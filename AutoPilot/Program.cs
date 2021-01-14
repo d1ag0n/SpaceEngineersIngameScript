@@ -32,11 +32,14 @@ namespace IngameScript
         const double dRPM = fRPM;
         const double dRotateEpsilon = 0.003;
         void rotate2target(Vector3D aTarget) {
+            //yaw2target(aTarget);
+            //pitch2target(aTarget);
+            aTarget = new Vector3D(0.0, double.MaxValue, 0.0);
             yaw2target(aTarget);
             pitch2target(aTarget);
             roll2target(aTarget);
         }
-        void yaw2target(Vector3D aTarget) {
+        double yaw2target(Vector3D aTarget) {
             var m = rc.WorldMatrix;
             // yaw
             var position = project(aTarget, m.Translation, m.Up);
@@ -54,8 +57,9 @@ namespace IngameScript
                 rpm = rps2rpm(angle);
             }
             gyro.SetValueFloat("Yaw", (float)rpm);
+            return rpm;
         }
-        void roll2target(Vector3D aTarget) {
+        double roll2target(Vector3D aTarget) {
             var m = rc.WorldMatrix;
             var position = project(aTarget, m.Translation, m.Forward);
             var displacement = position - m.Translation;
@@ -72,8 +76,9 @@ namespace IngameScript
                 rpm = rps2rpm(angle);
             }
             gyro.SetValueFloat("Roll", (float)rpm);
+            return rpm;
         }
-        void pitch2target(Vector3D aTarget) {
+        double pitch2target(Vector3D aTarget) {
             var m = rc.WorldMatrix;
             // pitch
             var position = project(aTarget, m.Translation, m.Right);
@@ -91,6 +96,7 @@ namespace IngameScript
                 rpm = rps2rpm(angle);
             }
             gyro.SetValueFloat("Pitch", (float)rpm);
+            return rpm;
         }
 
 
@@ -236,6 +242,7 @@ namespace IngameScript
         Vector3D BASE_HIGHER = new Vector3D(1045917.97, 142402.91, 1571139.78);
         Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
         Vector3D BASE_SPACE_2 = new Vector3D(44282.68, 164548.94, -85064.41);
+        Vector3D BASE_SPACE_3 = new Vector3D(44496.03, 164633.07, -85185.32);
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             gyro = get("gyro") as IMyGyro;
@@ -419,12 +426,12 @@ namespace IngameScript
             //if (roto1.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto1.TargetVelocityRad;
             //if (roto2.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto2.TargetVelocityRad;
             /*return;
-                    roto0.TargetVelocityRad =
-                    roto1.TargetVelocityRad =
-                    roto2.TargetVelocityRad = 0.0f;
-                    roto0.Enabled =
-                    roto1.Enabled =
-                    roto2.Enabled = true;*/
+                            roto0.TargetVelocityRad =
+                            roto1.TargetVelocityRad =
+                            roto2.TargetVelocityRad = 0.0f;
+                            roto0.Enabled =
+                            roto1.Enabled =
+                            roto2.Enabled = true;*/
         }
 
         void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
