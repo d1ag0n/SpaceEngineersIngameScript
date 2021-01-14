@@ -21,6 +21,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
+
         double dAngularVeloPitchMax = 0.0; // local x
         double dAngularVeloYawMax = 0.0; // local y
         double dAngularVeloRollMax = 0.0; // local z
@@ -32,8 +33,8 @@ namespace IngameScript
         const double dRotateEpsilon = 0.003;
         void rotate2target(Vector3D aTarget) {
             yaw2target(aTarget);
-            //pitch2target(aTarget);
-            //roll2target(aTarget);
+            pitch2target(aTarget);
+            roll2target(aTarget);
         }
         void yaw2target(Vector3D aTarget) {
             var m = rc.WorldMatrix;
@@ -42,7 +43,7 @@ namespace IngameScript
             var displacement = position - m.Translation;
             var direction = Vector3D.Normalize(displacement);
             var angle = angleBetween(direction, m.Forward);
-            log("angle ", angle);
+            log("yaw angle ", angle);
             double rpm = 0.0;
             if (angle > dRotateEpsilon) {
                 var norm = Vector3D.Normalize(direction.Cross(m.Forward));
@@ -56,12 +57,11 @@ namespace IngameScript
         }
         void roll2target(Vector3D aTarget) {
             var m = rc.WorldMatrix;
-            // pitch
             var position = project(aTarget, m.Translation, m.Forward);
-            log("pp", position);
             var displacement = position - m.Translation;
             var direction = Vector3D.Normalize(displacement);
             var angle = angleBetween(direction, m.Up);
+            log("roll angle", angle);
             double rpm = 0.0;
             if (angle > dRotateEpsilon) {
                 var norm = Vector3D.Normalize(direction.Cross(m.Up));
@@ -80,6 +80,7 @@ namespace IngameScript
             var displacement = position - m.Translation;
             var direction = Vector3D.Normalize(displacement);
             var angle = angleBetween(direction, m.Forward);
+            log("pitch angle", angle);
             double rpm = 0.0;
             if (angle > dRotateEpsilon) {
                 var norm = Vector3D.Normalize(direction.Cross(m.Forward));
@@ -117,7 +118,7 @@ namespace IngameScript
             var angle = Math.Acos(Vector3D.Normalize(worldNormalDirection).Dot(rc.WorldMatrix.Up));
             log("angle between", angle);
 
-            // gyro prediction    
+            // gyro prediction
             var sv = rc.GetShipVelocities();
 
             //log("angular velo natural", sv.AngularVelocity);
@@ -223,7 +224,7 @@ namespace IngameScript
             var vPredictedDirection = normalize(vPredictedDisplacement);
 
             //doGyro(vGravityDirection * -1.0);
-            rotate2target(BASE_SPACE_2);
+            rotate2target(BASE_SPACE_1);
             //doGyro(vDesiredDirection);
             //thrust(thrust0, vForceGV.Length());
             //thrust(thrust0, 0.0);
@@ -417,13 +418,13 @@ namespace IngameScript
             //rotoVeloMax = roto0.TargetVelocityRad;
             //if (roto1.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto1.TargetVelocityRad;
             //if (roto2.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto2.TargetVelocityRad;
-            /*return;   
-            roto0.TargetVelocityRad =
-            roto1.TargetVelocityRad =
-            roto2.TargetVelocityRad = 0.0f;
-            roto0.Enabled =
-            roto1.Enabled = 
-            roto2.Enabled = true;*/
+            /*return;
+                    roto0.TargetVelocityRad =
+                    roto1.TargetVelocityRad =
+                    roto2.TargetVelocityRad = 0.0f;
+                    roto0.Enabled =
+                    roto1.Enabled =
+                    roto2.Enabled = true;*/
         }
 
         void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
@@ -455,7 +456,7 @@ namespace IngameScript
         double pi2 = Math.PI * 2.0;
         double halfpi = Math.PI * 0.5;
         IMyRemoteControl rc;
-        double maxV = 104.4; // speed cap in m/s 
+        double maxV = 104.4; // speed cap in m/s
         double cf = 2;// correction factor (decelleration speed)
         IMyGyro gyro;
         Vector3D pos = Vector3D.Zero;
