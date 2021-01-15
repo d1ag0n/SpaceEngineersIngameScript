@@ -35,7 +35,7 @@ namespace IngameScript
             pitch2vector(aTarget);
             roll2vector(aTarget);
         }
-        
+
         void rotate2target(Vector3D aTarget) {
             pitch2target(aTarget);
             yaw2target(aTarget);
@@ -196,7 +196,7 @@ namespace IngameScript
             return result * scale;
         }
         void update() {
-            rotate2vector(BASE_SPACE_1);
+
             var rcMatrix = rc.WorldMatrix;
             var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
@@ -204,11 +204,11 @@ namespace IngameScript
             var sv = rc.GetShipVelocities();
             var sm = rc.CalculateShipMass();
             var vGravityDisplacement = rc.GetNaturalGravity();
-            log("Gravity", vGravityDisplacement);
-            var vGravityDirection = normalize(vGravityDisplacement);
+            var vGravityDirection = Vector3D.Normalize(vGravityDisplacement);
             var fMass = sm.TotalMass;
             var vVelocityDisplacement = sv.LinearVelocity;
-            //log("reported velo displacement", null, vVelocityDisplacement);
+            var vVelocityDirection = Vector3D.Normalize(vVelocityDisplacement);
+
             var vMom = fMass * vVelocityDisplacement;
 
             // actual
@@ -218,26 +218,29 @@ namespace IngameScript
 
             // desired
             var vDesiredDisplacement = BASE_SPACE_1 - rc.WorldMatrix.Translation;
-            var vDesiredDirection = normalize(vDesiredDisplacement);
+            var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
 
             // answer is the target vector
             var vPredictedDisplacement = vDesiredDirection - vForceGV;
-            var vPredictedDirection = normalize(vPredictedDisplacement);
+            var vPredictedDirection = Vector3D.Normalize(vPredictedDisplacement);
             //var vProjectedDirection = project();
             //thrust(thrust0, vForceGV.Length());
-
+            var vRetrogradeDisplacement = rcMatrix.Translation - vVelocityDisplacement;
+            var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
+            rotate2vector(vRetrogradeDisplacement);
             //rotate2target(BASE_SPACE_1);
-            
-
-            log("update complete");
             //pointRotoAtTarget(get("roto0") as IMyMotorStator, BASE_SPACE_1);
             //pointRotoAtTarget(get("roto1") as IMyMotorStator, BASE_SPACE_1);
             //pointRotoAtTarget(get("roto2") as IMyMotorStator, BASE_SPACE_1);
             //pointRotoAtTarget(get("roto3") as IMyMotorStator, BASE_SPACE_1);
             //doGyro(vDesiredDirection);
+
+            var offset = angleBetween(vRetrogradeDirection, rcMatrix.Down);
+            log("offset% ", 1.0 - (offset / pi));
             //thrust(thrust0, vForceGV.Length());
             //thrust(thrust0, 0.0);
             //doGyro(vGravityDirection * -1.0);
+            log("update complete");
         }
 
         //Vector3D BASE_ABOVE = new Vector3D(1045810.57, 142332.61, 1571519.87);
@@ -427,12 +430,12 @@ namespace IngameScript
             //if (roto1.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto1.TargetVelocityRad;
             //if (roto2.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto2.TargetVelocityRad;
             /*return;
-                            roto0.TargetVelocityRad =
-                            roto1.TargetVelocityRad =
-                            roto2.TargetVelocityRad = 0.0f;
-                            roto0.Enabled =
-                            roto1.Enabled =
-                            roto2.Enabled = true;*/
+                                    roto0.TargetVelocityRad =
+                                    roto1.TargetVelocityRad =
+                                    roto2.TargetVelocityRad = 0.0f;
+                                    roto0.Enabled =
+                                    roto1.Enabled =
+                                    roto2.Enabled = true;*/
         }
 
         void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
