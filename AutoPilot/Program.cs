@@ -169,7 +169,6 @@ namespace IngameScript
 
         // vec = desired - act
         double rot2rpm(double x, double scale) {
-
             if (x > 1.0) {
                 log("BAD ", x);
             } else if (x < -1.0) {
@@ -213,7 +212,7 @@ namespace IngameScript
             // answer is the target vector
             var vPredictedDisplacement = vDesiredDirection - vForceGV;
             var vPredictedDirection = normalize(vPredictedDisplacement);
-            var vProjectedDirection = project();
+            //var vProjectedDirection = project();
             //thrust(thrust0, vForceGV.Length());
 
             rotate2target(BASE_SPACE_1);
