@@ -21,7 +21,6 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-
         double dAngularVeloPitchMax = 0.0; // local x
         double dAngularVeloYawMax = 0.0; // local y
         double dAngularVeloRollMax = 0.0; // local z
@@ -30,75 +29,63 @@ namespace IngameScript
         double dAngularVeloPredictedRoll;
         const float fRPM = 30.0f;
         const double dRPM = fRPM;
-        const double dRotateEpsilon = 0.003;
+        const double dRotateEpsilon = 0.004;
+
+        void vector2target(Vector3D aTarget) {
+            log("right", rc.WorldMatrix.Right);
+            var target = aTarget.Cross(rc.WorldMatrix.Right);
+            var direction = Vector3D.Normalize(target);
+        }
+        
         void rotate2target(Vector3D aTarget) {
-            //yaw2target(aTarget);
-            //pitch2target(aTarget);
-            aTarget = new Vector3D(0.0, double.MaxValue, 0.0);
-            yaw2target(aTarget);
             pitch2target(aTarget);
+            yaw2target(aTarget);
             roll2target(aTarget);
         }
         double yaw2target(Vector3D aTarget) {
-            var m = rc.WorldMatrix;
+            var m = mGyro.WorldMatrix;
+            return rotate2target(
+                "Yaw", aTarget, m.Translation, m.Up, m.Forward, m.Forward
+            );
+        }
+        double pitch2target(Vector3D aTarget) {
+            var m = mGyro.WorldMatrix;
+            return rotate2target(
+                "Pitch", aTarget, m.Translation, m.Right, m.Forward, m.Backward
+            );
+        }
+        double roll2target(Vector3D aTarget) {
+            var m = mGyro.WorldMatrix;
+            return rotate2target(
+                "Roll", aTarget, m.Translation, m.Forward, m.Up, m.Down
+            );
+        }
+        double rotate2target(string aGyroOverride, Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
             // yaw
-            var position = project(aTarget, m.Translation, m.Up);
-            var displacement = position - m.Translation;
+            // m.Translation = aPlane
+            // m.Up = aNormal
+            // m.Forward = aIntersect
+            var position = project(aTarget, aPlane, aNormal);
+            var displacement = position - aPlane;
             var direction = Vector3D.Normalize(displacement);
-            var angle = angleBetween(direction, m.Forward);
-            log("yaw angle ", angle);
+            return rotate2direction(aGyroOverride, direction, aNormal, aIntersect1, aIntersect2);
+        }
+        double rotate2direction(string aGyroOverride, Vector3D aDirection, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
+            var angle = angleBetween(aDirection, aIntersect1);
+            log(aDirection, " angle ", angle);
             double rpm = 0.0;
             if (angle > dRotateEpsilon) {
-                var norm = Vector3D.Normalize(direction.Cross(m.Forward));
-                var dot = m.Up.Dot(norm);
+                var norm = Vector3D.Normalize(aDirection.Cross(aIntersect2));
+                var dot = aNormal.Dot(norm);
                 if (dot < 0) {
                     angle = -angle;
                 }
                 rpm = rps2rpm(angle);
             }
-            gyro.SetValueFloat("Yaw", (float)rpm);
+            mGyro.SetValueFloat(aGyroOverride.ToString(), (float)rpm);
+            log(aGyroOverride, " rpm ", rpm);
             return rpm;
         }
-        double roll2target(Vector3D aTarget) {
-            var m = rc.WorldMatrix;
-            var position = project(aTarget, m.Translation, m.Forward);
-            var displacement = position - m.Translation;
-            var direction = Vector3D.Normalize(displacement);
-            var angle = angleBetween(direction, m.Up);
-            log("roll angle", angle);
-            double rpm = 0.0;
-            if (angle > dRotateEpsilon) {
-                var norm = Vector3D.Normalize(direction.Cross(m.Up));
-                var dot = m.Forward.Dot(norm);
-                if (dot > 0) {
-                    angle = -angle;
-                }
-                rpm = rps2rpm(angle);
-            }
-            gyro.SetValueFloat("Roll", (float)rpm);
-            return rpm;
-        }
-        double pitch2target(Vector3D aTarget) {
-            var m = rc.WorldMatrix;
-            // pitch
-            var position = project(aTarget, m.Translation, m.Right);
-            var displacement = position - m.Translation;
-            var direction = Vector3D.Normalize(displacement);
-            var angle = angleBetween(direction, m.Forward);
-            log("pitch angle", angle);
-            double rpm = 0.0;
-            if (angle > dRotateEpsilon) {
-                var norm = Vector3D.Normalize(direction.Cross(m.Forward));
-                var dot = m.Right.Dot(norm);
-                if (dot > 0) {
-                    angle = -angle;
-                }
-                rpm = rps2rpm(angle);
-            }
-            gyro.SetValueFloat("Pitch", (float)rpm);
-            return rpm;
-        }
-
 
         double rps2rpm(double rps) => (rps / (Math.PI * 2)) * 60.0;
         double rpm2rps(double rpm) => (rpm * (Math.PI * 2)) / 60.0;
@@ -108,7 +95,7 @@ namespace IngameScript
             return Math.Acos(a.Dot(b));
         }
         Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
-            aTarget - Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal;
+            aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
 
         Vector3D vAngularVelocity;
         void absMax(double a, ref double b) {
@@ -133,7 +120,7 @@ namespace IngameScript
                 //var a = BASE_SPACE_1;
                 //BASE_SPACE_1 = BASE_SPACE_2;
                 //BASE_SPACE_2 = a;
-                gyro.SetValueFloat("Roll", 60.0f);
+                mGyro.SetValueFloat("Roll", 60.0f);
                 return;
             }
             if (angle > 2.5) {
@@ -143,7 +130,7 @@ namespace IngameScript
                 angle *= 0.7;
             }
 
-            var vAngular = world2dir(sv.AngularVelocity, gyro.WorldMatrix);
+            var vAngular = world2dir(sv.AngularVelocity, mGyro.WorldMatrix);
 
             absMax(vAngular.X, ref dAngularVeloPitchMax);
             absMax(vAngular.Y, ref dAngularVeloYawMax);
@@ -158,12 +145,12 @@ namespace IngameScript
             //log("angular velo transformed", vAngularVelocity);
             rc.Orientation.GetMatrix(out m);
             Vector3D rcUp = m.Up;
-            gyro.Orientation.GetMatrix(out m);
+            mGyro.Orientation.GetMatrix(out m);
 
             // original Vector3D gyroDwn = Vector3D.Transform(rcDown, MatrixD.Transpose(m));
             Vector3D gyroUp = Vector3D.Transform(rcUp, MatrixD.Transpose(m));
 
-            Vector3D gyroTgt = world2dir(worldNormalDirection, gyro.WorldMatrix);
+            Vector3D gyroTgt = world2dir(worldNormalDirection, mGyro.WorldMatrix);
             log("gyroTgt", gyroTgt);
             log("gyroUp", gyroUp);
             Vector3D gyroRot = Vector3D.Cross(gyroUp, gyroTgt);
@@ -175,9 +162,9 @@ namespace IngameScript
             //return;
 
 
-            gyro.SetValueFloat("Pitch", (float)x);
-            gyro.SetValueFloat("Yaw", (float)y);
-            gyro.SetValueFloat("Roll", (float)z);
+            mGyro.SetValueFloat("Pitch", (float)x);
+            mGyro.SetValueFloat("Yaw", (float)y);
+            mGyro.SetValueFloat("Roll", (float)z);
         }
 
         // vec = desired - act
@@ -199,17 +186,15 @@ namespace IngameScript
             return result * scale;
         }
         void update() {
-            pointRotoAtTarget(get("roto0") as IMyMotorStator, BASE_SPACE_1);
-            pointRotoAtTarget(get("roto1") as IMyMotorStator, BASE_SPACE_1);
-            pointRotoAtTarget(get("roto2") as IMyMotorStator, BASE_SPACE_1);
-            pointRotoAtTarget(get("roto3") as IMyMotorStator, BASE_SPACE_1);
+            vector2target(BASE_SPACE_1);
             var rcMatrix = rc.WorldMatrix;
-            var gyroMatrix = gyro.WorldMatrix;
+            var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
             var g = rc.GetNaturalGravity();
             var sv = rc.GetShipVelocities();
             var sm = rc.CalculateShipMass();
             var vGravityDisplacement = rc.GetNaturalGravity();
+            log("Gravity", vGravityDisplacement);
             var vGravityDirection = normalize(vGravityDisplacement);
             var fMass = sm.TotalMass;
             var vVelocityDisplacement = sv.LinearVelocity;
@@ -228,14 +213,21 @@ namespace IngameScript
             // answer is the target vector
             var vPredictedDisplacement = vDesiredDirection - vForceGV;
             var vPredictedDirection = normalize(vPredictedDisplacement);
+            var vProjectedDirection = project();
+            //thrust(thrust0, vForceGV.Length());
 
-            //doGyro(vGravityDirection * -1.0);
             rotate2target(BASE_SPACE_1);
+            
+
+            log("update complete");
+            //pointRotoAtTarget(get("roto0") as IMyMotorStator, BASE_SPACE_1);
+            //pointRotoAtTarget(get("roto1") as IMyMotorStator, BASE_SPACE_1);
+            //pointRotoAtTarget(get("roto2") as IMyMotorStator, BASE_SPACE_1);
+            //pointRotoAtTarget(get("roto3") as IMyMotorStator, BASE_SPACE_1);
             //doGyro(vDesiredDirection);
             //thrust(thrust0, vForceGV.Length());
             //thrust(thrust0, 0.0);
-
-            log("update complete");
+            //doGyro(vGravityDirection * -1.0);
         }
 
         //Vector3D BASE_ABOVE = new Vector3D(1045810.57, 142332.61, 1571519.87);
@@ -245,7 +237,6 @@ namespace IngameScript
         Vector3D BASE_SPACE_3 = new Vector3D(44496.03, 164633.07, -85185.32);
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
-            gyro = get("gyro") as IMyGyro;
             maxV /= cf;
             rc = get("rc") as IMyRemoteControl;
             pit = get("pit") as IMyCockpit;
@@ -411,7 +402,7 @@ namespace IngameScript
 
         void init() {
             thrust0 = get("thrust0") as IMyThrust;
-            gyro = get("gyro") as IMyGyro;
+            mGyro = get("gyro") as IMyGyro;
             //roto0 = get("roto0") as IMyMotorStator;
             //roto1 = get("roto1") as IMyMotorStator;
             //roto2 = get("roto2") as IMyMotorStator;
@@ -465,7 +456,93 @@ namespace IngameScript
         IMyRemoteControl rc;
         double maxV = 104.4; // speed cap in m/s
         double cf = 2;// correction factor (decelleration speed)
-        IMyGyro gyro;
+        IMyGyro mGyro;
         Vector3D pos = Vector3D.Zero;
+
+        // old methods
+        double zrotate2target(string aDirection, Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
+            // yaw
+            // m.Translation = aPlane
+            // m.Up = aNormal
+            // m.Forward = aIntersect
+            var position = project(aTarget, aPlane, aNormal);
+            var displacement = position - aPlane;
+            var direction = Vector3D.Normalize(displacement);
+            var angle = angleBetween(direction, aIntersect1);
+            log(aDirection, " angle ", angle);
+            double rpm = 0.0;
+            if (angle > dRotateEpsilon) {
+                var norm = Vector3D.Normalize(direction.Cross(aIntersect2));
+                var dot = aNormal.Dot(norm);
+                if (dot < 0) {
+                    angle = -angle;
+                }
+                rpm = rps2rpm(angle);
+            }
+            mGyro.SetValueFloat(aDirection.ToString(), (float)rpm);
+            log(aDirection, " rpm ", rpm);
+            return rpm;
+        }
+        double zyaw2target(Vector3D aTarget) {
+            var m = rc.WorldMatrix;
+            // yaw
+            var position = project(aTarget, m.Translation, m.Up);
+            var displacement = position - m.Translation;
+            var direction = Vector3D.Normalize(displacement);
+            var angle = angleBetween(direction, m.Forward);
+            log("yaw angle ", angle);
+            double rpm = 0.0;
+            if (angle > dRotateEpsilon) {
+                var norm = Vector3D.Normalize(direction.Cross(m.Forward));
+                var dot = m.Up.Dot(norm);
+                if (dot < 0) {
+                    angle = -angle;
+                }
+                rpm = rps2rpm(angle);
+            }
+            //gyro.SetValueFloat("Yaw", (float)rpm);
+            mGyro.SetValueFloat("Yaw", 0.0f);
+            return rpm;
+        }
+        double zpitch2target(Vector3D aTarget) {
+            var m = rc.WorldMatrix;
+            // pitch
+            var position = project(aTarget, m.Translation, m.Right);
+            var displacement = position - m.Translation;
+            var direction = Vector3D.Normalize(displacement);
+            var angle = angleBetween(direction, m.Forward);
+            log("pitch angle", angle);
+            double rpm = 0.0;
+            if (angle > dRotateEpsilon) {
+                var norm = Vector3D.Normalize(direction.Cross(m.Forward));
+                var dot = m.Right.Dot(norm);
+                if (dot > 0) {
+                    angle = -angle;
+                }
+                rpm = rps2rpm(angle);
+            }
+            mGyro.SetValueFloat("Pitch", (float)rpm);
+            return rpm;
+        }
+        double zroll2target(Vector3D aTarget) {
+            var m = rc.WorldMatrix;
+            var position = project(aTarget, m.Translation, m.Forward);
+            var displacement = position - m.Translation;
+            var direction = Vector3D.Normalize(displacement);
+            var angle = angleBetween(direction, m.Up);
+            log("roll angle", angle);
+            double rpm = 0.0;
+            if (angle > dRotateEpsilon) {
+                var norm = Vector3D.Normalize(direction.Cross(m.Up));
+                var dot = m.Forward.Dot(norm);
+                if (dot > 0) {
+                    angle = -angle;
+                }
+                rpm = rps2rpm(angle);
+            }
+            mGyro.SetValueFloat("Roll", (float)rpm);
+            //gyro.SetValueFloat("Roll", 0.0f);
+            return rpm;
+        }
     }
 }
