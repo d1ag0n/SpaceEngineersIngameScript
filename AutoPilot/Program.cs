@@ -31,10 +31,9 @@ namespace IngameScript
         const double dRPM = fRPM;
         const double dRotateEpsilon = 0.004;
 
-        void vector2target(Vector3D aTarget) {
-            log("right", rc.WorldMatrix.Right);
-            var target = aTarget.Cross(rc.WorldMatrix.Right);
-            var direction = Vector3D.Normalize(target);
+        void rotate2vector(Vector3D aTarget) {
+            pitch2vector(aTarget);
+            roll2vector(aTarget);
         }
         
         void rotate2target(Vector3D aTarget) {
@@ -48,10 +47,22 @@ namespace IngameScript
                 "Yaw", aTarget, m.Translation, m.Up, m.Forward, m.Forward
             );
         }
+        double pitch2vector(Vector3D aTarget) {
+            var m = mGyro.WorldMatrix;
+            return rotate2target(
+                "Pitch", aTarget, m.Translation, m.Right, m.Up, m.Down
+            );
+        }
         double pitch2target(Vector3D aTarget) {
             var m = mGyro.WorldMatrix;
             return rotate2target(
                 "Pitch", aTarget, m.Translation, m.Right, m.Forward, m.Backward
+            );
+        }
+        double roll2vector(Vector3D aTarget) {
+            var m = mGyro.WorldMatrix;
+            return rotate2target(
+                "Roll", aTarget, m.Translation, m.Forward, m.Up, m.Down
             );
         }
         double roll2target(Vector3D aTarget) {
@@ -185,7 +196,7 @@ namespace IngameScript
             return result * scale;
         }
         void update() {
-            vector2target(BASE_SPACE_1);
+            rotate2vector(BASE_SPACE_1);
             var rcMatrix = rc.WorldMatrix;
             var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
@@ -215,7 +226,7 @@ namespace IngameScript
             //var vProjectedDirection = project();
             //thrust(thrust0, vForceGV.Length());
 
-            rotate2target(BASE_SPACE_1);
+            //rotate2target(BASE_SPACE_1);
             
 
             log("update complete");
