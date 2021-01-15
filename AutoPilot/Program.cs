@@ -26,16 +26,16 @@ namespace IngameScript
             idle,
             damp
         }
-        Missions eMission = Missions.damp;
-        double dAngularVeloPitchMax = 0.0; // local x
-        double dAngularVeloYawMax = 0.0; // local y
-        double dAngularVeloRollMax = 0.0; // local z
-        double dAngularVeloPredictedYaw;
-        double dAngularVeloPredictedPitch;
-        double dAngularVeloPredictedRoll;
-        const float fRPM = 30.0f;
-        const double dRPM = fRPM;
-        const double dRotateEpsilon = 0.001;
+        Missions meMission = Missions.damp;
+        double mdAngularVeloPitchMax = 0.0; // local x
+        double mdAngularVeloYawMax = 0.0; // local y
+        double mdAngularVeloRollMax = 0.0; // local z
+        double mdAngularVeloPredictedYaw;
+        double mdAngularVeloPredictedPitch;
+        double mdAngularVeloPredictedRoll;
+        const float mfRPM = 30.0f;
+        const double mdRPM = mfRPM;
+        const double mdRotateEpsilon = 0.001;
 
         void rotate2vector(Vector3D aTarget) {
             pitch2vector(aTarget);
@@ -91,7 +91,7 @@ namespace IngameScript
             var angle = angleBetween(aDirection, aIntersect1);
             //log(aGyroOverride, " angle ", angle);
             double rpm = 0.0;
-            if (angle > dRotateEpsilon) {
+            if (angle > mdRotateEpsilon) {
                 var norm = Vector3D.Normalize(aDirection.Cross(aIntersect2));
                 var dot = aNormal.Dot(norm);
                 if (dot < 0) {
@@ -149,11 +149,11 @@ namespace IngameScript
 
             var vAngular = world2dir(sv.AngularVelocity, mGyro.WorldMatrix);
 
-            absMax(vAngular.X, ref dAngularVeloPitchMax);
-            absMax(vAngular.Y, ref dAngularVeloYawMax);
-            absMax(vAngular.Z, ref dAngularVeloRollMax);
+            absMax(vAngular.X, ref mdAngularVeloPitchMax);
+            absMax(vAngular.Y, ref mdAngularVeloYawMax);
+            absMax(vAngular.Z, ref mdAngularVeloRollMax);
 
-            var vAngularMax = new Vector3D(dAngularVeloPitchMax, dAngularVeloYawMax, dAngularVeloRollMax);
+            var vAngularMax = new Vector3D(mdAngularVeloPitchMax, mdAngularVeloYawMax, mdAngularVeloRollMax);
             //log("Angular Max", vAngularMax);
 
             vAngularVelocity = vAngular;
@@ -201,10 +201,11 @@ namespace IngameScript
             }
             return result * scale;
         }
-        double doMission() {
-            switch (eMission) {
+        double doMission(Missions aMission) {
+            log("doMission ", aMission);
+            switch (aMission) {
                 case Missions.damp: return missionDamp();
-                default: return 1.0;
+                default: return 0.0;
             }
         }
         double missionDamp() {
@@ -220,10 +221,12 @@ namespace IngameScript
             var sm = mRC.CalculateShipMass();
             var sv = mRC.GetShipVelocities();
             var vGravityDisplacement = mRC.GetNaturalGravity();
-            return sm.TotalMass * (vGravityDisplacement + sv.LinearVelocity);
+            Vector3D result = sm.TotalMass * (vGravityDisplacement + sv.LinearVelocity);
+            log("momentum", result);
+            return result;
         }
         double update() {
-            return doMission();
+            return doMission(meMission);
             var rcMatrix = mRC.WorldMatrix;
             var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
@@ -276,6 +279,7 @@ namespace IngameScript
             if (offset < Math.PI / 2.0) {
                 result = 1.0 - (offset / (Math.PI / 2.0));
             }
+            log("thrustPercent ", result);
             return result;
         }
         //Vector3D BASE_ABOVE = new Vector3D(1045810.57, 142332.61, 1571519.87);
@@ -519,7 +523,7 @@ namespace IngameScript
             var angle = angleBetween(direction, aIntersect1);
             log(aDirection, " angle ", angle);
             double rpm = 0.0;
-            if (angle > dRotateEpsilon) {
+            if (angle > mdRotateEpsilon) {
                 var norm = Vector3D.Normalize(direction.Cross(aIntersect2));
                 var dot = aNormal.Dot(norm);
                 if (dot < 0) {
@@ -540,7 +544,7 @@ namespace IngameScript
             var angle = angleBetween(direction, m.Forward);
             log("yaw angle ", angle);
             double rpm = 0.0;
-            if (angle > dRotateEpsilon) {
+            if (angle > mdRotateEpsilon) {
                 var norm = Vector3D.Normalize(direction.Cross(m.Forward));
                 var dot = m.Up.Dot(norm);
                 if (dot < 0) {
@@ -561,7 +565,7 @@ namespace IngameScript
             var angle = angleBetween(direction, m.Forward);
             log("pitch angle", angle);
             double rpm = 0.0;
-            if (angle > dRotateEpsilon) {
+            if (angle > mdRotateEpsilon) {
                 var norm = Vector3D.Normalize(direction.Cross(m.Forward));
                 var dot = m.Right.Dot(norm);
                 if (dot > 0) {
@@ -580,7 +584,7 @@ namespace IngameScript
             var angle = angleBetween(direction, m.Up);
             log("roll angle", angle);
             double rpm = 0.0;
-            if (angle > dRotateEpsilon) {
+            if (angle > mdRotateEpsilon) {
                 var norm = Vector3D.Normalize(direction.Cross(m.Up));
                 var dot = m.Forward.Dot(norm);
                 if (dot > 0) {
