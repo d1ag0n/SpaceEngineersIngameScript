@@ -21,6 +21,12 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
+        enum Missions
+        {
+            idle,
+            damp
+        }
+        Missions eMission = Missions.damp;
         double dAngularVeloPitchMax = 0.0; // local x
         double dAngularVeloYawMax = 0.0; // local y
         double dAngularVeloRollMax = 0.0; // local z
@@ -83,7 +89,7 @@ namespace IngameScript
         }
         double rotate2direction(string aGyroOverride, Vector3D aDirection, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
             var angle = angleBetween(aDirection, aIntersect1);
-            log(aGyroOverride, " angle ", angle);
+            //log(aGyroOverride, " angle ", angle);
             double rpm = 0.0;
             if (angle > dRotateEpsilon) {
                 var norm = Vector3D.Normalize(aDirection.Cross(aIntersect2));
@@ -94,7 +100,7 @@ namespace IngameScript
                 rpm = rps2rpm(angle);
             }
             mGyro.SetValueFloat(aGyroOverride.ToString(), (float)rpm);
-            log(aGyroOverride, " rpm ", rpm);
+            //log(aGyroOverride, " rpm ", rpm);
             return rpm;
         }
 
@@ -178,7 +184,7 @@ namespace IngameScript
             mGyro.SetValueFloat("Roll", (float)z);
         }
 
-        // vec = desired - act
+        
         double rot2rpm(double x, double scale) {
             if (x > 1.0) {
                 log("BAD ", x);
@@ -195,8 +201,29 @@ namespace IngameScript
             }
             return result * scale;
         }
-        void update() {
-
+        double doMission() {
+            switch (eMission) {
+                case Missions.damp: return missionDamp();
+                default: return 1.0;
+            }
+        }
+        double missionDamp() {
+            var rcMatrix = mRC.WorldMatrix;
+            var sv = mRC.GetShipVelocities();
+            var vRetrogradeDisplacement = rcMatrix.Translation - sv.LinearVelocity;
+            var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
+            rotate2vector(vRetrogradeDisplacement);
+            thrust(thrust0, momentum().Length() * thrustPercent(vRetrogradeDirection, rcMatrix.Up));            
+            return 0.0;
+        }
+        Vector3D momentum() {
+            var sm = mRC.CalculateShipMass();
+            var sv = mRC.GetShipVelocities();
+            var vGravityDisplacement = mRC.GetNaturalGravity();
+            return sm.TotalMass * (vGravityDisplacement + sv.LinearVelocity);
+        }
+        double update() {
+            return doMission();
             var rcMatrix = mRC.WorldMatrix;
             var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
@@ -211,7 +238,7 @@ namespace IngameScript
             //var vVelocityDirection = Vector3D.Normalize(sv.LinearVelocity);
             
             var vMom = fMass * sv.LinearVelocity;
-
+            // vec = desired - act
             // actual
             var vForceGV = fMass * (vGravityDisplacement + sv.LinearVelocity);
             var vForceG = fMass * vGravityDisplacement;
@@ -225,9 +252,9 @@ namespace IngameScript
             var vPredictedDisplacement = vDesiredDirection - vForceGV;
             var vPredictedDirection = Vector3D.Normalize(vPredictedDisplacement);
             //var vProjectedDirection = project();
-            //thrust(thrust0, vForceGV.Length()); 
+            //thrust(thrust0, vForceGV.Length());
             
-            rotate2vector(vRetrogradeDisplacement);
+            rotate2vector(BASE_SPACE_1);
             //rotate2target(BASE_SPACE_1);
             //pointRotoAtTarget(get("roto0") as IMyMotorStator, BASE_SPACE_1);
             //pointRotoAtTarget(get("roto1") as IMyMotorStator, BASE_SPACE_1);
@@ -235,14 +262,22 @@ namespace IngameScript
             //pointRotoAtTarget(get("roto3") as IMyMotorStator, BASE_SPACE_1);
             //doGyro(vDesiredDirection);
 
-            log("offset prograde", angleBetween(Vector3D.Normalize(vRetrogradeDisplacement), rcMatrix.Down));
+            var dThrustPercent = thrustPercent(vDesiredDirection, rcMatrix.Up);
+            log("dThrustPercent", dThrustPercent);
             //log("offset up", angleBetween(Vector3D.Normalize(vRetrogradeDisplacement), rcMatrix.Up));
-            thrust(thrust0, vForceGV.Length());
+            thrust(thrust0, vForceGV.Length() * dThrustPercent);
             //thrust(thrust0, 0.0);
             //doGyro(vGravityDirection * -1.0);
             log("update complete");
         }
-
+        double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
+            var result = 0.0;
+            var offset = angleBetween(aDirection, aNormal);
+            if (offset < Math.PI / 2.0) {
+                result = 1.0 - (offset / (Math.PI / 2.0));
+            }
+            return result;
+        }
         //Vector3D BASE_ABOVE = new Vector3D(1045810.57, 142332.61, 1571519.87);
         Vector3D BASE_HIGHER = new Vector3D(1045917.97, 142402.91, 1571139.78);
         Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
