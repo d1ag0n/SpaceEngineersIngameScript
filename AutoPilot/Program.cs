@@ -24,6 +24,7 @@ namespace IngameScript
         enum Missions
         {
             idle,
+            stop,
             damp
         }
         Missions meMission = Missions.damp;
@@ -201,21 +202,30 @@ namespace IngameScript
             }
             return result * scale;
         }
-        double doMission(Missions aMission) {
+        void doMission(Missions aMission) {
             log("doMission ", aMission);
             switch (aMission) {
-                case Missions.damp: return missionDamp();
-                default: return 0.0;
+                
+                case Missions.damp: missionDamp(); break;
+                default: log("mission unhandled"); break;
             }
         }
-        double missionDamp() {
+        void missionStop() {
+            var dMomentum = momentum().LengthSquared();
+            if (0.0 != dMomentum) {
+                missionDamp(Math.Sqrt(dMomentum));
+            } else {
+                meMission = Missions.idle;
+            }
+        }
+        void missionDamp() => missionDamp(momentum().Length());
+        void missionDamp(double aMomentumLength) {
             var rcMatrix = mRC.WorldMatrix;
             var sv = mRC.GetShipVelocities();
             var vRetrogradeDisplacement = rcMatrix.Translation - sv.LinearVelocity;
             var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
             rotate2vector(vRetrogradeDisplacement);
-            thrust(thrust0, momentum().Length() * thrustPercent(vRetrogradeDirection, rcMatrix.Up));            
-            return 0.0;
+            thrust(thrust0, aMomentumLength * thrustPercent(vRetrogradeDirection, rcMatrix.Down));            
         }
         Vector3D momentum() {
             var sm = mRC.CalculateShipMass();
@@ -225,8 +235,9 @@ namespace IngameScript
             log("momentum", result);
             return result;
         }
-        double update() {
-            return doMission(meMission);
+        void update() {
+            doMission(meMission);
+            return;
             var rcMatrix = mRC.WorldMatrix;
             var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
@@ -276,6 +287,7 @@ namespace IngameScript
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
             var result = 0.0;
             var offset = angleBetween(aDirection, aNormal);
+            log("thrust offset ", offset);
             if (offset < Math.PI / 2.0) {
                 result = 1.0 - (offset / (Math.PI / 2.0));
             }
