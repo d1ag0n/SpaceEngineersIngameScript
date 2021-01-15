@@ -27,7 +27,7 @@ namespace IngameScript
             stop,
             damp
         }
-        Missions meMission = Missions.damp;
+        Missions meMission = Missions.stop;
         double mdAngularVeloPitchMax = 0.0; // local x
         double mdAngularVeloYawMax = 0.0; // local y
         double mdAngularVeloRollMax = 0.0; // local z
@@ -90,7 +90,7 @@ namespace IngameScript
         }
         double rotate2direction(string aGyroOverride, Vector3D aDirection, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
             var angle = angleBetween(aDirection, aIntersect1);
-            //log(aGyroOverride, " angle ", angle);
+            log(aGyroOverride, " angle ", angle);
             double rpm = 0.0;
             if (angle > mdRotateEpsilon) {
                 var norm = Vector3D.Normalize(aDirection.Cross(aIntersect2));
@@ -109,8 +109,9 @@ namespace IngameScript
         double rpm2rps(double rpm) => (rpm * (Math.PI * 2)) / 60.0;
 
         double angleBetween(Vector3D a, Vector3D b) {
-            //log("angle alen ", a.Length(), " blen ", b.Length());
-            return Math.Acos(a.Dot(b));
+            var result = Math.Acos(a.Dot(b));
+            log("angleBetween a", a.Length(), " b", b.Length(), " = ", result);
+            return result;
         }
         Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
             aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
@@ -184,8 +185,6 @@ namespace IngameScript
             mGyro.SetValueFloat("Yaw", (float)y);
             mGyro.SetValueFloat("Roll", (float)z);
         }
-
-        
         double rot2rpm(double x, double scale) {
             if (x > 1.0) {
                 log("BAD ", x);
@@ -205,27 +204,27 @@ namespace IngameScript
         void doMission(Missions aMission) {
             log("doMission ", aMission);
             switch (aMission) {
-                
+                case Missions.stop: missionStop(); break;
                 case Missions.damp: missionDamp(); break;
                 default: log("mission unhandled"); break;
             }
         }
         void missionStop() {
-            var dMomentum = momentum().LengthSquared();
+            var dMomentum = momentum().Length();
             if (0.0 != dMomentum) {
-                missionDamp(Math.Sqrt(dMomentum));
+                missionDamp(dMomentum);
             } else {
                 meMission = Missions.idle;
             }
         }
         void missionDamp() => missionDamp(momentum().Length());
         void missionDamp(double aMomentumLength) {
-            var rcMatrix = mRC.WorldMatrix;
             var sv = mRC.GetShipVelocities();
-            var vRetrogradeDisplacement = rcMatrix.Translation - sv.LinearVelocity;
+            var vRetrogradeDisplacement = mRC.WorldMatrix.Translation - sv.LinearVelocity;
             var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
+            //log("damp angle generic", angleBetween(Vector3D.Normalize(sv.LinearVelocity), mRC.WorldMatrix.Up));
             rotate2vector(vRetrogradeDisplacement);
-            thrust(thrust0, aMomentumLength * thrustPercent(vRetrogradeDirection, rcMatrix.Down));            
+            thrust(thrust0, aMomentumLength * thrustPercent(Vector3D.Normalize(sv.LinearVelocity), mRC.WorldMatrix.Down));
         }
         Vector3D momentum() {
             var sm = mRC.CalculateShipMass();
@@ -233,6 +232,16 @@ namespace IngameScript
             var vGravityDisplacement = mRC.GetNaturalGravity();
             Vector3D result = sm.TotalMass * (vGravityDisplacement + sv.LinearVelocity);
             log("momentum", result);
+            return result;
+        }
+        double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
+            var result = 0.0;
+            var offset = angleBetween(aDirection, aNormal);
+
+            if (offset < Math.PI / 2.0) {
+                result = 1.0 - (offset / (Math.PI / 2.0));
+            }
+            log("thrustPercent ", result);
             return result;
         }
         void update() {
@@ -284,16 +293,7 @@ namespace IngameScript
             //doGyro(vGravityDirection * -1.0);
             log("update complete");
         }
-        double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
-            var result = 0.0;
-            var offset = angleBetween(aDirection, aNormal);
-            log("thrust offset ", offset);
-            if (offset < Math.PI / 2.0) {
-                result = 1.0 - (offset / (Math.PI / 2.0));
-            }
-            log("thrustPercent ", result);
-            return result;
-        }
+
         //Vector3D BASE_ABOVE = new Vector3D(1045810.57, 142332.61, 1571519.87);
         Vector3D BASE_HIGHER = new Vector3D(1045917.97, 142402.91, 1571139.78);
         Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
@@ -491,14 +491,17 @@ namespace IngameScript
 
         void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
         void log(params object[] args) {
-            foreach (var arg in args) {
-                if (null == arg) {
-                    sb.AppendLine();
-                } else if (arg is Vector3D) {
-                    sb.AppendLine();
-                    log((Vector3D)arg);
-                } else {
-                    sb.Append(arg.ToString());
+            if (null != args) {
+                for (int i = 0; i < args.Length; i++) {
+                    var arg = args[i];
+                    if (null == arg) {
+                        sb.AppendLine();
+                    } else if (arg is Vector3D) {
+                        sb.AppendLine();
+                        log((Vector3D)arg);
+                    } else {
+                        sb.Append(arg.ToString());
+                    }
                 }
             }
             sb.AppendLine();
