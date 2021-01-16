@@ -44,7 +44,7 @@ namespace IngameScript
             
         }
         void Main(string argument, UpdateType aUpdate) {
-            string str;
+            string str = "";
             if (0 < nonUpdateCalls) {
                 log(" * * NON UPDATE CALLS ", nonUpdateCalls);
             }
