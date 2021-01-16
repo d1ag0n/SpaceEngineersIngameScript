@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IngameScript1", "IngameScri
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoPilot", "AutoPilot\AutoPilot.csproj", "{582C28DB-1277-4BC5-9B3D-D5BECE33BF65}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DockManager", "DockManager\DockManager.csproj", "{6EB7EB41-9002-4602-93F1-9DA21807E436}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -16,6 +18,8 @@ Global
 		{4C1089AB-F398-46AE-822D-A996650E9465}.Debug|x64.Build.0 = Debug|x64
 		{582C28DB-1277-4BC5-9B3D-D5BECE33BF65}.Debug|x64.ActiveCfg = Debug|x64
 		{582C28DB-1277-4BC5-9B3D-D5BECE33BF65}.Debug|x64.Build.0 = Debug|x64
+		{6EB7EB41-9002-4602-93F1-9DA21807E436}.Debug|x64.ActiveCfg = Debug|x64
+		{6EB7EB41-9002-4602-93F1-9DA21807E436}.Debug|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

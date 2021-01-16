@@ -288,9 +288,9 @@ namespace IngameScript
             var vDesiredDisplacement = aTarget - mRC.WorldMatrix.Translation;
             
             if (double.MaxValue == aVelocity) {
-                aVelocity = vDesiredDisplacement.Length() * 0.01;
+                aVelocity = vDesiredDisplacement.Length() * 0.1;
                 if (100.0 < aVelocity) {
-                    aVelocity = 100.0;
+                    aVelocity = 100.1;
                 } else if (0.0 > aVelocity) {
                     aVelocity = 0.0;
                 }
@@ -398,7 +398,6 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             maxV /= cf;
             mRC = get("rc") as IMyRemoteControl;
-            pit = get("pit") as IMyCockpit;
             lcd = get("lcd") as IMyTextPanel;
             init();
             setMission(Missions.navigate, BASE_SPACE_2);
