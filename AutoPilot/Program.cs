@@ -274,11 +274,11 @@ namespace IngameScript
         void missionNavigate() {
             switch (miMissionStep) {
                 case 0:
-                    thrustVector(mvMissionObjective, 10.0);
+                    thrustVector(mvMissionObjective);
                     break;
             }
         }
-        void thrustVector(Vector3D aTarget, double aVelocity) {
+        void thrustVector(Vector3D aTarget, double aVelocity = double.MaxValue) {
             var sm = mRC.CalculateShipMass();
             var sv = mRC.GetShipVelocities();
             Vector3D vLinearVelocity = sv.LinearVelocity;
@@ -286,6 +286,15 @@ namespace IngameScript
             double dMass = sm.TotalMass;
             // vec = desired - act
             var vDesiredDisplacement = aTarget - mRC.WorldMatrix.Translation;
+            
+            if (double.MaxValue == aVelocity) {
+                aVelocity = vDesiredDisplacement.Length() * 0.01;
+                if (100.0 < aVelocity) {
+                    aVelocity = 100.0;
+                } else if (0.0 > aVelocity) {
+                    aVelocity = 0.0;
+                }
+            }
             var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
             var vDesiredVelocity = aVelocity * vDesiredDirection;
             var vForceDisplacement = (vDesiredVelocity - vLinearVelocity - vGravityDisplacement) * dMass;
