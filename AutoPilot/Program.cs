@@ -30,6 +30,7 @@ namespace IngameScript
         }
         Vector3D mvMissionObjective;
         Missions meMission = Missions.navigate;
+        double mdMissionAltitude = 0;
         int miMissionStep = 0;
         double mdAngularVeloPitchMax = 0.0; // local x
         double mdAngularVeloYawMax = 0.0; // local y
@@ -204,18 +205,57 @@ namespace IngameScript
             }
             return result * scale;
         }
+        void setMission(Missions aMission, Vector3D aObjective = new Vector3D()) {
+            miMissionStep = 0;
+            meMission = aMission;
+            
+            if (0.0 == vGravityDisplacement.LengthSquared() || !initMissionAltitude()) {
+                
+            }
+        }
+        bool initMissionAltitude() {
+            var result = false;
+            
+            
+            if (0.0 < mdMissionAltitude) {
+                var vGravityDisplacement = mRC.GetNaturalGravity();
+                if (0.0 < vGravityDisplacement.LengthSquared()) {
+                    result = mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdMissionAltitude);
+                    if (!result) {
+                        mdMissionAltitude = 0.0;
+                    }
+                }
+            } else {
+                result = true;
+            }
+            return result;
+        }
+            
         void doMission(Missions aMission) {
             log("doMission ", aMission);
             switch (aMission) {
-                case Missions.stop:
-                    if (missionStop()) {
-                        meMission = Missions.idle;
+                case Missions.damp: {
+                    var vGravityDisplacement = mRC.GetNaturalGravity();
+                    if (0.0 == vGravityDisplacement.LengthSquared()) {
+                        missionDamp();
+                    } else {
+                        if (0.0 == mdMissionAltitude) {
+                        
+                        }
                     }
-                    break;
-                case Missions.damp: missionDamp();          break;
+                } break;
                 case Missions.navigate: missionNavigate();  break;
                 default: log("mission unhandled");          break;
             }
+        }
+        void missionDamp() => missionDamp(momentum().Length());
+        void missionDamp(double aMomentumLength) {
+            var sv = mRC.GetShipVelocities();
+            var vRetrogradeDisplacement = mRC.WorldMatrix.Translation - sv.LinearVelocity;
+            var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
+            //log("damp angle generic", angleBetween(Vector3D.Normalize(sv.LinearVelocity), mRC.WorldMatrix.Up));
+            rotate2vector(vRetrogradeDisplacement);
+            thrust(thrust0, aMomentumLength * thrustPercent(Vector3D.Normalize(sv.LinearVelocity), mRC.WorldMatrix.Down));
         }
         void missionNavigate() {
             switch (miMissionStep) {
@@ -229,31 +269,22 @@ namespace IngameScript
                     break;
             }
         }
-        void thrustVector(Vector3D aTarget) {
+        void thrustVector(Vector3D aTarget, double aVelocity) {
             var sm = mRC.CalculateShipMass();
             var sv = mRC.GetShipVelocities();
             Vector3D vLinearVelocity = sv.LinearVelocity;
-            Vector3D vGravityDisplacement = mRC.GetNaturalGravity();
-            
+            Vector3D vGravityDisplacement = mRC.GetNaturalGravity();            
             double dMass = sm.TotalMass;
-
             // vec = desired - act
-            var vDesiredDisplacement = BASE_SPACE_1 - mRC.WorldMatrix.Translation;
+            var vDesiredDisplacement = aTarget - mRC.WorldMatrix.Translation;
             var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
-            var vDesiredVelocity = 1.0 * vDesiredDirection;
+            var vDesiredVelocity = aVelocity * vDesiredDirection;
             var vForceDisplacement = (vDesiredVelocity - vLinearVelocity - vGravityDisplacement) * dMass;
             var dForce = vForceDisplacement.Length();
             var vImpulseDirection = vForceDisplacement / dForce;
-
-            //var vForceGV = fMass * (vGravityDisplacement + sv.LinearVelocity);
-            //var vPredictedDisplacement = mRC.WorldMatrix.Translation + ((vDesiredDirection - vForceGV) * 10.0);
-            //var vPredictedDirection = Vector3D.Normalize(vPredictedDisplacement);
-            //log("vPredictedDisplacement", vPredictedDisplacement);
             rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
-            var dThrustPercent = thrustPercent(vImpulseDirection, mRC.WorldMatrix.Down);
-            //log("dThrustPercent", dThrustPercent);
-            //log("offset up", angleBetween(Vector3D.Normalize(vRetrogradeDisplacement), rcMatrix.Up));
-            thrust(thrust0, 1.0 * dThrustPercent);
+            var dThrustPercent = thrustPercent(vImpulseDirection, mRC.WorldMatrix.Up);
+            thrust(thrust0, dForce * dThrustPercent);
         }
         Vector3D normalize(Vector3D v) {
             var len = v.Length();
@@ -262,9 +293,9 @@ namespace IngameScript
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
             var result = 0.0;
             var offset = angleBetween(aDirection, aNormal);
-
-            if (offset < Math.PI / 2.0) {
-                result = 1.0 - (offset / (Math.PI / 2.0));
+            var d = 2.0;
+            if (offset < Math.PI / d) {
+                result = 1.0 - (offset / (Math.PI / d));
             }
             log("thrustPercent ", result);
             return result;
@@ -279,15 +310,7 @@ namespace IngameScript
             }
             return result;
         }
-        void missionDamp() => missionDamp(momentum().Length());
-        void missionDamp(double aMomentumLength) {
-            var sv = mRC.GetShipVelocities();
-            var vRetrogradeDisplacement = mRC.WorldMatrix.Translation - sv.LinearVelocity;
-            var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
-            //log("damp angle generic", angleBetween(Vector3D.Normalize(sv.LinearVelocity), mRC.WorldMatrix.Up));
-            rotate2vector(vRetrogradeDisplacement);
-            thrust(thrust0, aMomentumLength * thrustPercent(Vector3D.Normalize(sv.LinearVelocity), mRC.WorldMatrix.Down));
-        }
+
         Vector3D momentum() {
             var sm = mRC.CalculateShipMass();
             var sv = mRC.GetShipVelocities();
