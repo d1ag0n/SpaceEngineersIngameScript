@@ -214,11 +214,13 @@ namespace IngameScript
             var result = false;
             var vGravityDisplacement = mRC.GetNaturalGravity();
             if (0.0 < vGravityDisplacement.LengthSquared()) {
-                if (0.0 >= mdMissionAltitude) {
-                    result = mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdMissionAltitude);
-                    if (!result || mdMissionAltitude <= 0.0) {
-                        result = false;
-                        mdMissionAltitude = 0.0;
+                // in gravity
+                if (0.0 == mdMissionAltitude) {
+                    // didnt set altitude
+                    if (mdAltitude > 0.0) {
+                        // have +altitude
+                        mdMissionAltitude = mdAltitude;
+                        result = true;
                     }
                 } else {
                     result = true;
@@ -237,8 +239,15 @@ namespace IngameScript
             log("doMission ", aMission);
             switch (aMission) {
                 case Missions.damp: {
+                    
                     if (initMissionAltitude()) {
-                        
+                        var dAltitudeDifference = mdMissionAltitude - mdAltitude;
+                        if (0.0 < dAltitudeDifference) {
+                            var vGravityDisplacement = mRC.GetNaturalGravity();
+                            var vGravityNormal = Vector3D.Normalize(vGravityDisplacement);
+                            var target = mRC.WorldMatrix.Translation + (vGravityNormal * -dAltitudeDifference);
+                            thrustVector(target, dAltitudeDifference * 0.1);
+                        }
                     } else {
                         missionDamp();
                     }
@@ -264,7 +273,7 @@ namespace IngameScript
                     }
                     break;
                 case 1:
-                    thrustVector(BASE_SPACE_2);
+                    thrustVector(BASE_SPACE_2, 10);
                     break;
             }
         }
@@ -396,6 +405,7 @@ namespace IngameScript
                     count = 0;
                     sb = new StringBuilder();
                     try {
+                        initAltitude();
                         update();
                         str = sb.ToString();
                         lcd.WriteText(str);
