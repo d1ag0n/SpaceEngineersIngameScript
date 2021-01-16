@@ -208,40 +208,39 @@ namespace IngameScript
         void setMission(Missions aMission, Vector3D aObjective = new Vector3D()) {
             miMissionStep = 0;
             meMission = aMission;
-            
-            if (0.0 == vGravityDisplacement.LengthSquared() || !initMissionAltitude()) {
-                
-            }
+            mdMissionAltitude = 0.0;
         }
         bool initMissionAltitude() {
             var result = false;
-            
-            
-            if (0.0 < mdMissionAltitude) {
-                var vGravityDisplacement = mRC.GetNaturalGravity();
-                if (0.0 < vGravityDisplacement.LengthSquared()) {
+            var vGravityDisplacement = mRC.GetNaturalGravity();
+            if (0.0 < vGravityDisplacement.LengthSquared()) {
+                if (0.0 >= mdMissionAltitude) {
                     result = mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdMissionAltitude);
-                    if (!result) {
+                    if (!result || mdMissionAltitude <= 0.0) {
+                        result = false;
                         mdMissionAltitude = 0.0;
                     }
+                } else {
+                    result = true;
                 }
-            } else {
-                result = true;
             }
             return result;
+        }
+        double mdAltitude;
+        void initAltitude() {
+            if (!mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitude)) {
+                mdAltitude = 0.0;
+            }
         }
             
         void doMission(Missions aMission) {
             log("doMission ", aMission);
             switch (aMission) {
                 case Missions.damp: {
-                    var vGravityDisplacement = mRC.GetNaturalGravity();
-                    if (0.0 == vGravityDisplacement.LengthSquared()) {
-                        missionDamp();
-                    } else {
-                        if (0.0 == mdMissionAltitude) {
+                    if (initMissionAltitude()) {
                         
-                        }
+                    } else {
+                        missionDamp();
                     }
                 } break;
                 case Missions.navigate: missionNavigate();  break;
