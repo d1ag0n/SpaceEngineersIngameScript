@@ -28,6 +28,8 @@ namespace IngameScript
             dock
         }
         Vector3D mvMissionObjective;
+        Vector3D mvMissionDirection;
+        Connector mMissionConnector;
         Missions meMission = Missions.damp;
         double mdMissionAltitude = 0;
         int miMissionStep = 0;
@@ -120,7 +122,7 @@ namespace IngameScript
         Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
             aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
 
-        Vector3D vAngularVelocity;
+        
         void absMax(double a, ref double b) {
             a = Math.Abs(a);
             if (a > b) {
@@ -206,14 +208,42 @@ namespace IngameScript
             return result * scale;
         }
 
-        void setMissionDock(string aDock) {
+        void setMissionDock(string aConnector) {
+            
+            Connector c = null;
 
+            initMission();
+
+            var keys = mDocks.Keys.ToArray();
+            double distance = double.MaxValue;
+            for (int i = 0; i < keys.Length; i++) {
+                var val = mDocks[keys[i]];
+                if (aConnector == val.Name) {
+                    var d = (val.Position - mRC.WorldMatrix.Translation).LengthSquared();
+                    if (d < distance) {
+                        mMissionConnector = val;
+                        distance = d;
+                        meMission = Missions.dock;
+                    }
+                }
+            }
+            
         }
-        void setMission(Missions aMission, Vector3D aObjective = new Vector3D()) {
+        void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
+            initMission();
+            meMission = Missions.navigate;
+            mvMissionObjective = aObjective;            
+        }
+        void initMission() {
+            mdMissionAltitude =
             miMissionStep = 0;
-            meMission = aMission;
-            mdMissionAltitude = 0.0;
-            mvMissionObjective = aObjective;
+
+            meMission = Missions.damp;
+            
+            mvMissionObjective = 
+            mvMissionDirection = Vector3D.Zero;
+
+            mMissionConnector = null;
         }
         bool initMissionAltitude() {
             var result = false;
@@ -263,6 +293,8 @@ namespace IngameScript
                     }
                 } break;
                 case Missions.navigate: missionNavigate();  break;
+                case Missions.dock:
+                    break;
                 default: log("mission unhandled");          break;
             }
         }
@@ -405,21 +437,16 @@ namespace IngameScript
             mRC = get("rc") as IMyRemoteControl;
             lcd = get("lcd") as IMyTextPanel;
             init();
-            setMission(Missions.damp);
+            setMissionNavigate(BASE_SPACE_2);
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
         }
-        
-        int nonUpdateCalls = 0;
-        
         void receiveMessage() {
             while (mListener.HasPendingMessage) {
                 var msg = mListener.AcceptMessage();
-                Me.CustomData = msg.Tag;
                 switch (msg.Tag) {
                     case "docks":
-                        mDocks = Connector.ParseAll(msg.Data.ToString());
-                        Me.CustomData = "parse list count " + mDocks.Count.ToString();
+                        Connector.ParseAll(msg.Data.ToString(), mDocks);
                         break;
                 }
             }
@@ -432,13 +459,14 @@ namespace IngameScript
             public string Name;
             public Vector3D Position;
             public Vector3D Direction;
-            public static List<Connector> ParseAll(string aData) {
+            public static void ParseAll(string aData, Dictionary<long, Connector> aDictionary) {
                 var rows = aData.Split(mRowSep);
-                var result = new List<Connector>(rows.Length);
+                
                 for (int i = 0; i < rows.Length; i++) {
-                    result.Add(Parse(rows[i]));
+                    var c = Parse(rows[i]);
+                    aDictionary[c.EntityId] = c;
                 }
-                return result;
+
             }
             public static Connector Parse(string aData) {
                 var result = new Connector();
@@ -459,20 +487,14 @@ namespace IngameScript
         }
         void Main(string argument, UpdateType aUpdate) {
             string str;
-            bool die = false;
-            if (0 < nonUpdateCalls) {
-                initLog();
-                log(" * * NON UPDATE CALLS ", nonUpdateCalls);
-                //die = true;
-            }
+
             if (aUpdate.HasFlag(UpdateType.IGC)) {
                 receiveMessage();
-                //die = true;
-                nonUpdateCalls--;
             }
             if (aUpdate.HasFlag(UpdateType.Update1)) {
                 mCount++;
                 if (10 == mCount) {
+                    mCount = 0;
                     initLog();
                     mLog = new StringBuilder();
                     try {
@@ -498,13 +520,8 @@ namespace IngameScript
                     mLog = null;
                     Echo(str);
                 }
-            } else {
-                nonUpdateCalls++;
             }
             mLog = null;
-            if (die) {
-                Me.Enabled = false;
-            }
         }
         void thrust(IMyThrust t, double f) => thrust(t, (float)f);
         void thrust(IMyThrust t, float f) {
@@ -791,6 +808,7 @@ namespace IngameScript
         IMyBroadcastListener mListener;
         const char mRowSep = '@';
         const char mColSep = '!';
-        List<Connector> mDocks = new List<Connector>();
+        Dictionary<long, Connector> mDocks = new Dictionary<long, Connector>();
+        Vector3D vAngularVelocity;
     }
 }
