@@ -398,9 +398,8 @@ namespace IngameScript
         Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
         Vector3D BASE_SPACE_2 = new Vector3D(44282.68, 164548.94, -85064.41);
         Vector3D BASE_SPACE_3 = new Vector3D(44496.03, 164633.07, -85185.32);
-        public static Program self;
+        
         public Program() {
-            self = this;
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             maxV /= cf;
             mRC = get("rc") as IMyRemoteControl;
@@ -414,19 +413,15 @@ namespace IngameScript
         int nonUpdateCalls = 0;
         
         void receiveMessage() {
-            try {
-
-                while (mListener.HasPendingMessage) {
-                    var msg = mListener.AcceptMessage();
-                    switch (msg.Tag) {
-                        case "docks":
-                            mDocks = null;
-                            mDocks = Connector.ParseAll(msg.Data.ToString());
-                            break;
-                    }
+            while (mListener.HasPendingMessage) {
+                var msg = mListener.AcceptMessage();
+                Me.CustomData = msg.Tag;
+                switch (msg.Tag) {
+                    case "docks":
+                        mDocks = Connector.ParseAll(msg.Data.ToString());
+                        Me.CustomData = "parse list count " + mDocks.Count.ToString();
+                        break;
                 }
-            } catch (Exception ex) {
-                Me.CustomData = ex.ToString();
             }
         }
         
@@ -437,11 +432,11 @@ namespace IngameScript
             public string Name;
             public Vector3D Position;
             public Vector3D Direction;
-            public static Connector[] ParseAll(string aData) {
+            public static List<Connector> ParseAll(string aData) {
                 var rows = aData.Split(mRowSep);
-                var result = new Connector[rows.Length];
+                var result = new List<Connector>(rows.Length);
                 for (int i = 0; i < rows.Length; i++) {
-                    result[i] = Parse(rows[i]);
+                    result.Add(Parse(rows[i]));
                 }
                 return result;
             }
@@ -464,25 +459,34 @@ namespace IngameScript
         }
         void Main(string argument, UpdateType aUpdate) {
             string str;
+            bool die = false;
             if (0 < nonUpdateCalls) {
+                initLog();
                 log(" * * NON UPDATE CALLS ", nonUpdateCalls);
+                //die = true;
             }
             if (aUpdate.HasFlag(UpdateType.IGC)) {
-                initLog();
                 receiveMessage();
+                //die = true;
+                nonUpdateCalls--;
             }
             if (aUpdate.HasFlag(UpdateType.Update1)) {
-                count++;
-                if (10 == count) {
+                mCount++;
+                if (10 == mCount) {
                     initLog();
                     mLog = new StringBuilder();
                     try {
                         log("dock list");
-                        if (null != mDocks && 0 < mDocks.Length) {                            
-                            for (int i = 0; i < mDocks.Length; i++) {
+                        
+                        if (mDocks.Count > 0) {
+                            for (int i = 0; i < mDocks.Count; i++) {
+                                log("got dock");
                                 log(mDocks[i]);
                             }
+                        } else {
+                            log("0 docks");
                         }
+                        
                         initAltitude();
                         update();
                         str = mLog.ToString();
@@ -498,6 +502,9 @@ namespace IngameScript
                 nonUpdateCalls++;
             }
             mLog = null;
+            if (die) {
+                Me.Enabled = false;
+            }
         }
         void thrust(IMyThrust t, double f) => thrust(t, (float)f);
         void thrust(IMyThrust t, float f) {
@@ -595,7 +602,7 @@ namespace IngameScript
         //Vector3D tango = new Vector3D(1033485.69, 154992.3, 1504229.77);
         Vector3D otherside = new Vector3D(986148.14, 102603.57, 1599688.09);
         IMyThrust thrust0;
-        int count = 0;
+        int mCount = 0;
         IMyTextPanel lcd;
         IMyCockpit pit;
         
@@ -784,6 +791,6 @@ namespace IngameScript
         IMyBroadcastListener mListener;
         const char mRowSep = '@';
         const char mColSep = '!';
-        Connector[] mDocks;
+        List<Connector> mDocks = new List<Connector>();
     }
 }
