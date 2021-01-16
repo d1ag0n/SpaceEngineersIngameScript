@@ -25,9 +25,12 @@ namespace IngameScript
         {
             idle,
             stop,
-            damp
+            damp,
+            navigate
         }
+        Vector3D mvMissionObjective;
         Missions meMission = Missions.stop;
+        int miMissionStep = 0;
         double mdAngularVeloPitchMax = 0.0; // local x
         double mdAngularVeloYawMax = 0.0; // local y
         double mdAngularVeloRollMax = 0.0; // local z
@@ -204,18 +207,55 @@ namespace IngameScript
         void doMission(Missions aMission) {
             log("doMission ", aMission);
             switch (aMission) {
-                case Missions.stop: missionStop(); break;
-                case Missions.damp: missionDamp(); break;
-                default: log("mission unhandled"); break;
+                case Missions.stop:
+                    if (missionStop()) {
+                        meMission = Missions.idle;
+                    }
+                    break;
+                case Missions.damp: missionDamp();          break;
+                case Missions.navigate: missionNavigate();  break;
+                default: log("mission unhandled");          break;
             }
         }
-        void missionStop() {
+        void missionNavigate() {
+            switch (miMissionStep) {
+                case 0:
+                    if (missionStop()) {
+                        miMissionStep++;
+                    }
+                    break;
+                case 1:
+                    //rotate2vector();
+                    break;
+            }
+        }
+        void thrustVector(Vector3D aTarget) {
+            var sv = mRC.GetShipVelocities();
+            var vGravityDisplacement = mRC.GetNaturalGravity();
+            var sm = mRC.CalculateShipMass();
+            var fMass = sm.TotalMass;
+
+            // vec = desired - act
+            var vDesiredDisplacement = BASE_SPACE_1 - mRC.WorldMatrix.Translation;
+            var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
+            var vForceGV = fMass * (vGravityDisplacement + sv.LinearVelocity);
+            var vPredictedDisplacement = vDesiredDirection - vForceGV;
+            rotate2vector(vPredictedDisplacement);
+            var dThrustPercent = thrustPercent(vDesiredDirection, mRC.WorldMatrix.Up);
+            //log("dThrustPercent", dThrustPercent);
+            //log("offset up", angleBetween(Vector3D.Normalize(vRetrogradeDisplacement), rcMatrix.Up));
+            thrust(thrust0, vForceGV.Length() * dThrustPercent);
+
+        }
+        bool missionStop() {
+            var result = false;
             var dMomentum = momentum().Length();
             if (0.0 != dMomentum) {
                 missionDamp(dMomentum);
             } else {
-                meMission = Missions.idle;
+                result = true;
             }
+            return result;
         }
         void missionDamp() => missionDamp(momentum().Length());
         void missionDamp(double aMomentumLength) {
@@ -244,6 +284,7 @@ namespace IngameScript
             log("thrustPercent ", result);
             return result;
         }
+
         void update() {
             doMission(meMission);
             return;
@@ -311,22 +352,29 @@ namespace IngameScript
             var len = v.Length();
             return len < 0.001 ? Vector3D.Zero : v / len;
         }
+        int nonUpdateCalls = 0;
         void Main(string argument, UpdateType aUpdate) {
             string str;
-
-            count++;
-            if (10 == count) {
-                count = 0;
-                sb = new StringBuilder();
-                try {
-                    update();
-                    str = sb.ToString();
-                    lcd.WriteText(str);
-                } catch (Exception ex) {
-                    log(ex);
-                    str = sb.ToString();
+            if (0 < nonUpdateCalls) {
+                log(" * * NON UPDATE CALLS ", nonUpdateCalls);
+            }
+            if (aUpdate.HasFlag(UpdateType.Update1)) {
+                count++;
+                if (10 == count) {
+                    count = 0;
+                    sb = new StringBuilder();
+                    try {
+                        update();
+                        str = sb.ToString();
+                        lcd.WriteText(str);
+                    } catch (Exception ex) {
+                        log(ex);
+                        str = sb.ToString();
+                    }
+                    Echo(str);
                 }
-                Echo(str);
+            } else {
+                nonUpdateCalls++;
             }
         }
         void thrust(IMyThrust t, double f) => thrust(t, (float)f);
