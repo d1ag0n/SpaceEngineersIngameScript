@@ -414,14 +414,19 @@ namespace IngameScript
         int nonUpdateCalls = 0;
         
         void receiveMessage() {
-            while (mListener.HasPendingMessage) {                
-                var msg = mListener.AcceptMessage();
-                switch (msg.Tag) {
-                    case "docks":
-                        mDocks = null;
-                        mDocks = Connector.ParseAll(msg.Data.ToString());
-                        break;
+            try {
+
+                while (mListener.HasPendingMessage) {
+                    var msg = mListener.AcceptMessage();
+                    switch (msg.Tag) {
+                        case "docks":
+                            mDocks = null;
+                            mDocks = Connector.ParseAll(msg.Data.ToString());
+                            break;
+                    }
                 }
+            } catch (Exception ex) {
+                Me.CustomData = ex.ToString();
             }
         }
         
@@ -457,23 +462,24 @@ namespace IngameScript
             override public string ToString() => Name;
         }
         StringBuilder mLog;
-        
+        void initLog() {
+            if (null == mLog) {
+                mLog = new StringBuilder();
+            }
+        }
         void Main(string argument, UpdateType aUpdate) {
             string str;
             if (0 < nonUpdateCalls) {
                 log(" * * NON UPDATE CALLS ", nonUpdateCalls);
             }
-            bool die = false;
             if (aUpdate.HasFlag(UpdateType.IGC)) {
-                mLog = new StringBuilder();
+                initLog();
                 receiveMessage();
-                Me.CustomData = mLog.ToString();
-                die = true;
             }
             if (aUpdate.HasFlag(UpdateType.Update1)) {
                 count++;
                 if (10 == count) {
-                    count = 0;
+                    initLog();
                     mLog = new StringBuilder();
                     try {
                         log("dock list");
@@ -490,14 +496,13 @@ namespace IngameScript
                         log(ex);
                         str = mLog.ToString();
                     }
+                    mLog = null;
                     Echo(str);
                 }
             } else {
                 nonUpdateCalls++;
             }
-            if (die) {
-                Me.Enabled = false;
-            }
+            mLog = null;
         }
         void thrust(IMyThrust t, double f) => thrust(t, (float)f);
         void thrust(IMyThrust t, float f) {
