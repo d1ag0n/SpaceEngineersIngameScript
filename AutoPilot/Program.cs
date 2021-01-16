@@ -209,6 +209,7 @@ namespace IngameScript
             miMissionStep = 0;
             meMission = aMission;
             mdMissionAltitude = 0.0;
+            mvMissionObjective = aObjective;
         }
         bool initMissionAltitude() {
             var result = false;
@@ -239,12 +240,10 @@ namespace IngameScript
                 mdAltitude = 0.0;
             }
         }
-            
-        void doMission(Missions aMission) {
-            log("doMission ", aMission);
-            switch (aMission) {
-                case Missions.damp: {
-                    
+        void doMission() {
+            log("doMission ", meMission);
+            switch (meMission) {
+                case Missions.damp: {                    
                     if (initMissionAltitude()) {
                         var dAltitudeDifference = mdMissionAltitude - mdAltitude;
                         if (0.0 < dAltitudeDifference) {
@@ -275,12 +274,7 @@ namespace IngameScript
         void missionNavigate() {
             switch (miMissionStep) {
                 case 0:
-                    if (missionStop()) {
-                        miMissionStep++;
-                    }
-                    break;
-                case 1:
-                    thrustVector(BASE_SPACE_2, 10.0);
+                    thrustVector(mvMissionObjective, 10.0);
                     break;
             }
         }
@@ -337,7 +331,7 @@ namespace IngameScript
 
 
         void update() {
-            doMission(meMission);
+            doMission();
             return;
             var rcMatrix = mRC.WorldMatrix;
             var gyroMatrix = mGyro.WorldMatrix;
@@ -398,6 +392,7 @@ namespace IngameScript
             pit = get("pit") as IMyCockpit;
             lcd = get("lcd") as IMyTextPanel;
             init();
+            setMission(Missions.navigate, BASE_SPACE_2);
         }
         
         int nonUpdateCalls = 0;
