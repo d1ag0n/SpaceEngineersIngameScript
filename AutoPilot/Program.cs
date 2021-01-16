@@ -29,7 +29,7 @@ namespace IngameScript
             navigate
         }
         Vector3D mvMissionObjective;
-        Missions meMission = Missions.navigate;
+        Missions meMission = Missions.damp;
         double mdMissionAltitude = 0;
         int miMissionStep = 0;
         double mdAngularVeloPitchMax = 0.0; // local x
@@ -226,11 +226,16 @@ namespace IngameScript
                     result = true;
                 }
             }
+            if (result) {
+                log("mission altitude ", mdMissionAltitude);
+            }
             return result;
         }
         double mdAltitude;
         void initAltitude() {
-            if (!mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitude)) {
+            if (mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitude)) {
+                log("altitude ", mdAltitude);
+            } else {            
                 mdAltitude = 0.0;
             }
         }
@@ -273,7 +278,7 @@ namespace IngameScript
                     }
                     break;
                 case 1:
-                    thrustVector(BASE_SPACE_2, 10);
+                    thrustVector(BASE_SPACE_2, 10.0);
                     break;
             }
         }
