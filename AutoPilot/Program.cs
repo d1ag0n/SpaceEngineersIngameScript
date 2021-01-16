@@ -441,7 +441,6 @@ namespace IngameScript
                 var rows = aData.Split(mRowSep);
                 var result = new Connector[rows.Length];
                 for (int i = 0; i < rows.Length; i++) {
-                    Program.self.log("row '", rows[i], "'");
                     result[i] = Parse(rows[i]);
                 }
                 return result;
@@ -449,10 +448,6 @@ namespace IngameScript
             public static Connector Parse(string aData) {
                 var result = new Connector();
                 var col = aData.Split(mColSep);
-                for (int i = 0; i < col.Length; i++) {
-                    Program.self.log("col '", col[i], "'");
-                }
-                return result;
                 result.EntityId = long.Parse(col[0]);
                 result.Name = col[1];
                 Vector3D.TryParse(col[2], out result.Position);
