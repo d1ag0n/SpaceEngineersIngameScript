@@ -23,15 +23,15 @@ namespace IngameScript
     {
         enum Missions
         {
-            idle,
-            stop,
             damp,
-            navigate
+            navigate,
+            dock
         }
         Vector3D mvMissionObjective;
         Missions meMission = Missions.damp;
         double mdMissionAltitude = 0;
         int miMissionStep = 0;
+        string msMissionTag = string.Empty;
         double mdAngularVeloPitchMax = 0.0; // local x
         double mdAngularVeloYawMax = 0.0; // local y
         double mdAngularVeloRollMax = 0.0; // local z
@@ -204,6 +204,10 @@ namespace IngameScript
                 //Me.Enabled = false;
             }
             return result * scale;
+        }
+
+        void setMissionDock(string aDock) {
+
         }
         void setMission(Missions aMission, Vector3D aObjective = new Vector3D()) {
             miMissionStep = 0;
@@ -400,14 +404,57 @@ namespace IngameScript
             mRC = get("rc") as IMyRemoteControl;
             lcd = get("lcd") as IMyTextPanel;
             init();
-            setMission(Missions.navigate, BASE_SPACE_2);
+            setMission(Missions.damp);
+            mListener = IGC.RegisterBroadcastListener("docks");
+            mListener.SetMessageCallback("docks");
         }
         
         int nonUpdateCalls = 0;
+        
+        void receiveMessage() {
+            while (mListener.HasPendingMessage) {                
+                var msg = mListener.AcceptMessage();
+                switch (msg.Tag) {
+                    case "docks":
+                        mDocks = null;
+                        mDocks = Connector.ParseAll(msg.Data.ToString());
+                        break;
+                }
+            }
+        }
+        class Connector
+        {
+            public long EntityId;
+            public string Name;
+            public Vector3D Position;
+            public Vector3D Direction;
+            public static Connector[] ParseAll(string aData) {
+                var rows = aData.Split(mRowSep);
+                var result = new Connector[rows.Length];
+                for (int i = 0; i < rows.Length; i++) {
+                    result[i] = Parse(rows[i]);
+                }
+                return result;
+            }
+            public static Connector Parse(string aData) {
+                var result = new Connector();
+                var cols = aData.Split(mColSep);
+                result.EntityId = long.Parse(cols[0]);
+                result.Name = cols[1];
+                Vector3D.TryParse(cols[2], out result.Position);
+                Vector3D.TryParse(cols[3], out result.Direction);
+                return result;
+            }
+            override public string ToString() => Name;
+        }
+        
         void Main(string argument, UpdateType aUpdate) {
             string str;
             if (0 < nonUpdateCalls) {
                 log(" * * NON UPDATE CALLS ", nonUpdateCalls);
+            }
+            if (aUpdate.HasFlag(UpdateType.IGC)) {
+                receiveMessage();
             }
             if (aUpdate.HasFlag(UpdateType.Update1)) {
                 count++;
@@ -415,6 +462,12 @@ namespace IngameScript
                     count = 0;
                     sb = new StringBuilder();
                     try {
+                        if (null != mDocks && 0 < mDocks.Length) {
+                            log("dock list");
+                            for (int i = 0; i < mDocks.Length; i++) {
+                                log(mDocks[i]);
+                            }
+                        }
                         initAltitude();
                         update();
                         str = sb.ToString();
@@ -711,5 +764,10 @@ namespace IngameScript
             //gyro.SetValueFloat("Roll", 0.0f);
             return rpm;
         }
+        IMyBroadcastListener mListener;
+        const char mRowSep = '|';
+        const char mColSep = ',';
+        const char mFieldChar = ' ';
+        Connector[] mDocks;
     }
 }
