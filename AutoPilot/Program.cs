@@ -252,6 +252,8 @@ namespace IngameScript
                             var vGravityNormal = Vector3D.Normalize(vGravityDisplacement);
                             var target = mRC.WorldMatrix.Translation + (vGravityNormal * -dAltitudeDifference);
                             thrustVector(target, dAltitudeDifference * 0.1);
+                        } else {
+                            missionDamp();
                         }
                     } else {
                         missionDamp();
