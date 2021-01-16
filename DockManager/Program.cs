@@ -41,16 +41,14 @@ namespace IngameScript
             dockStatus();
             log("update complete");
         }
-        const char mRowSep = '|';
-        const char mColSep = ',';
-        const char mFieldChar = ' ';
+
         void dockStatus() {
             var sb = new StringBuilder();
             var one = false;
             for (int i = connectors.Count - 1; i > -1; i--) {
                 var con = connectors[i];
 
-                if (MyShipConnectorStatus.Connectable == con.Status) {
+                if (MyShipConnectorStatus.Unconnected == con.Status) {
                     if (one) {
                         sb.Append(mRowSep);
                     }
@@ -60,7 +58,7 @@ namespace IngameScript
             }
             var msg = sb.ToString();
             IGC.SendBroadcastMessage("docks", msg);
-            log("dock status broadcasted", null, msg);
+            log("dock status broadcasted ", msg.Length, " characters");
         }
         string serialize(IMyShipConnector aConnector) {
             var sb = new StringBuilder();
@@ -70,7 +68,7 @@ namespace IngameScript
             sb.Append(mColSep);
             sb.Append(aConnector.WorldMatrix.Translation);
             sb.Append(mColSep);
-            sb.Append(aConnector.WorldMatrix.Forward);            
+            sb.Append(aConnector.WorldMatrix.Forward);
             return sb.ToString();
         }
         public void Save() {
@@ -85,16 +83,16 @@ namespace IngameScript
                 count++;
                 if (runEvery == count) {
                     count = 0;
-                    sb = new StringBuilder();
+                    mLog = new StringBuilder();
                     try {
                         update();
-                        if (0 < sb.Length) {
-                            str = sb.ToString();
+                        if (0 < mLog.Length) {
+                            str = mLog.ToString();
                             lcd.WriteText(str);
                         }
                     } catch (Exception ex) {
                         log(ex);
-                        str = sb.ToString();
+                        str = mLog.ToString();
                     }
                     Echo(str);
                 }
@@ -108,22 +106,25 @@ namespace IngameScript
                 for (int i = 0; i < args.Length; i++) {
                     var arg = args[i];
                     if (null == arg) {
-                        sb.AppendLine();
+                        mLog.AppendLine();
                     } else if (arg is Vector3D) {
-                        sb.AppendLine();
+                        mLog.AppendLine();
                         log((Vector3D)arg);
                     } else {
-                        sb.Append(arg.ToString());
+                        mLog.Append(arg.ToString());
                     }
                 }
             }
-            sb.AppendLine();
+            mLog.AppendLine();
         }
         int nonUpdateCalls = 0;
-        StringBuilder sb = new StringBuilder();
-        const int runEvery = 1000;
+        StringBuilder mLog = new StringBuilder();
+        const int runEvery = 100;
         int count = runEvery - 1;
         IMyTextPanel lcd;
         List<IMyShipConnector> connectors = new List<IMyShipConnector>();
+        const char mRowSep = '@';
+        const char mColSep = '!';
+        const char mFieldChar = ' ';
     }
 }

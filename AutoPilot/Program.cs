@@ -398,7 +398,9 @@ namespace IngameScript
         Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
         Vector3D BASE_SPACE_2 = new Vector3D(44282.68, 164548.94, -85064.41);
         Vector3D BASE_SPACE_3 = new Vector3D(44496.03, 164633.07, -85185.32);
+        public static Program self;
         public Program() {
+            self = this;
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             maxV /= cf;
             mRC = get("rc") as IMyRemoteControl;
@@ -422,6 +424,8 @@ namespace IngameScript
                 }
             }
         }
+        
+        
         class Connector
         {
             public long EntityId;
@@ -432,54 +436,67 @@ namespace IngameScript
                 var rows = aData.Split(mRowSep);
                 var result = new Connector[rows.Length];
                 for (int i = 0; i < rows.Length; i++) {
+                    Program.self.log("row '", rows[i], "'");
                     result[i] = Parse(rows[i]);
                 }
                 return result;
             }
             public static Connector Parse(string aData) {
                 var result = new Connector();
-                var cols = aData.Split(mColSep);
-                result.EntityId = long.Parse(cols[0]);
-                result.Name = cols[1];
-                Vector3D.TryParse(cols[2], out result.Position);
-                Vector3D.TryParse(cols[3], out result.Direction);
+                var col = aData.Split(mColSep);
+                for (int i = 0; i < col.Length; i++) {
+                    Program.self.log("col '", col[i], "'");
+                }
+                return result;
+                result.EntityId = long.Parse(col[0]);
+                result.Name = col[1];
+                Vector3D.TryParse(col[2], out result.Position);
+                Vector3D.TryParse(col[3], out result.Direction);
                 return result;
             }
             override public string ToString() => Name;
         }
+        StringBuilder mLog;
         
         void Main(string argument, UpdateType aUpdate) {
             string str;
             if (0 < nonUpdateCalls) {
                 log(" * * NON UPDATE CALLS ", nonUpdateCalls);
             }
+            bool die = false;
             if (aUpdate.HasFlag(UpdateType.IGC)) {
+                mLog = new StringBuilder();
                 receiveMessage();
+                Me.CustomData = mLog.ToString();
+                die = true;
             }
             if (aUpdate.HasFlag(UpdateType.Update1)) {
                 count++;
                 if (10 == count) {
                     count = 0;
-                    sb = new StringBuilder();
+                    mLog = new StringBuilder();
                     try {
-                        if (null != mDocks && 0 < mDocks.Length) {
-                            log("dock list");
+                        log("dock list");
+                        if (null != mDocks && 0 < mDocks.Length) {                            
                             for (int i = 0; i < mDocks.Length; i++) {
                                 log(mDocks[i]);
                             }
                         }
                         initAltitude();
                         update();
-                        str = sb.ToString();
+                        str = mLog.ToString();
                         lcd.WriteText(str);
                     } catch (Exception ex) {
                         log(ex);
-                        str = sb.ToString();
+                        str = mLog.ToString();
                     }
                     Echo(str);
                 }
             } else {
                 nonUpdateCalls++;
+            }
+            if (die) {
+                Me.Enabled = false;
             }
         }
         void thrust(IMyThrust t, double f) => thrust(t, (float)f);
@@ -581,7 +598,7 @@ namespace IngameScript
         int count = 0;
         IMyTextPanel lcd;
         IMyCockpit pit;
-        StringBuilder sb;
+        
         void groupPropSet<T>(string group, string prop, T value) {
             var list = new List<IMyTerminalBlock>();
             //foreach (var block in GridTerminalSystem.GetBlockGroupWithName(group).
@@ -642,22 +659,22 @@ namespace IngameScript
                                             roto2.Enabled = true;*/
         }
 
-        void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
-        void log(params object[] args) {
+        public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
+        public void log(params object[] args) {
             if (null != args) {
                 for (int i = 0; i < args.Length; i++) {
                     var arg = args[i];
                     if (null == arg) {
-                        sb.AppendLine();
+                        mLog.AppendLine();
                     } else if (arg is Vector3D) {
-                        sb.AppendLine();
+                        mLog.AppendLine();
                         log((Vector3D)arg);
                     } else {
-                        sb.Append(arg.ToString());
+                        mLog.Append(arg.ToString());
                     }
                 }
             }
-            sb.AppendLine();
+            mLog.AppendLine();
         }
         object get(string n) => GridTerminalSystem.GetBlockWithName(n);
 
@@ -765,9 +782,8 @@ namespace IngameScript
             return rpm;
         }
         IMyBroadcastListener mListener;
-        const char mRowSep = '|';
-        const char mColSep = ',';
-        const char mFieldChar = ' ';
+        const char mRowSep = '@';
+        const char mColSep = '!';
         Connector[] mDocks;
     }
 }
