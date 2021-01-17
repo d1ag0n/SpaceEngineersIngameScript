@@ -189,6 +189,8 @@ namespace IngameScript
             mvMissionObjective = 
             mvMissionDirection = Vector3D.Zero;
 
+            mGyro.Enabled = true;
+
             mMissionConnector = null;
         }
         bool initMissionAltitude() {
