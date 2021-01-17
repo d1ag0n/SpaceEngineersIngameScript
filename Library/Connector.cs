@@ -17,7 +17,7 @@ namespace Library
         public Connector(IMyShipConnector aConnector) {
             Id = aConnector.EntityId;
             Name = aConnector.CustomName;
-            Position = aConnector.Position;
+            Position = aConnector.WorldMatrix.Translation;
             Direction = aConnector.WorldMatrix.Forward;
         }
         public Connector(MyTuple<long, string, Vector3D, Vector3D> aData) {

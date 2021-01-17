@@ -159,32 +159,7 @@ namespace IngameScript
             initMission();
             meMission = Missions.damp;
         }
-        void setMissionDock(string aConnector) {
-            
-            Connector c = null;
-
-            initMission();
-
-            var keys = mDocks.Keys.ToArray();
-            double distance = double.MaxValue;
-            for (int i = 0; i < keys.Length; i++) {
-                var val = mDocks[keys[i]];
-                if (aConnector == val.Name) {
-                    var d = (val.Position - mRC.WorldMatrix.Translation).LengthSquared();
-                    if (d < distance) {
-                        mMissionConnector = val;
-                        distance = d;
-                        meMission = Missions.dock;
-                    }
-                }
-            }
-            if (null != mMissionConnector) {
-                mMissionConnector.FinalApproach = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
-                mMissionConnector.Approach = mRC.WorldMatrix.Translation +
-                    Vector3D.Normalize(mMissionConnector.FinalApproach - project(mRC.WorldMatrix.Translation, mMissionConnector.FinalApproach, mMissionConnector.Direction)) * 1000.0;
-                Me.CustomData = "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine + "Final Approach" + Environment.NewLine + mMissionConnector.FinalApproach;
-            }
-        }
+        
         void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
             initMission();
             meMission = Missions.navigate;
@@ -265,12 +240,76 @@ namespace IngameScript
                 } break;
                 case Missions.navigate: missionNavigate();  break;
                 case Missions.dock:
+                    missionDock();
                     break;
                 default: log("mission unhandled");          break;
             }
         }
         void missionDock() {
-            
+            log("missionDock step ", miMissionStep);
+            var d = 0.0;
+            switch (miMissionStep) {
+                case 0:
+                    d = distance2(mMissionConnector.Approach);
+                    if (800.0 > d) {
+                        miMissionStep++;
+                    } else {
+                        thrustVector(mMissionConnector.Approach);
+                    }
+                    break;
+                case 1:
+                    d = distance2(mMissionConnector.FinalApproach);
+                    if (600.0 > d) {
+                        miMissionStep++;
+                    } else {
+                        thrustVector(mMissionConnector.FinalApproach);
+                    }
+                    break;
+                case 2:
+                    d = distance2(mMissionConnector.Position);
+                    if (600.0 > d && 1.0 > mdLinearVelocity) {
+                        thrust(thrust0, 0.0f);
+                    } else {
+                        thrustVector(mMissionConnector.Position);
+                    }
+                    break;
+                default:
+                    log("step unhandled damping");
+                    missionDamp();
+                    break;
+            }
+            log("distance ", Math.Sqrt(d));
+            //thrustVector()
+        }
+        void setMissionDock(string aConnector) {
+            Connector c = null;
+
+            initMission();
+
+            var keys = mDocks.Keys.ToArray();
+            double distance = double.MaxValue;
+            for (int i = 0; i < keys.Length; i++) {
+                var val = mDocks[keys[i]];
+                if (aConnector == val.Name) {
+                    var d = (val.Position - mRC.WorldMatrix.Translation).LengthSquared();
+                    if (d < distance) {
+                        mMissionConnector = val;
+                        distance = d;
+                        meMission = Missions.dock;
+                    }
+                }
+            }
+            if (null != mMissionConnector) {
+                mMissionConnector.FinalApproach = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
+                var approachPlane = mMissionConnector.Position + (mMissionConnector.Direction * 1000.0);
+                var projectedPosition = project(mRC.WorldMatrix.Translation, approachPlane, mMissionConnector.Direction);
+                var projectedDirection = Vector3D.Normalize(projectedPosition - mMissionConnector.FinalApproach);
+                mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
+                Me.CustomData = 
+                    "Position" + Environment.NewLine + mMissionConnector.Position + Environment.NewLine + 
+                    "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine + 
+                    "Final Approach" + Environment.NewLine + mMissionConnector.FinalApproach;
+            }
         }
         void missionDamp() => missionDamp(momentum().Length());
         void missionDamp(double aMomentumLength) {
@@ -303,6 +342,9 @@ namespace IngameScript
                     }
                     break;
             }
+        }
+        double distance2(Vector3D aTarget) {
+            return (aTarget - mRC.WorldMatrix.Translation).LengthSquared();
         }
         void thrustVector(Vector3D aTarget, double aVelocity = double.MaxValue) {
             var sm = mRC.CalculateShipMass();
@@ -444,9 +486,6 @@ namespace IngameScript
                 }
             }
         }
-        
-        
-        
         StringBuilder mLog;
         void initLog() {
             if (null == mLog) {
