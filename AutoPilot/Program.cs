@@ -178,11 +178,9 @@ namespace IngameScript
             }
             if (null != mMissionConnector) {
                 mMissionConnector.FinalApproach = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
-                var vFinalApproachDisplacement = mMissionConnector.FinalApproach - mRC.WorldMatrix.Translation;
-                
-                if (distance < vFinalApproachDisplacement.LengthSquared()) {                    
-                    mMissionConnector.Approach = project(mRC.WorldMatrix.Translation, mMissionConnector.FinalApproach, mMissionConnector.Direction);
-                }
+                mMissionConnector.Approach = 
+                    Vector3D.Normalize(mMissionConnector.FinalApproach - project(mRC.WorldMatrix.Translation, mMissionConnector.FinalApproach, mMissionConnector.Direction)) * 1000.0;
+                Me.CustomData = "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine + "Final Approach" + Environment.NewLine + mMissionConnector.FinalApproach;
             }
         }
         void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
