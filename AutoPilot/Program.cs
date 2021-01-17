@@ -176,6 +176,14 @@ namespace IngameScript
                     }
                 }
             }
+            if (null != mMissionConnector) {
+                mMissionConnector.FinalApproach = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
+                var vFinalApproachDisplacement = mMissionConnector.FinalApproach - mRC.WorldMatrix.Translation;
+                
+                if (distance < vFinalApproachDisplacement.LengthSquared()) {                    
+                    mMissionConnector.Approach = project(mRC.WorldMatrix.Translation, mMissionConnector.FinalApproach, mMissionConnector.Direction);
+                }
+            }
         }
         void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
             initMission();
@@ -261,6 +269,9 @@ namespace IngameScript
                 default: log("mission unhandled");          break;
             }
         }
+        void missionDock() {
+            
+        }
         void missionDamp() => missionDamp(momentum().Length());
         void missionDamp(double aMomentumLength) {
             if (0.001 > mdLinearVelocity) {
@@ -278,12 +289,17 @@ namespace IngameScript
         void missionNavigate() {
             switch (miMissionStep) {
                 case 0:
-                    if (400.0 < (mvMissionObjective - mRC.WorldMatrix.Translation).LengthSquared()) {
+                    if (140.0 < (mvMissionObjective - mRC.WorldMatrix.Translation).LengthSquared()) {
                         thrustVector(mvMissionObjective);
                         log("navigating");
                     } else {
                         log("close enough");
-                        missionDamp(0.0);
+                        if (mvMissionObjective == CONNECTOR) {
+                            mvMissionObjective = CONNECTOR_APPROACH;
+                        } else {
+                            mvMissionObjective = CONNECTOR;
+                        }
+                        missionDamp();
                     }
                     break;
             }
@@ -404,6 +420,8 @@ namespace IngameScript
         Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
         Vector3D BASE_SPACE_2 = new Vector3D(44282.68, 164548.94, -85064.41);
         Vector3D BASE_SPACE_3 = new Vector3D(44496.03, 164633.07, -85185.32);
+        Vector3D CONNECTOR_APPROACH = new Vector3D(44676.88, 164938.5, -85394.41);
+        Vector3D CONNECTOR = new Vector3D(44698.67, 164745.01, -85320.02);
         
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
@@ -411,7 +429,7 @@ namespace IngameScript
             mRC = get("rc") as IMyRemoteControl;
             lcd = get("lcd") as IMyTextPanel;
             init();
-            setMissionNavigate(BASE_SPACE_2);
+            setMissionNavigate(CONNECTOR);
             //setMissionDamp();
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
@@ -433,6 +451,8 @@ namespace IngameScript
             public long EntityId;
             public string Name;
             public Vector3D Position;
+            public Vector3D Approach;
+            public Vector3D FinalApproach;
             public Vector3D Direction;
             public static void ParseAll(string aData, Dictionary<long, Connector> aDictionary) {
                 var rows = aData.Split(mRowSep);
@@ -462,7 +482,24 @@ namespace IngameScript
         }
         void Main(string argument, UpdateType aUpdate) {
             string str;
+            if (aUpdate.HasFlag(UpdateType.Terminal)) {
+                if (null != argument) {
+                    var args = argument.Split(' ');
+                    if (0 < args.Length) {
 
+                        switch (args[0]) {
+                            case "dock":
+                                if (1 < args.Length) {
+                                    setMissionDock(args[1]);
+                                }
+                                break;
+                            case "damp":
+                                setMissionDamp();
+                                break;
+                        }
+                    }
+                }
+            }
             if (aUpdate.HasFlag(UpdateType.IGC)) {
                 receiveMessage();
             }
