@@ -163,7 +163,8 @@ namespace IngameScript
         void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
             initMission();
             meMission = Missions.navigate;
-            mvMissionObjective = aObjective;            
+            mvMissionObjective = aObjective;
+            
         }
         void initMission() {
             mdMissionAltitude =
@@ -206,16 +207,16 @@ namespace IngameScript
             }
         }
         double mdLinearVelocity = 0.0;
-        Vector3D mvPosition = Vector3D.Zero;
+        Vector3D mvRCPosition = Vector3D.Zero;
+        Vector3D mvConPosition = Vector3D.Zero;
         Vector3D mvLinearVelocity = Vector3D.Zero;
         Vector3D mvLinearVelocityDirection = Vector3D.Zero;
         
         void initVelocity() {
-            //var position = mRC.CenterOfMass;
-            //mvLinearVelocity = position - mvPosition;
             var sv = mRC.GetShipVelocities();
             mvLinearVelocity = sv.LinearVelocity;
-            mvPosition = mRC.WorldMatrix.Translation;
+            mvRCPosition = mRC.WorldMatrix.Translation;
+            mvConPosition = mCon.WorldMatrix.Translation;
             mdLinearVelocity = mvLinearVelocity.Length();
             mvLinearVelocityDirection = mvLinearVelocity / mdLinearVelocity;
             log("linear velocity", mdLinearVelocity);
@@ -250,25 +251,27 @@ namespace IngameScript
             var d = 0.0;
             switch (miMissionStep) {
                 case 0:
-                    d = distance2(mMissionConnector.Approach);
-                    if (800.0 > d) {
+                    d = distance2con(mMissionConnector.Approach);
+                    if (100.0 > d) {
                         miMissionStep++;
                     } else {
                         thrustVector(mMissionConnector.Approach);
                     }
                     break;
                 case 1:
-                    d = distance2(mMissionConnector.FinalApproach);
-                    if (600.0 > d) {
+                    d = distance2con(mMissionConnector.FinalApproach);
+                    if (100.0 > d) {
                         miMissionStep++;
                     } else {
                         thrustVector(mMissionConnector.FinalApproach);
                     }
                     break;
                 case 2:
-                    d = distance2(mMissionConnector.Position);
-                    if (600.0 > d && 1.0 > mdLinearVelocity) {
+                    d = distance2con(mMissionConnector.Position);
+                    if (10.0 > d && 0.5 > mdLinearVelocity) {
+                        mCon.Enabled = true;
                         thrust(thrust0, 0.0f);
+                        rotate2vector(Vector3D.Zero);
                     } else {
                         thrustVector(mMissionConnector.Position);
                     }
@@ -285,6 +288,7 @@ namespace IngameScript
             Connector c = null;
 
             initMission();
+            mCon.Enabled = false;
 
             var keys = mDocks.Keys.ToArray();
             double distance = double.MaxValue;
@@ -318,7 +322,7 @@ namespace IngameScript
                 aMomentumLength = 0.0;
                 rotate2vector(Vector3D.Zero);
             } else {
-                var vRetrogradeDisplacement = mvPosition - mvLinearVelocity;
+                var vRetrogradeDisplacement = mvRCPosition - mvLinearVelocity;
                 var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
                 log("damp to vec", vRetrogradeDisplacement);
                 rotate2vector(vRetrogradeDisplacement);
@@ -343,32 +347,38 @@ namespace IngameScript
                     break;
             }
         }
-        double distance2(Vector3D aTarget) {
-            return (aTarget - mRC.WorldMatrix.Translation).LengthSquared();
-        }
-        void thrustVector(Vector3D aTarget, double aVelocity = double.MaxValue) {
+        double distance2con(Vector3D aTarget) => distance2(aTarget, mCon.WorldMatrix.Translation);
+        double distance2rc(Vector3D aTarget) => distance2(aTarget, mRC.WorldMatrix.Translation);
+        double distance2(Vector3D aTarget, Vector3D aOrigin) => (aTarget - aOrigin).Length();
+        
+        void thrustVector(Vector3D aTarget, double aVelocity = double.MaxValue, bool aGyroHold = false) {
             var sm = mRC.CalculateShipMass();
             
-            //Vector3D vLinearVelocity = sv.LinearVelocity;
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();            
             double dMass = sm.TotalMass;
-            // vec = desired - act
-            var vDesiredDisplacement = aTarget - mRC.WorldMatrix.Translation;
-            
+
+            var vDesiredDisplacement = aTarget - mvConPosition;
+            var distance = vDesiredDisplacement.Length();
             if (double.MaxValue == aVelocity) {
-                aVelocity = vDesiredDisplacement.Length() * 0.1;
+                aVelocity = distance * 0.1;
                 if (100.0 < aVelocity) {
                     aVelocity = 100.1;
                 } else if (0.0 > aVelocity) {
                     aVelocity = 0.0;
                 }
             }
+
             var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
             var vDesiredVelocity = aVelocity * vDesiredDirection;
             var vForceDisplacement = (vDesiredVelocity - mvLinearVelocity - vGravityDisplacement) * dMass;
             var dForce = vForceDisplacement.Length();
             var vImpulseDirection = vForceDisplacement / dForce;
-            rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
+            if (aGyroHold) {
+                rotate2vector(Vector3D.Zero);
+            } else {
+                rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
+            }
+            
             var dThrustPercent = thrustPercent(vImpulseDirection, mRC.WorldMatrix.Up);
             thrust(thrust0, dForce * dThrustPercent);
         }
@@ -675,6 +685,7 @@ namespace IngameScript
         void init() {
             thrust0 = get("thrust0") as IMyThrust;
             mGyro = get("gyro") as IMyGyro;
+            mCon = get("con") as IMyShipConnector;
             //roto0 = get("roto0") as IMyMotorStator;
             //roto1 = get("roto1") as IMyMotorStator;
             //roto2 = get("roto2") as IMyMotorStator;
@@ -725,14 +736,7 @@ namespace IngameScript
         Vector3D world2dir(Vector3D world, MatrixD local) =>
             Vector3D.TransformNormal(world, MatrixD.Transpose(local));
 
-        double pi = Math.PI;
-        double pi2 = Math.PI * 2.0;
-        double halfpi = Math.PI * 0.5;
-        IMyRemoteControl mRC;
-        double maxV = 104.4; // speed cap in m/s
-        double cf = 2;// correction factor (decelleration speed)
-        IMyGyro mGyro;
-        Vector3D pos = Vector3D.Zero;
+  
 
         // old methods
         double zrotate2target(string aDirection, Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
@@ -823,5 +827,14 @@ namespace IngameScript
         const char mRowSep = '@';
         const char mColSep = '!';
         Dictionary<long, Connector> mDocks = new Dictionary<long, Connector>();
+        double pi = Math.PI;
+        double pi2 = Math.PI * 2.0;
+        double halfpi = Math.PI * 0.5;
+        IMyRemoteControl mRC;
+        double maxV = 104.4; // speed cap in m/s
+        double cf = 2;// correction factor (decelleration speed)
+        IMyGyro mGyro;
+        IMyShipConnector mCon;
+        Vector3D pos = Vector3D.Zero;
     }
 }
