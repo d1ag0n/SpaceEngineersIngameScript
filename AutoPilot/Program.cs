@@ -102,7 +102,7 @@ namespace IngameScript
             return rotate2direction(aGyroOverride, direction, aNormal, aIntersect1, aIntersect2);
         }
         double rotate2direction(string aGyroOverride, Vector3D aDirection, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
-            log("rotate2direction");
+            //log("rotate2direction");
             var angle = angleBetween(aDirection, aIntersect1);
             //log(aGyroOverride, " angle ", angle);
             double rpm = 0.0;
@@ -124,7 +124,7 @@ namespace IngameScript
 
         double angleBetween(Vector3D a, Vector3D b) {
             var result = Math.Acos(a.Dot(b));
-            log("angleBetween ", result);
+            //log("angleBetween ", result);
             return result;
         }
         Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
@@ -224,11 +224,13 @@ namespace IngameScript
         Vector3D mvRCPosition = Vector3D.Zero;
         Vector3D mvConPosition = Vector3D.Zero;
         Vector3D mvLinearVelocity = Vector3D.Zero;
+        Vector3D mvAngularVelocity = Vector3D.Zero;
         Vector3D mvLinearVelocityDirection = Vector3D.Zero;
         
         void initVelocity() {
             var sv = mRC.GetShipVelocities();
             mvLinearVelocity = sv.LinearVelocity;
+            mvAngularVelocity = sv.AngularVelocity;
             mvRCPosition = mRC.WorldMatrix.Translation;
             mvConPosition = mCon.WorldMatrix.Translation;
             mdLinearVelocity = mvLinearVelocity.Length();
@@ -294,9 +296,15 @@ namespace IngameScript
         void missionDock() {
             log("missionDock step ", miMissionStep);
             var d = 0.0;
+            var msg = "unknown";
             switch (miMissionStep) {
-                case 0:
                 case 6:
+                case 0:
+                    if (6 == miMissionStep) {
+                        msg = "depart approach area";
+                    } else {
+                        msg = "rendezvous with approach";
+                    }
                     // goto initial approach
                     d = distance2con(mMissionConnector.Approach);
                     if (250.0 > d) {
@@ -307,6 +315,11 @@ namespace IngameScript
                     break;
                 case 1:
                 case 5:
+                    if (5 == miMissionStep) {
+                        msg = "depart dock area";
+                    } else {
+                        msg = "rendezvous with final approach";
+                    }
                     // goto beginning of final approach
                     d = distance2con(mMissionConnector.FinalApproach);
                     if (100.0 > d) {
@@ -316,6 +329,7 @@ namespace IngameScript
                     }
                     break;
                 case 2:
+                    msg = "rendezvous with dock";
                     // on final approach
                     d = distance2con(mMissionConnector.Position);
                     if (d < 5.0) {
@@ -329,26 +343,32 @@ namespace IngameScript
                     }
                     break;
                 case 3:
+                    msg = "connecting to dock";
                     rotate2vector(Vector3D.Zero);
                     thrust0.Enabled = false;
-                    if (mCon.Status.HasFlag(MyShipConnectorStatus.Connectable)) {
-                        mCon.Connect();
-                    } else if (mCon.Status.HasFlag(MyShipConnectorStatus.Connected)) {
-                        miMissionStep++;
+                    if (mvAngularVelocity.LengthSquared() == 0 && mvLinearVelocity.LengthSquared() == 0) {
+                        if (mCon.Status.HasFlag(MyShipConnectorStatus.Connectable)) {
+                            mCon.Connect();
+                        } else if (mCon.Status.HasFlag(MyShipConnectorStatus.Connected)) {
+                            miMissionStep++;
+                        }
+                    } else {
+                        msg = "stabilizing with dock";
                     }
                     break;
                 case 4:
-                    log("docked");
+                    msg = "connected to dock";
                     mGyro.Enabled = false;
                     thrust0.Enabled = false;
                     if (mCon.Status != MyShipConnectorStatus.Connected) {
-                        mGyro.Enabled = false;
-                        thrust0.Enabled = false;
+                        mGyro.Enabled = true;
+                        thrust0.Enabled = true;
                         mCon.Enabled = false;
+                        miMissionStep++;
                     }
-                    miMissionStep++;
                     break;
                 case 7:
+                    msg = "depature complete";
                     setMissionDamp();
                     break;
                 default:
@@ -356,8 +376,7 @@ namespace IngameScript
                     missionDamp();
                     break;
             }
-            log("distance ", d);
-            //thrustVector()
+            log(msg);
         }
         
 
@@ -424,14 +443,14 @@ namespace IngameScript
             return len < 0.001 ? Vector3D.Zero : v / len;
         }
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
-            log("thrustPercent");
+            //log("thrustPercent");
             var result = 0.0;
             var offset = angleBetween(aDirection, aNormal);
             var d = 2.0;
             if (offset < Math.PI / d) {
                 result = 1.0 - (offset / (Math.PI / d));
             }
-            log("thrustPercent ", result);
+            //log("thrustPercent ", result);
             return result;
         }
         bool missionStop() {
@@ -593,7 +612,7 @@ namespace IngameScript
                 } else {
                     f = f / fMax;
                 }
-                log("thrust% ", f);
+                //log("thrust% ", f);
                 if (f > 0.0f) {
                     t.Enabled = true;
                     t.ThrustOverridePercentage = f;
