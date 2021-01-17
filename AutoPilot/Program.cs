@@ -296,7 +296,7 @@ namespace IngameScript
             }
         }
         void missionDock() {
-            log("missionDock step ", miMissionStep);
+            log("Dock Mission: ", mMissionConnector.Name + " - " + mMissionConnector.Id);
             var d = 0.0;
             var msg = "unknown";
             switch (miMissionStep) {
@@ -371,7 +371,12 @@ namespace IngameScript
                     break;
                 case 7:
                     msg = "depature complete";
-                    setMissionDamp();
+                    iDock++;
+                    if (iDock == 3) {
+                        iDock = 0;
+                    }
+                    setMissionDock("con" + iDock);
+                    //setMissionDamp();
                     break;
                 default:
                     log("step unhandled damping");
@@ -894,5 +899,6 @@ namespace IngameScript
         IMyGyro mGyro;
         IMyShipConnector mCon;
         Vector3D pos = Vector3D.Zero;
+        int iDock = 0;
     }
 }
