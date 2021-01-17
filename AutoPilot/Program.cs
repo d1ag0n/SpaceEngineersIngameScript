@@ -362,6 +362,7 @@ namespace IngameScript
                     msg = "connected to dock";
                     mGyro.Enabled = false;
                     thrust0.Enabled = false;
+                    mCon.Enabled = false;
                     if (mCon.Status != MyShipConnectorStatus.Connected) {
                         mGyro.Enabled = true;
                         thrust0.Enabled = true;
@@ -481,7 +482,6 @@ namespace IngameScript
 
 
         void update() {
-            log("CoM", mRC.CenterOfMass);
             doMission();
             return;
             var rcMatrix = mRC.WorldMatrix;
