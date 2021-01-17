@@ -157,9 +157,23 @@ namespace IngameScript
 
         void setMissionDamp() {
             initMission();
-            meMission = Missions.damp;
         }
-        
+        void missionDamp() => missionDamp(momentum().Length());
+        void missionDamp(double aMomentumLength) {
+            if (0.01 > mdLinearVelocity) {
+                log("damp to vec 0");
+                rotate2vector(Vector3D.Zero);
+                thrust(thrust0, 0.0);
+            } else {
+                var vRetrogradeDisplacement = mvRCPosition - mvLinearVelocity;
+                var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
+                log("damp to vec", vRetrogradeDisplacement);
+                rotate2vector(vRetrogradeDisplacement);
+                thrust(thrust0, aMomentumLength * thrustPercent(mvLinearVelocityDirection, mRC.WorldMatrix.Down));
+            }
+            
+        }
+
         void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
             initMission();
             meMission = Missions.navigate;
@@ -246,44 +260,6 @@ namespace IngameScript
                 default: log("mission unhandled");          break;
             }
         }
-        void missionDock() {
-            log("missionDock step ", miMissionStep);
-            var d = 0.0;
-            switch (miMissionStep) {
-                case 0:
-                    d = distance2con(mMissionConnector.Approach);
-                    if (100.0 > d) {
-                        miMissionStep++;
-                    } else {
-                        thrustVector(mMissionConnector.Approach);
-                    }
-                    break;
-                case 1:
-                    d = distance2con(mMissionConnector.FinalApproach);
-                    if (100.0 > d) {
-                        miMissionStep++;
-                    } else {
-                        thrustVector(mMissionConnector.FinalApproach);
-                    }
-                    break;
-                case 2:
-                    d = distance2con(mMissionConnector.Position);
-                    if (10.0 > d && 0.5 > mdLinearVelocity) {
-                        mCon.Enabled = true;
-                        thrust(thrust0, 0.0f);
-                        rotate2vector(Vector3D.Zero);
-                    } else {
-                        thrustVector(mMissionConnector.Position);
-                    }
-                    break;
-                default:
-                    log("step unhandled damping");
-                    missionDamp();
-                    break;
-            }
-            log("distance ", Math.Sqrt(d));
-            //thrustVector()
-        }
         void setMissionDock(string aConnector) {
             Connector c = null;
 
@@ -309,26 +285,82 @@ namespace IngameScript
                 var projectedPosition = project(mRC.WorldMatrix.Translation, approachPlane, mMissionConnector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - mMissionConnector.FinalApproach);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
-                Me.CustomData = 
-                    "Position" + Environment.NewLine + mMissionConnector.Position + Environment.NewLine + 
-                    "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine + 
+                Me.CustomData =
+                    "Position" + Environment.NewLine + mMissionConnector.Position + Environment.NewLine +
+                    "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine +
                     "Final Approach" + Environment.NewLine + mMissionConnector.FinalApproach;
             }
         }
-        void missionDamp() => missionDamp(momentum().Length());
-        void missionDamp(double aMomentumLength) {
-            if (0.001 > mdLinearVelocity) {
-                log("damp to vec 0");
-                aMomentumLength = 0.0;
-                rotate2vector(Vector3D.Zero);
-            } else {
-                var vRetrogradeDisplacement = mvRCPosition - mvLinearVelocity;
-                var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
-                log("damp to vec", vRetrogradeDisplacement);
-                rotate2vector(vRetrogradeDisplacement);
-            }            
-            thrust(thrust0, aMomentumLength * thrustPercent(mvLinearVelocityDirection, mRC.WorldMatrix.Down));
+        void missionDock() {
+            log("missionDock step ", miMissionStep);
+            var d = 0.0;
+            switch (miMissionStep) {
+                case 0:
+                case 6:
+                    // goto initial approach
+                    d = distance2con(mMissionConnector.Approach);
+                    if (250.0 > d) {
+                        miMissionStep++;
+                    } else {
+                        thrustVector(mMissionConnector.Approach);
+                    }
+                    break;
+                case 1:
+                case 5:
+                    // goto beginning of final approach
+                    d = distance2con(mMissionConnector.FinalApproach);
+                    if (100.0 > d) {
+                        miMissionStep++;
+                    } else {
+                        thrustVector(mMissionConnector.FinalApproach);
+                    }
+                    break;
+                case 2:
+                    // on final approach
+                    d = distance2con(mMissionConnector.Position);
+                    if (d < 5.0) {
+                        mCon.Enabled = true;                        
+                        rotate2vector(Vector3D.Zero);
+                        miMissionStep++;
+                    } else if (d < 25.0) {
+                        thrustVector(mMissionConnector.Position, 1.00, true);
+                    } else {
+                        thrustVector(mMissionConnector.Position);
+                    }
+                    break;
+                case 3:
+                    rotate2vector(Vector3D.Zero);
+                    thrust0.Enabled = false;
+                    if (mCon.Status.HasFlag(MyShipConnectorStatus.Connectable)) {
+                        mCon.Connect();
+                    } else if (mCon.Status.HasFlag(MyShipConnectorStatus.Connected)) {
+                        miMissionStep++;
+                    }
+                    break;
+                case 4:
+                    log("docked");
+                    mGyro.Enabled = false;
+                    thrust0.Enabled = false;
+                    if (mCon.Status != MyShipConnectorStatus.Connected) {
+                        mGyro.Enabled = false;
+                        thrust0.Enabled = false;
+                        mCon.Enabled = false;
+                    }
+                    miMissionStep++;
+                    break;
+                case 7:
+                    setMissionDamp();
+                    break;
+                default:
+                    log("step unhandled damping");
+                    missionDamp();
+                    break;
+            }
+            log("distance ", d);
+            //thrustVector()
         }
+        
+
         void missionNavigate() {
             switch (miMissionStep) {
                 case 0:
@@ -357,7 +389,7 @@ namespace IngameScript
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();            
             double dMass = sm.TotalMass;
 
-            var vDesiredDisplacement = aTarget - mvConPosition;
+            var vDesiredDisplacement = aTarget - mvRCPosition;
             var distance = vDesiredDisplacement.Length();
             if (double.MaxValue == aVelocity) {
                 aVelocity = distance * 0.1;
@@ -367,20 +399,25 @@ namespace IngameScript
                     aVelocity = 0.0;
                 }
             }
-
-            var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
-            var vDesiredVelocity = aVelocity * vDesiredDirection;
-            var vForceDisplacement = (vDesiredVelocity - mvLinearVelocity - vGravityDisplacement) * dMass;
-            var dForce = vForceDisplacement.Length();
-            var vImpulseDirection = vForceDisplacement / dForce;
-            if (aGyroHold) {
-                rotate2vector(Vector3D.Zero);
+            if (aVelocity > 0.0) {
+                var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
+                var vDesiredVelocity = aVelocity * vDesiredDirection;
+                var vForceDisplacement = (vDesiredVelocity - mvLinearVelocity - vGravityDisplacement) * dMass;
+                var dForce = vForceDisplacement.Length();
+                var vImpulseDirection = vForceDisplacement / dForce;
+                var dThrustPercent = thrustPercent(vImpulseDirection, mRC.WorldMatrix.Up);
+                thrust(thrust0, dForce * dThrustPercent);
+                if (!aGyroHold) {
+                    rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
+                }
             } else {
-                rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
+                thrust(thrust0, 0.0);
+            }
+            if (aGyroHold) {
+                rotate2vector(Vector3D.Zero);                
             }
             
-            var dThrustPercent = thrustPercent(vImpulseDirection, mRC.WorldMatrix.Up);
-            thrust(thrust0, dForce * dThrustPercent);
+            
         }
         Vector3D normalize(Vector3D v) {
             var len = v.Length();
@@ -481,8 +518,8 @@ namespace IngameScript
             mRC = get("rc") as IMyRemoteControl;
             lcd = get("lcd") as IMyTextPanel;
             init();
-            setMissionNavigate(CONNECTOR);
-            //setMissionDamp();
+            //setMissionNavigate(CONNECTOR);
+            setMissionDamp();
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
         }
