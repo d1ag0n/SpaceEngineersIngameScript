@@ -9,7 +9,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoPilot", "AutoPilot\Auto
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DockManager", "DockManager\DockManager.csproj", "{6EB7EB41-9002-4602-93F1-9DA21807E436}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Library", "Library\Library.shproj", "{FA185618-A62B-480F-ABC7-76F155FBDC58}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Library\Library.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
+		Library\Library.projitems*{6eb7eb41-9002-4602-93f1-9da21807e436}*SharedItemsImports = 4
+		Library\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 	EndGlobalSection

@@ -1,10 +1,12 @@
-﻿using Sandbox.Game.EntityComponents;
+﻿using Library;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using VRage;
@@ -29,7 +31,7 @@ namespace IngameScript
                 var block = blocks[i];
                 if (block.CubeGrid == Me.CubeGrid) {
                     if (block is IMyShipConnector) {
-                        connectors.Add(block as IMyShipConnector);
+                        mConnectors.Add(block as IMyShipConnector);
                     } else if (block is IMyTextPanel) {
                         lcd = block as IMyTextPanel;
                     }
@@ -38,39 +40,19 @@ namespace IngameScript
         }
         void update() {
             log("update start");
-            dockStatus();
+            dockInfo();
             log("update complete");
         }
 
-        void dockStatus() {
-            var sb = new StringBuilder();
-            var one = false;
-            for (int i = connectors.Count - 1; i > -1; i--) {
-                var con = connectors[i];
-
-                if (MyShipConnectorStatus.Unconnected == con.Status) {
-                    if (one) {
-                        sb.Append(mRowSep);
-                    }
-                    sb.Append(serialize(con));
-                    one = true;
-                }
+        void dockInfo() {
+            var list = new Connector[mConnectors.Count];
+            for (int i = 0; i < mConnectors.Count; i++) {
+                list[i] = new Connector(mConnectors[i]);
             }
-            var msg = sb.ToString();
-            IGC.SendBroadcastMessage("docks", msg);
-            log("dock status broadcasted ", msg.Length, " characters");
+            IGC.SendBroadcastMessage("docks", Connector.ToCollection(list));
+            log("dock info broadcasted ");
         }
-        string serialize(IMyShipConnector aConnector) {
-            var sb = new StringBuilder();
-            sb.Append(aConnector.EntityId);
-            sb.Append(mColSep);
-            sb.Append(aConnector.CustomName.Replace(mColSep, mFieldChar).Replace(mRowSep, mFieldChar));
-            sb.Append(mColSep);
-            sb.Append(aConnector.WorldMatrix.Translation);
-            sb.Append(mColSep);
-            sb.Append(aConnector.WorldMatrix.Forward);
-            return sb.ToString();
-        }
+        
         public void Save() {
             
         }
@@ -122,9 +104,7 @@ namespace IngameScript
         const int runEvery = 100;
         int count = runEvery - 1;
         IMyTextPanel lcd;
-        List<IMyShipConnector> connectors = new List<IMyShipConnector>();
-        const char mRowSep = '@';
-        const char mColSep = '!';
-        const char mFieldChar = ' ';
+        List<IMyShipConnector> mConnectors = new List<IMyShipConnector>();
+        
     }
 }

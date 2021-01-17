@@ -1,10 +1,12 @@
-﻿using Sandbox.Game.EntityComponents;
+﻿using Library;
+using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using VRage;
@@ -437,41 +439,14 @@ namespace IngameScript
                 var msg = mListener.AcceptMessage();
                 switch (msg.Tag) {
                     case "docks":
-                        Connector.ParseAll(msg.Data.ToString(), mDocks);
+                        mDocks = Connector.FromCollection((ImmutableArray<MyTuple<long, string, Vector3D, Vector3D>>)msg.Data);
                         break;
                 }
             }
         }
         
         
-        class Connector
-        {
-            public long EntityId;
-            public string Name;
-            public Vector3D Position;
-            public Vector3D Approach;
-            public Vector3D FinalApproach;
-            public Vector3D Direction;
-            public static void ParseAll(string aData, Dictionary<long, Connector> aDictionary) {
-                var rows = aData.Split(mRowSep);
-                
-                for (int i = 0; i < rows.Length; i++) {
-                    var c = Parse(rows[i]);
-                    aDictionary[c.EntityId] = c;
-                }
-
-            }
-            public static Connector Parse(string aData) {
-                var result = new Connector();
-                var col = aData.Split(mColSep);
-                result.EntityId = long.Parse(col[0]);
-                result.Name = col[1];
-                Vector3D.TryParse(col[2], out result.Position);
-                Vector3D.TryParse(col[3], out result.Direction);
-                return result;
-            }
-            override public string ToString() => Name;
-        }
+        
         StringBuilder mLog;
         void initLog() {
             if (null == mLog) {
