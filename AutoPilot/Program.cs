@@ -592,7 +592,7 @@ namespace IngameScript
             // veloSquared = d * (accel * 2)
             // velo = sqrt(veloSquared)
             mdDistance2Objective = (mvMissionObjective - mvConPosition).Length();
-            if (mdDistance2Objective >= mdStopDistance) {
+            if (0.0 < mdStopDistance && mdDistance2Objective >= mdStopDistance) {
                 mdPreferredVelocity = Math.Sqrt(mdStopDistance * (mdAcceleration * 2));
                 if (0.0 > mdPreferredVelocity) {
                     mdPreferredVelocity = 0.0;
@@ -600,7 +600,7 @@ namespace IngameScript
             } else {
                 mdPreferredVelocity = 100.0;
             }
-            
+            log("Distance2Objective ", mdDistance2Objective);
             log("acceleration ", mdAcceleration);
             log("linear velocity ", mdLinearVelocity);
             log("angular velocity ", mdAngularVelocity);
