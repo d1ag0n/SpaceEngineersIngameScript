@@ -153,7 +153,6 @@ namespace IngameScript
             initMission();
             meMission = Missions.navigate;
             mvMissionObjective = aObjective;
-            
         }
         void initMission() {
             mdMissionAltitude =
@@ -169,7 +168,6 @@ namespace IngameScript
             mMissionConnector = null;
             mCon.Enabled = false;
         }
-
         bool initMissionAltitude() {
             var result = false;
             var vGravityDisplacement = mRC.GetNaturalGravity();
@@ -201,7 +199,7 @@ namespace IngameScript
                             var vGravityDisplacement = mRC.GetNaturalGravity();
                             var vGravityNormal = Vector3D.Normalize(vGravityDisplacement);
                             var target = mRC.WorldMatrix.Translation + (vGravityNormal * -dAltitudeDifference);
-                            thrustVector(target, dAltitudeDifference * 0.1);
+                            ThrustVector(dAltitudeDifference * 0.1);
                         } else {
                             missionDamp();
                         }
@@ -233,17 +231,17 @@ namespace IngameScript
                 }
             }
             if (null != mMissionConnector) {
-                mMissionConnector.FinalApproach = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
+                mMissionConnector.ApproachFinal = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
                 var approachPlane = mMissionConnector.Position + (mMissionConnector.Direction * 1000.0);
                 var projectedPosition = project(mRC.WorldMatrix.Translation, approachPlane, mMissionConnector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
-                mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
+                mMissionConnector.Approach = approachPlane + (projectedDirection * 3000.0);
                 // todo double check this
                 
                 Me.CustomData =
                     "Position" + Environment.NewLine + mMissionConnector.Position + Environment.NewLine +
                     "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine +
-                    "Final Approach" + Environment.NewLine + mMissionConnector.FinalApproach;
+                    "Final Approach" + Environment.NewLine + mMissionConnector.ApproachFinal;
             }
         }
         void missionDock() {
@@ -254,35 +252,38 @@ namespace IngameScript
             switch (step) {
                 case DockStep.departFinal:
                 case DockStep.approach:
+                    mvMissionObjective = mMissionConnector.Approach;
                     if (DockStep.departFinal == step) {
                         msg = "depart approach area";
                     } else {
                         msg = "rendezvous with approach";
                     }
                     // goto initial approach
-                    d = distance2con(mMissionConnector.Approach);
+                    d = distance2con();
                     if (250.0 > d) {
                         miMissionStep++;
                     } else {
-                        thrustVector(mMissionConnector.Approach);
+                        ThrustVector();
                     }
                     break;
                 case DockStep.approachFinal:
                 case DockStep.depart:
+                    mvMissionObjective = mMissionConnector.ApproachFinal;
                     if (DockStep.depart == step) {
                         msg = "depart dock area";
                     } else {
                         msg = "rendezvous with final approach";
                     }
                     // goto beginning of final approach
-                    d = distance2con(mMissionConnector.FinalApproach);
-                    if (100.0 > d) {
+                    d = distance2con();
+                    if (10.0 > d) {
                         miMissionStep++;
                     } else {
-                        thrustVector(mMissionConnector.FinalApproach);
+                        ThrustVector();
                     }
                     break;
                 case DockStep.dock:
+                    mvMissionObjective = mMissionConnector.Position;
                     msg = "rendezvous with dock";
                     // on final approach
                     d = distance2con(mMissionConnector.Position);
@@ -291,9 +292,9 @@ namespace IngameScript
                         rotate2vector(Vector3D.Zero);
                         miMissionStep++;
                     } else if (d < 25.0) {
-                        thrustVector(mMissionConnector.Position, 1.00, true);
+                        ThrustVector(1.00, true);
                     } else {
-                        thrustVector(mMissionConnector.Position);
+                        ThrustVector();
                     }
                     break;
                 case DockStep.connect:
@@ -327,12 +328,10 @@ namespace IngameScript
                     if (iDock == 3) {
                         iDock = 0;
                     }
-                    // todo remove dock loop
                     setMissionDock("con" + iDock);
-                    //setMissionDamp();
                     break;
                 default:
-                    log("step unhandled damping");
+                    log("step unhandled, damping");
                     missionDamp();
                     break;
             }
@@ -342,7 +341,7 @@ namespace IngameScript
             switch (miMissionStep) {
                 case 0:
                     if (140.0 < (mvMissionObjective - mRC.WorldMatrix.Translation).LengthSquared()) {
-                        thrustVector(mvMissionObjective);
+                        ThrustVector();
                         log("navigating");
                     } else {
                         log("close enough");
@@ -356,12 +355,14 @@ namespace IngameScript
                     break;
             }
         }
-        double distance2con(Vector3D aTarget) => distance2(aTarget, mCon.WorldMatrix.Translation);
-        double distance2rc(Vector3D aTarget) => distance2(aTarget, mRC.WorldMatrix.Translation);
-        double distance2(Vector3D aTarget, Vector3D aOrigin) => (aTarget - aOrigin).Length();
-        void thrustVector(Vector3D aTarget, double aVelocity = double.MaxValue, bool aGyroHold = false) {
+        double distance2con() => _distance2(mvMissionObjective, mCon.WorldMatrix.Translation);
+        double distance2rc() => _distance2(mvMissionObjective, mRC.WorldMatrix.Translation);
+        double distance2con(Vector3D aTarget) => _distance2(aTarget, mCon.WorldMatrix.Translation);
+        double distance2rc(Vector3D aTarget) => _distance2(aTarget, mRC.WorldMatrix.Translation);
+        double _distance2(Vector3D aTarget, Vector3D aOrigin) => (aTarget - aOrigin).Length();
+        void ThrustVector(double aVelocity = double.MaxValue, bool aGyroHold = false) {
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();
-            var vDesiredDisplacement = aTarget - mvRCPosition;
+            var vDesiredDisplacement = mvMissionObjective - mvConPosition;
             var distance = vDesiredDisplacement.Length();
             if (double.MaxValue == aVelocity) {
                 aVelocity = distance * 0.1;
@@ -646,7 +647,6 @@ namespace IngameScript
         }
         void ThrustN(double aNewtons) => ThrustN((float)aNewtons);
         void ThrustN(float aNewtons) {
-            aNewtons *= 6.0f;
             float fMax, fPercent;
             mdNewtons = 0;
             log("ThrustN requested ", aNewtons, "N");
@@ -704,6 +704,7 @@ namespace IngameScript
             }
         }
         void pointRotoAtDirection(IMyMotorStator aRoto, Vector3D aDirection) {
+            /*
             if (null != aRoto) {
                 var matrix = aRoto.WorldMatrix;
                 var angle = Math.Acos(aDirection.Dot(matrix.Forward));
@@ -739,9 +740,11 @@ namespace IngameScript
                 }
                 aRoto.TargetVelocityRad = (float)(v * dMagik);
             }
+            */
         }
 
         void pointRotoAtOld(IMyMotorStator roto, Vector3D dir) {
+            /*
             if (null != roto) {
                 var matrix = roto.WorldMatrix;
                 var va = matrix.Right;
@@ -767,7 +770,7 @@ namespace IngameScript
                     }
                 }
                 roto.TargetVelocityRad = (float)(v * dMagik);
-            }
+            }*/
         }
         
         public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
@@ -787,7 +790,6 @@ namespace IngameScript
             }
             mLog.AppendLine();
         }
-        
 
         Vector3D local2pos(Vector3D local, MatrixD world) =>
             Vector3D.Transform(local, world);
@@ -797,91 +799,6 @@ namespace IngameScript
             Vector3D.TransformNormal(world - local.Translation, MatrixD.Transpose(local));
         Vector3D world2dir(Vector3D world, MatrixD local) =>
             Vector3D.TransformNormal(world, MatrixD.Transpose(local));
-        // old methods
-        double Zrotate2target(string aDirection, Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
-            // yaw
-            // m.Translation = aPlane
-            // m.Up = aNormal
-            // m.Forward = aIntersect
-            var position = project(aTarget, aPlane, aNormal);
-            var displacement = position - aPlane;
-            var direction = Vector3D.Normalize(displacement);
-            var angle = angleBetween(direction, aIntersect1);
-            log(aDirection, " angle ", angle);
-            double rpm = 0.0;
-            if (angle > mdRotateEpsilon) {
-                var norm = Vector3D.Normalize(direction.Cross(aIntersect2));
-                var dot = aNormal.Dot(norm);
-                if (dot < 0) {
-                    angle = -angle;
-                }
-                rpm = rps2rpm(angle);
-            }
-            mGyro.SetValueFloat(aDirection.ToString(), (float)rpm);
-            log(aDirection, " rpm ", rpm);
-            return rpm;
-        }
-        double Zyaw2target(Vector3D aTarget) {
-            var m = mRC.WorldMatrix;
-            // yaw
-            var position = project(aTarget, m.Translation, m.Up);
-            var displacement = position - m.Translation;
-            var direction = Vector3D.Normalize(displacement);
-            var angle = angleBetween(direction, m.Forward);
-            log("yaw angle ", angle);
-            double rpm = 0.0;
-            if (angle > mdRotateEpsilon) {
-                var norm = Vector3D.Normalize(direction.Cross(m.Forward));
-                var dot = m.Up.Dot(norm);
-                if (dot < 0) {
-                    angle = -angle;
-                }
-                rpm = rps2rpm(angle);
-            }
-            //gyro.SetValueFloat("Yaw", (float)rpm);
-            mGyro.SetValueFloat("Yaw", 0.0f);
-            return rpm;
-        }
-        double Zpitch2target(Vector3D aTarget) {
-            var m = mRC.WorldMatrix;
-            // pitch
-            var position = project(aTarget, m.Translation, m.Right);
-            var displacement = position - m.Translation;
-            var direction = Vector3D.Normalize(displacement);
-            var angle = angleBetween(direction, m.Forward);
-            log("pitch angle", angle);
-            double rpm = 0.0;
-            if (angle > mdRotateEpsilon) {
-                var norm = Vector3D.Normalize(direction.Cross(m.Forward));
-                var dot = m.Right.Dot(norm);
-                if (dot > 0) {
-                    angle = -angle;
-                }
-                rpm = rps2rpm(angle);
-            }
-            mGyro.SetValueFloat("Pitch", (float)rpm);
-            return rpm;
-        }
-        double Zroll2target(Vector3D aTarget) {
-            var m = mRC.WorldMatrix;
-            var position = project(aTarget, m.Translation, m.Forward);
-            var displacement = position - m.Translation;
-            var direction = Vector3D.Normalize(displacement);
-            var angle = angleBetween(direction, m.Up);
-            log("roll angle", angle);
-            double rpm = 0.0;
-            if (angle > mdRotateEpsilon) {
-                var norm = Vector3D.Normalize(direction.Cross(m.Up));
-                var dot = m.Forward.Dot(norm);
-                if (dot > 0) {
-                    angle = -angle;
-                }
-                rpm = rps2rpm(angle);
-            }
-            mGyro.SetValueFloat("Roll", (float)rpm);
-            //gyro.SetValueFloat("Roll", 0.0f);
-            return rpm;
-        }
 
         enum DockStep : int
         {
@@ -894,71 +811,61 @@ namespace IngameScript
             departFinal,
             complete
         }
-        double mdAltitude;
-        readonly IMyBroadcastListener mListener;
+        Connector mMissionConnector; 
+        
         Dictionary<long, Connector> mDocks = new Dictionary<long, Connector>();
-        const double pi = Math.PI;
-        const double pi2 = Math.PI * 2.0;
-        const double halfpi = Math.PI * 0.5;
-        IMyRemoteControl mRC;
-        
-        
-        IMyGyro mGyro;
-        IMyShipConnector mCon;
-        Vector3D pos = Vector3D.Zero;
-        int iDock = 0;
-        Vector3D mvMissionObjective;
-        Vector3D mvMissionDirection;
-        Connector mMissionConnector;
-        Missions meMission = Missions.damp;
-        double mdMissionAltitude = 0;
-        int miMissionStep = 0;
-        const float mfRPM = 30.0f;
-        const double mdRPM = mfRPM;
-        const double mdRotateEpsilon = 0.001;
-        const double dMagik = 3.0;
-        Vector3D drone = new Vector3D(992497.0, 98921.0, 1668849.0);
-        Vector3D droneHigher = new Vector3D(992136.99, 98604.87, 1669245.49);
-
-        Vector3D otherside = new Vector3D(986148.14, 102603.57, 1599688.09);
-        IMyThrust[] marThrust;
-        int mCount = 0;
-        IMyTextPanel mLCD;
-        
-        
-        Vector3D BASE_HIGHER = new Vector3D(1045917.97, 142402.91, 1571139.78);
-        Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
-        Vector3D BASE_SPACE_2 = new Vector3D(44282.68, 164548.94, -85064.41);
-        Vector3D BASE_SPACE_3 = new Vector3D(44496.03, 164633.07, -85185.32);
-        Vector3D CONNECTOR_APPROACH = new Vector3D(44676.88, 164938.5, -85394.41);
-        Vector3D CONNECTOR = new Vector3D(44698.67, 164745.01, -85320.02);
-        double mdLinearVelocity = 0.0;
-        Vector3D mvRCPosition = Vector3D.Zero;
-        Vector3D mvConPosition = Vector3D.Zero;
-        Vector3D mvLinearVelocity = Vector3D.Zero;
-        Vector3D mvAngularVelocity = Vector3D.Zero;
-        double mdAngularVelocity;
-        Vector3D mvLinearVelocityDirection = Vector3D.Zero;
-        StringBuilder mLog;
         Dictionary<string, IMyTerminalBlock> mBlocks;
+
+        double mdAltitude;
+        double mdLinearVelocity = 0.0;
+        double mdAngularVelocity;
         double mdMass;
         double mdAcceleration;
         double mdStopDistance;
         double mdNewtons;
-        //string msMissionTag = string.Empty;
-        //double mdAngularVeloPitchMax = 0.0; // local x
-        //double mdAngularVeloYawMax = 0.0; // local y
-        //double mdAngularVeloRollMax = 0.0; // local z
-        //double mdAngularVeloPredictedYaw;
-        //double mdAngularVeloPredictedPitch;
-        //double mdAngularVeloPredictedRoll;
-        //Vector3D target = new Vector3D(992136.99, 98604.87, 1669245.49);
-        //Vector3D target = new Vector3D(1032768.24, 138549.56, 1568429.17);
-        //Vector3D target = new Vector3D(1033485.69, 154992.3, 1504229.77);
-        //Vector3D tango = new Vector3D(1033485.69, 154992.3, 1504229.77);
-        //Vector3D BASE_ABOVE = new Vector3D(1045810.57, 142332.61, 1571519.87);
+        double mdMissionAltitude = 0;
+        double mdRotateEpsilon = 0.001;
+
+        IMyThrust[] marThrust;
+        IMyTextPanel mLCD;
+        readonly IMyBroadcastListener mListener;
+        IMyRemoteControl mRC;
+        IMyGyro mGyro;
+        IMyShipConnector mCon;
+
+        int iDock = 0;
+        int mCount = 0;
+        int miMissionStep = 0;
+
+        Missions meMission = Missions.damp;
+
+        StringBuilder mLog;
+
+        Vector3D drone = new Vector3D(992497.0, 98921.0, 1668849.0);
+        Vector3D droneHigher = new Vector3D(992136.99, 98604.87, 1669245.49);
+        Vector3D pos = Vector3D.Zero;
+        Vector3D mvMissionObjective;
+        Vector3D mvMissionDirection;
+
+        Vector3D CONNECTOR_APPROACH = new Vector3D(44676.88, 164938.5, -85394.41);
+        Vector3D CONNECTOR = new Vector3D(44698.67, 164745.01, -85320.02);
+        Vector3D mvRCPosition = Vector3D.Zero;
+        Vector3D mvConPosition = Vector3D.Zero;
+        Vector3D mvLinearVelocity = Vector3D.Zero;
+        Vector3D mvAngularVelocity = Vector3D.Zero;
+        Vector3D mvLinearVelocityDirection = Vector3D.Zero;
     }
     // large connectors distance apart 2.65 
     // small connector distance from large 1.85
     // small connector distance from small 1.00
+
+    /*
+        Vector3D mvMissionDirection;
+        Vector3D otherside = new Vector3D(986148.14, 102603.57, 1599688.09);
+        Vector3D BASE_HIGHER = new Vector3D(1045917.97, 142402.91, 1571139.78);
+        Vector3D BASE_SPACE_1 = new Vector3D(44710.14, 164718.97, -85304.59);
+        Vector3D BASE_SPACE_2 = new Vector3D(44282.68, 164548.94, -85064.41);
+        Vector3D BASE_SPACE_3 = new Vector3D(44496.03, 164633.07, -85185.32);
+      
+    */
 }

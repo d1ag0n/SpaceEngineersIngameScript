@@ -12,7 +12,7 @@ namespace Library
         public string Name;
         public Vector3D Position;
         public Vector3D Approach;
-        public Vector3D FinalApproach;
+        public Vector3D ApproachFinal;
         public Vector3D Direction;
         public Connector(IMyShipConnector aConnector) {
             Id = aConnector.EntityId;
