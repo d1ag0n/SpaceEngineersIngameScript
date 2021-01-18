@@ -199,7 +199,7 @@ namespace IngameScript
                             var vGravityDisplacement = mRC.GetNaturalGravity();
                             var vGravityNormal = Vector3D.Normalize(vGravityDisplacement);
                             var target = mRC.WorldMatrix.Translation + (vGravityNormal * -dAltitudeDifference);
-                            ThrustVector(dAltitudeDifference * 0.1);
+                            ThrustVector(/*dAltitudeDifference * 0.1*/);
                         } else {
                             missionDamp();
                         }
@@ -292,7 +292,7 @@ namespace IngameScript
                         rotate2vector(Vector3D.Zero);
                         miMissionStep++;
                     } else if (d < 25.0) {
-                        ThrustVector(1.00, true);
+                        ThrustVector(/*1.00,*/ true);
                     } else {
                         ThrustVector();
                     }
@@ -360,11 +360,11 @@ namespace IngameScript
         double distance2con(Vector3D aTarget) => _distance2(aTarget, mCon.WorldMatrix.Translation);
         double distance2rc(Vector3D aTarget) => _distance2(aTarget, mRC.WorldMatrix.Translation);
         double _distance2(Vector3D aTarget, Vector3D aOrigin) => (aTarget - aOrigin).Length();
-        void ThrustVector(double aVelocity = double.MaxValue, bool aGyroHold = false) {
+        void ThrustVector(/*double aVelocity = double.MaxValue,*/ bool aGyroHold = false) {
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();
             var vDesiredDisplacement = mvMissionObjective - mvConPosition;
             var distance = vDesiredDisplacement.Length();
-            if (double.MaxValue == aVelocity) {
+            /*if (double.MaxValue == aVelocity) {
                 aVelocity = distance * 0.1;
                 if (100.0 < aVelocity) {
                     aVelocity = 100.1;
@@ -372,22 +372,23 @@ namespace IngameScript
                     aVelocity = 0.0;
                 }
             }
-            if (aVelocity > 0.0) {
+            if (aVelocity > 0.0) {*/
                 var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
+            var aVelocity = mdPreferredVelocity;
                 var vDesiredVelocity = aVelocity * vDesiredDirection;
                 var vForceDisplacement = (vDesiredVelocity - mvLinearVelocity - vGravityDisplacement) * mdMass;
                 var dForce = vForceDisplacement.Length();
                 var vImpulseDirection = vForceDisplacement / dForce;
                 var dThrustPercent = thrustPercent(vImpulseDirection, mRC.WorldMatrix.Up);
                 ThrustN(dForce * dThrustPercent);
-                if (!aGyroHold) {
-                    rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
-                }
+               /* 
             } else {
                 ThrustN(0);
-            }
+            }*/
             if (aGyroHold) {
-                rotate2vector(Vector3D.Zero);                
+                rotate2vector(Vector3D.Zero);
+            } else {
+                rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
             }
             
             
@@ -399,7 +400,7 @@ namespace IngameScript
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
             var result = 0.0;
             var offset = angleBetween(aDirection, aNormal);
-            var d = 2.0;
+            var d = 4.0;
             if (offset < Math.PI / d) {
                 result = 1.0 - (offset / (Math.PI / d));
             }
@@ -586,9 +587,25 @@ namespace IngameScript
             mdLinearVelocity = mvLinearVelocity.Length();
             mvLinearVelocityDirection = mvLinearVelocity / mdLinearVelocity;
             mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdAcceleration * 2);
+            // d           = (1                * 1               ) / (2              * 2)
+            // d = 0.25
+            // veloSquared = d * (accel * 2)
+            // velo = sqrt(veloSquared)
+            mdDistance2Objective = (mvMissionObjective - mvConPosition).Length();
+            if (mdDistance2Objective >= mdStopDistance) {
+                mdPreferredVelocity = Math.Sqrt(mdStopDistance * (mdAcceleration * 2));
+                if (0.0 > mdPreferredVelocity) {
+                    mdPreferredVelocity = 0.0;
+                }
+            } else {
+                mdPreferredVelocity = 100.0;
+            }
+            
+            log("acceleration ", mdAcceleration);
             log("linear velocity ", mdLinearVelocity);
             log("angular velocity ", mdAngularVelocity);
             log("stop distance ", mdStopDistance);
+            log("perferred velocity ", mdPreferredVelocity);
         }
 
         void receiveMessage() {
@@ -818,10 +835,12 @@ namespace IngameScript
 
         double mdAltitude;
         double mdLinearVelocity = 0.0;
+        double mdPreferredVelocity = 0.0;
         double mdAngularVelocity;
         double mdMass;
         double mdAcceleration;
         double mdStopDistance;
+        double mdDistance2Objective;
         double mdNewtons;
         double mdMissionAltitude = 0;
         double mdRotateEpsilon = 0.001;
