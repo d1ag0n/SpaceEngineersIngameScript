@@ -236,7 +236,7 @@ namespace IngameScript
                 mMissionConnector.FinalApproach = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
                 var approachPlane = mMissionConnector.Position + (mMissionConnector.Direction * 1000.0);
                 var projectedPosition = project(mRC.WorldMatrix.Translation, approachPlane, mMissionConnector.Direction);
-                var projectedDirection = Vector3D.Normalize(projectedPosition - mMissionConnector.FinalApproach);
+                var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
                 // todo double check this
                 
@@ -417,7 +417,6 @@ namespace IngameScript
         Vector3D momentum() {
             var vGravityDisplacement = mRC.GetNaturalGravity();
             Vector3D result = mdMass * (vGravityDisplacement + mvLinearVelocity);
-            log("momentum", result);
             return result;
         }
         void zupdate() {
@@ -467,9 +466,8 @@ namespace IngameScript
         }
         
         public Program() {
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;                        
+            Runtime.UpdateFrequency = UpdateFrequency.Update1;
             init();
-            //setMissionNavigate(CONNECTOR);
             setMissionDamp();
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
@@ -489,11 +487,13 @@ namespace IngameScript
             GridTerminalSystem.GetBlocks(blocks);
             for (int i = blocks.Count - 1; i > -1; i--) {
                 var block = blocks[i];
-                var name = block.CustomName.ToLower();
-                if (mBlocks.ContainsKey(name)) {
-                    throw new Exception($"Duplicate block name '{name}' is prohibited.");
+                if (block.CubeGrid == Me.CubeGrid) {
+                    var name = block.CustomName.ToLower();
+                    if (mBlocks.ContainsKey(name)) {
+                        throw new Exception($"Duplicate block name '{name}' is prohibited.");
+                    }
+                    mBlocks.Add(name, block);
                 }
-                mBlocks.Add(name, block);
             }
         }
         T get<T>(string aName) {
@@ -507,13 +507,15 @@ namespace IngameScript
             var list = new List<T>();
             int i = 0;
             T t;
-            while (null != (t = get<T>($"{aName}{i}"))) {
+            while (null != (t = get<T>(aName + i.ToString()))) {
+                list.Add(t);
                 i++;
             }
             array = list.ToArray();
         }
         
         void init() {
+            initLog();
             initBlocks();
             mRC = get<IMyRemoteControl>("rc");
             mLCD = get<IMyTextPanel>("lcd");
@@ -577,12 +579,15 @@ namespace IngameScript
             var sv = mRC.GetShipVelocities();
             mvLinearVelocity = sv.LinearVelocity;
             mvAngularVelocity = sv.AngularVelocity;
+            mdAngularVelocity = mvAngularVelocity.Length();
             mvRCPosition = mRC.WorldMatrix.Translation;
             mvConPosition = mCon.WorldMatrix.Translation;
             mdLinearVelocity = mvLinearVelocity.Length();
             mvLinearVelocityDirection = mvLinearVelocity / mdLinearVelocity;
             mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdAcceleration * 2);
-            log("linear velocity", mdLinearVelocity);
+            log("linear velocity ", mdLinearVelocity);
+            log("angular velocity ", mdAngularVelocity);
+            log("stop distance ", mdStopDistance);
         }
 
         void receiveMessage() {
@@ -602,7 +607,6 @@ namespace IngameScript
                 if (null != argument) {
                     var args = argument.Split(' ');
                     if (0 < args.Length) {
-
                         switch (args[0]) {
                             case "dock":
                                 if (1 < args.Length) {
@@ -624,7 +628,6 @@ namespace IngameScript
                 if (10 == mCount) {
                     mCount = 0;
                     initLog();
-                    mLog = new StringBuilder();
                     try {
                         initAltitude();
                         initVelocity();
@@ -643,9 +646,12 @@ namespace IngameScript
         }
         void ThrustN(double aNewtons) => ThrustN((float)aNewtons);
         void ThrustN(float aNewtons) {
+            aNewtons *= 6.0f;
             float fMax, fPercent;
             mdNewtons = 0;
+            log("ThrustN requested ", aNewtons, "N");
             for (int i = 0; i < marThrust.Length; i++) {
+                
                 var t = marThrust[i];
                 fMax = t.MaxEffectiveThrust;
                 mdNewtons += fMax;
@@ -658,9 +664,11 @@ namespace IngameScript
                         fPercent = aNewtons / fMax;
                         aNewtons = 0.0f;
                     }
+                    log("Thruster #", i, " at ", 100.0 * fPercent, "%");
                     t.Enabled = true;
                     t.ThrustOverridePercentage = fPercent;
                 } else {
+                    log("Thruster #", i, " disabled");
                     t.Enabled = false;
                 }
             }
@@ -929,6 +937,7 @@ namespace IngameScript
         Vector3D mvConPosition = Vector3D.Zero;
         Vector3D mvLinearVelocity = Vector3D.Zero;
         Vector3D mvAngularVelocity = Vector3D.Zero;
+        double mdAngularVelocity;
         Vector3D mvLinearVelocityDirection = Vector3D.Zero;
         StringBuilder mLog;
         Dictionary<string, IMyTerminalBlock> mBlocks;
@@ -949,4 +958,7 @@ namespace IngameScript
         //Vector3D tango = new Vector3D(1033485.69, 154992.3, 1504229.77);
         //Vector3D BASE_ABOVE = new Vector3D(1045810.57, 142332.61, 1571519.87);
     }
+    // large connectors distance apart 2.65 
+    // small connector distance from large 1.85
+    // small connector distance from small 1.00
 }
