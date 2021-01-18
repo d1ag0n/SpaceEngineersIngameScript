@@ -140,15 +140,14 @@ namespace IngameScript
             if (0.01 > mdLinearVelocity) {
                 log("damp to vec 0");
                 rotate2vector(Vector3D.Zero);
-                Thrust(thrust0, 0.0);
+                ThrustN(0);
             } else {
                 var vRetrogradeDisplacement = mvRCPosition - mvLinearVelocity;
                 var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
                 log("damp to vec", vRetrogradeDisplacement);
                 rotate2vector(vRetrogradeDisplacement);
-                thrust(aMomentumLength * thrustPercent(mvLinearVelocityDirection, mRC.WorldMatrix.Down));
+                ThrustN(aMomentumLength * thrustPercent(mvLinearVelocityDirection, mRC.WorldMatrix.Down));
             }
-            
         }
         void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
             initMission();
@@ -190,8 +189,6 @@ namespace IngameScript
             }
             return result;
         }
-        
-
         void doMission() {
             log("doMission ", meMission);
             switch (meMission) {
@@ -218,11 +215,8 @@ namespace IngameScript
             }
         }
         void setMissionDock(string aConnector) {
-            Connector c = null;
-
             initMission();
             mCon.Enabled = false;
-
             var keys = mDocks.Keys.ToArray();
             double distance = double.MaxValue;
             for (int i = 0; i < keys.Length; i++) {
@@ -242,6 +236,8 @@ namespace IngameScript
                 var projectedPosition = project(mRC.WorldMatrix.Translation, approachPlane, mMissionConnector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - mMissionConnector.FinalApproach);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
+                // todo double check this
+                
                 Me.CustomData =
                     "Position" + Environment.NewLine + mMissionConnector.Position + Environment.NewLine +
                     "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine +
@@ -300,7 +296,7 @@ namespace IngameScript
                 case DockStep.connect:
                     msg = "connecting to dock";
                     rotate2vector(Vector3D.Zero);
-                    thrust0.Enabled = false;
+                    ThrustN(0);
                     if (mvAngularVelocity.LengthSquared() == 0 && mvLinearVelocity.LengthSquared() == 0) {
                         if (mCon.Status.HasFlag(MyShipConnectorStatus.Connectable)) {
                             initShipMass();
@@ -314,15 +310,12 @@ namespace IngameScript
                     break;
                 case DockStep.wait:
                     msg = "connected to dock";
-                    
                     mGyro.Enabled = false;
-                    thrust0.Enabled = false;
                     mCon.Enabled = false;
                     if (mCon.Status != MyShipConnectorStatus.Connected) {
                         // clear mass
                         mShipMass = null;
                         mGyro.Enabled = true;
-                        thrust0.Enabled = true;
                         mCon.Enabled = false;
                         miMissionStep++;
                     }
@@ -387,12 +380,12 @@ namespace IngameScript
                 var dForce = vForceDisplacement.Length();
                 var vImpulseDirection = vForceDisplacement / dForce;
                 var dThrustPercent = thrustPercent(vImpulseDirection, mRC.WorldMatrix.Up);
-                thrust(thrust0, dForce * dThrustPercent);
+                ThrustN(dForce * dThrustPercent);
                 if (!aGyroHold) {
                     rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
                 }
             } else {
-                thrust(thrust0, 0.0);
+                ThrustN(0);
             }
             if (aGyroHold) {
                 rotate2vector(Vector3D.Zero);                
@@ -405,14 +398,12 @@ namespace IngameScript
             return len < 0.001 ? Vector3D.Zero : v / len;
         }
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
-            //log("thrustPercent");
             var result = 0.0;
             var offset = angleBetween(aDirection, aNormal);
             var d = 2.0;
             if (offset < Math.PI / d) {
                 result = 1.0 - (offset / (Math.PI / d));
             }
-            //log("thrustPercent ", result);
             return result;
         }
         bool missionStop() {
@@ -432,9 +423,9 @@ namespace IngameScript
             log("momentum", result);
             return result;
         }
-        void update() {
-            doMission();
-            return;
+        void zupdate() {
+            
+            /*return;
             var rcMatrix = mRC.WorldMatrix;
             var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
@@ -462,8 +453,8 @@ namespace IngameScript
             var vPredictedDisplacement = vDesiredDirection - vForceGV;
             var vPredictedDirection = Vector3D.Normalize(vPredictedDisplacement);
             //var vProjectedDirection = project();
-            
-            rotate2vector(BASE_SPACE_1);
+            */
+            //rotate2vector(BASE_SPACE_1);
             //rotate2target(BASE_SPACE_1);
             //pointRotoAtTarget(get("roto0") as IMyMotorStator, BASE_SPACE_1);
             //pointRotoAtTarget(get("roto1") as IMyMotorStator, BASE_SPACE_1);
@@ -471,13 +462,13 @@ namespace IngameScript
             //pointRotoAtTarget(get("roto3") as IMyMotorStator, BASE_SPACE_1);
             //doGyro(vDesiredDirection);
 
-            var dThrustPercent = thrustPercent(vDesiredDirection, rcMatrix.Up);
-            log("dThrustPercent", dThrustPercent);
+            //var dThrustPercent = thrustPercent(vDesiredDirection, rcMatrix.Up);
+            //log("dThrustPercent", dThrustPercent);
             //log("offset up", angleBetween(Vector3D.Normalize(vRetrogradeDisplacement), rcMatrix.Up));
-            thrust(thrust0, vForceGV.Length() * dThrustPercent);
+            //ThrustN(vForceGV.Length() * dThrustPercent);
             
             //doGyro(vGravityDirection * -1.0);
-            log("update complete");
+            //log("update complete");
         }
         
         public Program() {
@@ -626,7 +617,7 @@ namespace IngameScript
                     try {
                         initAltitude();
                         initVelocity();
-                        update();
+                        doMission();
                         str = mLog.ToString();
                         mLCD.WriteText(str);
                     } catch (Exception ex) {
@@ -639,13 +630,13 @@ namespace IngameScript
             }
             mLog = null;
         }
+        void ThrustN(double aNewtons) => ThrustN((float)aNewtons);
         void ThrustN(float aNewtons) {
             float fMax, fPercent;
             for (int i = 0; i < marThrust.Length; i++) {
                 var t = marThrust[i];
                 if (aNewtons > 0.0f) {
                     fMax = t.MaxEffectiveThrust;
-
                     if (aNewtons > fMax) {
                         fPercent = 1.0f;
                         aNewtons -= fMax;
