@@ -6,7 +6,6 @@ using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using VRage;
@@ -57,7 +56,8 @@ namespace IngameScript
             
         }
         void Main(string argument, UpdateType aUpdate) {
-            string str = "";
+            var str = argument;
+            
             if (0 < nonUpdateCalls) {
                 log(" * * NON UPDATE CALLS ", nonUpdateCalls);
             }
@@ -103,8 +103,8 @@ namespace IngameScript
         StringBuilder mLog = new StringBuilder();
         const int runEvery = 100;
         int count = runEvery - 1;
-        IMyTextPanel lcd;
-        List<IMyShipConnector> mConnectors = new List<IMyShipConnector>();
+        readonly IMyTextPanel lcd;
+        readonly List<IMyShipConnector> mConnectors = new List<IMyShipConnector>();
         
     }
 }
