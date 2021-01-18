@@ -167,7 +167,9 @@ namespace IngameScript
             mGyro.Enabled = true;
 
             mMissionConnector = null;
+            mCon.Enabled = false;
         }
+
         bool initMissionAltitude() {
             var result = false;
             var vGravityDisplacement = mRC.GetNaturalGravity();
@@ -216,7 +218,7 @@ namespace IngameScript
         }
         void setMissionDock(string aConnector) {
             initMission();
-            mCon.Enabled = false;
+            
             var keys = mDocks.Keys.ToArray();
             double distance = double.MaxValue;
             for (int i = 0; i < keys.Length; i++) {
@@ -300,7 +302,7 @@ namespace IngameScript
                     ThrustN(0);
                     if (mvAngularVelocity.LengthSquared() == 0 && mvLinearVelocity.LengthSquared() == 0) {
                         if (mCon.Status.HasFlag(MyShipConnectorStatus.Connectable)) {
-                            initShipMass();
+                            initMass();
                             mCon.Connect();
                         } else if (mCon.Status.HasFlag(MyShipConnectorStatus.Connected)) {
                             miMissionStep++;
@@ -312,9 +314,8 @@ namespace IngameScript
                 case DockStep.wait:
                     msg = "connected to dock";
                     mGyro.Enabled = false;
-                    mCon.Enabled = false;
+                    //mCon.Enabled = false;
                     if (mCon.Status != MyShipConnectorStatus.Connected) {
-                        // clear mass
                         mGyro.Enabled = true;
                         mCon.Enabled = false;
                         miMissionStep++;
@@ -414,7 +415,6 @@ namespace IngameScript
             return result;
         }
         Vector3D momentum() {
-            //var sm = mRC.CalculateShipMass();
             var vGravityDisplacement = mRC.GetNaturalGravity();
             Vector3D result = mdMass * (vGravityDisplacement + mvLinearVelocity);
             log("momentum", result);
@@ -427,20 +427,18 @@ namespace IngameScript
             var gyroMatrix = mGyro.WorldMatrix;
             // 1 N = 1 kgm/s2
             var g = mRC.GetNaturalGravity();
-            var sm = mRC.CalculateShipMass();
+            
             var vGravityDisplacement = mRC.GetNaturalGravity();
             var vGravityDirection = Vector3D.Normalize(vGravityDisplacement);
-            var fMass = sm.TotalMass;
+            
             var vProgradeDisplacement = rcMatrix.Translation + mvLinearVelocity;
             var vRetrogradeDisplacement = rcMatrix.Translation - mvLinearVelocity;
             //var vVelocityDirection = Vector3D.Normalize(sv.LinearVelocity);
             
-            var vMom = fMass * mvLinearVelocity;
+            
             // vec = desired - act
             // actual
-            var vForceGV = fMass * (vGravityDisplacement + mvLinearVelocity);
-            var vForceG = fMass * vGravityDisplacement;
-            var vForceV = fMass * mvLinearVelocity;
+            
 
             // desired
             var vDesiredDisplacement = BASE_SPACE_1 - mRC.WorldMatrix.Translation;
@@ -514,11 +512,14 @@ namespace IngameScript
             }
             array = list.ToArray();
         }
+        
         void init() {
             initBlocks();
             mRC = get<IMyRemoteControl>("rc");
             mLCD = get<IMyTextPanel>("lcd");
             initBlockList<IMyThrust>("thrust", out marThrust);
+            ThrustN(0);
+            initMass();
             mGyro = get<IMyGyro>("gyro");
             mCon = get<IMyShipConnector>("con");
             //roto0 = get("roto0") as IMyMotorStator;
@@ -535,12 +536,12 @@ namespace IngameScript
             //if (roto1.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto1.TargetVelocityRad;
             //if (roto2.TargetVelocityRad < rotoVeloMax) rotoVeloMax = roto2.TargetVelocityRad;
             /*return;
-                                            roto0.TargetVelocityRad =
-                                            roto1.TargetVelocityRad =
-                                            roto2.TargetVelocityRad = 0.0f;
-                                            roto0.Enabled =
-                                            roto1.Enabled =
-                                            roto2.Enabled = true;*/
+            roto0.TargetVelocityRad =
+            roto1.TargetVelocityRad =
+            roto2.TargetVelocityRad = 0.0f;
+            roto0.Enabled =
+            roto1.Enabled =
+            roto2.Enabled = true;*/
         }
         void initLog() {
             if (null == mLog) {
@@ -554,11 +555,23 @@ namespace IngameScript
                 mdAltitude = 0.0;
             }
         }
-        void initShipMass() {
+        /// <summary>
+        /// 1 N = 0.10197 kg × 9.80665
+        /// mass = N / accel 
+        /// stop distance = (velocity^2)/(2* acceleration)
+        /// </summary>
+        void initMass() {
             var sm = mRC.CalculateShipMass();
-            // 1 N = 0.10197 kg × 9.80665
-            // mass = N / accel 
+            
+            mdMass = 0;
+            
+            absMax(sm.BaseMass, ref mdMass);
+            absMax(sm.PhysicalMass, ref mdMass);
+            absMax(sm.TotalMass, ref mdMass);
+            mdAcceleration = mdNewtons / mdMass;
 
+            // stop distance 50 = (10 * 10)/(2 * 1)
+            // 0.5 = 1 / 2
         }
         void initVelocity() {
             var sv = mRC.GetShipVelocities();
@@ -568,6 +581,7 @@ namespace IngameScript
             mvConPosition = mCon.WorldMatrix.Translation;
             mdLinearVelocity = mvLinearVelocity.Length();
             mvLinearVelocityDirection = mvLinearVelocity / mdLinearVelocity;
+            mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdAcceleration * 2);
             log("linear velocity", mdLinearVelocity);
         }
 
@@ -630,10 +644,13 @@ namespace IngameScript
         void ThrustN(double aNewtons) => ThrustN((float)aNewtons);
         void ThrustN(float aNewtons) {
             float fMax, fPercent;
+            mdNewtons = 0;
             for (int i = 0; i < marThrust.Length; i++) {
                 var t = marThrust[i];
+                fMax = t.MaxEffectiveThrust;
+                mdNewtons += fMax;
                 if (aNewtons > 0.0f) {
-                    fMax = t.MaxEffectiveThrust;
+                    
                     if (aNewtons > fMax) {
                         fPercent = 1.0f;
                         aNewtons -= fMax;
@@ -860,7 +877,6 @@ namespace IngameScript
 
         enum DockStep : int
         {
-            //var sm = mRC.CalculateShipMass();
             approach = 0,
             approachFinal,
             dock,
@@ -917,6 +933,9 @@ namespace IngameScript
         StringBuilder mLog;
         Dictionary<string, IMyTerminalBlock> mBlocks;
         double mdMass;
+        double mdAcceleration;
+        double mdStopDistance;
+        double mdNewtons;
         //string msMissionTag = string.Empty;
         //double mdAngularVeloPitchMax = 0.0; // local x
         //double mdAngularVeloYawMax = 0.0; // local y
