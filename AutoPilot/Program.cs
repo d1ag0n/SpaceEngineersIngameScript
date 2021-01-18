@@ -640,17 +640,21 @@ namespace IngameScript
             mLog = null;
         }
         void ThrustN(float aNewtons) {
-            if (null != t) {
-                float fMax = t.MaxEffectiveThrust;
-                if (f > fMax) {
-                    f = 1.0f;
-                } else {
-                    f = f / fMax;
-                }
-                //log("thrust% ", f);
-                if (f > 0.0f) {
+            float fMax, fPercent;
+            for (int i = 0; i < marThrust.Length; i++) {
+                var t = marThrust[i];
+                if (aNewtons > 0.0f) {
+                    fMax = t.MaxEffectiveThrust;
+
+                    if (aNewtons > fMax) {
+                        fPercent = 1.0f;
+                        aNewtons -= fMax;
+                    } else {
+                        fPercent = aNewtons / fMax;
+                        aNewtons = 0.0f;
+                    }
                     t.Enabled = true;
-                    t.ThrustOverridePercentage = f;
+                    t.ThrustOverridePercentage = fPercent;
                 } else {
                     t.Enabled = false;
                 }
