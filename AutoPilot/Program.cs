@@ -356,6 +356,7 @@ namespace IngameScript
             log(msg);
         }
         void missionNavigate() {
+            mdAltitudeDynamic = 0.0;
             var displacement2objective = mvMissionObjective - mvMissionStart;
             var displacement2start = mvMissionStart - mvMissionObjective;
 
@@ -364,47 +365,59 @@ namespace IngameScript
             var dir2objective = displacement2objective / missionDistance;
             var dir2start = dir2objective * -1.0;
 
-            var dist2objective = (mvMissionObjective - mRC.WorldMatrix.Translation).LengthSquared();
-            var dist2start = (mvMissionStart - mRC.WorldMatrix.Translation).LengthSquared();
+            var dist2objectiveFromShip = (mvMissionObjective - mRC.WorldMatrix.Translation).Length();
+            var dist2startFromShip = (mRC.WorldMatrix.Translation - mvMissionStart).Length();
+            if (dist2objectiveFromShip > 10.0) {
 
-            var missionMiddle = mvMissionStart + (displacement2objective * 0.5);
-            var dir2shipFromMiddle = Vector3D.Normalize(mRC.WorldMatrix.Translation - missionMiddle);
+                var dist2start = (mvMissionStart - mRC.WorldMatrix.Translation).LengthSquared();
 
-
-            var dist2between = displacement2start.Length();
-            
-            
-
-            var up = Vector3D.Normalize(mRC.GetNaturalGravity() * -1);
+                var missionMiddle = mvMissionStart + (displacement2objective * 0.5);
+                var dir2shipFromMiddle = Vector3D.Normalize(mRC.WorldMatrix.Translation - missionMiddle);
 
 
-            var norm = dir2shipFromMiddle.Cross(up);
-            var dot = dir2objective.Dot(norm);
-            // norm = dir to me cross up/grav
-            // dot = dir to obj dot norm
-            if (dot < 0) {
-                log("above");
-            } else {
-                log("below");
+                var dist2between = displacement2start.Length();
+
+
+
+                var up = Vector3D.Normalize(mRC.GetNaturalGravity() * -1);
+
+
+
+
+                var dot = up.Dot(Vector3D.Normalize(mRC.WorldMatrix.Translation - missionMiddle));
+                // norm = dirToShipFromMiddle cross directionToObjectiveFromMiddle
+                // dot = dir to obj dot norm
+                // var norm = Vector3D.Normalize(aDirection.Cross(matrix.Forward));
+                // var dot = matrix.Up.Dot(norm);
+
+                var projection = project(mRC.WorldMatrix.Translation, missionMiddle, up);
+                var distFromPlane = (mRC.WorldMatrix.Translation - projection).Length();
+                var missionRadius = missionDistance * 0.5;
+                var distance2projection = (projection - missionMiddle).Length();
+
+                var remainingDistance = missionRadius - distance2projection;
+                log("remainingDistance ", remainingDistance);
+                log("distFromPlane ", distFromPlane);
+                if (dot > 0) {
+                    log("above plane");
+                    if (remainingDistance > distFromPlane) {
+                        mdAltitudeDynamic = (remainingDistance - distFromPlane) * 0.5;
+                    }
+                } else {
+                    log("below plane");
+                    mdAltitudeDynamic = distFromPlane + (remainingDistance * 0.5);
+                }
+
+                log("mdAltitudeDynamic ", mdAltitudeDynamic);
+
             }
-            
-            
-            var missionRadius = missionDistance * 0.5;
-            
-            
-             
-            
-            
-            var projection = project(mRC.WorldMatrix.Translation, missionMiddle, up);
 
-            var distance2projection = (projection - missionMiddle).Length();
-
-            var remainingDistance = missionRadius - distance2projection;
-
-            //mvAltitudeDynamic = projection + (g * remainingDistance);
-            
+            // mvAltitudeDynamic = projection + (up * remainingDistance);
 
             ThrustVector(false, false);
+
+            //rotate2vector(Vector3D.Zero);
+
         }
         double distance2objective() => _distance2(mvMissionObjective, mRC.WorldMatrix.Translation);
         double _distance2(Vector3D aTarget, Vector3D aOrigin) => (aTarget - aOrigin).Length();
@@ -416,6 +429,11 @@ namespace IngameScript
             /// me says
             /// todo feed altitude different back into gravity force
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();
+            if (mdAltitudeDynamic > 11.0) {
+                vGravityDisplacement *= (mdAltitudeDynamic * 0.1);
+            } else if (mdAltitudeDynamic > 1.0) {
+                vGravityDisplacement *= mdAltitudeDynamic;
+            }
             var objective = mvMissionObjective;
             
             var vDesiredDisplacement = objective - mRC.WorldMatrix.Translation;
@@ -686,9 +704,6 @@ namespace IngameScript
                     mCount = 0;
                     initLog();
                     try {
-                        foreach (var c in mDocks) {
-                            log(c.Value.Name);
-                        }
                         initAltitude();
                         initVelocity();
                         doMission();
