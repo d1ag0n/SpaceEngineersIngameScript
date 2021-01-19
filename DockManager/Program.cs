@@ -37,12 +37,13 @@ namespace IngameScript
         }
 
         void dockInfo() {
-            var list = new Connector[mConnectors.Count];
-            for (int i = 0; i < mConnectors.Count; i++) {
-                list[i] = new Connector(mConnectors[i]);
+            var list = new Connector[marConnectors.Length];
+            int i = 0;
+            for (; i < marConnectors.Length; i++) {
+                list[i] = new Connector(marConnectors[i]);
             }
             IGC.SendBroadcastMessage("docks", Connector.ToCollection(list));
-            log("dock info broadcasted ");
+            log("dock info broadcasted ", i);
         }
         
         public void Save() {
@@ -97,7 +98,5 @@ namespace IngameScript
         const int runEvery = 100;
         int count = runEvery - 1;
         readonly IMyTextPanel lcd;
-        readonly List<IMyShipConnector> mConnectors = new List<IMyShipConnector>();
-        
     }
 }

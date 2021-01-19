@@ -565,7 +565,7 @@ namespace IngameScript
                 var msg = mListener.AcceptMessage();
                 switch (msg.Tag) {
                     case "docks":
-                        mDocks = Connector.FromCollection((ImmutableArray<MyTuple<long, string, Vector3D, Vector3D>>)msg.Data);
+                        Connector.FromCollection((ImmutableArray<MyTuple<long, string, Vector3D, Vector3D>>)msg.Data, mDocks);
                         break;
                 }
             }
@@ -605,6 +605,9 @@ namespace IngameScript
                     mCount = 0;
                     initLog();
                     try {
+                        foreach (var c in mDocks) {
+                            log(c.Value.Name);
+                        }
                         initAltitude();
                         initVelocity();
                         doMission();

@@ -11,5 +11,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GTS.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Methods.cs" />
   </ItemGroup>
 </Project>

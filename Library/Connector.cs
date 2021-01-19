@@ -34,13 +34,13 @@ namespace Library
             }
             return ImmutableArray.Create(list);
         }
-        public static Dictionary<long, Connector> FromCollection(ImmutableArray<MyTuple<long, string, Vector3D, Vector3D>> aCollection) {
-            var result = new Dictionary<long, Connector>();
+        public static void FromCollection(ImmutableArray<MyTuple<long, string, Vector3D, Vector3D>> aCollection, Dictionary<long, Connector> aDictionary) {
+            
             for (int i = 0; i < aCollection.Length; i++) {
                 var c = new Connector(aCollection[i]);
-                result[c.Id] = c;
+                aDictionary[c.Id] = c;
             }
-            return result;
+            
         }
         override public string ToString() => Name;
     }
