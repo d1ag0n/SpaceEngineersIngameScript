@@ -22,20 +22,13 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
+        readonly GTS mGTS;
+        IMyShipConnector[] marConnectors;
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
-            var blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocks(blocks);
-            for (int i = blocks.Count - 1; i > -1; i--) {
-                var block = blocks[i];
-                if (block.CubeGrid == Me.CubeGrid) {
-                    if (block is IMyShipConnector) {
-                        mConnectors.Add(block as IMyShipConnector);
-                    } else if (block is IMyTextPanel) {
-                        lcd = block as IMyTextPanel;
-                    }
-                }
-            }
+            mGTS = new GTS(this);
+            lcd = mGTS.get<IMyTextPanel>("lcd");
+            mGTS.initBlockList<IMyShipConnector>("con", out marConnectors);
         }
         void update() {
             log("update start");
