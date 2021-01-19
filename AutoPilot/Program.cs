@@ -163,7 +163,6 @@ namespace IngameScript
 
             meMission = Missions.damp;
             
-            mvDynamicObjective =
             mvMissionObjective = 
             mvMissionDirection = Vector3D.Zero;
 
@@ -396,7 +395,7 @@ namespace IngameScript
              
             
             
-            var projection = project(mRC.WorldMatrix.Translation, missionMiddle, g);
+            var projection = project(mRC.WorldMatrix.Translation, missionMiddle, up);
 
             var distance2projection = (projection - missionMiddle).Length();
 
@@ -418,9 +417,7 @@ namespace IngameScript
             /// todo feed altitude different back into gravity force
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();
             var objective = mvMissionObjective;
-            if (mvDynamicObjective != Vector3D.Zero) {
-                objective = mvDynamicObjective;
-            }
+            
             var vDesiredDisplacement = objective - mRC.WorldMatrix.Translation;
             var distance = vDesiredDisplacement.Length();
             var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
