@@ -558,15 +558,23 @@ namespace IngameScript
             
             mdDistance2Objective = (mvMissionObjective - mRC.WorldMatrix.Translation).Length();
             var distanceFromStart = (mvMissionStart - mRC.WorldMatrix.Translation).Length();
-
-            var dist2use = mdDistance2Objective > distanceFromStart ? distanceFromStart : mdDistance2Objective;
-            mdPreferredVelocity = dist2use / 1000.0;
+            double dist2use = mdDistance2Objective;
+            double speedfactor = 0.1;
+            if (mdDistance2Objective > distanceFromStart) {
+                dist2use = distanceFromStart;
+            }
+            log("dist2use ", dist2use);
+            mdPreferredVelocity = dist2use * speedfactor;
             if (mdPreferredVelocity < MIN_VELO) {
                 mdPreferredVelocity = MIN_VELO;
             } else if (mdPreferredVelocity > MAX_VELO) {
                 mdPreferredVelocity = MAX_VELO;
             }
-            log("Distance 2 Objective ", mdDistance2Objective);
+            if (mdDistance2Objective < mdPreferredVelocity) {
+                mdPreferredVelocity = mdDistance2Objective;
+            }
+            log("Distance to Objective ", mdDistance2Objective);
+            log("Distance from Start ", distanceFromStart);
             //log("acceleration ", mdAcceleration);
             log("linear velocity ", mdLinearVelocity);
             //log("angular velocity ", mdAngularVelocity);
@@ -604,7 +612,7 @@ namespace IngameScript
                                 setMissionPatrol();
                                 break;
                             case "navigate":
-                                setMissionNavigate(); // GPS: MOON_DOCK
+                                setMissionNavigate(args[1]); // GPS: MOON_DOCK
                                 break;
                         }
                     }
