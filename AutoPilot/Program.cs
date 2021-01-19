@@ -157,7 +157,6 @@ namespace IngameScript
         }
         void initMission() {
             mvMissionStart = mRC.WorldMatrix.Translation;
-
             mdMissionDistance = 
             mdMissionAltitude =
             miMissionStep = 0;
@@ -360,20 +359,42 @@ namespace IngameScript
         void missionNavigate() {
             var displacement2objective = mvMissionObjective - mvMissionStart;
             var displacement2start = mvMissionStart - mvMissionObjective;
+
+            var missionDistance = displacement2objective.Length();
+
+            var dir2objective = displacement2objective / missionDistance;
+            var dir2start = dir2objective * -1.0;
+
             var dist2objective = (mvMissionObjective - mRC.WorldMatrix.Translation).LengthSquared();
             var dist2start = (mvMissionStart - mRC.WorldMatrix.Translation).LengthSquared();
 
+            var missionMiddle = mvMissionStart + (displacement2objective * 0.5);
+            var dir2shipFromMiddle = Vector3D.Normalize(mRC.WorldMatrix.Translation - missionMiddle);
+
+
             var dist2between = displacement2start.Length();
             
-            var missionMiddle = mvMissionStart + (displacement2objective * 0.5);
             
-            var missionDistance = displacement2objective.Length();
+
+            var up = Vector3D.Normalize(mRC.GetNaturalGravity() * -1);
+
+
+            var norm = dir2shipFromMiddle.Cross(up);
+            var dot = dir2objective.Dot(norm);
+            // norm = dir to me cross up/grav
+            // dot = dir to obj dot norm
+            if (dot < 0) {
+                log("above");
+            } else {
+                log("below");
+            }
+            
+            
             var missionRadius = missionDistance * 0.5;
-            var dir2target = displacement2objective / missionDistance;
-            var dir2start = displacement2start / missionDistance;
+            
             
              
-            var g = Vector3D.Normalize(mRC.GetNaturalGravity() * -1.0);
+            
             
             var projection = project(mRC.WorldMatrix.Translation, missionMiddle, g);
 
@@ -381,10 +402,8 @@ namespace IngameScript
 
             var remainingDistance = missionRadius - distance2projection;
 
-            mvDynamicObjective = projection + (g * remainingDistance);
+            //mvAltitudeDynamic = projection + (g * remainingDistance);
             
-            Me.CustomData = mvDynamicObjective.ToString();
-            //mvDynamicObjective = Vector3D.Zero;
 
             ThrustVector(false, false);
         }
@@ -754,6 +773,8 @@ namespace IngameScript
                 double targetAngle;
                 var v = 0.0;
                 if (!double.IsNaN(angle)) {
+                    // norm = dir to me cross grav
+                    // dot = dir to obj dot norm
                     var norm = Vector3D.Normalize(aDirection.Cross(matrix.Forward));
                     var dot = matrix.Up.Dot(norm);
                     if (dot < 0) {
@@ -842,6 +863,8 @@ namespace IngameScript
         
 
         double mdAltitude;
+        double mdAltitudeDynamic;
+        
         double mdLinearVelocity = 0.0;
         double mdAngularVelocity = 0.0;
         double mdPreferredVelocity = 0.0;
@@ -876,7 +899,7 @@ namespace IngameScript
 
         Vector3D pos = Vector3D.Zero;
         Vector3D mvMissionObjective;
-        Vector3D mvDynamicObjective;
+        //Vector3D mvDynamicObjective;
         Vector3D mvMissionStart;
         Vector3D mvMissionDirection;
 
