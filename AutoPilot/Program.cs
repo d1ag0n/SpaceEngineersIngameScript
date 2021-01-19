@@ -164,6 +164,7 @@ namespace IngameScript
 
             meMission = Missions.damp;
             
+            mvDynamicObjective =
             mvMissionObjective = 
             mvMissionDirection = Vector3D.Zero;
 
@@ -357,6 +358,25 @@ namespace IngameScript
             log(msg);
         }
         void missionNavigate() {
+            var displacement2objective = mvMissionObjective - mvMissionStart;
+            var displacement2start = mvMissionStart - mvMissionObjective;
+            var middle = mvMissionStart + (displacement2objective * 0.5);
+            var dist = displacement2objective.Length();
+            var r = dist * 0.5;
+            var dir2target = displacement2objective / dist;
+            var dir2start = displacement2start / dist;
+            
+             
+            var g = Vector3D.Normalize(mRC.GetNaturalGravity() * -1.0);
+            
+            var proj = project(mRC.WorldMatrix.Translation, middle, g);
+            var displacement2middle = proj - middle;
+            var distFromMiddle = displacement2middle.Length();
+
+            var mag = r - distFromMiddle;
+
+            mvDynamicObjective = proj + (g * mag);
+
             ThrustVector(false, false);
         }
         double distance2objective() => _distance2(mvMissionObjective, mRC.WorldMatrix.Translation);
@@ -366,7 +386,11 @@ namespace IngameScript
             // then using that time to intercept (tti) you propogate the state of the target forward: 
             // predictedTargetPos = currentTargetPos + currentTargetVel * tti + 0.5 * tti * tti * currentTargetAcc
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();
-            var vDesiredDisplacement = mvMissionObjective - mRC.WorldMatrix.Translation;
+            var objective = mvMissionObjective;
+            if (mvDynamicObjective != Vector3D.Zero) {
+                objective = mvDynamicObjective;
+            }
+            var vDesiredDisplacement = objective - mRC.WorldMatrix.Translation;
             var distance = vDesiredDisplacement.Length();
             var vDesiredDirection = Vector3D.Normalize(vDesiredDisplacement);
             var aVelocity = mdPreferredVelocity;
@@ -833,6 +857,7 @@ namespace IngameScript
 
         Vector3D pos = Vector3D.Zero;
         Vector3D mvMissionObjective;
+        Vector3D mvDynamicObjective;
         Vector3D mvMissionStart;
         Vector3D mvMissionDirection;
 
