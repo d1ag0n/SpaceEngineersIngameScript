@@ -360,22 +360,31 @@ namespace IngameScript
         void missionNavigate() {
             var displacement2objective = mvMissionObjective - mvMissionStart;
             var displacement2start = mvMissionStart - mvMissionObjective;
-            var middle = mvMissionStart + (displacement2objective * 0.5);
-            var dist = displacement2objective.Length();
-            var r = dist * 0.5;
-            var dir2target = displacement2objective / dist;
-            var dir2start = displacement2start / dist;
+            var dist2objective = (mvMissionObjective - mRC.WorldMatrix.Translation).LengthSquared();
+            var dist2start = (mvMissionStart - mRC.WorldMatrix.Translation).LengthSquared();
+
+            var dist2between = displacement2start.Length();
+            
+            var missionMiddle = mvMissionStart + (displacement2objective * 0.5);
+            
+            var missionDistance = displacement2objective.Length();
+            var missionRadius = missionDistance * 0.5;
+            var dir2target = displacement2objective / missionDistance;
+            var dir2start = displacement2start / missionDistance;
             
              
             var g = Vector3D.Normalize(mRC.GetNaturalGravity() * -1.0);
             
-            var proj = project(mRC.WorldMatrix.Translation, middle, g);
-            var displacement2middle = proj - middle;
-            var distFromMiddle = displacement2middle.Length();
+            var projection = project(mRC.WorldMatrix.Translation, missionMiddle, g);
 
-            var mag = r - distFromMiddle;
+            var distance2projection = (projection - missionMiddle).Length();
 
-            mvDynamicObjective = proj + (g * mag);
+            var remainingDistance = missionRadius - distance2projection;
+
+            mvDynamicObjective = projection + (g * remainingDistance);
+            
+            Me.CustomData = mvDynamicObjective.ToString();
+            //mvDynamicObjective = Vector3D.Zero;
 
             ThrustVector(false, false);
         }
@@ -385,6 +394,9 @@ namespace IngameScript
             // whip says
             // then using that time to intercept (tti) you propogate the state of the target forward: 
             // predictedTargetPos = currentTargetPos + currentTargetVel * tti + 0.5 * tti * tti * currentTargetAcc
+
+            /// me says
+            /// todo feed altitude different back into gravity force
             Vector3D vGravityDisplacement = mRC.GetNaturalGravity();
             var objective = mvMissionObjective;
             if (mvDynamicObjective != Vector3D.Zero) {
@@ -407,7 +419,7 @@ namespace IngameScript
             if (aGyroHold) {
                 rotate2vector(Vector3D.Zero);
             } else {
-                rotate2vector(mRC.WorldMatrix.Translation + vForceDisplacement);
+                rotate2vector(objective + vForceDisplacement);
             }
         }
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
@@ -534,11 +546,18 @@ namespace IngameScript
             }
         }
         void initAltitude() {
-            if (mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitude)) {
-                log("altitude ", mdAltitude);
+            double altitude;
+            if (mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out altitude)) {
+                mdAltitude = altitude;
+                if (mRC.TryGetPlanetElevation(MyPlanetElevation.Surface, out altitude)) {
+                    if (altitude < mdAltitude) {
+                        mdAltitude = altitude;
+                    }
+                }
             } else {
                 mdAltitude = 0.0;
             }
+            log("altitude ", mdAltitude);
         }
         /// <summary>
         /// 1 N = 0.10197 kg × 9.80665
