@@ -125,10 +125,26 @@ namespace IngameScript
                 ThrustN(aMomentumLength * thrustPercent(mvLinearVelocityDirection, mRC.WorldMatrix.Down));
             }
         }
-        void setMissionNavigate(Vector3D aObjective) {
-            initMission();
-            meMission = Missions.navigate;
-            
+        void setMissionNavigate(string aWaypointName) {
+            initMission();            
+            MyWaypointInfo waypoint;
+            if (findWaypoint(aWaypointName, out waypoint)) {
+                meMission = Missions.navigate;
+                setMissionObjective(waypoint.Coords);
+            }
+        }
+        bool findWaypoint(string aName, out MyWaypointInfo aWaypoint) {
+            var list = new List<MyWaypointInfo>();
+            mRC.GetWaypointInfo(list);
+
+            foreach (var p in list) {
+                if (p.Name.ToLower() == aName.ToLower()) {
+                    aWaypoint = p;
+                    return true;
+                }
+            }
+            aWaypoint = MyWaypointInfo.Empty;
+            return false;
         }
         void setMissionPatrol() {
             initMission();
@@ -588,7 +604,7 @@ namespace IngameScript
                                 setMissionPatrol();
                                 break;
                             case "navigate":
-                                setMissionNavigate(MOON_DOCK); // GPS: MOON_DOCK
+                                setMissionNavigate(); // GPS: MOON_DOCK
                                 break;
                         }
                     }
