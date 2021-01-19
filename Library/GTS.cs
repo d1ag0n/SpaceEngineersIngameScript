@@ -39,7 +39,7 @@ namespace Library
             }
             array = list.ToArray();
         }
-        private void init() {
+        public void init() {
             List<IMyTerminalBlock> blocks;
             if (null == mBlocks) {
                 blocks = new List<IMyTerminalBlock>();

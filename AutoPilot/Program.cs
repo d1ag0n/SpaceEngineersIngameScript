@@ -24,7 +24,8 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
 
-        
+        const double MAX_VELO = 100.0;
+        const double MIN_VELO = 0.25;
         void rotate2vector(Vector3D aTarget) {
             if (Vector3D.Zero == aTarget) {
                 mGyro.GyroOverride = false;
@@ -106,7 +107,7 @@ namespace IngameScript
         }
         void setMissionDamp() {
             initMission();
-            mvMissionObjective = mRC.WorldMatrix.Translation;
+            setMissionObjective(mRC.WorldMatrix.Translation);
         }
         void missionDamp() => missionDamp(momentum().Length());
         void missionDamp(double aMomentumLength) {
@@ -124,17 +125,24 @@ namespace IngameScript
                 ThrustN(aMomentumLength * thrustPercent(mvLinearVelocityDirection, mRC.WorldMatrix.Down));
             }
         }
-        void setMissionNavigate(Vector3D aObjective = new Vector3D()) {
+        void setMissionNavigate(Vector3D aObjective) {
             initMission();
             meMission = Missions.navigate;
-            mvMissionObjective = aObjective;
+            
         }
         void setMissionPatrol() {
             initMission();
             meMission = Missions.patrol;
 
         }
+        void setMissionObjective(Vector3D aObjective) {
+            mvMissionObjective = aObjective;
+            mdMissionDistance = (mvMissionObjective - mvMissionStart).Length();
+        }
         void initMission() {
+            mvMissionStart = mRC.WorldMatrix.Translation;
+
+            mdMissionDistance = 
             mdMissionAltitude =
             miMissionStep = 0;
 
@@ -192,20 +200,15 @@ namespace IngameScript
                     break;
                 case Missions.patrol:
                     if (0 == miMissionStep) {
-                        mvMissionObjective = PATROL_0;
+                        setMissionObjective(PATROL_0);
                     } else {
-                        mvMissionObjective = PATROL_1;
+                        setMissionObjective(PATROL_1);
                     }
                     if (mdDistance2Objective < 10.0) {
                         miMissionStep++;
                     }
                     if (miMissionStep > 1) {
                         miMissionStep = 0;
-                    }
-                    if (0 == miMissionStep) {
-                        mvMissionObjective = PATROL_0;
-                    } else {
-                        mvMissionObjective = PATROL_1;
                     }
                     missionNavigate();
                     break;
@@ -253,7 +256,7 @@ namespace IngameScript
             switch (step) {
                 case DockStep.departFinal:
                 case DockStep.approach:
-                    mvMissionObjective = mMissionConnector.Approach;
+                    setMissionObjective(mMissionConnector.Approach);
                     if (DockStep.departFinal == step) {
                         msg = "depart approach area";
                     } else {
@@ -269,7 +272,7 @@ namespace IngameScript
                     break;
                 case DockStep.approachFinal:
                 case DockStep.depart:
-                    mvMissionObjective = mMissionConnector.ApproachFinal;
+                    setMissionObjective(mMissionConnector.ApproachFinal);
                     if (DockStep.depart == step) {
                         msg = "depart dock area";
                     } else {
@@ -284,7 +287,7 @@ namespace IngameScript
                     }
                     break;
                 case DockStep.dock:
-                    mvMissionObjective = mMissionConnector.Position;
+                    setMissionObjective(mMissionConnector.Position);
                     msg = "zzrendezvous with dock";
                     // on final approach
                     d = distance2objective();
@@ -517,11 +520,13 @@ namespace IngameScript
         }
         void initVelocity() {
             var sv = mRC.GetShipVelocities();
+
             mvLinearVelocity = sv.LinearVelocity;
+            mdLinearVelocity = mvLinearVelocity.Length();
+
             mvAngularVelocity = sv.AngularVelocity;
             mdAngularVelocity = mvAngularVelocity.Length();
-            mdPreviousVelocity = mdLinearVelocity;
-            mdLinearVelocity = mvLinearVelocity.Length();
+            
             mvLinearVelocityDirection = mvLinearVelocity / mdLinearVelocity;
             mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdAcceleration * 2);
             mdStopDistance *= 10.0;
@@ -533,24 +538,17 @@ namespace IngameScript
             // d = 0.25
             // veloSquared = d * (accel * 2)
             // velo = sqrt(veloSquared)
+
+            
             mdDistance2Objective = (mvMissionObjective - mRC.WorldMatrix.Translation).Length();
-            var veloPercent = mdDistance2Objective / mdStopDistance;
-            if (veloPercent > 1.0) {
-                veloPercent = 1.0;
-            }
-            var prefmaxv = 100.0 * veloPercent;
-            if (mdStopDistance > 0.0 && mdDistance2Objective <= mdStopDistance) {
-                mdPreferredVelocity = Math.Sqrt(mdStopDistance * (mdAcceleration * 2));
-                if (mdPreferredVelocity < 0) {
-                    mdPreferredVelocity = 0.0;
-                } else if (mdPreferredVelocity > prefmaxv) {
-                    mdPreferredVelocity = prefmaxv;
-                }
-            } else {
-                mdPreferredVelocity = prefmaxv;
-            }
-            if (mdPreferredVelocity > mdDistance2Objective / 10.0) {
-                mdPreferredVelocity = mdDistance2Objective / 10.0;
+            var distanceFromStart = (mvMissionStart - mRC.WorldMatrix.Translation).Length();
+
+            var dist2use = mdDistance2Objective > distanceFromStart ? distanceFromStart : mdDistance2Objective;
+            mdPreferredVelocity = dist2use / 1000.0;
+            if (mdPreferredVelocity < MIN_VELO) {
+                mdPreferredVelocity = MIN_VELO;
+            } else if (mdPreferredVelocity > MAX_VELO) {
+                mdPreferredVelocity = MAX_VELO;
             }
             log("Distance 2 Objective ", mdDistance2Objective);
             //log("acceleration ", mdAcceleration);
@@ -682,7 +680,6 @@ namespace IngameScript
             }
         }
         void pointRotoAtDirection(IMyMotorStator aRoto, Vector3D aDirection) {
-            /*
             if (null != aRoto) {
                 var matrix = aRoto.WorldMatrix;
                 var angle = Math.Acos(aDirection.Dot(matrix.Forward));
@@ -693,16 +690,16 @@ namespace IngameScript
                     var norm = Vector3D.Normalize(aDirection.Cross(matrix.Forward));
                     var dot = matrix.Up.Dot(norm);
                     if (dot < 0) {
-                        targetAngle = pi2 - angle;
+                        targetAngle = (Math.PI * 2) - angle;
                     } else {
                         targetAngle = angle;
                     }
                     v = targetAngle - aRoto.Angle;
-                    if (v > pi) {
-                        v -= pi2;
+                    if (v > Math.PI) {
+                        v -= (Math.PI * 2);
                     }
-                    if (v < -pi) {
-                        v += pi2;
+                    if (v < -Math.PI) {
+                        v += (Math.PI * 2);
                     }
                     if (v > 0) {
                         if (v < 0.01) {
@@ -716,40 +713,10 @@ namespace IngameScript
                 } else {
                     log("angle nan");
                 }
-                aRoto.TargetVelocityRad = (float)(v * dMagik);
+                aRoto.TargetVelocityRad = (float)(v * 6.0);
             }
-            */
         }
 
-        void pointRotoAtOld(IMyMotorStator roto, Vector3D dir) {
-            /*
-            if (null != roto) {
-                var matrix = roto.WorldMatrix;
-                var va = matrix.Right;
-                var vn = matrix.Up;
-                double angle = Math.Acos(dir.Dot(matrix.Forward));
-                double targetAngle;
-                double v = 0.0;
-                if (!double.IsNaN(angle)) {
-                    var norm = Vector3D.Normalize(dir.Cross(matrix.Forward));
-                    var dot = matrix.Up.Dot(norm);
-                    if (dot > 0) {
-                        targetAngle = angle;
-                    } else {
-                        targetAngle = pi2 - angle;
-                    }
-                    v = targetAngle - (float)roto.Angle;
-                    if (v > pi) {
-                        v -= pi2;
-                    }
-                    if (v < -pi) {
-                        log("mod velo pos");
-                        v += pi2;
-                    }
-                }
-                roto.TargetVelocityRad = (float)(v * dMagik);
-            }*/
-        }
         public void log(double d) => log();
         public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
         public void log(params object[] args) {
@@ -811,14 +778,14 @@ namespace IngameScript
         double mdLinearVelocity = 0.0;
         double mdAngularVelocity = 0.0;
         double mdPreferredVelocity = 0.0;
-        double mdPreviousVelocity;
         double mdMass;
         double mdAcceleration;
         double mdStopDistance;
         double mdDistance2Objective;
         double mdNewtons;
         double mdMissionAltitude = 0;
-        double mdRotateEpsilon = 0.001;
+        const double mdRotateEpsilon = 0.001;
+        double mdMissionDistance = 0.0;
 
         GTS mGTS;
 
@@ -842,6 +809,7 @@ namespace IngameScript
 
         Vector3D pos = Vector3D.Zero;
         Vector3D mvMissionObjective;
+        Vector3D mvMissionStart;
         Vector3D mvMissionDirection;
 
         
