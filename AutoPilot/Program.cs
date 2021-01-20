@@ -537,7 +537,6 @@ namespace IngameScript
             setMissionDamp();
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
-            IGC.
         }
         /// <summary>
         /// Organize blocks into case insensitive dictionary
@@ -554,7 +553,8 @@ namespace IngameScript
             initBlocks();
             mRC = mGTS.get<IMyRemoteControl>("rc");
             mLCD = mGTS.get<IMyTextPanel>("lcd");
-            mGTS.initBlockList<IMyThrust>("thrust", out marThrust);
+            mThrust = new List<IMyThrust>();
+            mGTS.initBlockList<IMyThrust>("thrust", mThrust);
             ThrustN(0);
             initMass();
             mGyro = mGTS.get<IMyGyro>("gyro");
@@ -733,9 +733,9 @@ namespace IngameScript
             float fMax, fPercent;
             mdNewtons = 0;
             log("ThrustN requested ", aNewtons, "N");
-            for (int i = 0; i < marThrust.Length; i++) {
+            for (int i = 0; i < mThrust.Count; i++) {
                 
-                var t = marThrust[i];
+                var t = mThrust[i];
                 fMax = t.MaxEffectiveThrust;
                 mdNewtons += fMax;
                 if (aNewtons > 0.0f) {
@@ -900,7 +900,7 @@ namespace IngameScript
 
         GTS mGTS;
 
-        IMyThrust[] marThrust;
+        List<IMyThrust> mThrust;
         IMyTextPanel mLCD;
         readonly IMyBroadcastListener mListener;
         IMyRemoteControl mRC;

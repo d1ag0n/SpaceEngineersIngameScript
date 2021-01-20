@@ -23,12 +23,13 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         readonly GTS mGTS;
-        IMyShipConnector[] marConnectors;
+        List<IMyShipConnector> mConnectors;
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             mGTS = new GTS(this);
             lcd = mGTS.get<IMyTextPanel>("lcd");
-            mGTS.initBlockList("con", out marConnectors);
+            mConnectors = new List<IMyShipConnector>();
+            mGTS.initBlockList("con", mConnectors);
         }
         void update() {
             log("update start");
@@ -37,10 +38,10 @@ namespace IngameScript
         }
 
         void dockInfo() {
-            var list = new Connector[marConnectors.Length];
+            var list = new Connector[mConnectors.Count];
             int i = 0;
-            for (; i < marConnectors.Length; i++) {
-                list[i] = new Connector(marConnectors[i]);
+            for (; i < mConnectors.Count; i++) {
+                list[i] = new Connector(mConnectors[i]);
             }
             IGC.SendBroadcastMessage("docks", Connector.ToCollection(list));
             log("dock info broadcasted ", i);
