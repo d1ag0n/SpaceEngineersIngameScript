@@ -234,6 +234,8 @@ namespace IngameScript
         }
         void setMissionDock(string aConnector) {
             initMission();
+
+            
             
             var keys = mDocks.Keys.ToArray();
             double distance = double.MaxValue;
@@ -249,12 +251,12 @@ namespace IngameScript
                 }
             }
             if (null != mMissionConnector) {
-                var approachPlane = mMissionConnector.Position + (mMissionConnector.Direction * 1000.0);
-                mMissionConnector.ApproachFinal = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
+                var approachPlane = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
+                mMissionConnector.ApproachFinal = mMissionConnector.Position + (mMissionConnector.Direction * 250.0);
                 
                 var projectedPosition = project(mRC.WorldMatrix.Translation, approachPlane, mMissionConnector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
-                mMissionConnector.Approach = approachPlane + (projectedDirection * 1000.0);
+                mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
                 // todo double check this
                 
                 Me.CustomData =
@@ -281,9 +283,8 @@ namespace IngameScript
                     d = distance2objective();
                     if (250.0 > d) {
                         miMissionStep++;
-                    } else {
-                        ThrustVector(false, false);
                     }
+                    ThrustVector(false, false);
                     break;
                 case DockStep.approachFinal:
                 case DockStep.depart:
@@ -301,29 +302,28 @@ namespace IngameScript
                         ThrustVector(false, false);
                     }
                     break;
-                case DockStep.dock:
-                    setMissionObjective(mMissionConnector.Position);
+                case DockStep.dock:                    
+                    setMissionObjective(mMissionConnector.Position + (mRC.WorldMatrix.Translation - mCon.WorldMatrix.Translation) + (mMissionConnector.Direction * 2.65));//2.65 
                     msg = "zzrendezvous with dock";
                     // on final approach
                     d = distance2objective();
-                    if (d < 5.0) {
-                        mCon.Enabled = true;                                                
+                    if (d < 0.25) {
+                        mCon.Enabled = true;                               
                         miMissionStep++;
-                    } else if (d < 100.0) {
-                        ThrustVector(false, true);
-                    } else {// if slow ok not working CoM is alternative
-                        ThrustVector(false, true);
                     }
+                    ThrustVector(false, false);
                     break;
                 case DockStep.connect:
                     msg = "connecting to dock";
-                    rotate2vector(mvMissionObjective);
-                    ThrustN(0);
+                    ThrustVector(false, false);
+                    rotate2vector(mvMissionObjective);                    
                     if (mvAngularVelocity.LengthSquared() == 0 && mvLinearVelocity.LengthSquared() == 0) {
                         if (mCon.Status.HasFlag(MyShipConnectorStatus.Connectable)) {
                             initMass();
                             mCon.Connect();
                         } else if (mCon.Status.HasFlag(MyShipConnectorStatus.Connected)) {
+                            ThrustN(0.0);
+                            rotate2vector(Vector3D.Zero);
                             miMissionStep++;
                         }
                     } else {
@@ -638,7 +638,7 @@ namespace IngameScript
             double dist2use = mdDistance2Objective;
             double speedfactor = 0.1;
             if (mdDistance2Objective > distanceFromStart) {
-                dist2use = distanceFromStart;
+                //dist2use = distanceFromStart;
             }
             log("dist2use ", dist2use);
             mdPreferredVelocity = dist2use * speedfactor;
@@ -703,6 +703,9 @@ namespace IngameScript
                 if (10 == mCount) {
                     mCount = 0;
                     initLog();
+                    foreach (var d in mDocks.Values) {
+                        //log(d.Name);
+                    }
                     try {
                         initAltitude();
                         initVelocity();

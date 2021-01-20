@@ -28,7 +28,7 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
             mGTS = new GTS(this);
             lcd = mGTS.get<IMyTextPanel>("lcd");
-            mGTS.initBlockList<IMyShipConnector>("con", out marConnectors);
+            mGTS.initBlockList("con", out marConnectors);
         }
         void update() {
             log("update start");
