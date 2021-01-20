@@ -329,6 +329,7 @@ namespace IngameScript
                             ThrustVector(false, false);
                             break;
                         case MyShipConnectorStatus.Connected:
+                            mGyro.Enabled = false;
                             miMissionStep++;
                             break;
 
@@ -536,6 +537,7 @@ namespace IngameScript
             setMissionDamp();
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
+            IGC.
         }
         /// <summary>
         /// Organize blocks into case insensitive dictionary
