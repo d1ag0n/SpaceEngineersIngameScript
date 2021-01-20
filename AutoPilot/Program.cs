@@ -315,19 +315,23 @@ namespace IngameScript
                     break;
                 case DockStep.connect:
                     msg = "connecting to dock";
-                    ThrustVector(false, false);
-                    rotate2vector(mvMissionObjective);                    
-                    if (mvAngularVelocity.LengthSquared() == 0 && mvLinearVelocity.LengthSquared() == 0) {
-                        if (mCon.Status.HasFlag(MyShipConnectorStatus.Connectable)) {
-                            initMass();
-                            mCon.Connect();
-                        } else if (mCon.Status.HasFlag(MyShipConnectorStatus.Connected)) {
-                            ThrustN(0.0);
+                    switch (mCon.Status) {
+                        
+                        case MyShipConnectorStatus.Connectable:
                             rotate2vector(Vector3D.Zero);
+                            ThrustN(0);
+                            if (mvAngularVelocity.LengthSquared() == 0 && mdLinearVelocity == 0) {
+                                initMass();
+                                mCon.Connect();
+                            }
+                            break;
+                        case MyShipConnectorStatus.Unconnected:
+                            ThrustVector(false, false);
+                            break;
+                        case MyShipConnectorStatus.Connected:
                             miMissionStep++;
-                        }
-                    } else {
-                        msg = "stabilizing with dock";
+                            break;
+
                     }
                     break;
                 case DockStep.wait:
