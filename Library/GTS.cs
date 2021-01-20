@@ -88,7 +88,7 @@ namespace Library
                 blocks = new List<IMyTerminalBlock>(mBlocks.Count);
                 mBlocks = new Dictionary<string, IMyTerminalBlock>(mBlocks.Count);
             }
-            mTags = new Dictionary<string, List<IMyTerminalBlock>>;
+            mTags = new Dictionary<string, List<IMyTerminalBlock>>();
             program.GridTerminalSystem.GetBlocks(blocks);
             for (int i = blocks.Count - 1; i > -1; i--) {
                 var block = blocks[i];
