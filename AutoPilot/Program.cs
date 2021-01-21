@@ -230,8 +230,6 @@ namespace IngameScript
         }
         void setMissionDock(string aConnector) {
             initMission();
-
-            
             
             var keys = mDocks.Keys.ToArray();
             double distance = double.MaxValue;
@@ -248,12 +246,20 @@ namespace IngameScript
             }
             if (null != mMissionConnector) {
                 var approachPlane = mMissionConnector.World.Translation+ (mMissionConnector.World.Forward * 500.0);
-                mMissionConnector.ApproachFinal = mMissionConnector.World.Forward + (mMissionConnector.World.Forward* 250.0);
+                mMissionConnector.ApproachFinal = mMissionConnector.World.Translation + (mMissionConnector.World.Forward* 250.0);
                 
                 var projectedPosition = project(mvCoM, approachPlane, mMissionConnector.World.Forward);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
-                // todo double check this
+
+                var disp = world2pos(mvCoM, mCon.WorldMatrix);
+                var len = disp.Length();
+                var dir = (disp / len) * -1.0;
+                mMissionConnector.Objective = 
+                    mMissionConnector.World.Translation + 
+                    (mMissionConnector.World.Forward * 2.55) +  // 2.65
+                    (local2pos(len * dir, mMissionConnector.World) - mMissionConnector.World.Translation)
+                ;
                 
             }
         }
@@ -267,6 +273,19 @@ namespace IngameScript
             depart,
             departFinal,
             complete
+        }
+        string gps(string aName, Vector3D aPos) {
+            // GPS:ARC_ABOVE:19680.65:144051.53:-109067.96:#FF75C9F1:
+            var sb = new StringBuilder("GPS:");
+            sb.Append(aName);
+            sb.Append(":");
+            sb.Append(aPos.X);
+            sb.Append(":");
+            sb.Append(aPos.Y);
+            sb.Append(":");
+            sb.Append(aPos.Z);
+            sb.Append(":#FFFF00FF:");
+            return sb.ToString();
         }
         void missionDock() {
             log("Dock Mission: ", mMissionConnector.Name + " - " + mMissionConnector.Id);
@@ -307,48 +326,45 @@ namespace IngameScript
                     }
                     break;
                 case DockStep.dock:
-                    // fml
-                    var com = world2pos(mvCoM, mCon.WorldMatrix);
-                    com = local2pos(com, mMissionConnector.World);
-                    setMissionObjective(
-                        mMissionConnector.World.Translation - 
-                        com + 
-                        (mMissionConnector.World.Forward * 2.65));
+                    setMissionObjective(mMissionConnector.Objective);
                     msg = "rendezvous with dock";
-                    // on final approach
-                    
                     if (missionNavigate()) {
-                        mCon.Enabled = true;                               
+                        mCon.Enabled = true;
                         miMissionStep++;
                     }
                     break;
                 case DockStep.connect:
                     msg = "connecting to dock";
-                    switch (mCon.Status) {                        
-                        case MyShipConnectorStatus.Connectable:
-                            mGyro.SetValueFloat("Yaw", 0);
-                            rotate2vector(Vector3D.Zero);
-                            ThrustN(0);
-                            if (mvAngularVelocity.LengthSquared() == 0 && mdLinearVelocity == 0) {
-                                initMass();
-                                mCon.Connect();
-                            }
-                            break;
-                        case MyShipConnectorStatus.Unconnected:
-                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {
-                                rotate2vector(mMissionConnector.ApproachFinal);
+                    if (mdDistance2Objective > 1.0) {
+                        miMissionStep -= 2;
+                        mCon.Enabled = false;
+                    } else {
+                        switch (mCon.Status) {
+                            case MyShipConnectorStatus.Connectable:
+                                mGyro.SetValueFloat("Yaw", 0);
+                                rotate2vector(Vector3D.Zero);
                                 ThrustN(0);
-                            } else {
-                                ThrustVector(false, false);
-                            }
-                            yaw2target(mMissionConnector.World.Translation);
-                            break;
-                        case MyShipConnectorStatus.Connected:
-                            mGyro.SetValueFloat("Yaw", 0);
-                            mGyro.Enabled = false;
-                            miMissionStep++;
-                            break;
+                                if (mvAngularVelocity.LengthSquared() == 0 && mdLinearVelocity == 0) {
+                                    initMass();
+                                    mCon.Connect();
+                                }
+                                break;
+                            case MyShipConnectorStatus.Unconnected:
+                                if (0 == mRC.GetNaturalGravity().LengthSquared()) {
+                                    rotate2vector(mMissionConnector.ApproachFinal);
+                                    ThrustN(0);
+                                } else {
+                                    ThrustVector(false, false);
+                                }
+                                yaw2target(mMissionConnector.World.Translation);
+                                break;
+                            case MyShipConnectorStatus.Connected:
+                                mGyro.SetValueFloat("Yaw", 0);
+                                mGyro.Enabled = false;
+                                miMissionStep++;
+                                break;
 
+                        }
                     }
                     break;
                 case DockStep.wait:
@@ -692,13 +708,17 @@ namespace IngameScript
         }
 
         void receiveMessage() {
-            while (mListener.HasPendingMessage) {
-                var msg = mListener.AcceptMessage();
-                switch (msg.Tag) {
-                    case "docks":
-                        Connector.FromCollection((ImmutableArray<MyTuple<long, string, MatrixD>>)msg.Data, mDocks);
-                        break;
+            try {
+                while (mListener.HasPendingMessage) {
+                    var msg = mListener.AcceptMessage();
+                    switch (msg.Tag) {
+                        case "docks":
+                            Connector.FromCollection((ImmutableArray<MyTuple<long, string, MatrixD>>)msg.Data, mDocks);
+                            break;
+                    }
                 }
+            } catch (Exception ex) {
+                Me.CustomData = ex.ToString();
             }
         }
         
@@ -742,7 +762,9 @@ namespace IngameScript
                         initSensor();
                         initAltitude();
                         initVelocity();
-                        
+                        if (null != mMissionConnector) {
+                            log(gps("DockObjective", mMissionConnector.Objective));
+                        }
                         doMission();
                         str = mLog.ToString();
                         mLCD.WriteText(str);

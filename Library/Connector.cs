@@ -13,6 +13,7 @@ namespace Library
         public MatrixD World;
         public Vector3D Approach;
         public Vector3D ApproachFinal;
+        public Vector3D Objective;
         public Connector(IMyShipConnector aConnector) {
             Id = aConnector.EntityId;
             Name = aConnector.CustomName;
