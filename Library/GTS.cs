@@ -92,14 +92,14 @@ namespace Library
             program.GridTerminalSystem.GetBlocks(blocks);
             for (int i = blocks.Count - 1; i > -1; i--) {
                 var block = blocks[i];
-                if (block.CubeGrid == program.Me.CubeGrid) {
+                //if (block.CubeGrid == program.Me.CubeGrid) {
                     var name = block.CustomName.ToLower();
                     if (mBlocks.ContainsKey(name)) {
                         throw new Exception($"Duplicate block name '{name}' is prohibited.");
                     }
                     mBlocks.Add(name, block);
                     initTags(block);
-                }
+                //}
             }
         }
     }
