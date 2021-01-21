@@ -238,7 +238,7 @@ namespace IngameScript
             for (int i = 0; i < keys.Length; i++) {
                 var val = mDocks[keys[i]];
                 if (aConnector == val.Name) {
-                    var d = (val.Position - mvCoM).LengthSquared();
+                    var d = (val.World.Translation - mvCoM).LengthSquared();
                     if (d < distance) {
                         mMissionConnector = val;
                         distance = d;
@@ -247,18 +247,14 @@ namespace IngameScript
                 }
             }
             if (null != mMissionConnector) {
-                var approachPlane = mMissionConnector.Position + (mMissionConnector.Direction * 500.0);
-                mMissionConnector.ApproachFinal = mMissionConnector.Position + (mMissionConnector.Direction * 250.0);
+                var approachPlane = mMissionConnector.World.Translation+ (mMissionConnector.World.Forward * 500.0);
+                mMissionConnector.ApproachFinal = mMissionConnector.World.Forward + (mMissionConnector.World.Forward* 250.0);
                 
-                var projectedPosition = project(mvCoM, approachPlane, mMissionConnector.Direction);
+                var projectedPosition = project(mvCoM, approachPlane, mMissionConnector.World.Forward);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
                 // todo double check this
                 
-                Me.CustomData =
-                    "Position" + Environment.NewLine + mMissionConnector.Position + Environment.NewLine +
-                    "Approach" + Environment.NewLine + mMissionConnector.Approach + Environment.NewLine +
-                    "Final Approach" + Environment.NewLine + mMissionConnector.ApproachFinal;
             }
         }
         enum DockStep : int
@@ -310,11 +306,14 @@ namespace IngameScript
                         ThrustVector(false, false);
                     }
                     break;
-                case DockStep.dock:                    
+                case DockStep.dock:
+                    // fml
+                    var com = world2pos(mvCoM, mCon.WorldMatrix);
+                    com = local2pos(com, mMissionConnector.World);
                     setMissionObjective(
-                        mMissionConnector.Position + 
-                        (mvCoM - mCon.WorldMatrix.Translation) + 
-                        (mMissionConnector.Direction * 2.65));//2.65 
+                        mMissionConnector.World.Translation - 
+                        com + 
+                        (mMissionConnector.World.Forward * 2.65));
                     msg = "rendezvous with dock";
                     // on final approach
                     
@@ -342,7 +341,7 @@ namespace IngameScript
                             } else {
                                 ThrustVector(false, false);
                             }
-                            yaw2target(mMissionConnector.Position);
+                            yaw2target(mMissionConnector.World.Translation);
                             break;
                         case MyShipConnectorStatus.Connected:
                             mGyro.SetValueFloat("Yaw", 0);
@@ -424,6 +423,7 @@ namespace IngameScript
             } else {
                 ThrustVector(false, false);
             }
+            log("navigate result ", result);
             return result;
 
             //rotate2vector(Vector3D.Zero);
@@ -663,6 +663,7 @@ namespace IngameScript
 
             
             mdDistance2Objective = (mvMissionObjective - mvCoM).Length();
+            Me.CustomData = mvMissionObjective.ToString();
             var distanceFromStart = (mvMissionStart - mvCoM).Length();
             double dist2use = mdDistance2Objective;
             double speedfactor = 0.1;
@@ -680,6 +681,8 @@ namespace IngameScript
                 mdPreferredVelocity = mdDistance2Objective;
             }
             log("Distance to Objective ", mdDistance2Objective);
+
+
             log("Distance from Start ", distanceFromStart);
             //log("acceleration ", mdAcceleration);
             log("linear velocity ", mdLinearVelocity);
@@ -693,7 +696,7 @@ namespace IngameScript
                 var msg = mListener.AcceptMessage();
                 switch (msg.Tag) {
                     case "docks":
-                        Connector.FromCollection((ImmutableArray<MyTuple<long, string, Vector3D, Vector3D>>)msg.Data, mDocks);
+                        Connector.FromCollection((ImmutableArray<MyTuple<long, string, MatrixD>>)msg.Data, mDocks);
                         break;
                 }
             }
