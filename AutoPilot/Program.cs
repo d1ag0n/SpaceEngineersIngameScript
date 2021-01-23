@@ -67,7 +67,7 @@ namespace IngameScript
                 if (dot < 0) {
                     angle = -angle;
                 }
-                rpm = rps2rpm(angle);
+                rpm = rps2rpm(angle) * 0.2;
             }
             mGyro.GyroOverride = true;
             mGyro.SetValueFloat(aGyroOverride.ToString(), (float)rpm);
@@ -245,12 +245,6 @@ namespace IngameScript
                     var local = -world2pos(mRC.CenterOfMass, mCon.WorldMatrix);
                     var objective = local2pos(local, c.World) + (c.World.Forward * 2.65);
                     log(gps("test con1", objective));
-                    break;
-                case Missions.thrust:
-                    trajectory(true);
-                    break;
-                case Missions.rotate:
-                    trajectory(false);
                     break;
                 default:
                     log("mission unhandled");
@@ -480,6 +474,8 @@ namespace IngameScript
         double distance2objective() => _distance2(mvMissionObjective, mRC.CenterOfMass);
         double _distance2(Vector3D aTarget, Vector3D aOrigin) => (aTarget - aOrigin).Length();
         void ThrustVector(/*double aVelocity = double.MaxValue,*/ bool aGyroHold, bool aSlowOkay) {
+            trajectory(mvMissionObjective, aGyroHold);
+            return;
             // whip says
             // then using that time to intercept (tti) you propogate the state of the target forward: 
             // predictedTargetPos = currentTargetPos + currentTargetVel * tti + 0.5 * tti * tti * currentTargetAcc
@@ -520,10 +516,11 @@ namespace IngameScript
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
             var result = 0.0;
             var offset = angleBetween(aDirection, aNormal);
-            var d = 3.0;
+            var d = 4.0;
             if (offset < Math.PI / d) {
                 result = 1.0 - (offset / (Math.PI / d));
             }
+
             return result;
         }
         bool missionStop() {
@@ -591,6 +588,7 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             init();
             initMission();
+            setMissionDamp();
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
         }
@@ -728,7 +726,7 @@ namespace IngameScript
             
         }
         
-        void trajectory(bool aThrust) {
+        double trajectory(Vector3D aObjective, bool aGyroHold) {
             log("Trajectory");
             var sv = mRC.GetShipVelocities();
 
@@ -742,8 +740,8 @@ namespace IngameScript
             var targetMag = targetVec.Length();
             var targetDir = targetVec / targetMag;
             var prefVelo = targetMag > 100.0 ? 10.0 : targetMag * 0.1;
-            if (prefVelo < 0.25) {
-                prefVelo = 0.25;
+            if (prefVelo < 0.5) {
+                prefVelo = 0.5;
             }
             var targetForce = forceOfVelocity(mdMass, prefVelo, mdTimeFactor); // will need to work out
             targetVec = targetDir * targetForce;
@@ -810,17 +808,21 @@ namespace IngameScript
             }
             */
             Vector3D extVec;
+            //Vector3D extDir;
             
             if (gravMag == 0.0) {
                 extVec = veloVec + -targetVec;
+                //extDir = Vector3D.Normalize(extVec);
             } else {
                 extVec = veloVec + gravVec + -targetVec;
+                //extDir = Vector3D.Normalize(veloDir + (gravDir * 10) + -targetDir);
             }
+            var extDir = Vector3D.Normalize(extVec);
             log("extVec", extVec);
             var extForce = extVec.Length();
 
             //var extMag = extVec.Length();
-            var extDir = Vector3D.Normalize(extVec);
+            
             //var requiredForce = mdMass * extMag / mdTimeFactor;
             if (false && gravMag == 0.0) {
                 if (veloMag == 0.0) {
@@ -852,7 +854,7 @@ namespace IngameScript
 
             var m = mRC.WorldMatrix;
             
-            if (true) {
+            if (!aGyroHold) {
                 // pitch right up down
                 // roll forward up down
                 //rotate2direction("Pitch", requiredDir, m.Right, m.Up, m.Down);
@@ -863,7 +865,7 @@ namespace IngameScript
                 mGyro.GyroOverride = false;
             }
             log("Required force ", extForce);
-            if (aThrust) {
+            if (true) {
                 ThrustN(extForce * thrustPercent(extDir, mRC.WorldMatrix.Up));
             } else {
                 ThrustN(0.0f);
@@ -873,7 +875,8 @@ namespace IngameScript
             // if p = mv and m is constant, then F = dp/dt = m*dv/dt = ma
 
             // f = ma
-            
+
+            return targetMag;
         }
 
         void initVelocity() {
@@ -1184,7 +1187,7 @@ namespace IngameScript
         double mdNewtons;
         double mdMaxAccel;
         double mdMissionAltitude = 0;
-        const double mdRotateEpsilon = 0.001;
+        const double mdRotateEpsilon = 0.1;
         double mdMissionDistance = 0.0;
 
         GTS mGTS;
