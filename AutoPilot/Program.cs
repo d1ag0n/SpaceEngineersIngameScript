@@ -29,7 +29,7 @@ namespace IngameScript
             }
         }
         double yaw2target(Vector3D aTarget) {
-            var m = mRC.WorldMatrix;
+            var m = mCon.WorldMatrix;
             return rotate2target(
                 "Yaw", aTarget, (m.Translation + m.Backward), m.Up, m.Forward, m.Forward
             );
@@ -67,7 +67,7 @@ namespace IngameScript
                 if (dot < 0) {
                     angle = -angle;
                 }
-                rpm = rps2rpm(angle) * 0.2;
+                rpm = rps2rpm(angle);
             }
             mGyro.GyroOverride = true;
             mGyro.SetValueFloat(aGyroOverride.ToString(), (float)rpm);
@@ -516,7 +516,7 @@ namespace IngameScript
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
             var result = 0.0;
             var offset = angleBetween(aDirection, aNormal);
-            var d = 4.0;
+            var d = 8.0;
             if (offset < Math.PI / d) {
                 result = 1.0 - (offset / (Math.PI / d));
             }
@@ -733,13 +733,21 @@ namespace IngameScript
             //var velocityDir = velocityVec / velocityMag;
             //var velocityForce = forceOfVelocity(mdMass, velocityMag, mdTimeFactor);
 
+            // 100 = 1000 * 0.1
+            // mag / dist
+            // if result > 1.0 result = 1.0
 
             // answer target
-            var target = new Vector3D(19688.65, 144291, -109020.29);
-            var targetVec = mRC.CenterOfMass - target;
+            //var target = new Vector3D(19688.65, 144291, -109020.29);
+            var targetVec = mRC.CenterOfMass - aObjective;
             var targetMag = targetVec.Length();
             var targetDir = targetVec / targetMag;
-            var prefVelo = targetMag > 100.0 ? 10.0 : targetMag * 0.1;
+            var prefVelo = targetMag / 500.0;
+            if (prefVelo > 1.0) {
+                prefVelo = 1.0;
+            }
+            var maxvelo = 40.0;
+            prefVelo *= maxvelo;
             if (prefVelo < 0.5) {
                 prefVelo = 0.5;
             }
@@ -1051,6 +1059,7 @@ namespace IngameScript
                 }
             }
             mdMaxAccel = mdNewtons / mdMass;
+            log("Max Accel ", mdMaxAccel);
         }
         void motor2Angle(IMyMotorStator aHinge, float aAngle) {
             if (check(aHinge)) {
