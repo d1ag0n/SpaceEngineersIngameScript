@@ -18,12 +18,11 @@ namespace Library
             init();
         }
 
-        public T get<T>(string aName) {
-            IMyTerminalBlock result;
-            if (!mBlocks.TryGetValue(aName.ToLower(), out result)) {
-                result = null;
-            }
-            return (T)result;
+        public bool get<T>(string aName, out T aBlock) {
+            IMyTerminalBlock block;
+            bool result = mBlocks.TryGetValue(aName.ToLower(), out block);
+            aBlock = result ? (T)block : default(T);
+            return result;
         }
 
         public void getByTag<T>(string aTag, List<T> aList) {
@@ -73,7 +72,7 @@ namespace Library
         public void initBlockList<T>(string aName, List<T> aList) {
             int i = 0;
             T t;
-            while (null != (t = get<T>(aName + i.ToString()))) {
+            while (get($"{aName}{i}", out t)) {
                 aList.Add(t);
                 i++;
             }
@@ -90,16 +89,16 @@ namespace Library
             }
             mTags = new Dictionary<string, List<IMyTerminalBlock>>();
             program.GridTerminalSystem.GetBlocks(blocks);
-            for (int i = blocks.Count - 1; i > -1; i--) {
+            for (int i = blocks.Count - 1; -1 < i; i--) {
                 var block = blocks[i];
-                //if (block.CubeGrid == program.Me.CubeGrid) {
+                if (block.IsSameConstructAs(program.Me)) {
                     var name = block.CustomName.ToLower();
                     if (mBlocks.ContainsKey(name)) {
                         throw new Exception($"Duplicate block name '{name}' is prohibited.");
                     }
                     mBlocks.Add(name, block);
                     initTags(block);
-                //}
+                }
             }
         }
     }

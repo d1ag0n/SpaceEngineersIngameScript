@@ -6,5 +6,6 @@ namespace Library
 {
     class InventoryOrder
     {
+        
     }
 }

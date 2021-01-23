@@ -13,6 +13,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)GTS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InventoryOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Methods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)MDK Wiki.txt" />
