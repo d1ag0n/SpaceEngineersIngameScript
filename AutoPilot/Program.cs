@@ -741,7 +741,11 @@ namespace IngameScript
             var targetVec = mRC.CenterOfMass - target;
             var targetMag = targetVec.Length();
             var targetDir = targetVec / targetMag;
-            var targetForce = forceOfVelocity(mdMass, targetMag > 100.0 ? 10.0 : targetMag * 0.1, mdTimeFactor); // will need to work out
+            var prefVelo = targetMag > 100.0 ? 10.0 : targetMag * 0.1;
+            if (prefVelo < 0.25) {
+                prefVelo = 0.25;
+            }
+            var targetForce = forceOfVelocity(mdMass, prefVelo, mdTimeFactor); // will need to work out
             targetVec = targetDir * targetForce;
 
             // counteract gravity
