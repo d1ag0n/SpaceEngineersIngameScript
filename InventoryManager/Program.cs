@@ -29,6 +29,7 @@ namespace IngameScript
         readonly GTS mGTS;
 
         List<IMyEntity> mCargo;
+        List<IMyProductionBlock> mProduction;
         IMyTextPanel mLCD;
         readonly Logger g;
 
@@ -44,9 +45,22 @@ namespace IngameScript
             init();
         }
         void init() {
+            step = 0;
+            index =
+            subIndex = 0;
+
             mGTS.get("lcd", out mLCD);
             mCargo = new List<IMyEntity>();
+            mProduction = new List<IMyProductionBlock>();
             mGTS.getByTag(tagInventory, mCargo);
+            for (int i = 0; i < mCargo.Count; i++) {
+                var b = mCargo[i];
+                if (b is IMyProductionBlock) {
+                    var p = b as IMyProductionBlock;
+                    p.UseConveyorSystem = false;
+                    mProduction.Add(p);
+                }
+            }
         }
 
         public void Save() { }
@@ -112,124 +126,136 @@ namespace IngameScript
             }
             return result;
         }
-        bool volume(string aTag, out double aVolume) {
-            bool result = true;
-
-            switch (aTag) {
-
-                case "platinum":
-                    aVolume = 0.000047;
-                    break;
-                case "gold":
-                case "uranium":
-                    aVolume = 0.000052;
-                    break;
-                case "cobalt":
-                case "nickel":
-                    aVolume = 0.000112;
-                    break;
-                case "iron":
-                    aVolume = 0.000127;
-                    break;
-
-                case "silver":
-                    aVolume = 0.00019;
-                    break;
-                case "nato556":
-                    aVolume = 0.0002;
-                    break;
-                case "scrap":
-                    aVolume = 0.000254;
-                    break;
-                case "organic":
-                case "magnesiumore":
-                case "nickelore":
-                case "platinumore":
-                case "siliconore":
-                case "silverore":
-                case "uraniumore":
-                case "ice":
-                case "goldore":
-                case "cobaltore":
-                case "ironore":
-                case "stone":
-                    aVolume = 0.00037;
-                    break;
-                case "silicon":
-                    aVolume = 0.000429;
-                    break;
-                case "magnesium":
-                    aVolume = 0.000575;
-                    break;
-                case "canvas":
-                    aVolume = 0.008;
-                    break;
-                case "nato25":
-                    aVolume = 0.016;
-                    break;
-                case "missile":
-                    aVolume = 0.06;
-                    break;
-                default:
-                    aVolume = 0.0;
-                    result = false;
-                    g.log("Volume not found #", aTag);
-                    break;
-            }
-
-            return result;
-        }
-
-        void move2scale() {
-
-        }
-
 
         void sort(IMyEntity aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag) {
             
             g.log("sorting #", aTag);
             var list = new List<IMyEntity>();
             mGTS.getByTag(aTag, list);
-            if (list.Count == 0) {
+            if (list.Count == 0 && !mGTS.hasTag((IMyTerminalBlock)aSourceCargo, tagAnything)) {
                 mGTS.getByTag(tagAnything, list);
             }
-            for (int i = 0; i < list.Count; i++) {
-                var c = list[i];
-                if (c.EntityId != aSourceCargo.EntityId) {
-                    var inv = c.GetInventory();
-                    
-                    if (aSourceInventory.CanTransferItemTo(inv, aItem.Type)) {
-                        var max = inv.MaxVolume;
-                        var cur = inv.CurrentVolume;
-                        var free = max - cur;
-                        double volumeFactor;
-                        if (volume(aTag, out volumeFactor)) {
-                            var itemVolume = aItem.Amount.RawValue * volumeFactor;
-                            if (free.RawValue > itemVolume) {
+            MyItemInfo itemInfo;
+            if (list.Count != 0) {
+                itemInfo = aItem.Type.GetItemInfo();
+                for (int i = 0; i < list.Count; i++) {
+                    var c = list[i];
+                    if (c.EntityId != aSourceCargo.EntityId) {
+                        var inv = c.GetInventory();
+
+                        if (aSourceInventory.CanTransferItemTo(inv, aItem.Type)) {
+                            var max = (float)inv.MaxVolume;
+                            var cur = (float)inv.CurrentVolume;
+                            var free = max - cur;
+                            var volume = (float)aItem.Amount * itemInfo.Volume;
+                            /*
+                            if ("missile" == aTag) {
+                                g.log("           Max Volume: ", max);
+                                g.log("       Current Volume: ", cur);
+                                g.log("          Free Volume: ", free);
+                                g.log("          Item Volume: ", volume);
+                                Me.Enabled = false;
+                                Echo(g.clear());
+                            }*/
+                            if (free > volume) {
                                 aSourceInventory.TransferItemTo(inv, aItem);
                             } else {
-                                g.log("Cannot transfer #", aTag, " volume ", itemVolume, " cargo free ", free.RawValue);
+                                var amt = aItem.Amount;
+                                // todo use aItem.Type.GetItemInfo().Volume ??
+                                // aSourceInventory.TransferItemTo()
+                                //g.log("Cannot transfer #", aTag, " volume ", volume, " cargo free ", free);
+                                //g.log("raw amount ", amt.RawValue);
+                                
+                                if (itemInfo.UsesFractions) {
+                                    //g.log("fractional");
+                                    amt.RawValue = (long)(free / itemInfo.Volume);
+                                } else {
+                                    amt.RawValue = (int)(free / itemInfo.Volume);
+                                }
+                                amt.RawValue *= 1000000;
+                                //g.log("plan to transfer ", amt.RawValue);
+                                aSourceInventory.TransferItemTo(inv, aItem, amt);
                             }
                         }
-                    }
-                    //g.log("           Max Volume: ", max);
-                    //g.log("       Raw Max Volume: ", max.RawValue);
-                    //g.log("       Current Volume: ", cur);
-                    //g.log("   Raw Current Volume: ", cur.RawValue);
-                    //g.log("          Free Volume: ", free);
-                    //g.log("      Raw Free Volume: ", free.RawValue);
-                    //g.log("          Item amount: ", aItem.Amount);
-                    //g.log("      Raw item amount: ", aItem.Amount.RawValue);
-                    //g.log("Raw Calculated Volume: ", aItem.Amount.RawValue * volume(aTag));
+                        //g.log("           Max Volume: ", max);
+                        //g.log("       Raw Max Volume: ", max.RawValue);
+                        //g.log("       Current Volume: ", cur);
+                        //g.log("   Raw Current Volume: ", cur.RawValue);
+                        //g.log("          Free Volume: ", free);
+                        //g.log("      Raw Free Volume: ", free.RawValue);
+                        //g.log("          Item amount: ", aItem.Amount);
+                        //g.log("      Raw item amount: ", aItem.Amount.RawValue);
+                        //g.log("Raw Calculated Volume: ", aItem.Amount.RawValue * volume(aTag));
 
+                    }
                 }
             }
         }
-
+        enum Steps
+        {
+            cargo = 0,
+            production,
+            done
+        }
+        Steps step;
         int index = 0;
         int subIndex = 0;
+        void sort(IMyEntity aSource, IMyInventory aSourceInventory, MyInventoryItem? aItem) {
+            string tag;
+            if (aItem.HasValue) {
+                if (getTag4Item(aItem.Value, out tag)) {
+                    if (!mGTS.hasTag((IMyTerminalBlock)aSource, tag)) {
+                        sort(aSource, aSourceInventory, aItem.Value, tag);
+                    }
+                }
+            }
+        }
+        void stepProduction(IMyProductionBlock aProduction) {
+            g.log("Step Production ", aProduction.CustomData);
+            var inv = aProduction.OutputInventory;
+            if (inv.IsItemAt(subIndex)) {
+                sort(aProduction, inv, inv.GetItemAt(subIndex));
+                subIndex++;
+            } else {
+                subIndex = 0;
+                index++;
+            }
+        }
+        void stepProduction() {
+            if (mProduction.Count > 0 && index < mProduction.Count) {
+                g.log("production count ", mProduction.Count);
+                stepProduction(mProduction[index]);
+            } else {
+                g.log("production sort complete");
+                index = 0;
+                step++;
+            }
+        }
+        void stepCargo(IMyEntity aCargo) {
+            MyInventoryItem? item;
+            var inv = aCargo.GetInventory();
+            if (inv.IsItemAt(subIndex)) {
+                sort(aCargo, inv, inv.GetItemAt(subIndex));
+                subIndex++;
+            } else {
+                subIndex = 0;
+                index++;
+            }
+        }
+        void stepCargo() {
+            if (mCargo.Count > 0 && index < mCargo.Count) {
+                stepCargo(mCargo[index]);
+            } else {
+                index = 0;
+                step++;
+            }
+        }
+        void flush() {
+            var str = g.clear();
+            Echo(str);
+            mLCD.WriteText(str);
+        }
         public void Main(string argument, UpdateType updateSource) {
-            string str = null;
             //g.log("Main");
             if (updateSource.HasFlag(UpdateType.Terminal)) {
                 Echo("Processing argument: " + argument);
@@ -237,40 +263,32 @@ namespace IngameScript
                     case "reinit":
                         reinit();
                         break;
+                    case "status":
+                        g.log("step ", step);
+                        g.log("index ", index);
+                        g.log("subIndex ", subIndex);
+                        flush();
+                        break;
                     default: 
                         Echo("I'm sorry Dave, I'm afraid I can't do that.");
                         break;
                 }
             }
             if (updateSource.HasFlag(UpdateType.Update10)) {
-                //g.log("mCargo ", mCargo.Count);
-                if (index < mCargo.Count) {
-                    var c = mCargo[index];
-                    var inv = c.GetInventory();
-                    //g.log(c.CustomName, " volume ", inv.CurrentVolume);
-                    MyInventoryItem? item;
-                    if (inv.IsItemAt(subIndex)) {
-                        item = inv.GetItemAt(subIndex);
-                        if (item.HasValue) {
-                            //g.log("TypeId ", item.Value.Type.TypeId);
-                            //g.log("SubtypeId ", item.Value.Type.SubtypeId);
-                            string tag;
-                            if (getTag4Item(item.Value, out tag)) {
-                                if (!mGTS.hasTag((IMyTerminalBlock)c, tag)) {
-                                    sort(c, inv, item.Value, tag);
-                                }
-                            }
-                        }
-                        subIndex++;
-                    } else {
-                        subIndex = 0;
-                        index++;
-                    }
-                } else {
-                    index = 0;
-                    str = g.clear();
-                    Echo(str);
-                    mLCD.WriteText(str);
+                switch (step) {
+                    case Steps.cargo:
+                        stepCargo();
+                        break;
+                    case Steps.production:
+                        stepProduction();
+                        break;
+                }
+                if (Steps.done == step) {
+                    g.log("sorting complete");
+                    g.log("index ", index);
+                    g.log("subIndex ", subIndex);
+                    step = 0;
+                    flush();
                 }
             }
         }

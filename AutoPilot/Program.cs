@@ -272,16 +272,19 @@ namespace IngameScript
 
             mMissionConnector = findConnector(aConnector);
             if (null != mMissionConnector) {
+                var approachDistance = 600;
+                var finalDistance = approachDistance * 0.5;
+                var connectorDistance = 2.65;
                 meMission = Missions.dock;
-                var approachPlane = mMissionConnector.World.Translation+ (mMissionConnector.World.Forward * 500.0);
-                mMissionConnector.ApproachFinal = mMissionConnector.World.Translation + (mMissionConnector.World.Forward* 250.0);
-                
+                var approachPlane = mMissionConnector.World.Translation + (mMissionConnector.World.Forward * approachDistance);
+                mMissionConnector.ApproachFinal = mMissionConnector.World.Translation + (mMissionConnector.World.Forward * finalDistance);
+
                 var projectedPosition = reject(mRC.CenterOfMass, approachPlane, mMissionConnector.World.Forward);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
-                mMissionConnector.Approach = approachPlane + (projectedDirection * 500.0);
+                mMissionConnector.Approach = approachPlane + (projectedDirection * approachDistance);
 
                 var local = -world2pos(mRC.CenterOfMass, mCon.WorldMatrix);
-                mMissionConnector.Objective = local2pos(local, mMissionConnector.World) + (mMissionConnector.World.Forward * 2.65);
+                mMissionConnector.Objective = local2pos(local, mMissionConnector.World) + (mMissionConnector.World.Forward * connectorDistance);
             }
         }
         enum DockStep : int

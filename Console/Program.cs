@@ -15,7 +15,12 @@ namespace commandline
         const double mMass = 3887.0;
         const double mVelocity = 1.71;
         static void Main(string[] args) {
-
+            var free = 1.0;
+            var vol = 1.01;
+            var famount = free / vol;
+            var iamount = (int)famount;
+            Console.WriteLine(famount.ToString());
+            Console.WriteLine(iamount.ToString());
             // force = mass x(velocity / time) = (mass x velocity) / time = momentum / time
             // if p = mv and m is constant, then F = m*dv/dt = ma
 
