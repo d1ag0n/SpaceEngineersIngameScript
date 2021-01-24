@@ -187,7 +187,7 @@ namespace IngameScript
 
         void sort(IMyEntity aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag) {
             
-            g.log("sorting ", aTag);
+            g.log("sorting #", aTag);
             var list = new List<IMyEntity>();
             mGTS.getByTag(aTag, list);
             if (list.Count == 0) {
@@ -207,6 +207,8 @@ namespace IngameScript
                             var itemVolume = aItem.Amount.RawValue * volumeFactor;
                             if (free.RawValue > itemVolume) {
                                 aSourceInventory.TransferItemTo(inv, aItem);
+                            } else {
+                                g.log("Cannot transfer #", aTag, " volume ", itemVolume, " cargo free ", free.RawValue);
                             }
                         }
                     }
