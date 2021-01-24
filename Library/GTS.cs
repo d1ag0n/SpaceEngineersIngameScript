@@ -113,11 +113,12 @@ namespace Library
                 if (block.IsSameConstructAs(program.Me)) {
                     var name = block.CustomName.ToLower();
                     if (mBlocks.ContainsKey(name)) {
-                        throw new Exception($"Duplicate block name '{name}' is prohibited.");
+                        g.log($"WARNING: Duplicate block '{name}' will be ignored.");
+                    } else {
+                        //g.log("adding block ", block.CustomName, " ", block.CustomData);
+                        mBlocks.Add(name, block);
+                        initTags(block);
                     }
-                    //g.log("adding block ", block.CustomName, " ", block.CustomData);
-                    mBlocks.Add(name, block);
-                    initTags(block);
                 } else {
                     //g.log("Not on this grid.");
                 }

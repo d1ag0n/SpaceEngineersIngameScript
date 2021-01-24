@@ -33,7 +33,7 @@ namespace IngameScript
         readonly Logger g;
 
         public Program() {
-            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
             g = new Logger();
             g.log("Program construct");
             mGTS = new GTS(this, g);
@@ -56,12 +56,16 @@ namespace IngameScript
             switch (aItem.Type.TypeId) {
                 case "MyObjectBuilder_Ore":
                     switch (aItem.Type.SubtypeId) {
+                        case "Organic":
+                            tag = "organic";
+                            break;
                         case "Ice":
                             tag = "ice";
                             break;
                         case "Scrap":
                             tag = "scrap";
                             break;
+                        case "Magnesium":
                         case "Nickel":
                         case "Platinum":
                         case "Silicon":
@@ -89,12 +93,17 @@ namespace IngameScript
             bool result = true;
 
             switch (aTag) {
-        case "nickelore":
-        case "platinumore":
-        case "siliconore":
-        case "silverore":
-        case "uraniumore":
-        case "Ice":
+                case "scrap":
+                    aVolume = 0.000254;
+                    break;
+                case "organic":
+                case "magnesiumore":
+                case "nickelore":
+                case "platinumore":
+                case "siliconore":
+                case "silverore":
+                case "uraniumore":
+                case "ice":
                 case "goldore":
                 case "cobaltore":
                 case "ironore":
@@ -167,7 +176,7 @@ namespace IngameScript
                         break;
                 }
             }
-            if (updateSource.HasFlag(UpdateType.Update100)) {
+            if (updateSource.HasFlag(UpdateType.Update10)) {
                 //g.log("mCargo ", mCargo.Count);
                 if (index < mCargo.Count) {
                     var c = mCargo[index];
@@ -194,12 +203,9 @@ namespace IngameScript
                 } else {
                     index = 0;
                     str = g.clear();
+                    Echo(str);
+                    mLCD.WriteText(str);
                 }
-                if (str == null) {
-                    str = g.get();
-                }
-                Echo(str);
-                mLCD.WriteText(str);
             }
         }
     }
