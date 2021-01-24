@@ -20,7 +20,7 @@ namespace commandline
             // if p = mv and m is constant, then F = m*dv/dt = ma
 
             // f = ma
-
+            Console.WriteLine(Guid.NewGuid());
             Console.WriteLine($"mdTimeFactor = {mdTimeFactor}");
 
             var forceOfVelocityResult = forceOfVelocity(mMass, mVelocity, mdTimeFactor);

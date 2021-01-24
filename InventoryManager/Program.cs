@@ -54,6 +54,29 @@ namespace IngameScript
         bool getTag4Item(MyInventoryItem aItem, out string tag) {
             tag = null;
             switch (aItem.Type.TypeId) {
+                case "MyObjectBuilder_AmmoMagazine":
+                    switch (aItem.Type.SubtypeId) {
+                        case "NATO_5p56x45mm":
+                            tag = "nato556";
+                            break;
+                        case "NATO_25x184mm":
+                            tag = "nato25";
+                            break;
+                        case "Missile200mm":
+                            tag = "missile";
+                            break;
+                    }
+                    break;
+                case "MyObjectBuilder_Component":
+                    switch (aItem.Type.SubtypeId) {
+                        case "Canvas":
+                            tag = "canvas";
+                            break;
+                    }
+                    break;
+                case "MyObjectBuilder_Ingot":
+                    tag = aItem.Type.SubtypeId.ToLower();
+                    break;
                 case "MyObjectBuilder_Ore":
                     switch (aItem.Type.SubtypeId) {
                         case "Organic":
@@ -93,6 +116,28 @@ namespace IngameScript
             bool result = true;
 
             switch (aTag) {
+
+                case "platinum":
+                    aVolume = 0.000047;
+                    break;
+                case "gold":
+                case "uranium":
+                    aVolume = 0.000052;
+                    break;
+                case "cobalt":
+                case "nickel":
+                    aVolume = 0.000112;
+                    break;
+                case "iron":
+                    aVolume = 0.000127;
+                    break;
+
+                case "silver":
+                    aVolume = 0.00019;
+                    break;
+                case "nato556":
+                    aVolume = 0.0002;
+                    break;
                 case "scrap":
                     aVolume = 0.000254;
                     break;
@@ -107,10 +152,25 @@ namespace IngameScript
                 case "goldore":
                 case "cobaltore":
                 case "ironore":
-                case "stone": 
-                    aVolume = 0.00037; 
+                case "stone":
+                    aVolume = 0.00037;
                     break;
-                default: 
+                case "silicon":
+                    aVolume = 0.000429;
+                    break;
+                case "magnesium":
+                    aVolume = 0.000575;
+                    break;
+                case "canvas":
+                    aVolume = 0.008;
+                    break;
+                case "nato25":
+                    aVolume = 0.016;
+                    break;
+                case "missile":
+                    aVolume = 0.06;
+                    break;
+                default:
                     aVolume = 0.0;
                     result = false;
                     g.log("Volume not found #", aTag);
@@ -118,6 +178,10 @@ namespace IngameScript
             }
 
             return result;
+        }
+
+        void move2scale() {
+
         }
 
 
