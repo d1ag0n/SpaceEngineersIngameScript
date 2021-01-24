@@ -23,11 +23,12 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         readonly GTS mGTS;
+        readonly Logger g;
         List<IMyShipConnector> mConnectors;
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
-            mGTS = new GTS(this);
-            lcd = mGTS.get<IMyTextPanel>("lcd");
+            mGTS = new GTS(this, g);
+            mGTS.get("lcd", out lcd);
             mConnectors = new List<IMyShipConnector>();
             mGTS.initBlockList("con", mConnectors);
         }

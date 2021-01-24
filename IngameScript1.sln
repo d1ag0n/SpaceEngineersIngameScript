@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IngameScript1", "IngameScript1\IngameScript1.csproj", "{4C1089AB-F398-46AE-822D-A996650E9465}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoPilot", "AutoPilot\AutoPilot.csproj", "{582C28DB-1277-4BC5-9B3D-D5BECE33BF65}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DockManager", "DockManager\DockManager.csproj", "{6EB7EB41-9002-4602-93F1-9DA21807E436}"
@@ -29,11 +27,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4C1089AB-F398-46AE-822D-A996650E9465}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{4C1089AB-F398-46AE-822D-A996650E9465}.Debug|x64.ActiveCfg = Debug|x64
-		{4C1089AB-F398-46AE-822D-A996650E9465}.Debug|x64.Build.0 = Debug|x64
-		{4C1089AB-F398-46AE-822D-A996650E9465}.Release|Any CPU.ActiveCfg = Debug|x64
-		{4C1089AB-F398-46AE-822D-A996650E9465}.Release|x64.ActiveCfg = Debug|x64
 		{582C28DB-1277-4BC5-9B3D-D5BECE33BF65}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{582C28DB-1277-4BC5-9B3D-D5BECE33BF65}.Debug|x64.ActiveCfg = Debug|x64
 		{582C28DB-1277-4BC5-9B3D-D5BECE33BF65}.Debug|x64.Build.0 = Debug|x64

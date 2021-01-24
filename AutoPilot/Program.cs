@@ -92,16 +92,16 @@ namespace IngameScript
         }
         double rot2rpm(double x, double scale) {
             if (x > 1.0) {
-                log("BAD ", x);
+                log.log("BAD ", x);
             } else if (x < -1.0) {
-                log("BAD ", x);
+                log.log("BAD ", x);
             }
             var result = Math.Asin(x) / 2.0 / Math.PI * 60.0 / 0.166666;
             if (Math.Abs(result) < 0.001) {
                 //result = 0.0;
             }
             if (result > 60.0) {
-                log("dying ", result);
+                log.log("dying ", result);
                 //Me.Enabled = false;
             }
             return result * scale;
@@ -127,13 +127,13 @@ namespace IngameScript
             }
             return;
             if (0.01 > mdLinearVelocity) {
-                log("damp to vec 0");
+                log.log("damp to vec 0");
                 rotate2vector(Vector3D.Zero);
                 ThrustN(0);
             } else {
                 var vRetrogradeDisplacement = mRC.CenterOfMass - mvLinearVelocity;
                 var vRetrogradeDirection = Vector3D.Normalize(vRetrogradeDisplacement);
-                log("damp to vec", vRetrogradeDisplacement);
+                log.log("damp to vec", vRetrogradeDisplacement);
                 rotate2vector(vRetrogradeDisplacement);
                 ThrustN(aMomentumLength * thrustPercent(mvLinearVelocityDirection, mRC.WorldMatrix.Down));
             }
@@ -162,7 +162,6 @@ namespace IngameScript
         void setMissionPatrol() {
             initMission();
             meMission = Missions.patrol;
-
         }
         void setMissionObjective(Vector3D aObjective) {
             mvMissionObjective = aObjective;
@@ -200,12 +199,12 @@ namespace IngameScript
                 }
             }
             if (result) {
-                log("mission altitude ", mdMissionAltitude);
+                log.log("mission altitude ", mdMissionAltitude);
             }
             return result;
         }
         void doMission() {
-            log("doMission ", meMission);
+            log.log("doMission ", meMission);
             switch (meMission) {
                 case Missions.damp: {                    
                     if (initMissionAltitude()) {
@@ -244,10 +243,10 @@ namespace IngameScript
                     var c = findConnector("con1");
                     var local = -world2pos(mRC.CenterOfMass, mCon.WorldMatrix);
                     var objective = local2pos(local, c.World) + (c.World.Forward * 2.65);
-                    log(gps("test con1", objective));
+                    log.log(gps("test con1", objective));
                     break;
                 default:
-                    log("mission unhandled");
+                    log.log("mission unhandled");
                     break;
             }
         }
@@ -310,7 +309,7 @@ namespace IngameScript
             return sb.ToString();
         }
         void missionDock() {
-            log("Dock Mission: ", mMissionConnector.Name + " - " + mMissionConnector.Id);
+            log.log("Dock Mission: ", mMissionConnector.Name + " - " + mMissionConnector.Id);
             var d = 0.0;
             var msg = "unknown";
             var step = (DockStep)miMissionStep;
@@ -413,11 +412,11 @@ namespace IngameScript
                     setMissionDock("con" + miDock);
                     break;
                 default:
-                    log("step unhandled, damping");
+                    log.log("step unhandled, damping");
                     missionDamp();
                     break;
             }
-            log(msg);
+            log.log(msg);
         }
         double missionNavigate() {
             /*
@@ -465,7 +464,7 @@ namespace IngameScript
             } else {
                 ThrustVector(false, false);
             }
-            log("navigate result ", result);
+            log.log("navigate result ", result);
             return result;
 
             //rotate2vector(Vector3D.Zero);
@@ -586,6 +585,8 @@ namespace IngameScript
         
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            g = new Logger();
+            mGTS = new GTS(this, g);
             init();
             initMission();
             setMissionDamp();
@@ -601,9 +602,8 @@ namespace IngameScript
 
 
         
-        void init() {
-            mGTS = new GTS(this);
-            initLog();
+        void init() {            
+            
             initBlocks();
             mGTS.get("rc", out mRC);
             mGTS.get("lcd", out mLCD);
@@ -639,17 +639,13 @@ namespace IngameScript
             roto1.Enabled =
             roto2.Enabled = true;*/
         }
-        void initLog() {
-            if (null == mLog) {
-                mLog = new StringBuilder();
-            }
-        }
+        
         void initSensor() {
             var list = new List<MyDetectedEntityInfo>();
             mSensor.DetectedEntities(list);
             var vec = Vector3D.Zero;
             foreach (var e in list) {
-                log(e.Name);
+                log.log(e.Name);
             }
         }
         void initAltitude() {
@@ -664,7 +660,7 @@ namespace IngameScript
             } else {
                 mdAltitude = 0.0;
             }
-            log("altitude ", mdAltitude);
+            log.log("altitude ", mdAltitude);
         }
         /// <summary>
         /// 1 N = 0.10197 kg × 9.80665
@@ -727,7 +723,7 @@ namespace IngameScript
         }
         
         double trajectory(Vector3D aObjective, bool aGyroHold) {
-            log("Trajectory");
+            log.log("Trajectory");
             var sv = mRC.GetShipVelocities();
 
             //var velocityDir = velocityVec / velocityMag;
@@ -776,7 +772,7 @@ namespace IngameScript
                 var dot = up.Dot(veloDir);
 
                 if (dot > 0) {
-                    log("velo going up");
+                    log.log("velo going up");
                     veloVec = reject(mRC.CenterOfMass + veloVec, mRC.CenterOfMass, up) - mRC.CenterOfMass;
                     veloMag = veloVec.Length();
                     veloDir = veloVec / veloMag;
@@ -784,7 +780,7 @@ namespace IngameScript
                     gravForce =
                     gravMag = 0.0;
                 } else {
-                    log("velo going down");
+                    log.log("velo going down");
                 }
             }
 
@@ -826,7 +822,7 @@ namespace IngameScript
                 //extDir = Vector3D.Normalize(veloDir + (gravDir * 10) + -targetDir);
             }
             var extDir = Vector3D.Normalize(extVec);
-            log("extVec", extVec);
+            log.log("extVec", extVec);
             var extForce = extVec.Length();
 
             //var extMag = extVec.Length();
@@ -872,13 +868,13 @@ namespace IngameScript
             } else {
                 mGyro.GyroOverride = false;
             }
-            log("Required force ", extForce);
+            log.log("Required force ", extForce);
             if (true) {
                 ThrustN(extForce * thrustPercent(extDir, mRC.WorldMatrix.Up));
             } else {
                 ThrustN(0.0f);
             }
-            log("Trajectory complete");
+            log.log("Trajectory complete");
             // force = mass x(velocity / time) = (mass x velocity) / time = momentum / time
             // if p = mv and m is constant, then F = dp/dt = m*dv/dt = ma
 
@@ -936,13 +932,13 @@ namespace IngameScript
             }
 
             
-            log("Distance to Objective ", mdDistance2Objective);
+            log.log("Distance to Objective ", mdDistance2Objective);
             
             //log("acceleration ", mdAcceleration);
-            log("linear velocity ", mdLinearVelocity);
+            log.log("linear velocity ", mdLinearVelocity);
             //log("angular velocity ", mdAngularVelocity);
-            log("stop distance ", mdStopDistance);
-            log("perferred velocity ", mdPreferredVelocity);
+            log.log("stop distance ", mdStopDistance);
+            log.log("perferred velocity ", mdPreferredVelocity);
         }
 
         void receiveMessage() {
@@ -1004,25 +1000,24 @@ namespace IngameScript
                 miCount++;
                 if (true || miInterval == miCount) {
                     miCount = 0;
-                    initLog();
                     /*foreach (var d in mDocks.Values) {
                         log(d.Name);
                     }*/
                     try {
                         var v1 = new Vector3D(19715.48, 143953.6, -109091.22);
                         var v2 = new Vector3D(19715.92, 143956.15, -109089.43);
-                        log("DIST! ", (v1 - v2).Length().ToString());
+                        log.log("DIST! ", (v1 - v2).Length().ToString());
                         //initSensor();
                         initAltitude();
                         initVelocity();
                         if (null != mMissionConnector) {
-                            log(gps("DockObjective", mMissionConnector.Objective));
+                            log.log(gps("DockObjective", mMissionConnector.Objective));
                         }
                         doMission();
                         str = mLog.ToString();
                         mLCD.WriteText(str);
                     } catch (Exception ex) {
-                        log(ex);
+                        log.log(ex);
                         str = mLog.ToString();
                     }
                     mLog = null;
@@ -1035,7 +1030,7 @@ namespace IngameScript
         void ThrustN(float aNewtons) {
             float fMax, fPercent;
             mdNewtons = 0;
-            log("ThrustN requested ", aNewtons, "N");
+            log.log("ThrustN requested ", aNewtons, "N");
             for (int i = 0; i < mThrust.Count; i++) {
                 
                 var t = mThrust[i];
@@ -1050,21 +1045,21 @@ namespace IngameScript
                         fPercent = aNewtons / fMax;
                         aNewtons = 0.0f;
                     }
-                    log("Thruster #", i, " at ", 100.0 * fPercent, "%");
+                    log.log("Thruster #", i, " at ", 100.0 * fPercent, "%");
                     t.Enabled = true;
                     t.ThrustOverridePercentage = fPercent;
                 } else {
-                    log("Thruster #", i, " disabled");
+                    log.log("Thruster #", i, " disabled");
                     t.Enabled = false;
                 }
             }
             mdMaxAccel = mdNewtons / mdMass;
-            log("Max Accel ", mdMaxAccel);
+            log.log("Max Accel ", mdMaxAccel);
         }
         void motor2Angle(IMyMotorStator aHinge, float aAngle) {
             if (check(aHinge)) {
                 var delta = aAngle - aHinge.Angle;
-                log("hinge delta", delta);
+                log.log("hinge delta", delta);
                 aHinge.TargetVelocityRad = delta;
             }
         }
@@ -1076,7 +1071,7 @@ namespace IngameScript
                 !aMotor.RotorLock &&
                 aMotor.IsFunctional;
             if (!result) {
-                log("check failed");
+                log.log("check failed");
             }
             return result;
         }
@@ -1125,32 +1120,12 @@ namespace IngameScript
                         }
                     }
                 } else {
-                    log("angle nan");
+                    log.log("angle nan");
                 }
                 aRoto.TargetVelocityRad = (float)(v * 6.0);
             }
         }
 
-        public void log(double d) => log();
-        public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
-        public void log(params object[] args) {
-            if (null != args) {
-                for (int i = 0; i < args.Length; i++) {
-                    var arg = args[i];
-                    if (null == arg) {
-                        mLog.AppendLine();
-                    } else if (arg is Vector3D) {
-                        mLog.AppendLine();
-                        log((Vector3D)arg);
-                    } else if (arg is double) {
-                        mLog.Append(((double)arg).ToString("N"));
-                    } else {
-                        mLog.Append(arg.ToString());
-                    }
-                }
-            }
-            mLog.AppendLine();
-        }
 
         Vector3D local2pos(Vector3D local, MatrixD world) =>
             Vector3D.Transform(local, world);
@@ -1199,7 +1174,8 @@ namespace IngameScript
         const double mdRotateEpsilon = 0.1;
         double mdMissionDistance = 0.0;
 
-        GTS mGTS;
+        readonly GTS mGTS;
+        readonly Logger g;
 
         List<IMyThrust> mThrust;
         IMyTextPanel mLCD;
@@ -1216,6 +1192,8 @@ namespace IngameScript
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;
         int miMissionStep = 0;
+
+        Logger log = new Logger();
 
         Missions meMission = Missions.damp;
 
@@ -1234,6 +1212,7 @@ namespace IngameScript
         Vector3D mvLinearVelocity = Vector3D.Zero;
         Vector3D mvAngularVelocity = Vector3D.Zero;
         Vector3D mvLinearVelocityDirection = Vector3D.Zero;
+
     }
     // large connectors distance apart 2.65 
     // small connector distance from large 1.85
