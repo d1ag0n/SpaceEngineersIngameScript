@@ -24,12 +24,14 @@ namespace IngameScript
     {
         readonly GTS gts;
         readonly Logger g;        
-        readonly List<Dock> mDocks;
+        readonly Dictionary<long, Dock> mDicDocks;
+        readonly List<Dock> mListDocks;
+        
         readonly IMyTextPanel lcd;
         States state = States.uninitialized;
 
         int index = 0;
-
+        int count = 0;
         public enum States
         {
             uninitialized,
@@ -44,23 +46,36 @@ namespace IngameScript
             gts = new GTS(this, g);
             gts.getByTag("dockdisplay", ref lcd);
 
-            mDocks = new List<Dock>();
+            mDicDocks = new Dictionary<long, Dock>();
+            mListDocks = new List<Dock>();
+            IGC.UnicastListener.SetMessageCallback("dockcommand");
+            
         }
         void update() {
             g.log("update start");
-            dockInfo();
+            count++;
+            if (count > 6) {
+                count = 0;
+            }
+            if (count == 0) {
+                dockInfo();
+            }
+            for (int i = 0; i < mListDocks.Count; i++) {
+                mListDocks[i].update();
+            }
+            
             g.log("update complete");
         }
 
         void dockInfo() {
-            if (mDocks.Count > 0) {
-                var list = new Connector[mDocks.Count];
-                int i = 0;
-                for (; i < mDocks.Count; i++) {
-                    list[i] = new Connector(Me, mDocks[i]);
+            if (mListDocks.Count > 0) {
+
+                var list = new List<Connector>();
+                for (int i = 0; i < mListDocks.Count; i++) {
+                    list.Add(new Connector(Me, mListDocks[i]));
                 }
                 IGC.SendBroadcastMessage("docks", Connector.ToCollection(list));
-                g.log("dock info broadcasted ", i);
+                g.log("dock info broadcasted ", list.Count);
             } else {
                 g.log("No docks");
             }
@@ -73,18 +88,18 @@ namespace IngameScript
         void findDocks() {
             var list = new List<IMyPistonBase>();
             gts.getByTag("dock", list);
-
+            g.log("tag lookup found ", list.Count);
             for (int i = 0; i < list.Count; i++) {
                 var d = new Dock(gts, g, list[i]);
-                mDocks.Add(d);
+                mDicDocks.Add(d.X.EntityId, d);
+                mListDocks.Add(d);
             }
-            
         }
 
         bool initDocks() {
             bool result = true;
-            for (int i = 0; i < mDocks.Count; i++) {
-                var r = mDocks[i].init();
+            for (int i = 0; i < mListDocks.Count; i++) {
+                var r = mListDocks[i].init();
                 if (!r) {
                     result = false;
                 }
@@ -97,11 +112,40 @@ namespace IngameScript
             //log("angleBetween ", result);
             return result;
         }
+        void processDockMessage(DockMessage aMessage) {
+            Dock d;
+            if (mDicDocks.TryGetValue(aMessage.DockId, out d)) {
+
+                switch (aMessage.Command) {
+                    case "Align":
+                        d.setAlign(aMessage.Position);
+                        break;
+                }
+            }
+        }
+        void processMessages() {
+            while (IGC.UnicastListener.HasPendingMessage) {
+                var msg = IGC.UnicastListener.AcceptMessage();
+                try {
+
+                    switch (msg.Tag) {
+                        case "DockMessage":
+                            processDockMessage(new DockMessage(msg.Data));
+                            break;
+                    }
+                } catch (Exception ex) {
+
+                }
+            }
+        }
         void Main(string argument, UpdateType aUpdate) {
+            if (aUpdate.HasFlag(UpdateType.IGC)) {
+                processMessages();
+            }
             if (aUpdate.HasFlag(UpdateType.Update10)) {
                 try {
                     g.log("state ", state);
-                    g.log("docks found ", mDocks.Count);
+                    g.log("docks found ", mListDocks.Count);
                     switch (state) {
                         case States.uninitialized:
                             findDocks();
@@ -114,8 +158,8 @@ namespace IngameScript
                             break;
                         case States.calibrated:
                             var retracted = true;
-                            for (int i = 0; i < mDocks.Count; i++) {
-                                if (!mDocks[i].retract()) {
+                            for (int i = 0; i < mListDocks.Count; i++) {
+                                if (!mListDocks[i].retract()) {
                                     retracted = false;
                                 }
                                 

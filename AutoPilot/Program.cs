@@ -258,9 +258,11 @@ namespace IngameScript
         }
         void setMissionDock(string aConnector) {
             initMission();
+            
 
             mMissionConnector = findConnector(aConnector);
             if (null != mMissionConnector) {
+                mMissionConnector.MessageSent = false;
                 var approachDistance = 600;
                 var finalDistance = approachDistance * 0.5;
                 
@@ -318,7 +320,7 @@ namespace IngameScript
                     if (250.0 > d) {
                         miMissionStep++;
                     }
-                    ThrustVector(false, false);
+                    missionNavigate();
                     break;
                 case DockStep.approachFinal:
                 case DockStep.depart:
@@ -333,8 +335,6 @@ namespace IngameScript
                     
                     if (precision > missionNavigate()) {
                         miMissionStep++;
-                    } else {
-                        ThrustVector(false, false);
                     }
                     break;
                 case DockStep.dock:
@@ -358,15 +358,17 @@ namespace IngameScript
                             }
                             break;
                         case MyShipConnectorStatus.Unconnected:
-                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {
-                                if (1.0 > rotate2vector(mMissionConnector.Position + (mMissionConnector.Direction * 1000.0)) && !mMissionConnector.MessageSent) {
-                                    var dockMessage = new DockMessage(mMissionConnector.Id, "align", mCon.WorldMatrix.Translation);
-                                    IGC.SendUnicastMessage(mMissionConnector.ManagerId, "dockcommand", dockMessage.Data());
-                                }
-                                ThrustN(0);
-                            } else {
-                                ThrustVector(false, false);
+                            if (1.0 > rotate2vector(mMissionConnector.Position + (mMissionConnector.Direction * 1000.0)) && !mMissionConnector.MessageSent) {
+                                var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
+                                IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
                             }
+                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {                                
+                                ThrustN(0);
+                                mMissionConnector.MessageSent = true;
+                            } else {
+                                missionNavigate();
+                            }
+                            
                             break;
                         case MyShipConnectorStatus.Connected:
                             mGyro.Enabled = false;
@@ -924,6 +926,7 @@ namespace IngameScript
                     var msg = mListener.AcceptMessage();
                     switch (msg.Tag) {
                         case "docks":
+                            //Me.CustomData += msg.Data.ToString() + Environment.NewLine;
                             Connector.FromCollection(msg.Data, mDocks);
                             break;
                     }
@@ -973,39 +976,35 @@ namespace IngameScript
             if (aUpdate.HasFlag(UpdateType.IGC)) {
                 receiveMessage();
             }
-            
+
             if (aUpdate.HasFlag(UpdateType.Update10)) {
-                miCount++;
-                if (true || miInterval == miCount) {
-                    miCount = 0;
-                    /*foreach (var d in mDocks.Values) {
-                        log(d.Name);
-                    }*/
-                    try {
-                        var v1 = new Vector3D(19715.48, 143953.6, -109091.22);
-                        var v2 = new Vector3D(19715.92, 143956.15, -109089.43);
-                        log.log("DIST! ", (v1 - v2).Length().ToString());
-                        //initSensor();
-                        initAltitude();
-                        initVelocity();
-                        if (null != mMissionConnector) {
-                            //log.log(gps("Dock Approach", mMissionConnector.Approach));
-                            //log.log(gps("Final Approach", mMissionConnector.ApproachFinal));
-                            //log.log(gps("Dock Objective", mMissionConnector.Position));
-                            //log.log(gps("Dock Direction", mMissionConnector.Position + mMissionConnector.Direction));
-                        }
-                        doMission();
-                        str = log.clear();
-                        if (null != mLCD) {
-                            mLCD.WriteText(str);
-                        }
-                    } catch (Exception ex) {
-                        log.log("Handled!", ex);
-                        str = log.clear();
-                    }
-                    
-                    Echo(str);
+                foreach (var d in mDocks.Values) {
+                    log.log(d.Name);
                 }
+                try {
+                    var v1 = new Vector3D(19715.48, 143953.6, -109091.22);
+                    var v2 = new Vector3D(19715.92, 143956.15, -109089.43);
+                    log.log("DIST! ", (v1 - v2).Length().ToString());
+                    //initSensor();
+                    initAltitude();
+                    initVelocity();
+                    if (null != mMissionConnector) {
+                        //log.log(gps("Dock Approach", mMissionConnector.Approach));
+                        //log.log(gps("Final Approach", mMissionConnector.ApproachFinal));
+                        //log.log(gps("Dock Objective", mMissionConnector.Position));
+                        //log.log(gps("Dock Direction", mMissionConnector.Position + mMissionConnector.Direction));
+                    }
+                    doMission();
+                    str = log.clear();
+                    if (null != mLCD) {
+                        mLCD.WriteText(str);
+                    }
+                } catch (Exception ex) {
+                    log.log("Handled!", ex);
+                    str = log.clear();
+                }
+
+                Echo(str);
             }
         }
         void ThrustN(double aNewtons) => ThrustN((float)aNewtons);
@@ -1169,7 +1168,7 @@ namespace IngameScript
 
 
         int miDock = 0;
-        int miCount = 0;
+        //int miCount = 0;
         const int miInterval = 10;
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;

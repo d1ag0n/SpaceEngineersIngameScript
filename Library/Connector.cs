@@ -34,9 +34,9 @@ namespace IngameScript
             Direction = aData.Item5;
         }        
         public MyTuple<long, long, string, Vector3D, Vector3D> Data() => new MyTuple<long, long, string, Vector3D, Vector3D>(ManagerId, Id, Name, Position, Direction);
-        public static ImmutableArray<MyTuple<long, long, string, Vector3D, Vector3D>> ToCollection(Connector[] aList) {
-            var list = new MyTuple<long, long, string, Vector3D, Vector3D>[aList.Length];
-            for (int i = 0; i < aList.Length; i++) {
+        public static ImmutableArray<MyTuple<long, long, string, Vector3D, Vector3D>> ToCollection(List<Connector> aList) {
+            var list = new MyTuple<long, long, string, Vector3D, Vector3D>[aList.Count];
+            for (int i = 0; i < aList.Count; i++) {
                 list[i] = aList[i].Data();
             }
             return ImmutableArray.Create(list);

@@ -16,7 +16,7 @@ namespace IngameScript
         States state = States.uninitialized;
         public Vector3D position { get; private set; }
         public Vector3D direction { get; private set; }
-        
+        Vector3D target;
 
 
         float xu = float.NaN;
@@ -49,12 +49,13 @@ namespace IngameScript
         public Dock(GTS aGTS, Logger aLogger, IMyPistonBase aPiston) {
             gts = aGTS;
             g = aLogger;
-            X = aPiston;            
+            X = aPiston;
+            X.Velocity = 0;
+            X.Enabled = true;
         }
         void checkAngles() {
             checkAnglesX();
             checkAnglesY();
-            
         }
         void checkAnglesX() {
             var mx = X.WorldMatrix;
@@ -175,8 +176,31 @@ namespace IngameScript
             }
             return result;
         }
-        public bool align(Vector3D aTarget) {
-
+        Vector3D world2pos(Vector3D world, MatrixD local) =>
+            Vector3D.TransformNormal(world - local.Translation, MatrixD.Transpose(local));
+        public void update() {
+            switch (state) {
+                case States.aligning:
+                    if (align(world2pos(target, C.WorldMatrix))) {
+                        state = States.aligned;
+                    }
+                    break;
+                case States.aligned:
+                    extend();
+                    break;
+            }
+        }
+        public void setAlign(Vector3D aTarget) {
+            C.Enabled = false;
+            target = aTarget;
+            if (state != States.aligned) {
+                state = States.aligning;
+            }
+        }
+        bool align(Vector3D aTarget) {
+            aTarget.Y *= 2.0;
+            aTarget.X *= 2.0;
+            g.log("aligning ", aTarget);
             if (xu < 1) {
                 X.Velocity = (float)aTarget.Y;
             } else if (xd < 1) {
@@ -218,18 +242,21 @@ namespace IngameScript
             return result;
         }
         public bool init() {
+            g.log("Dock state ", state);
             if (state == States.uninitialized) {
 
                 var plist = new List<IMyPistonBase>();
                 var clist = new List<IMyShipConnector>();
 
                 gts.initList(plist);
-
+                
                 var top = X.TopGrid;
                 for (int i = 0; i < plist.Count; i++) {
                     var p = plist[i];
                     if (p.CubeGrid.EntityId == top.EntityId) {
-                        Y = p;
+                        Y = p;                        
+                        Y.Velocity = 0;
+                        Y.Enabled = true;
                         break;
                     }
                 }
@@ -240,6 +267,8 @@ namespace IngameScript
                         var p = plist[i];
                         if (p.CubeGrid.EntityId == top.EntityId) {
                             Z = p;
+                            Z.Velocity = 0;
+                            Z.Enabled = true;
                             break;
                         }
                     }

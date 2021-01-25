@@ -17,6 +17,12 @@ namespace IngameScript
         public Vector3D Position {
             get; private set;
         }
+        public DockMessage(object aData) {
+            var data = (MyTuple<long, string, Vector3D>)aData;
+            DockId = data.Item1;
+            Command = data.Item2;
+            Position = data.Item3;
+        }
         public DockMessage(long aDockId, string aCommand, Vector3D aPosition) {
             DockId = aDockId;
             Command = aCommand;
