@@ -1,5 +1,4 @@
-﻿using Library;
-using Sandbox.Game.EntityComponents;
+﻿using Sandbox.Game.EntityComponents;
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
@@ -49,7 +48,7 @@ namespace IngameScript
             index =
             subIndex = 0;
 
-            mGTS.get("lcd", out mLCD);
+            mGTS.getByTag("lcd", ref mLCD);
             mCargo = new List<IMyEntity>();
             mProduction = new List<IMyProductionBlock>();
             mGTS.getByTag(tagInventory, mCargo);

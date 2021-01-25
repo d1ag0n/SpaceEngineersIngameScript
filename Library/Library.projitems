@@ -6,10 +6,12 @@
     <SharedGUID>fa185618-a62b-480f-abc7-76f155fbdc58</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>Library</Import_RootNamespace>
+    <Import_RootNamespace>IngameScript</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GTS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InventoryOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />

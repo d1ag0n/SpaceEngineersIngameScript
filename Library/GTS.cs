@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Text;
 using Sandbox.ModAPI.Ingame;
 
-namespace Library
+namespace IngameScript
 {
     class GTS {
         readonly MyGridProgram program;
 
-        Dictionary<string, IMyTerminalBlock> mBlocks;
+        Dictionary<long, IMyTerminalBlock> mBlocks;
         Dictionary<string, List<IMyTerminalBlock>> mTags;
         readonly Logger g;
         
@@ -17,14 +17,23 @@ namespace Library
             g = aLogger;
             init();
         }
-
-        public bool get<T>(string aName, out T aBlock) {
-            IMyTerminalBlock block;
-            bool result = mBlocks.TryGetValue(aName.ToLower(), out block);
-            aBlock = result ? (T)block : default(T);
-            return result;
+        public void get<T>(ref T aBlock) {
+            foreach (var b in mBlocks.Values) {
+                if (b is T) {
+                    aBlock = (T)b;
+                    return;
+                }
+            }
         }
+        public void getByTag<T>(string aTag, ref T aBlock) {
+            List<IMyTerminalBlock> list;
 
+            if (mTags.TryGetValue(aTag, out list)) {
+                if (list.Count > 0) {
+                    aBlock = (T)list[0];
+                }
+            }
+        }
         public void getByTag<T>(string aTag, List<T> aList) {
             List<IMyTerminalBlock> list;
 
@@ -33,9 +42,10 @@ namespace Library
                 for (int i = 0; i < list.Count; i++) {
                     var b = list[i];
                     if (b is T) {
-                        //g.log("adding ", b.CustomName);
+                        g.log("adding ", b.CustomName);
                         aList.Add((T)b);
-
+                    } else {
+                        g.log("not added ", b, " ", b.CustomName);
                     }
                 }
             } else {
@@ -64,20 +74,11 @@ namespace Library
             }
         }
 
-        public void initBlockList<T>(List<T> aList) {
+        public void initList<T>(List<T> aList) {
             foreach (var b in mBlocks.Values) {
                 if (b is T) {
                     aList.Add((T)b);
                 }
-            }
-        }
-
-        public void initBlockList<T>(string aName, List<T> aList) {
-            int i = 0;
-            T t;
-            while (get($"{aName}{i}", out t)) {
-                aList.Add(t);
-                i++;
             }
         }
 
@@ -100,10 +101,10 @@ namespace Library
             List<IMyTerminalBlock> blocks;
             if (null == mBlocks) {
                 blocks = new List<IMyTerminalBlock>();
-                mBlocks = new Dictionary<string, IMyTerminalBlock>();
+                mBlocks = new Dictionary<long, IMyTerminalBlock>();
             } else {
                 blocks = new List<IMyTerminalBlock>(mBlocks.Count);
-                mBlocks = new Dictionary<string, IMyTerminalBlock>(mBlocks.Count);
+                mBlocks = new Dictionary<long, IMyTerminalBlock>(mBlocks.Count);
             }
             mTags = new Dictionary<string, List<IMyTerminalBlock>>();
             program.GridTerminalSystem.GetBlocks(blocks);
@@ -111,14 +112,10 @@ namespace Library
             for (int i = 0; i < blocks.Count; i++) {
                 var block = blocks[i];
                 if (block.IsSameConstructAs(program.Me)) {
-                    var name = block.CustomName.ToLower();
-                    if (mBlocks.ContainsKey(name)) {
-                        g.log($"WARNING: Duplicate block '{name}' will be ignored.");
-                    } else {
-                        //g.log("adding block ", block.CustomName, " ", block.CustomData);
-                        mBlocks.Add(name, block);
-                        initTags(block);
-                    }
+                    
+                    //g.log("adding block ", block.CustomName, " ", block.CustomData);
+                    mBlocks.Add(block.EntityId, block);
+                    initTags(block);
                 } else {
                     //g.log("Not on this grid.");
                 }
