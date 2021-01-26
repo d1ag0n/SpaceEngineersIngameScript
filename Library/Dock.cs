@@ -212,8 +212,8 @@ namespace IngameScript
             }
         }
         bool align(Vector3D aTarget) {
-            aTarget.Y *= 10.0;
-            aTarget.X *= 10.0;
+            aTarget.Y *= 5.0;
+            aTarget.X *= 5.0;
             g.log("aligning ", aTarget);
             if (xu < 1) {
                 X.Velocity = (float)aTarget.Y;
@@ -260,8 +260,9 @@ namespace IngameScript
                     break;
                 case MyShipConnectorStatus.Unconnected:
                     C.PullStrength = 0.001f;
-                    
-                    Z.Velocity = 0.25f;
+                    var zv = (float)Math.Abs(world2pos(target, C.WorldMatrix).Z);
+                    zv -= 3.0f;
+                    Z.Velocity = zv < 0.25 ? 0.25f : zv;
                     break;
                 case MyShipConnectorStatus.Connected:
                     state = States.connected;
