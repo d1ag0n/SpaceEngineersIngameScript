@@ -270,7 +270,7 @@ namespace IngameScript
                 var projectedPosition = reject(mRC.CenterOfMass, approachPlane, mMissionConnector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * approachDistance);
-                mMissionConnector.Objective = mMissionConnector.Position + (mMissionConnector.Direction * (7.5 + (mCon.WorldMatrix.Translation - mRC.CenterOfMass).Length()));
+                mMissionConnector.Objective = mMissionConnector.Position + (mMissionConnector.Direction * (5.5 + (mCon.WorldMatrix.Translation - mRC.CenterOfMass).Length()));
                 result = true;
             }
             return result;
@@ -339,7 +339,7 @@ namespace IngameScript
                     setMissionObjective(mMissionConnector.Objective);
                     msg = "rendezvous with dock";
                     d = missionNavigate();
-                    if (d == 0.0) {
+                    if (d < 5.0) {
                         mCon.Enabled = true;
                         miMissionStep++;
                     }

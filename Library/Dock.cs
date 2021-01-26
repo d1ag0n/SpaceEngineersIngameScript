@@ -252,7 +252,7 @@ namespace IngameScript
                     if (C.PullStrength == 1.0) {
                         C.Connect();
                     } else {
-                        C.PullStrength *= 1.1f;
+                        C.PullStrength *= 1.3f;
                     }
                     
                     g.log("Strength: ", C.PullStrength);
@@ -262,9 +262,10 @@ namespace IngameScript
                     C.PullStrength = 0.001f;
                     var zv = (float)Math.Abs(world2pos(target, C.WorldMatrix).Z);
                     zv -= 3.0f;
-                    Z.Velocity = zv < 0.25 ? 0.25f : zv;
+                    Z.Velocity = zv < 0.25f ? 0.25f : zv;
                     break;
                 case MyShipConnectorStatus.Connected:
+                    Z.Velocity = 0.25f;
                     state = States.connected;
                     break;
             }
