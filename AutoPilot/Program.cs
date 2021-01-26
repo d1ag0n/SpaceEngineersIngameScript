@@ -360,17 +360,17 @@ namespace IngameScript
                         case MyShipConnectorStatus.Unconnected:
                             
                             if (0 == mRC.GetNaturalGravity().LengthSquared()) {
-                                if (1.0 > rotate2vector(mMissionConnector.Position + (mMissionConnector.Direction * 1000.0)) && mMissionConnector.MessageSent == 0) {
+                                if (1.0 > rotate2vector(mMissionConnector.Position + (mMissionConnector.Direction * 10000.0)) && mMissionConnector.MessageSent == 0) {
                                     var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
                                     IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
                                     mMissionConnector.MessageSent = 1;
                                 }
                                 ThrustN(0);
                             } else {
-                                if ((mMissionConnector.MessageSent % 6) == 0) {
+                                if (4 == mMissionConnector.MessageSent) {
                                     var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
                                     IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
-                                    
+                                    mMissionConnector.MessageSent = 0;
                                 }
                                 mMissionConnector.MessageSent++;
                                 missionNavigate();
