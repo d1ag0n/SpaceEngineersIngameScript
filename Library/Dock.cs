@@ -138,7 +138,6 @@ namespace IngameScript
                 Y.CurrentPosition == Y.MinLimit &&
                 Z.CurrentPosition == Z.MinLimit;
         }
-
         bool calibrate() {
             g.log("dock calibration ", state);
             if (state == States.precalibrated) {
@@ -199,6 +198,11 @@ namespace IngameScript
                     align(world2pos(target, C.WorldMatrix));
                     extend();
                     break;
+                case States.connected:
+                    if (C.Status != MyShipConnectorStatus.Connected) {
+                        retract();
+                    }
+                    break;
             }
         }
         public void setAlign(Vector3D aTarget) {
@@ -208,8 +212,8 @@ namespace IngameScript
             }
         }
         bool align(Vector3D aTarget) {
-            aTarget.Y *= 2.0;
-            aTarget.X *= 2.0;
+            aTarget.Y *= 10.0;
+            aTarget.X *= 10.0;
             g.log("aligning ", aTarget);
             if (xu < 1) {
                 X.Velocity = (float)aTarget.Y;
@@ -258,6 +262,9 @@ namespace IngameScript
                     C.PullStrength = 0.001f;
                     
                     Z.Velocity = 0.25f;
+                    break;
+                case MyShipConnectorStatus.Connected:
+                    state = States.connected;
                     break;
             }
             return result;
