@@ -10,9 +10,14 @@ namespace IngameScript
         readonly GTS gts;
         readonly Logger g;
         public readonly IMyPistonBase X;
+        public string Name {
+            get {
+                return C == null ? "unknown" : C.CustomName;
+            }
+        }
         public IMyPistonBase Y { get; private set; }
         public IMyPistonBase Z { get; private set; }
-        public IMyShipConnector C { get; private set; }
+        IMyShipConnector C;
         States state = States.uninitialized;
         public Vector3D position { get; private set; }
         public Vector3D direction { get; private set; }
@@ -186,12 +191,12 @@ namespace IngameScript
                     }
                     break;
                 case States.aligned:
+                    align(world2pos(target, C.WorldMatrix));
                     extend();
                     break;
             }
         }
         public void setAlign(Vector3D aTarget) {
-            C.Enabled = false;
             target = aTarget;
             if (state != States.aligned) {
                 state = States.aligning;
@@ -232,10 +237,14 @@ namespace IngameScript
             var result = false;
             switch (C.Status) {
                 case MyShipConnectorStatus.Connectable:
+                    // 0.00015
+                    // 0.00001
+                    C.PullStrength += 0.001f;
                     Z.Velocity = 0;
                     result = true;
                     break;
                 case MyShipConnectorStatus.Unconnected:
+                    C.PullStrength = 0.001f;
                     Z.Velocity = 0.1f;
                     break;
             }

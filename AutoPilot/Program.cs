@@ -262,7 +262,7 @@ namespace IngameScript
 
             mMissionConnector = findConnector(aConnector);
             if (null != mMissionConnector) {
-                mMissionConnector.MessageSent = false;
+                mMissionConnector.MessageSent = 0;
                 var approachDistance = 600;
                 var finalDistance = approachDistance * 0.5;
                 
@@ -351,21 +351,28 @@ namespace IngameScript
                     switch (mCon.Status) {
                         case MyShipConnectorStatus.Connectable:
                             rotate2vector(Vector3D.Zero);
-                            ThrustN(0);
+                            ThrustN(0);                            
                             if (mvAngularVelocity.LengthSquared() == 0 && mdLinearVelocity == 0) {
                                 initMass();
                                 mCon.Connect();
                             }
                             break;
                         case MyShipConnectorStatus.Unconnected:
-                            if (1.0 > rotate2vector(mMissionConnector.Position + (mMissionConnector.Direction * 1000.0)) && !mMissionConnector.MessageSent) {
-                                var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
-                                IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
-                            }
-                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {                                
+                            
+                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {
+                                if (1.0 > rotate2vector(mMissionConnector.Position + (mMissionConnector.Direction * 1000.0)) && mMissionConnector.MessageSent == 0) {
+                                    var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
+                                    IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
+                                    mMissionConnector.MessageSent = 1;
+                                }
                                 ThrustN(0);
-                                mMissionConnector.MessageSent = true;
                             } else {
+                                if ((mMissionConnector.MessageSent % 6) == 0) {
+                                    var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
+                                    IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
+                                    
+                                }
+                                mMissionConnector.MessageSent++;
                                 missionNavigate();
                             }
                             
@@ -979,12 +986,9 @@ namespace IngameScript
 
             if (aUpdate.HasFlag(UpdateType.Update10)) {
                 foreach (var d in mDocks.Values) {
-                    log.log(d.Name);
+                    log.log("Dock: ", d.Name);
                 }
                 try {
-                    var v1 = new Vector3D(19715.48, 143953.6, -109091.22);
-                    var v2 = new Vector3D(19715.92, 143956.15, -109089.43);
-                    log.log("DIST! ", (v1 - v2).Length().ToString());
                     //initSensor();
                     initAltitude();
                     initVelocity();

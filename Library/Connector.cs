@@ -17,12 +17,12 @@ namespace IngameScript
         public Vector3D Objective;
         public Vector3D Approach;
         public Vector3D ApproachFinal;
-        public bool MessageSent = false;
+        public int MessageSent = 0;
         
         public Connector(IMyProgrammableBlock aBlock, Dock aDock) {
             ManagerId = aBlock.EntityId;
             Id = aDock.X.EntityId;
-            Name = aDock.C.CustomName;
+            Name = aDock.Name;
             Position = aDock.position;
             Direction = aDock.direction;
         }

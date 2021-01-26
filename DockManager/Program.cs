@@ -191,7 +191,7 @@ namespace IngameScript
 
         }
         Vector3D local2pos(Vector3D local, MatrixD world) =>
-   Vector3D.Transform(local, world);
+            Vector3D.Transform(local, world);
         Vector3D local2dir(Vector3D local, MatrixD world) =>
             Vector3D.TransformNormal(local, world);
         Vector3D world2pos(Vector3D world, MatrixD local) =>
