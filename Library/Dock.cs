@@ -15,8 +15,8 @@ namespace IngameScript
                 return C == null ? "unknown" : C.CustomName;
             }
         }
-        public IMyPistonBase Y { get; private set; }
-        public IMyPistonBase Z { get; private set; }
+        IMyPistonBase Y;
+        IMyPistonBase Z;
         IMyShipConnector C;
         States state = States.uninitialized;
         public Vector3D position { get; private set; }
@@ -195,15 +195,21 @@ namespace IngameScript
                     }
                     break;
                 case States.aligned:
-                    align(world2pos(target, C.WorldMatrix));
                     extend();
+                    align(world2pos(target, C.WorldMatrix));
                     break;
                 case States.connected:
                     if (C.Status != MyShipConnectorStatus.Connected) {
                         retract();
                     }
                     break;
+                case States.retracting:
+                    retract();
+                    break;
             }
+        }
+        public void setRetract() {
+            state = States.retracting;
         }
         public void setAlign(Vector3D aTarget) {
             target = aTarget;
@@ -234,11 +240,11 @@ namespace IngameScript
             } else {
                 Y.Velocity = (float)aTarget.X;
             }
+            g.log("X ", X.Velocity);
+            g.log("Y ", Y.Velocity);
             
             var result = Y.Velocity < 0.1f && X.Velocity < 0.1f;
-            if (result) {
-                Y.Velocity = X.Velocity = 0;
-            }
+            
             return result;
 
         }
@@ -260,9 +266,7 @@ namespace IngameScript
                     break;
                 case MyShipConnectorStatus.Unconnected:
                     C.PullStrength = 0.001f;
-                    var zv = (float)Math.Abs(world2pos(target, C.WorldMatrix).Z);
-                    zv -= 3.0f;
-                    Z.Velocity = zv < 0.25f ? 0.25f : zv;
+                    Z.Velocity = 0.25f;
                     break;
                 case MyShipConnectorStatus.Connected:
                     Z.Velocity = 0.25f;

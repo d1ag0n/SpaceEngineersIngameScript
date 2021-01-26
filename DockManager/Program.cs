@@ -26,7 +26,7 @@ namespace IngameScript
         readonly Logger g;        
         readonly Dictionary<long, Dock> mDicDocks;
         readonly List<Dock> mListDocks;
-        
+        IMySensorBlock mSensor;
         readonly IMyTextPanel lcd;
         States state = States.uninitialized;
 
@@ -45,7 +45,7 @@ namespace IngameScript
             g = new Logger();
             gts = new GTS(this, g);
             gts.getByTag("dockdisplay", ref lcd);
-
+            gts.get(ref mSensor);
             mDicDocks = new Dictionary<long, Dock>();
             mListDocks = new List<Dock>();
             IGC.UnicastListener.SetMessageCallback("dockcommand");
@@ -120,31 +120,46 @@ namespace IngameScript
                     case "Align":
                         d.setAlign(aMessage.Position);
                         break;
+                    case "Retract":
+                        d.setRetract();
+                        break;
                 }
             }
         }
+        int dockMessageCount = 0;
         void processMessages() {
             while (IGC.UnicastListener.HasPendingMessage) {
                 var msg = IGC.UnicastListener.AcceptMessage();
                 if (state == States.ready) {
-
                     try {
                         switch (msg.Tag) {
                             case "DockMessage":
                                 processDockMessage(new DockMessage(msg.Data));
+                                dockMessageCount++;
                                 break;
                         }
                     } catch (Exception ex) {
+                        g.persist(ex.ToString());
                     }
                 }
             }
         }
+        readonly List<MyDetectedEntityInfo> detected = new List<MyDetectedEntityInfo>();
         void Main(string argument, UpdateType aUpdate) {
+            if (aUpdate.HasFlag(UpdateType.Terminal)) {
+                switch (argument) {
+                    case "clear":
+                        dockMessageCount = 0;
+                        break;
+                }
+            }
             if (aUpdate.HasFlag(UpdateType.IGC)) {
                 processMessages();
             }
             if (aUpdate.HasFlag(UpdateType.Update10)) {
                 try {
+                    
+                    g.log("message receive count ", dockMessageCount);
                     g.log("Manager state ", state);
                     g.log("docks found ", mListDocks.Count);
                     switch (state) {
@@ -170,6 +185,13 @@ namespace IngameScript
                             }
                             break;
                         case States.ready:
+                            detected.Clear();
+                            //mSensor.DetectedEntities(detected);
+                            foreach (var d in detected) {
+                                g.log("detected ", d.Position);
+                                mListDocks[0].setAlign(d.Position);
+                                break;
+                            }
                             update();
                             break;
                     }

@@ -2,10 +2,8 @@
 using Sandbox.ModAPI.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
-using VRage;
 using VRageMath;
 
 namespace IngameScript
@@ -75,7 +73,13 @@ namespace IngameScript
         double rps2rpm(double rps) => (rps / (Math.PI * 2)) * 60.0;
         double rpm2rps(double rpm) => (rpm * (Math.PI * 2)) / 60.0;
         double angleBetween(Vector3D a, Vector3D b) {
-            var result = Math.Acos(a.Dot(b));
+            var dot = a.Dot(b);
+            if (dot < -1.0) {
+                dot = -1.0;
+            } else if (dot > 1.0) {
+                dot = 1.0;
+            }
+            var result = Math.Acos(dot);
             //log("angleBetween ", result);
             return result;
         }
@@ -154,6 +158,7 @@ namespace IngameScript
             mdMissionDistance = (mvMissionObjective - mvMissionStart).Length();
         }
         void initMission() {
+            igcMessagesFailed = igcMessagesSent = 0;
             g.log("initMission");
             mvMissionStart = mRC.CenterOfMass;
             mdMissionDistance = 
@@ -270,8 +275,14 @@ namespace IngameScript
                 var projectedPosition = reject(mRC.CenterOfMass, approachPlane, mMissionConnector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * approachDistance);
-                mMissionConnector.Objective = mMissionConnector.Position + (mMissionConnector.Direction * (5.5 + (mCon.WorldMatrix.Translation - mRC.CenterOfMass).Length()));
+                mMissionConnector.Objective = mMissionConnector.Position + (mMissionConnector.Direction * (4.0 + (mCon.WorldMatrix.Translation - mRC.CenterOfMass).Length()));
                 result = true;
+                var msg = new DockMessage(mMissionConnector.DockId, "Retract", Vector3D.Zero);
+                if (IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", msg.Data())) {
+                    igcMessagesSent++;
+                } else {
+                    igcMessagesFailed++;
+                }
             }
             return result;
         }
@@ -324,7 +335,7 @@ namespace IngameScript
                 case DockStep.depart:
                     setMissionObjective(mMissionConnector.ApproachFinal);
                     msg = "rendezvous with final approach";
-                    var precision = 50.0;
+                    var precision = 10.0;
                     if (DockStep.depart == step) {
                         msg = "depart dock area";
                         precision = 100.0;
@@ -358,21 +369,21 @@ namespace IngameScript
                             }
                             break;
                         case MyShipConnectorStatus.Unconnected:
-                            
-                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {
-                                if (1.0 > rotate2vector(mMissionConnector.Position + (mMissionConnector.Direction * 10000.0)) && mMissionConnector.MessageSent == 0) {
-                                    var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
-                                    IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
-                                    mMissionConnector.MessageSent = 1;
+                            if (3 == mMissionConnector.MessageSent) {
+                                var dockMessage = new DockMessage(mMissionConnector.DockId, "Align", mCon.WorldMatrix.Translation);
+                                if (IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data())) {
+                                    igcMessagesSent++;
+                                    mMissionConnector.MessageSent = 0;
+                                } else {
+                                    igcMessagesFailed++;
                                 }
+                            } else {
+                                mMissionConnector.MessageSent++;
+                            }
+                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {
+                                rotate2vector(mRC.CenterOfMass + (mMissionConnector.Direction * 500.0));
                                 ThrustN(0);
                             } else {
-                                if (4 == mMissionConnector.MessageSent) {
-                                    var dockMessage = new DockMessage(mMissionConnector.Id, "Align", mCon.WorldMatrix.Translation);
-                                    IGC.SendUnicastMessage(mMissionConnector.ManagerId, "DockMessage", dockMessage.Data());
-                                    mMissionConnector.MessageSent = 0;
-                                }
-                                mMissionConnector.MessageSent++;
                                 missionNavigate();
                             }
                             
@@ -400,7 +411,13 @@ namespace IngameScript
                     if (miDock == 2) {
                         miDock = 0;
                     }
-                    setMissionDamp(); 
+                    moon = !moon;
+                    if (moon) {
+                        setMissionDock("moon");
+                    } else {
+                        setMissionDock("orbit");
+                    }
+                    
                     break;
                 default:
                     g.log("step unhandled, damping");
@@ -409,6 +426,7 @@ namespace IngameScript
             }
             g.log(msg);
         }
+        bool moon = false;
         double missionNavigate() {
             /*
             var displacement2objective = mvMissionObjective - mvMissionStart;
@@ -725,7 +743,8 @@ namespace IngameScript
             if (prefVelo > 1.0) {
                 prefVelo = 1.0;
             }
-            var maxvelo = 60.0;
+            //var maxvelo = 60.0;
+            var maxvelo = mdPreferredVelocity;
             prefVelo *= maxvelo;
             if (targetMag < 1.0) {
                 prefVelo = 0.0;
@@ -880,7 +899,9 @@ namespace IngameScript
 
             mvLinearVelocityDirection = mvLinearVelocity / mdLinearVelocity;
             mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2);
-            mdStopDistance *= 12.0;
+            var ab = angleBetween(mvLinearVelocityDirection, mRC.WorldMatrix.Down);
+
+            mdStopDistance *= (1 + ab);
 
             if (mdStopDistance < 1.0) {
                 //mdStopDistance = 1.0;
@@ -903,7 +924,7 @@ namespace IngameScript
             if (mdDistance2Objective < 0.25) {
                 mdPreferredVelocity = 0.0;
             } else if (mdDistance2Objective < 100.0 && mdPreferredVelocity > mdDistance2Objective * 0.1) {
-                mdPreferredVelocity = mdDistance2Objective * 0.1;
+                //mdPreferredVelocity = mdDistance2Objective * 0.1;
             }
 
             if (double.IsNaN(mdPreferredVelocity)) {
@@ -936,13 +957,15 @@ namespace IngameScript
                     }
                 }
             } catch (Exception ex) {
-                Me.CustomData = ex.ToString();
+                g.persist(ex.ToString());
             }
         }
         void setMissionTest() {
             initMission();
             meMission = Missions.test;
         }
+        int igcMessagesSent = 0;
+        int igcMessagesFailed = 0;
         void Main(string argument, UpdateType aUpdate) {
             string str;
             if (aUpdate.HasFlag(UpdateType.Terminal)) {
@@ -981,11 +1004,8 @@ namespace IngameScript
                                 case "test":
                                     setMissionTest();
                                     break;
-                                case "rotate":
-                                    setMissionTrajectory(false);
-                                    break;
-                                case "thrust":
-                                    setMissionTrajectory(true);
+                                case "mass":
+                                    initMass();
                                     break;
                             }
                         }
@@ -999,6 +1019,7 @@ namespace IngameScript
             }
 
             if (aUpdate.HasFlag(UpdateType.Update10)) {
+                g.log("igc success ", igcMessagesSent, " fail ", igcMessagesFailed);
                 foreach (var d in mDocks.Values) {
                     g.log("Dock: ", d.Name);
                 }
@@ -1155,7 +1176,7 @@ namespace IngameScript
 
         Connector mMissionConnector; 
         
-        Dictionary<long, Connector> mDocks = new Dictionary<long, Connector>();
+        readonly Dictionary<long, Connector> mDocks = new Dictionary<long, Connector>();
         
 
         double mdAltitude;
@@ -1170,7 +1191,7 @@ namespace IngameScript
         double mdNewtons;
         double mdMaxAccel;
         double mdMissionAltitude = 0;
-        const double mdRotateEpsilon = 0.1;
+        const double mdRotateEpsilon = 0.01;
         double mdMissionDistance = 0.0;
 
         readonly GTS mGTS;
