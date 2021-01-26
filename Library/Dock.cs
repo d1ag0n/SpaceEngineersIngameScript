@@ -252,7 +252,7 @@ namespace IngameScript
                     if (C.PullStrength == 1.0) {
                         C.Connect();
                     } else {
-                        C.PullStrength *= 1.3f;
+                        C.PullStrength *= 1.25f;
                     }
                     
                     g.log("Strength: ", C.PullStrength);

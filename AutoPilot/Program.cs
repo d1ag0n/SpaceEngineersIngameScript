@@ -324,7 +324,7 @@ namespace IngameScript
                 case DockStep.depart:
                     setMissionObjective(mMissionConnector.ApproachFinal);
                     msg = "rendezvous with final approach";
-                    var precision = 25.0;
+                    var precision = 50.0;
                     if (DockStep.depart == step) {
                         msg = "depart dock area";
                         precision = 100.0;
