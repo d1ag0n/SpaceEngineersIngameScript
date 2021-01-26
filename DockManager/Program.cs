@@ -126,15 +126,16 @@ namespace IngameScript
         void processMessages() {
             while (IGC.UnicastListener.HasPendingMessage) {
                 var msg = IGC.UnicastListener.AcceptMessage();
-                try {
+                if (state == States.ready) {
 
-                    switch (msg.Tag) {
-                        case "DockMessage":
-                            processDockMessage(new DockMessage(msg.Data));
-                            break;
+                    try {
+                        switch (msg.Tag) {
+                            case "DockMessage":
+                                processDockMessage(new DockMessage(msg.Data));
+                                break;
+                        }
+                    } catch (Exception ex) {
                     }
-                } catch (Exception ex) {
-
                 }
             }
         }
@@ -144,7 +145,7 @@ namespace IngameScript
             }
             if (aUpdate.HasFlag(UpdateType.Update10)) {
                 try {
-                    g.log("state ", state);
+                    g.log("Manager state ", state);
                     g.log("docks found ", mListDocks.Count);
                     switch (state) {
                         case States.uninitialized:

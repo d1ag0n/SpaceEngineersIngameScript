@@ -129,7 +129,11 @@ namespace IngameScript
         bool precalibrate() {
             X.Velocity =
             Y.Velocity =
-            Z.Velocity = -5.0f;
+            Z.Velocity = -0.5f;
+            g.log("precalibrate");
+            g.log("X ", X.CurrentPosition, " needs ", X.MinLimit);
+            g.log("Y ", Y.CurrentPosition, " needs ", Y.MinLimit);
+            g.log("Z ", Z.CurrentPosition, " needs ", Z.MinLimit);
             return X.CurrentPosition == X.MinLimit &&
                 Y.CurrentPosition == Y.MinLimit &&
                 Z.CurrentPosition == Z.MinLimit;
@@ -184,6 +188,7 @@ namespace IngameScript
         Vector3D world2pos(Vector3D world, MatrixD local) =>
             Vector3D.TransformNormal(world - local.Translation, MatrixD.Transpose(local));
         public void update() {
+            g.log("dock state ", state);
             switch (state) {
                 case States.aligning:
                     if (align(world2pos(target, C.WorldMatrix))) {
@@ -225,6 +230,7 @@ namespace IngameScript
             } else {
                 Y.Velocity = (float)aTarget.X;
             }
+            
             var result = Y.Velocity < 0.1f && X.Velocity < 0.1f;
             if (result) {
                 Y.Velocity = X.Velocity = 0;
@@ -239,13 +245,19 @@ namespace IngameScript
                 case MyShipConnectorStatus.Connectable:
                     // 0.00015
                     // 0.00001
-                    C.PullStrength += 0.001f;
-                    Z.Velocity = 0;
+                    if (C.PullStrength == 1.0) {
+                        C.Connect();
+                    } else {
+                        C.PullStrength *= 1.1f;
+                    }
+                    
+                    g.log("Strength: ", C.PullStrength);
                     result = true;
                     break;
                 case MyShipConnectorStatus.Unconnected:
                     C.PullStrength = 0.001f;
-                    Z.Velocity = 0.1f;
+                    
+                    Z.Velocity = 0.25f;
                     break;
             }
             return result;
@@ -290,7 +302,6 @@ namespace IngameScript
                         var c = clist[i];
                         if (c.CubeGrid.EntityId == top.EntityId) {
                             C = c;
-                            c.Enabled = false;
                             break;
                         }
                     }

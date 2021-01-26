@@ -19,9 +19,6 @@ namespace IngameScript
             double result = 0;
             if (Vector3D.Zero == aTarget) {
                 mGyro.GyroOverride = false;
-                if (mdAngularVelocity == 0) {
-                    mGyro.Enabled = false;
-                }
             } else {
                 mGyro.GyroOverride = true;
                 result += Math.Abs(pitch2vector(aTarget));
@@ -93,16 +90,16 @@ namespace IngameScript
         }
         double rot2rpm(double x, double scale) {
             if (x > 1.0) {
-                log.log("BAD ", x);
+                g.log("BAD ", x);
             } else if (x < -1.0) {
-                log.log("BAD ", x);
+                g.log("BAD ", x);
             }
             var result = Math.Asin(x) / 2.0 / Math.PI * 60.0 / 0.166666;
             if (Math.Abs(result) < 0.001) {
                 //result = 0.0;
             }
             if (result > 60.0) {
-                log.log("dying ", result);
+                g.log("dying ", result);
                 //Me.Enabled = false;
             }
             return result * scale;
@@ -157,6 +154,7 @@ namespace IngameScript
             mdMissionDistance = (mvMissionObjective - mvMissionStart).Length();
         }
         void initMission() {
+            g.log("initMission");
             mvMissionStart = mRC.CenterOfMass;
             mdMissionDistance = 
             mdMissionAltitude =
@@ -188,12 +186,12 @@ namespace IngameScript
                 }
             }
             if (result) {
-                log.log("mission altitude ", mdMissionAltitude);
+                g.log("mission altitude ", mdMissionAltitude);
             }
             return result;
         }
         void doMission() {
-            log.log("doMission ", meMission);
+            g.log("doMission ", meMission);
             switch (meMission) {
                 case Missions.damp: {                    
                     if (initMissionAltitude()) {
@@ -235,11 +233,12 @@ namespace IngameScript
                     //log.log(gps("test con1", objective));
                     break;
                 default:
-                    log.log("mission unhandled");
+                    g.log("mission unhandled");
                     break;
             }
         }
         Connector findConnector(string aConnector) {
+            g.log("findConnector");
             Connector result = null;
             var keys = mDocks.Keys.ToArray();
             double distance = double.MaxValue;
@@ -256,26 +255,25 @@ namespace IngameScript
             }
             return result;
         }
-        void setMissionDock(string aConnector) {
-            initMission();
-            
-
-            mMissionConnector = findConnector(aConnector);
-            if (null != mMissionConnector) {
+        bool setMissionDock(string aConnector) {
+            var foundConnector = findConnector(aConnector);
+            var result = false;
+            if (null != foundConnector) {
+                initMission();
+                mMissionConnector = foundConnector;
                 mMissionConnector.MessageSent = 0;
                 var approachDistance = 600;
                 var finalDistance = approachDistance * 0.5;
-                
                 meMission = Missions.dock;
                 var approachPlane = mMissionConnector.Position + (mMissionConnector.Direction * approachDistance);
                 mMissionConnector.ApproachFinal = mMissionConnector.Position + (mMissionConnector.Direction * finalDistance);
-
                 var projectedPosition = reject(mRC.CenterOfMass, approachPlane, mMissionConnector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
                 mMissionConnector.Approach = approachPlane + (projectedDirection * approachDistance);
-
-                mMissionConnector.Objective = mMissionConnector.Position + (mMissionConnector.Direction * (mCon.WorldMatrix.Translation - mRC.CenterOfMass).Length());
+                mMissionConnector.Objective = mMissionConnector.Position + (mMissionConnector.Direction * (7.5 + (mCon.WorldMatrix.Translation - mRC.CenterOfMass).Length()));
+                result = true;
             }
+            return result;
         }
         enum DockStep : int
         {
@@ -302,7 +300,7 @@ namespace IngameScript
             return sb.ToString();
         }
         void missionDock() {
-            log.log("Dock Mission: ", mMissionConnector.Name);
+            g.log("Dock Mission: ", mMissionConnector.Name);
             var d = 0.0;
             var msg = "unknown";
             var step = (DockStep)miMissionStep;
@@ -351,10 +349,12 @@ namespace IngameScript
                     switch (mCon.Status) {
                         case MyShipConnectorStatus.Connectable:
                             rotate2vector(Vector3D.Zero);
-                            ThrustN(0);                            
+                            ThrustN(0);
                             if (mvAngularVelocity.LengthSquared() == 0 && mdLinearVelocity == 0) {
                                 initMass();
                                 mCon.Connect();
+                            } else {
+                                g.log("waiting to connect");
                             }
                             break;
                         case MyShipConnectorStatus.Unconnected:
@@ -400,14 +400,14 @@ namespace IngameScript
                     if (miDock == 2) {
                         miDock = 0;
                     }
-                    setMissionDock("con" + miDock);
+                    setMissionDamp(); 
                     break;
                 default:
-                    log.log("step unhandled, damping");
+                    g.log("step unhandled, damping");
                     missionDamp();
                     break;
             }
-            log.log(msg);
+            g.log(msg);
         }
         double missionNavigate() {
             /*
@@ -454,7 +454,7 @@ namespace IngameScript
                 result = 0.0;
                 
             }
-            log.log("navigate result ", result);
+            g.log("navigate result ", result);
             return result;
 
             //rotate2vector(Vector3D.Zero);
@@ -628,7 +628,7 @@ namespace IngameScript
             mSensor.DetectedEntities(list);
             var vec = Vector3D.Zero;
             foreach (var e in list) {
-                log.log(e.Name);
+                g.log(e.Name);
             }
         }
         void initAltitude() {
@@ -643,7 +643,7 @@ namespace IngameScript
             } else {
                 mdAltitude = 0.0;
             }
-            log.log("altitude ", mdAltitude);
+            g.log("altitude ", mdAltitude);
         }
         /// <summary>
         /// 1 N = 0.10197 kg × 9.80665
@@ -749,9 +749,6 @@ namespace IngameScript
                 ThrustN(0);
                 mGyro.GyroOverride = false;
                 return 0.0;
-            } else {
-                log.log("trajectory targetMag ", targetMag);
-                log.log("trajectory veloMag ", veloMag.ToString());
             }
             
             var veloDir = veloVec / veloMag;
@@ -918,13 +915,13 @@ namespace IngameScript
             }
 
             
-            log.log("Distance to Objective ", mdDistance2Objective);
+            g.log("Distance to Objective ", mdDistance2Objective);
             
             //log("acceleration ", mdAcceleration);
-            log.log("linear velocity ", mdLinearVelocity);
+            g.log("linear velocity ", mdLinearVelocity);
             //log("angular velocity ", mdAngularVelocity);
-            log.log("stop distance ", mdStopDistance);
-            log.log("perferred velocity ", mdPreferredVelocity);
+            g.log("stop distance ", mdStopDistance);
+            g.log("perferred velocity ", mdPreferredVelocity);
         }
 
         void receiveMessage() {
@@ -949,35 +946,52 @@ namespace IngameScript
         void Main(string argument, UpdateType aUpdate) {
             string str;
             if (aUpdate.HasFlag(UpdateType.Terminal)) {
-                if (null != argument) {
-                    var args = argument.Split(' ');
-                    if (0 < args.Length) {
-                        switch (args[0]) {
-                            case "dock":
-                                if (1 < args.Length) {
-                                    setMissionDock(args[1]);
-                                }
-                                break;
-                            case "damp":
-                                setMissionDamp();
-                                break;
-                            case "patrol":
-                                setMissionPatrol();
-                                break;
-                            case "navigate":
-                                setMissionNavigate(args[1]); // GPS: MOON_DOCK
-                                break;
-                            case "test":
-                                setMissionTest();
-                                break;
-                            case "rotate":
-                                setMissionTrajectory(false);
-                                break;
-                            case "thrust":
-                                setMissionTrajectory(true);
-                                break;
+                try {
+                    if (null != argument) {
+                        var args = argument.Split(' ');
+                        if (0 < args.Length) {
+                            switch (args[0]) {
+                                case "p":
+                                    if (1 < args.Length) {
+                                        int p;
+                                        if (int.TryParse(args[1], out p)) {
+                                            g.removeP(p);
+                                        }
+
+                                    } else {
+                                        g.removeP(0);
+                                    }
+                                    break;
+                                case "dock":
+                                    if (1 < args.Length) {
+                                        if (!setMissionDock(args[1])) {
+                                            g.persist($"Dock '{args[1]}' not found.");
+                                        }
+                                    }
+                                    break;
+                                case "damp":
+                                    setMissionDamp();
+                                    break;
+                                case "patrol":
+                                    setMissionPatrol();
+                                    break;
+                                case "navigate":
+                                    setMissionNavigate(args[1]); // GPS: MOON_DOCK
+                                    break;
+                                case "test":
+                                    setMissionTest();
+                                    break;
+                                case "rotate":
+                                    setMissionTrajectory(false);
+                                    break;
+                                case "thrust":
+                                    setMissionTrajectory(true);
+                                    break;
+                            }
                         }
                     }
+                } catch (Exception ex) {
+                    g.persist(ex.ToString());
                 }
             }
             if (aUpdate.HasFlag(UpdateType.IGC)) {
@@ -986,7 +1000,7 @@ namespace IngameScript
 
             if (aUpdate.HasFlag(UpdateType.Update10)) {
                 foreach (var d in mDocks.Values) {
-                    log.log("Dock: ", d.Name);
+                    g.log("Dock: ", d.Name);
                 }
                 try {
                     //initSensor();
@@ -999,13 +1013,13 @@ namespace IngameScript
                         //log.log(gps("Dock Direction", mMissionConnector.Position + mMissionConnector.Direction));
                     }
                     doMission();
-                    str = log.clear();
+                    str = g.clear();
                     if (null != mLCD) {
                         mLCD.WriteText(str);
                     }
                 } catch (Exception ex) {
-                    log.log("Handled!", ex);
-                    str = log.clear();
+                    g.persist(ex.ToString());
+                    str = g.clear();
                 }
 
                 Echo(str);
@@ -1044,7 +1058,7 @@ namespace IngameScript
         void motor2Angle(IMyMotorStator aHinge, float aAngle) {
             if (check(aHinge)) {
                 var delta = aAngle - aHinge.Angle;
-                log.log("hinge delta", delta);
+                g.log("hinge delta", delta);
                 aHinge.TargetVelocityRad = delta;
             }
         }
@@ -1056,7 +1070,7 @@ namespace IngameScript
                 !aMotor.RotorLock &&
                 aMotor.IsFunctional;
             if (!result) {
-                log.log("check failed");
+                g.log("check failed");
             }
             return result;
         }
@@ -1105,7 +1119,7 @@ namespace IngameScript
                         }
                     }
                 } else {
-                    log.log("angle nan");
+                    g.log("angle nan");
                 }
                 aRoto.TargetVelocityRad = (float)(v * 6.0);
             }
@@ -1178,7 +1192,7 @@ namespace IngameScript
         const double mdTimeFactor = mdTickTime * miInterval;
         int miMissionStep = 0;
 
-        Logger log = new Logger();
+        
 
         Missions meMission = Missions.damp;
 

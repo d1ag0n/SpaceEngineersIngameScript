@@ -7,7 +7,8 @@ namespace IngameScript
 {
     class Logger
     {
-        StringBuilder mLog = new StringBuilder();
+        readonly StringBuilder mLog = new StringBuilder();
+        readonly List<string> mPersistent = new List<string>();
         public void log(double d) => log();
         public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
         public void log(params object[] args) {
@@ -29,10 +30,25 @@ namespace IngameScript
             mLog.AppendLine();
         }
         public string clear() {
-            string result = mLog.ToString();
-            mLog = new StringBuilder();
+            string result = get();
+            mLog.Clear();
             return result;
         }
-        public string get() => mLog.ToString();
+        public void removeP(int index) {
+            if (mPersistent.Count > index) {
+                mPersistent.RemoveAt(index);
+            }
+        }
+        public void persist(string aMessage) {
+            mPersistent.Add(aMessage);
+        }
+        public string get() {
+            for (int i = 0; i < mPersistent.Count; i++) {
+                mLog.Insert(0, Environment.NewLine);
+                mLog.Insert(0, mPersistent[0]);
+                mLog.Insert(0, $"#{i} ");
+            }
+            return mLog.ToString();
+        }
     }
 }
