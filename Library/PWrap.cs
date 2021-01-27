@@ -191,6 +191,8 @@ namespace IngameScript
                 if (!pc.IGC.SendUnicastMessage(coreNext, coreTag, corePing)) {
                     send = true;
                     g.persist("BC ping send fail");
+                } else {
+                    g.persist($"Ping sent @ {time.TotalSeconds}");
                 }
                 if (send) {
                     sendCoreBroadcast();

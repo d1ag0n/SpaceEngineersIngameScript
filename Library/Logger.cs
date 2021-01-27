@@ -40,7 +40,7 @@ namespace IngameScript
             }
         }
         public void persist(string aMessage) {
-            if (mPersistent.Count > 25) {
+            if (mPersistent.Count > 20) {
                 mPersistent.RemoveAt(0);
             }
             mPersistent.Add(aMessage);
