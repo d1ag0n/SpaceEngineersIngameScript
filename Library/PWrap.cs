@@ -61,6 +61,7 @@ namespace IngameScript
         private bool wrapInit() {
             coreListener = pc.IGC.RegisterBroadcastListener(coreTag);
             gts.getByTag("console", ref mConsole);
+            g.persist("BC wrapInit");
             sendCoreBroadcast();
             return true;
         }
@@ -87,16 +88,20 @@ namespace IngameScript
                     if (aSource > id) {
                         if (0 == coreNext) {
                             coreNext = aSource;
+                            g.persist("BC coreNext = zero");
                             result = true;
                         } else if (aSource < coreNext) {
+                            g.persist("BC source < coreNext");
                             coreNext = aSource;
                             result = true;
                         }
                     } else {
                         if (0 == corePrevious) {
+                            g.persist("BC corePrevious = zero");
                             corePrevious = aSource;
                             result = true;
                         } else if (aSource > corePrevious) {
+                            g.persist("BC source > corePrevious");
                             corePrevious = aSource;
                             result = true;
                         }
@@ -107,6 +112,7 @@ namespace IngameScript
                         if (sendPong()) {
                             g.persist($"Pong sent @ {time.TotalSeconds}");
                         } else {
+                            g.persist("BC fail to pong");
                             result = true;
                         }
                     } else {
@@ -143,6 +149,7 @@ namespace IngameScript
                 }
             }
             if (send) {
+                g.persist("BC handleMessage");
                 sendCoreBroadcast();
             }
             if (initialized && messages.Count > 0) {
@@ -176,10 +183,14 @@ namespace IngameScript
             if ((time.TotalSeconds - lastCorePing) > 10.0) {
                 lastCorePing = time.TotalSeconds;
                 var send = !corePongReceived;
+                if (send) {
+                    g.persist("BC pong not received");
+                }
                 corePongReceived = false;
 
                 if (!pc.IGC.SendUnicastMessage(coreNext, coreTag, corePing)) {
                     send = true;
+                    g.persist("BC ping send fail");
                 }
                 if (send) {
                     sendCoreBroadcast();
