@@ -180,7 +180,7 @@ namespace IngameScript
             }
         }
         void sendPing() {
-            if ((time.TotalSeconds - lastCorePing) > 10.0) {
+            if (coreNext > 0 && (time.TotalSeconds - lastCorePing) > 10.0) {
                 lastCorePing = time.TotalSeconds;
                 var send = !corePongReceived;
                 if (send) {
