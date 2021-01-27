@@ -13,10 +13,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InventoryManager", "Invento
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{53ECE70B-9576-43FF-9432-C30BBF8C55F4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{81C70A3C-A14C-4C0E-8607-35C4FC537876}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Library\Library.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
 		Library\Library.projitems*{6eb7eb41-9002-4602-93f1-9da21807e436}*SharedItemsImports = 4
+		Library\Library.projitems*{81c70a3c-a14c-4c0e-8607-35c4fc537876}*SharedItemsImports = 4
 		Library\Library.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
 		Library\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
 	EndGlobalSection
@@ -56,6 +59,13 @@ Global
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|x64.ActiveCfg = Release|Any CPU
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|x64.Build.0 = Release|Any CPU
+		{81C70A3C-A14C-4C0E-8607-35C4FC537876}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{81C70A3C-A14C-4C0E-8607-35C4FC537876}.Debug|x64.ActiveCfg = Debug|x64
+		{81C70A3C-A14C-4C0E-8607-35C4FC537876}.Debug|x64.Build.0 = Debug|x64
+		{81C70A3C-A14C-4C0E-8607-35C4FC537876}.Release|Any CPU.ActiveCfg = Debug|x64
+		{81C70A3C-A14C-4C0E-8607-35C4FC537876}.Release|Any CPU.Build.0 = Debug|x64
+		{81C70A3C-A14C-4C0E-8607-35C4FC537876}.Release|x64.ActiveCfg = Debug|x64
+		{81C70A3C-A14C-4C0E-8607-35C4FC537876}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

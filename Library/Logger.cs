@@ -40,15 +40,19 @@ namespace IngameScript
             }
         }
         public void persist(string aMessage) {
+            if (mPersistent.Count > 25) {
+                mPersistent.RemoveAt(0);
+            }
             mPersistent.Add(aMessage);
         }
         public string get() {
             for (int i = 0; i < mPersistent.Count; i++) {
                 mLog.Insert(0, Environment.NewLine);
-                mLog.Insert(0, mPersistent[0]);
+                mLog.Insert(0, mPersistent[i]);
                 mLog.Insert(0, $"#{i} ");
             }
             return mLog.ToString();
         }
+
     }
 }

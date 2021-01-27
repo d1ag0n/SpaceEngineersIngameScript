@@ -726,6 +726,9 @@ namespace IngameScript
         double trajectory(Vector3D aObjective, bool aGyroHold) {
             var sv = mRC.GetShipVelocities();
 
+            // whip says
+            // var desiredDampeningThrust = mass * (2 * velocity + gravity);
+
             //var velocityDir = velocityVec / velocityMag;
             //var velocityForce = forceOfVelocity(mdMass, velocityMag, mdTimeFactor);
 

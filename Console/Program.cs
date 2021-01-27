@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,6 +16,24 @@ namespace commandline
         const double mMass = 3887.0;
         const double mVelocity = 1.71;
         static void Main(string[] args) {
+            StringBuilder sb = new StringBuilder();
+            foreach (var c in "1234567890") {
+                Console.WriteLine((byte)c);
+            }
+            
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider()) {
+                byte[] by = new byte[1024];
+                rng.GetBytes(by);
+                foreach (var b in by) {
+                    if ((b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')) {
+                        sb.Append((char)b);
+                    }
+                    if (sb.Length == 24) {
+                        break;
+                    }
+                }
+            }
+            Console.WriteLine(sb.ToString());
             var free = 1.0;
             var vol = 1.01;
             var famount = free / vol;
@@ -43,9 +62,16 @@ namespace commandline
             var forceResult = force(mMass, accelerationResult);
             Console.WriteLine($"force = {forceResult}");
 
+            var desiredDampeningThrustResult = desiredDampeningThrust(mMass, mVelocity, 0);
+            Console.WriteLine($"desiredDampeningThrust = {desiredDampeningThrustResult}");
+
             Console.ReadKey();
         }
+        // whip says....
+        // var desiredDampeningThrust = mass * (2 * velocity + gravity);
+        // dont use this one
 
+        static double desiredDampeningThrust(double mass, double velocity, double gravity) => mass * (2 * velocity + gravity);
         static double forceOfVelocity(double mass, double velocity, double time) => mass * velocity / time;
         static double momentum(double force, double time) => force * time;
         static double forceOfMomentum(double momentum, double time) => momentum / time;

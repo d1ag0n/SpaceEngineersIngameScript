@@ -7,7 +7,6 @@ namespace IngameScript
 {
     class GTS {
         readonly MyGridProgram program;
-
         Dictionary<long, IMyTerminalBlock> mBlocks;
         Dictionary<string, List<IMyTerminalBlock>> mTags;
         readonly Logger g;
@@ -52,7 +51,6 @@ namespace IngameScript
                 //g.log("list not found for #", aTag);
             }
         }
-
         void initTags(IMyTerminalBlock aBlock) {
             if (null != aBlock && null != aBlock.CustomData) {
                 var tags = getTags(aBlock);
@@ -73,7 +71,6 @@ namespace IngameScript
                 }
             }
         }
-
         public void initList<T>(List<T> aList) {
             foreach (var b in mBlocks.Values) {
                 if (b is T) {
@@ -81,7 +78,6 @@ namespace IngameScript
                 }
             }
         }
-
         public bool hasTag(IMyTerminalBlock aBlock, string aTag) {
             var tags = getTags(aBlock);
 
@@ -92,11 +88,9 @@ namespace IngameScript
             }
             return false;
         }
-
         string[] getTags(IMyTerminalBlock aBlock) {
             return aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
         }
-
         public void init() {
             List<IMyTerminalBlock> blocks;
             if (null == mBlocks) {

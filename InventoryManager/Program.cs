@@ -240,6 +240,7 @@ namespace IngameScript
                 subIndex = 0;
                 index++;
             }
+            Me
         }
         void stepCargo() {
             if (mCargo.Count > 0 && index < mCargo.Count) {
