@@ -238,7 +238,7 @@ namespace IngameScript
                 } catch (Exception ex) {
                     g.persist(ex.ToString());
                 }
-                g.log(time);
+                g.log(time.TotalSeconds);
                 var log = g.clear();
                 if (null != mConsole) {
                     mConsole.WriteText(log);
