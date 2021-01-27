@@ -104,7 +104,9 @@ namespace IngameScript
                     break;
                 case corePing:
                     if (aSource == corePrevious) {
-                        if (!sendPong()) {
+                        if (sendPong()) {
+                            g.persist($"Pong sent @ {time.TotalSeconds}");
+                        } else {
                             result = true;
                         }
                     } else {
@@ -112,7 +114,7 @@ namespace IngameScript
                     }
                     break;
                 case corePong:
-                    if (aSource == corePrevious) {
+                    if (aSource == coreNext) {
                         corePongReceived = true;
                     } else {
                         g.persist($"Ignored pong from {aSource}");
@@ -125,6 +127,7 @@ namespace IngameScript
         void sendCoreBroadcast() {
             if (!coreBroadcastSent) {
                 pc.IGC.SendBroadcastMessage(coreTag, coreAssert);
+                g.persist($"Core broadcast sent @ {time.TotalSeconds}");
                 coreBroadcastSent = true;
             }
         }
@@ -170,7 +173,7 @@ namespace IngameScript
             }
         }
         void sendPing() {
-            if (lastCorePing > 10.0) {
+            if ((time.TotalSeconds - lastCorePing) > 10.0) {
                 lastCorePing = time.TotalSeconds;
                 var send = !corePongReceived;
                 corePongReceived = false;
