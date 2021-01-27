@@ -4,18 +4,84 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using VRageMath;
 
 namespace commandline
 {
     class Program
     {
+
         const int miInterval = 10;
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;
         //const double mdTimeFactor = 0.2;
         const double mMass = 3887.0;
         const double mVelocity = 1.71;
+        static int gps2i(int lat, int lon) {
+
+        }
+        static void sphere() {
+
+            int nx = 4;
+            int ny = 5;
+            for (int x = 0; x < nx; x++) {
+                var lon = 360 * ((x + 0.5) / nx);
+                for (int y = 0; y < ny; y++) {
+                    //var midpt = (y + 0.5) / ny;
+                    var lat = 180 * Math.Asin(2 * ((y + 0.5) / ny - 0.5));
+                    Console.WriteLine($"{lon}, {lat}");
+                }
+            }
+        }
+        static Vector3D v2n(Vector3D v, long n) {
+            if (v.X < 0) {
+                v.X -= n;
+            }
+            if (v.Y < 0) {
+                v.Y -= n;
+            }
+            if (v.Z < 0) {
+                v.Z -= n;
+            }
+            v.X = (long)v.X / n;
+            v.Y = (long)v.Y / n;
+            v.Z = (long)v.Z / n;
+            return v;
+        }
+        static Vector3D n2v(Vector3D v, long n) {
+            if (v.X < 0) {
+                v.X++;
+            }
+            if (v.Y < 0) {
+                v.Y++;
+            }
+            if (v.Z < 0) {
+                v.Z++;
+            }
+            v.X *= n;
+            v.Y *= n;
+            v.Z *= n;
+            return v;
+        }
+        static Vector3D v2k(Vector3D v) => v2n(v, 1000);
+        static Vector3D k2v(Vector3D v) => n2v(v, 1000);
+            
         static void Main(string[] args) {
+
+            Console.WriteLine(Math.Sqrt(2));
+            sphere();
+
+            var v = new Vector3D(986148.14, 102603.57, 1599688.09);
+            v = new Vector3D(48.14, 102603.57, 1599688.09);
+
+            Console.WriteLine("World " + v.ToString());
+            v = v2k(v);
+            Console.WriteLine("v2k " + v.ToString());
+            v = k2v(v);
+            Console.WriteLine("k2v " + v.ToString());
+
+
+
             StringBuilder sb = new StringBuilder();
             foreach (var c in "1234567890") {
                 Console.WriteLine((byte)c);

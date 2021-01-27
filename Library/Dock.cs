@@ -178,9 +178,9 @@ namespace IngameScript
         }
         public bool retract() {
             C.Enabled = false;
-            X.Velocity = 
-            Y.Velocity = 
-            Z.Velocity = -1.0f;
+            X.Velocity =
+            Y.Velocity = -0.5f;
+            Z.Velocity = -5.0f;
             var result = X.CurrentPosition == X.MinLimit && Y.CurrentPosition == Y.MinLimit && Z.CurrentPosition == Z.MinLimit;
             if (result) {
                 state = States.retracted;
@@ -200,8 +200,9 @@ namespace IngameScript
                     }
                     break;
                 case States.aligned:
-                    extend();
-                    align(world2pos(target, C.WorldMatrix));
+                    var v = world2pos(target, C.WorldMatrix);
+                    extend(v);
+                    align(v);
                     break;
                 case States.connected:
                     if (C.Status != MyShipConnectorStatus.Connected) {
@@ -253,9 +254,12 @@ namespace IngameScript
             return result;
 
         }
-        public bool extend() {
+        public bool extend(Vector3D aTarget) {
             C.Enabled = true;
             var result = false;
+            var v = (float)(Math.Abs(aTarget.Z) - 2.65);
+            const float minExtend = 0.2f;
+            
             switch (C.Status) {
                 case MyShipConnectorStatus.Connectable:
                     // 0.00015
@@ -263,21 +267,23 @@ namespace IngameScript
                     if (C.PullStrength == 1.0) {
                         C.Connect();
                     } else {
-                        C.PullStrength *= 1.2f;
+                        C.PullStrength *= 1.1f;
                     }
-                    
+                    v = 0f;
                     g.log("Strength: ", C.PullStrength);
                     result = true;
                     break;
                 case MyShipConnectorStatus.Unconnected:
-                    C.PullStrength = 0.001f;
-                    Z.Velocity = 0.25f;
+                    C.PullStrength = 0.0001f;
                     break;
                 case MyShipConnectorStatus.Connected:
-                    Z.Velocity = 0.25f;
                     state = States.connected;
                     break;
             }
+            if (v < minExtend) {
+                v = minExtend;
+            }
+            Z.Velocity = v;
             return result;
         }
         public bool init() {

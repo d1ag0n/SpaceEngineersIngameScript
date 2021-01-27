@@ -13,16 +13,14 @@ namespace IngameScript
         const string coreQuery = "coreQuery";
         const string corePing = "corePing";
         const string corePong = "corePong";
-        protected readonly MyGridProgram pc;
-        protected readonly GTS gts;
-        protected readonly Logger g;
+        public readonly MyGridProgram pc;
+        public readonly GTS gts;
+        public readonly Logger g;
         bool initialized = false;
         bool wrapInitialized = false;
         TimeSpan time;
         long coreNext;
         long corePrevious;
-        //long coreActual;    // which one is actually the core
-        //long coreFirst;     // which one is lat to become core
         IMyBroadcastListener coreListener;
         IMyTextPanel mConsole;
         readonly List<MyIGCMessage> messages;
@@ -240,7 +238,7 @@ namespace IngameScript
                 } catch (Exception ex) {
                     g.persist(ex.ToString());
                 }
-                g.log(time.TotalSeconds);
+                g.log($"core uptime {time.TotalSeconds}");
                 var log = g.clear();
                 if (null != mConsole) {
                     mConsole.WriteText(log);

@@ -16,6 +16,30 @@ namespace IngameScript
             g = aLogger;
             init();
         }
+        string[] getTags(IMyTerminalBlock aBlock) {
+            return aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+        }
+        void initTags(IMyTerminalBlock aBlock) {
+            if (null != aBlock && null != aBlock.CustomData) {
+                var tags = getTags(aBlock);
+                //g.log("tags found ", tags.Length);
+                for (int i = 0; i < tags.Length; i++) {
+                    var tag = tags[i].Trim().ToLower();
+                    //g.log("#", tag);
+                    List<IMyTerminalBlock> list;
+                    if (mTags.ContainsKey(tag)) {
+                        list = mTags[tag];
+                    } else {
+                        mTags[tag] = list = new List<IMyTerminalBlock>();
+                    }
+                    if (!list.Contains(aBlock)) {
+                        //g.log("adding block with tag #", tag);
+                        list.Add(aBlock);
+                    }
+                }
+            }
+        }
+
         public void get<T>(ref T aBlock) {
             foreach (var b in mBlocks.Values) {
                 if (b is T) {
@@ -50,27 +74,7 @@ namespace IngameScript
             } else {
                 //g.log("list not found for #", aTag);
             }
-        }
-        void initTags(IMyTerminalBlock aBlock) {
-            if (null != aBlock && null != aBlock.CustomData) {
-                var tags = getTags(aBlock);
-                //g.log("tags found ", tags.Length);
-                for (int i = 0; i < tags.Length; i++) {
-                    var tag = tags[i].Trim().ToLower();
-                    //g.log("#", tag);
-                    List<IMyTerminalBlock> list;
-                    if (mTags.ContainsKey(tag)) {
-                        list = mTags[tag];
-                    } else {
-                        mTags[tag] = list = new List<IMyTerminalBlock>();
-                    }
-                    if (!list.Contains(aBlock)) {
-                        //g.log("adding block with tag #", tag);
-                        list.Add(aBlock);
-                    }
-                }
-            }
-        }
+        }        
         public void initList<T>(List<T> aList) {
             foreach (var b in mBlocks.Values) {
                 if (b is T) {
@@ -88,9 +92,7 @@ namespace IngameScript
             }
             return false;
         }
-        string[] getTags(IMyTerminalBlock aBlock) {
-            return aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-        }
+
         public void init() {
             List<IMyTerminalBlock> blocks;
             if (null == mBlocks) {
