@@ -21,7 +21,8 @@ namespace IngameScript
         TimeSpan time;
         long coreNext;
         long corePrevious;
-        long coreActual;
+        //long coreActual;    // which one is actually the core
+        //long coreFirst;     // which one is lat to become core
         IMyBroadcastListener coreListener;
         IMyTextPanel mConsole;
         readonly List<MyIGCMessage> messages;
@@ -29,7 +30,7 @@ namespace IngameScript
         double lastCorePing = 0;
         bool corePongReceived = true;
         bool coreBroadcastSent;
-        const double pingInterval = 10.0;
+        const double pingInterval = 30.0;
         
         long id {
             get {
@@ -97,6 +98,7 @@ namespace IngameScript
                             result = true;
                         }
                     } else {
+                        result = true;
                         if (0 == corePrevious) {
                             g.persist("BC corePrevious = zero");
                             corePrevious = aSource;
@@ -104,7 +106,6 @@ namespace IngameScript
                         } else if (aSource > corePrevious) {
                             g.persist("BC source > corePrevious");
                             corePrevious = aSource;
-                            result = true;
                         }
                     }
                     break;
@@ -114,6 +115,7 @@ namespace IngameScript
                             g.persist($"Pong sent @ {time.TotalSeconds}");
                         } else {
                             g.persist("BC fail to pong");
+                            corePrevious = 0;
                             result = true;
                         }
                     } else {
@@ -131,6 +133,28 @@ namespace IngameScript
             return result;
         }
         bool sendPong() => pc.IGC.SendUnicastMessage(corePrevious, coreTag, corePong);
+        void sendPing() {
+            if (coreNext > 0 && (time.TotalSeconds - lastCorePing) > pingInterval) {
+                lastCorePing = time.TotalSeconds;
+                var send = !corePongReceived;
+                if (send) {
+                    coreNext = 0;
+                    g.persist("BC pong not received");
+                }
+                corePongReceived = false;
+
+                if (!pc.IGC.SendUnicastMessage(coreNext, coreTag, corePing)) {
+                    send = true;
+                    g.persist("BC ping send fail");
+                    coreNext = 0;
+                } else {
+                    g.persist($"Ping sent @ {time.TotalSeconds}");
+                }
+                if (send) {
+                    sendCoreBroadcast();
+                }
+            }
+        }
         void sendCoreBroadcast() {
             if (!coreBroadcastSent) {
                 pc.IGC.SendBroadcastMessage(coreTag, coreAssert);
@@ -180,27 +204,7 @@ namespace IngameScript
                 }
             }
         }
-        void sendPing() {
-            if (coreNext > 0 && (time.TotalSeconds - lastCorePing) > pingInterval) {
-                lastCorePing = time.TotalSeconds;
-                var send = !corePongReceived;
-                if (send) {
-                    coreNext = 0;
-                    g.persist("BC pong not received");
-                }
-                corePongReceived = false;
 
-                if (!pc.IGC.SendUnicastMessage(coreNext, coreTag, corePing)) {
-                    send = true;
-                    g.persist("BC ping send fail");
-                } else {
-                    g.persist($"Ping sent @ {time.TotalSeconds}");
-                }
-                if (send) {
-                    sendCoreBroadcast();
-                }
-            }
-        }
         public void Main(string argument, UpdateType aUpdate) {
             time += pc.Runtime.TimeSinceLastRun;
             
@@ -212,8 +216,9 @@ namespace IngameScript
                         handleMessages();
                         if (initialized) {
                             if (isCore) {
-                                g.log(coreAssert);
+                                g.log($"{coreAssert} {id}");
                             } else {
+                                g.log($"{id}");
                                 g.log($"Next core {coreNext}");
                             }
                             g.log($"Previous core {corePrevious}");
