@@ -30,7 +30,7 @@ namespace IngameScript
         double lastCorePing = 0;
         bool corePongReceived = true;
         bool coreBroadcastSent;
-        const double pingInterval = 30.0;
+        const double pingInterval = 10.0;
         
         long id {
             get {
@@ -177,6 +177,9 @@ namespace IngameScript
             }
             if (send) {
                 g.persist("BC handleMessages");
+                sendCoreBroadcast();
+            } else if (isCore) {
+                g.persist("BC isCore");
                 sendCoreBroadcast();
             }
             if (initialized && messages.Count > 0) {
