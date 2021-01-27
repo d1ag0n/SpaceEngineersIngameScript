@@ -179,8 +179,10 @@ namespace IngameScript
                 g.persist("BC handleMessages");
                 sendCoreBroadcast();
             } else if (isCore) {
-                g.persist("BC isCore");
-                sendCoreBroadcast();
+                if ((time.TotalSeconds - lastCorePing) > pingInterval) {
+                    g.persist("BC isCore");
+                    sendCoreBroadcast();
+                }
             }
             if (initialized && messages.Count > 0) {
                 var msg = messages[0];
