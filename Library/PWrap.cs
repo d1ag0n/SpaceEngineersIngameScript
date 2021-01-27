@@ -157,6 +157,8 @@ namespace IngameScript
         }
         void sendCoreBroadcast() {
             if (!coreBroadcastSent) {
+                corePongReceived = true;
+                lastCorePing = time.TotalSeconds;
                 pc.IGC.SendBroadcastMessage(coreTag, coreAssert);
                 g.persist($"Core broadcast sent @ {time.TotalSeconds}");
                 coreBroadcastSent = true;
@@ -174,7 +176,7 @@ namespace IngameScript
                 }
             }
             if (send) {
-                g.persist("BC handleMessage");
+                g.persist("BC handleMessages");
                 sendCoreBroadcast();
             }
             if (initialized && messages.Count > 0) {
