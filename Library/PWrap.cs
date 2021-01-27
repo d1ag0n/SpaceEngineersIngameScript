@@ -29,6 +29,7 @@ namespace IngameScript
         double lastCorePing = 0;
         bool corePongReceived = true;
         bool coreBroadcastSent;
+        const double pingInterval = 10.0;
         
         long id {
             get {
@@ -180,10 +181,11 @@ namespace IngameScript
             }
         }
         void sendPing() {
-            if (coreNext > 0 && (time.TotalSeconds - lastCorePing) > 10.0) {
+            if (coreNext > 0 && (time.TotalSeconds - lastCorePing) > pingInterval) {
                 lastCorePing = time.TotalSeconds;
                 var send = !corePongReceived;
                 if (send) {
+                    coreNext = 0;
                     g.persist("BC pong not received");
                 }
                 corePongReceived = false;
