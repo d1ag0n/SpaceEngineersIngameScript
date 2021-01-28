@@ -177,15 +177,18 @@ namespace IngameScript
             return result;
         }
         public bool retract() {
-            C.Enabled = false;
-            X.Velocity =
-            Y.Velocity = -0.5f;
-            Z.Velocity = -5.0f;
-            var result = X.CurrentPosition == X.MinLimit && Y.CurrentPosition == Y.MinLimit && Z.CurrentPosition == Z.MinLimit;
-            if (result) {
-                state = States.retracted;
-            } else {
-                state = States.retracting;
+            var result = false;
+            if (C.Status == MyShipConnectorStatus.Unconnected) {
+                C.Enabled = false;
+                X.Velocity =
+                Y.Velocity = -0.5f;
+                Z.Velocity = -5.0f;
+                result = X.CurrentPosition == X.MinLimit && Y.CurrentPosition == Y.MinLimit && Z.CurrentPosition == Z.MinLimit;
+                if (result) {
+                    state = States.retracted;
+                } else {
+                    state = States.retracting;
+                }
             }
             return result;
         }
@@ -205,9 +208,7 @@ namespace IngameScript
                     align(v);
                     break;
                 case States.connected:
-                    if (C.Status != MyShipConnectorStatus.Connected) {
                         retract();
-                    }
                     break;
                 case States.retracting:
                     retract();

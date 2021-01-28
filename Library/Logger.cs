@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sandbox.ModAPI.Ingame;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using VRageMath;
@@ -10,6 +11,9 @@ namespace IngameScript
         readonly StringBuilder mLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>();
         public void log(double d) => log();
+        public void log(MyDetectedEntityInfo e) {
+            log(e.Name);
+        }
         public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
         public void log(params object[] args) {
             if (null != args) {

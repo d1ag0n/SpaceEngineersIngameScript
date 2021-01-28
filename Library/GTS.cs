@@ -46,13 +46,14 @@ namespace IngameScript
             }
         }
 
-        public void get<T>(ref T aBlock) {
+        public bool get<T>(ref T aBlock) {
             foreach (var b in mBlocks.Values) {
                 if (b is T) {
                     aBlock = (T)b;
-                    return;
+                    return true;
                 }
             }
+            return false;
         }
         public void getByTag<T>(string aTag, ref T aBlock) {
             List<IMyTerminalBlock> list;
