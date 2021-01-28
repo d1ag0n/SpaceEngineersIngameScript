@@ -17,9 +17,6 @@ namespace commandline
         //const double mdTimeFactor = 0.2;
         const double mMass = 3887.0;
         const double mVelocity = 1.71;
-        static int gps2i(int lat, int lon) {
-
-        }
         static void sphere() {
 
             int nx = 4;
@@ -33,31 +30,29 @@ namespace commandline
                 }
             }
         }
+        const int cmax = 10;
+        static int toIndex(int x, int y, int z) => (z * cmax * cmax) + (y * cmax) + x;
+        static Vector3D toVector(int idx) {
+            int z = idx / (cmax * cmax);
+            idx -= (z * cmax * cmax);
+            int y = idx / cmax;
+            int x = idx % cmax;
+            return new Vector3D(x, y, z);
+        }
+        static Vector3D vectorFromIndex(Vector3D aWorldPosition, int aIndex) => k2v(v2k(aWorldPosition)) + toVector(aIndex) * 100;
         static Vector3D v2n(Vector3D v, long n) {
-            if (v.X < 0) {
-                v.X -= n;
-            }
-            if (v.Y < 0) {
-                v.Y -= n;
-            }
-            if (v.Z < 0) {
-                v.Z -= n;
-            }
+            if (v.X < 0) { v.X -= n; }
+            if (v.Y < 0) { v.Y -= n; }
+            if (v.Z < 0) { v.Z -= n; }
             v.X = (long)v.X / n;
             v.Y = (long)v.Y / n;
             v.Z = (long)v.Z / n;
             return v;
         }
         static Vector3D n2v(Vector3D v, long n) {
-            if (v.X < 0) {
-                v.X++;
-            }
-            if (v.Y < 0) {
-                v.Y++;
-            }
-            if (v.Z < 0) {
-                v.Z++;
-            }
+            if (v.X < 0) { v.X++; }
+            if (v.Y < 0) { v.Y++; }
+            if (v.Z < 0) { v.Z++; }
             v.X *= n;
             v.Y *= n;
             v.Z *= n;
@@ -65,20 +60,25 @@ namespace commandline
         }
         static Vector3D v2k(Vector3D v) => v2n(v, 1000);
         static Vector3D k2v(Vector3D v) => n2v(v, 1000);
-            
+
         static void Main(string[] args) {
 
+            var target = new Vector3D(986148.14, 102603.57, 1599688.09);
+            
+            Console.WriteLine($"target {target}");
+            
+            for (int i = 0; i < 1000; i++) {
+                
+                Console.WriteLine($"{i} {vectorFromIndex(target, i)}");
+                
+            }
+            Console.ReadKey();
+            return;
             Console.WriteLine(Math.Sqrt(2));
             sphere();
 
-            var v = new Vector3D(986148.14, 102603.57, 1599688.09);
-            v = new Vector3D(48.14, 102603.57, 1599688.09);
+            
 
-            Console.WriteLine("World " + v.ToString());
-            v = v2k(v);
-            Console.WriteLine("v2k " + v.ToString());
-            v = k2v(v);
-            Console.WriteLine("k2v " + v.ToString());
 
 
 

@@ -9,6 +9,7 @@ namespace IngameScript
         readonly MyGridProgram program;
         Dictionary<long, IMyTerminalBlock> mBlocks;
         Dictionary<string, List<IMyTerminalBlock>> mTags;
+        Dictionary<long, List<string>> mArguments;
         readonly Logger g;
         
         public GTS(MyGridProgram aProgram, Logger aLogger) {
@@ -17,7 +18,11 @@ namespace IngameScript
             init();
         }
         string[] getTags(IMyTerminalBlock aBlock) {
-            return aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            var tags = aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            /*foreach (var tag in tags) {
+                var args = tag.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+            }*/
+            return tags;
         }
         void initTags(IMyTerminalBlock aBlock) {
             if (null != aBlock && null != aBlock.CustomData) {
@@ -25,6 +30,7 @@ namespace IngameScript
                 //g.log("tags found ", tags.Length);
                 for (int i = 0; i < tags.Length; i++) {
                     var tag = tags[i].Trim().ToLower();
+                    
                     //g.log("#", tag);
                     List<IMyTerminalBlock> list;
                     if (mTags.ContainsKey(tag)) {

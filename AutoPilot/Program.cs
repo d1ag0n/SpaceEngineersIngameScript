@@ -13,16 +13,19 @@ namespace IngameScript
 
         const double MAX_VELO = 100.0;
         const double MIN_VELO = 0.03;
-        double rotate2vector(Vector3D aTarget) {
+        void rotate2vector(Vector3D aTarget) {
             double result = 0;
             if (Vector3D.Zero == aTarget) {
-                mGyro.GyroOverride = false;
+                g.log("rotate2vector zero");
+                setGyrosOverride(false);
             } else {
-                mGyro.GyroOverride = true;
-                result += Math.Abs(pitch2vector(aTarget));
-                result += Math.Abs(roll2vector(aTarget));
+                g.log("rotate2vector", aTarget);
+                setGyrosOverride(true);
+                ApplyGyroOverride(pitch2vector(aTarget), 0.0, roll2vector(aTarget));
+                //result += Math.Abs(pitch2vector(aTarget));
+                //result += Math.Abs(roll2vector(aTarget));
             }
-            return result;
+            //return result;
         }
         double yaw2target(Vector3D aTarget) {
             var m = mRC.WorldMatrix;
@@ -41,6 +44,43 @@ namespace IngameScript
             return rotate2target(
                 "Roll", aTarget, m.Translation, m.Forward, m.Up, m.Down
             );
+        }
+        void setBatteryCharge(ChargeMode aMode) {
+            foreach (var b in mBatteries) {
+                b.ChargeMode = aMode;
+            }
+        }
+        bool fullFuel() {
+            foreach (var t in mFuelTanks) {
+                if (t.FilledRatio < 0.95) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        bool lowFuel() {
+            foreach (var t in mFuelTanks) {
+                if (0.5 > t.FilledRatio) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        bool fullCharge() {
+            foreach (var b in mBatteries) {
+                if (b.CurrentStoredPower / b.MaxStoredPower < 0.95) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        bool lowBattery() {
+            foreach (var b in mBatteries) {
+                if (0.25 > b.CurrentStoredPower / b.MaxStoredPower) {
+                    return true;
+                }
+            }
+            return false;
         }
         double rotate2target(string aGyroOverride, Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
             // yaw
@@ -63,10 +103,12 @@ namespace IngameScript
                 if (dot < 0) {
                     angle = -angle;
                 }
-                rpm = rps2rpm(angle);
+                //rpm = rps2rpm(angle);
+                rpm = angle;
             }
-            mGyro.GyroOverride = true;
-            mGyro.SetValueFloat(aGyroOverride.ToString(), (float)rpm);
+            g.log("rotate2direction", aGyroOverride, " ", rpm);
+            //mGyro.GyroOverride = true;
+            //mGyro.SetValueFloat(aGyroOverride.ToString(), (float)rpm);
             //log(aGyroOverride, " rpm ", rpm);
             return rpm;
         }
@@ -156,6 +198,78 @@ namespace IngameScript
             initMission();
             meMission = Missions.patrol;
         }
+        void setMissionScan(Vector3D aWorldPosition) {
+            initMission();
+            if (null != mSensor && null != mCamera) {
+                meMission = Missions.scan;
+                mvMissionTranslation = mvMissionObjective = aWorldPosition;
+            } else {
+                g.persist("Camera and Sensor required for scan mission.");
+            }
+        }
+        //Whip's ApplyGyroOverride Method v10 - 8/19/17
+        void ApplyGyroOverride(double pitch_speed, double yaw_speed, double roll_speed) {
+            var rotationVec = new Vector3D(-pitch_speed, yaw_speed, roll_speed); //because keen does some weird stuff with signs 
+            
+            var relativeRotationVec = Vector3D.TransformNormal(rotationVec, mRC.WorldMatrix);
+            g.log("ApplyGyroOverride");
+            foreach (var thisGyro in mGyros) {
+                var transformedRotationVec = Vector3D.TransformNormal(relativeRotationVec, Matrix.Transpose(thisGyro.WorldMatrix));
+                g.log("transformedRotationVec", transformedRotationVec);
+                thisGyro.GyroOverride = true;
+                thisGyro.Pitch = (float)transformedRotationVec.X;
+                thisGyro.Yaw = (float)transformedRotationVec.Y;
+                thisGyro.Roll = (float)transformedRotationVec.Z;
+            }
+        }
+        readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
+        void doMissionScan() {
+            // mvMissionTranslation is used as the original location to scan in
+            // will modify mvMissionObjective to navigate in the scan zone as necessary
+            mDetected.Clear();
+            mSensor.DetectedEntities(mDetected);
+            foreach (var e in mDetected) {
+                //e.
+            }
+            switch (miMissionStep) {
+                case 0:
+                    if (mdDistance2Objective < 10) {
+                        miMissionStep++;
+                    }
+                    break;
+            }
+            trajectory(mvMissionObjective, 10.0);
+        }
+        const int cmax = 10;
+        int toIndex(int x, int y, int z) => (z * cmax * cmax) + (y * cmax) + x;
+        Vector3D toVector(int idx) {
+            int z = idx / (cmax * cmax);
+            idx -= (z * cmax * cmax);
+            int y = idx / cmax;
+            int x = idx % cmax;
+            return new Vector3D(x, y, z);
+        }
+        Vector3D vectorFromIndex(Vector3D aWorldPosition, int aIndex) => k2v(v2k(aWorldPosition)) + toVector(aIndex) * 100;
+        static Vector3D v2n(Vector3D v, long n) {
+            if (v.X < 0) { v.X -= n; }
+            if (v.Y < 0) { v.Y -= n; }
+            if (v.Z < 0) { v.Z -= n; }
+            v.X = (long)v.X / n;
+            v.Y = (long)v.Y / n;
+            v.Z = (long)v.Z / n;
+            return v;
+        }
+        static Vector3D n2v(Vector3D v, long n) {
+            if (v.X < 0) { v.X++; }
+            if (v.Y < 0) { v.Y++; }
+            if (v.Z < 0) { v.Z++; }
+            v.X *= n;
+            v.Y *= n;
+            v.Z *= n;
+            return v;
+        }
+        static Vector3D v2k(Vector3D v) => v2n(v, 1000);
+        static Vector3D k2v(Vector3D v) => n2v(v, 1000);
         void setMissionObjective(Vector3D aObjective) {
             mvMissionObjective = aObjective;
             mdMissionDistance = (mvMissionObjective - mvMissionStart).Length();
@@ -170,13 +284,27 @@ namespace IngameScript
             miMissionStep = 0;
 
             meMission = Missions.none;
+            if (null != mSensor) {
+                mSensor.Enabled = false;
+            }
             
+            mvMissionTranslation =
             mvMissionObjective = Vector3D.Zero;
 
-            mGyro.Enabled = true;
-            mGyro.GyroOverride = false;
+            setGyrosEnabled(true);
+            setGyrosOverride(false);
             mMissionConnector = null;
             mCon.Enabled = false;
+        }
+        void setGyrosOverride(bool aValue) {
+            foreach (var g in mGyros) {
+                g.GyroOverride = aValue;
+            }
+        }
+        void setGyrosEnabled(bool aValue) {
+            foreach (var g in mGyros) {
+                g.Enabled = aValue;
+            }
         }
         bool initMissionAltitude() {
             var result = false;
@@ -226,11 +354,14 @@ namespace IngameScript
                     missionNavigate();
                     break;
                 case Missions.test:
-                    mGyro.SetValueFloat("Pitch", 10.0f);
+                    //mGyro.SetValueFloat("Pitch", 10.0f);
                     var c = findConnector("con1");
                     var local = -world2pos(mRC.CenterOfMass, mCon.WorldMatrix);
                     //var objective = local2pos(local, c.World) + (c.World.Forward * 2.65);
                     //log.log(gps("test con1", objective));
+                    break;
+                case Missions.scan:
+                    doMissionScan();
                     break;
                 default:
                     g.log("mission unhandled");
@@ -290,6 +421,7 @@ namespace IngameScript
             wait,
             depart,
             departFinal,
+            charging,
             complete
         }
         string gps(string aName, Vector3D aPos) {
@@ -347,29 +479,24 @@ namespace IngameScript
                     d = missionNavigate();
                     if (d < 5.0) {
                         mCon.Enabled = true;
-                        miMissionStep++;
+                        miMissionStep = (int)DockStep.connect;
+                        initMass();
+                        if (0 == mRC.GetNaturalGravity().LengthSquared()) {
+                            rotate2vector(Vector3D.Zero);
+                            ThrustN(0);
+                        }
                     }
                     break;
                 case DockStep.connect:
                     msg = "connecting to dock";
                     switch (mCon.Status) {
                         case MyShipConnectorStatus.Connectable:
-                            if (0 == mRC.GetNaturalGravity().LengthSquared()) {
-                                rotate2vector(Vector3D.Zero);
-                                ThrustN(0);
-                            } else {
+                            if (0 != mRC.GetNaturalGravity().LengthSquared()) {
                                 if (miMissionSubStep == 0) {
                                     miMissionSubStep = 1;
                                     mvMissionObjective = mRC.CenterOfMass;
                                 }
                                 missionNavigate(true);
-                            }
-                            
-                            if (mvAngularVelocity.LengthSquared() == 0 && mdLinearVelocity == 0) {
-                                initMass();
-                                mCon.Connect();
-                            } else {
-                                g.log("waiting to connect");
                             }
                             break;
                         case MyShipConnectorStatus.Unconnected:
@@ -386,42 +513,41 @@ namespace IngameScript
                             }
                             if (0 == mRC.GetNaturalGravity().LengthSquared()) {
                                 rotate2vector(mRC.CenterOfMass + (mMissionConnector.Direction * 500.0));
-                                ThrustN(0);
                             } else {
                                 missionNavigate();
                             }
                             
                             break;
                         case MyShipConnectorStatus.Connected:
-                            mGyro.Enabled = false;
-                            miMissionStep++;
+                            setBatteryCharge(ChargeMode.Recharge);
+                            setGyrosEnabled(false);
+                            ThrustN(0);
+                            miMissionStep = (int)DockStep.wait;
                             break;
                     }
                     break;
                 case DockStep.wait:
                     msg = "connected to dock";
-                    mGyro.Enabled = false;
                     mCon.Enabled = false;
                     if (mCon.Status != MyShipConnectorStatus.Connected) {
-                        mGyro.Enabled = true;
-                        
-                        miMissionStep++;
-                        mCon.Enabled = false;
+                        if (lowBattery() || lowFuel()) {
+                            miMissionStep = (int)DockStep.charging;
+                        } else {
+                            miMissionStep = (int)DockStep.depart;
+                        }
+                    }
+                    break;
+                case DockStep.charging:
+                    msg = "refuel and recharge";
+                    if (fullCharge() && fullFuel()) {
+                        if (mCon.Status != MyShipConnectorStatus.Connected) {
+                                miMissionStep = (int)DockStep.depart;
+                        }
                     }
                     break;
                 case DockStep.complete:
                     msg = "depature complete";
-                    miDock++;
-                    if (miDock == 2) {
-                        miDock = 0;
-                    }
-                    moon = !moon;
-                    if (moon) {
-                        setMissionDock("moon");
-                    } else {
-                        setMissionDock("orbit");
-                    }
-                    
+                    missionDamp();
                     break;
                 default:
                     g.log("step unhandled, damping");
@@ -468,7 +594,7 @@ namespace IngameScript
             */
             // mvAltitudeDynamic = projection + (up * remainingDistance);
 
-            trajectory(mvMissionObjective, aGyroHold);
+            trajectory(mvMissionObjective, aGyroHold: aGyroHold);
             var result = mdDistance2Objective;
             
             if (result < 0.5) {
@@ -598,6 +724,10 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             g = new Logger();
             mGTS = new GTS(this, g);
+            mThrusters = new List<IMyThrust>();
+            mGyros = new List<IMyGyro>();
+            mBatteries = new List<IMyBatteryBlock>();
+            mFuelTanks = new List<IMyGasTank>();
             init();
             initMission();
             setMissionDamp();
@@ -611,19 +741,46 @@ namespace IngameScript
             mGTS.get(ref mRC);
             mGTS.get(ref mLCD);
             mGTS.get(ref mCon);
-            mGTS.get(ref mGyro);
+            
+            mGyros.Clear();
+            mGTS.initList(mGyros);
+
+            
             mGTS.get(ref mSensor);
 
-            mThrust = new List<IMyThrust>();
-            mGTS.initList(mThrust);
+            mThrusters.Clear();
+            mGTS.initList(mThrusters);
+
+            mBatteries.Clear();
+            mGTS.initList(mBatteries);
+
+            mFuelTanks.Clear();
+            mGTS.initList(mFuelTanks);
+
+            for (int i = mFuelTanks.Count - 1; i > -1; i--) {
+                /*MyObjectBuilder_OxygenTank / LargeHydrogenTank
+                MyObjectBuilder_OxygenTank / LargeHydrogenTankSmall
+                MyObjectBuilder_OxygenTank / OxygenTankSmall
+                MyObjectBuilder_OxygenTank / SmallHydrogenTank
+                MyObjectBuilder_OxygenTank / SmallHydrogenTankSmall*/
+                var t = mFuelTanks[i];
+                var n = t.BlockDefinition.SubtypeName;
+                if ("SmallHydrogenTank" == n) {
+                } else {
+                    mFuelTanks.RemoveAt(i);
+                    g.persist(n);
+                }
+            }
+
             initMass();
             ThrustN(0);
             initVelocity();
-            
-            mGyro.SetValueFloat("Yaw", 0);
-            mGyro.SetValueFloat("Pitch", 0);
-            mGyro.SetValueFloat("Roll", 0);
-            
+            foreach (var g in mGyros) {
+                g.Enabled = true;
+                g.SetValueFloat("Yaw", 0);
+                g.SetValueFloat("Pitch", 0);
+                g.SetValueFloat("Roll", 0);
+            }
             //roto0 = get("roto0") as IMyMotorStator;
             //roto1 = get("roto1") as IMyMotorStator;
             //roto2 = get("roto2") as IMyMotorStator;
@@ -728,9 +885,8 @@ namespace IngameScript
             
         }
 
-        void trajectory(Vector3D aObjective, bool aGyroHold = false) {
+        void trajectory(Vector3D aObjective, double maxVelo = 90, bool aGyroHold = false) {
             const double minStopDist = 200.0;
-            const double maxVelo = 90.0;
             const double maxThrottle = 0.99;
             var stopDist = mdStopDistance > minStopDist ? mdStopDistance : minStopDist;
             
@@ -758,8 +914,11 @@ namespace IngameScript
             if (aGyroHold) {
                 rotate2vector(Vector3D.Zero);
             } else {
-                rotate2direction("Pitch", -dir, m.Right, m.Up, m.Down);
-                rotate2direction("Roll", -dir, m.Forward, m.Up, m.Down);
+                ApplyGyroOverride(
+                    rotate2direction("Pitch", -dir, m.Right, m.Up, m.Down),
+                    0,
+                    rotate2direction("Roll", -dir, m.Forward, m.Up, m.Down)
+                );
             }
             ThrustN(mag * thrustPercent(-dir, mRC.WorldMatrix.Up));
         }
@@ -1091,9 +1250,7 @@ namespace IngameScript
             float fMax, fPercent;
             mdNewtons = 0;
             //log.log("ThrustN requested ", aNewtons, "N");
-            for (int i = 0; i < mThrust.Count; i++) {
-                
-                var t = mThrust[i];
+            foreach (var t in mThrusters) {
                 fMax = t.MaxEffectiveThrust;
                 mdNewtons += fMax;
                 if (aNewtons > 0.0f) {
@@ -1199,38 +1356,7 @@ namespace IngameScript
         Vector3D world2dir(Vector3D world, MatrixD local) =>
             Vector3D.TransformNormal(world, MatrixD.Transpose(local));
 
-        static Vector3D v2n(Vector3D v, long n) {
-            if (v.X < 0) {
-                v.X -= n;
-            }
-            if (v.Y < 0) {
-                v.Y -= n;
-            }
-            if (v.Z < 0) {
-                v.Z -= n;
-            }
-            v.X = (long)v.X / n;
-            v.Y = (long)v.Y / n;
-            v.Z = (long)v.Z / n;
-            return v;
-        }
-        static Vector3D n2v(Vector3D v, long n) {
-            if (v.X < 0) {
-                v.X++;
-            }
-            if (v.Y < 0) {
-                v.Y++;
-            }
-            if (v.Z < 0) {
-                v.Z++;
-            }
-            v.X *= n;
-            v.Y *= n;
-            v.Z *= n;
-            return v;
-        }
-        static Vector3D v2k(Vector3D v) => v2n(v, 1000);
-        static Vector3D k2v(Vector3D v) => n2v(v, 1000);
+        
 
         enum Missions
         {
@@ -1242,6 +1368,7 @@ namespace IngameScript
             thrust,
             rotate,
             map,
+            scan,
             none
         }
         enum DampStep : int
@@ -1274,12 +1401,17 @@ namespace IngameScript
         readonly GTS mGTS;
         readonly Logger g;
 
-        List<IMyThrust> mThrust;
+        readonly List<IMyThrust> mThrusters;
+        readonly List<IMyGyro> mGyros;
+        readonly List<IMyBatteryBlock> mBatteries;
+        readonly List<IMyGasTank> mFuelTanks;
+
         IMyTextPanel mLCD;
         readonly IMyBroadcastListener mListener;
         IMyRemoteControl mRC;
-        IMyGyro mGyro;
+        
         IMySensorBlock mSensor;
+        IMyCameraBlock mCamera;
         IMyShipConnector mCon;
 
 
@@ -1302,7 +1434,7 @@ namespace IngameScript
         
         Vector3D mvMissionObjective;
         Vector3D mvMissionStart;
-        Vector3D mvTranslation;
+        Vector3D mvMissionTranslation;
         //Vector3D mvCoM;
 
         
