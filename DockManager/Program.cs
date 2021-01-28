@@ -87,10 +87,9 @@ namespace IngameScript
         
         void findDocks() {
             var list = new List<IMyPistonBase>();
-            gts.getByTag("dock", list);
-            g.log("tag lookup found ", list.Count);
-            for (int i = 0; i < list.Count; i++) {
-                var d = new Dock(gts, g, list[i]);
+            gts.initListByTag("dock", list);
+            foreach (var p in list) {
+                var d = new Dock(gts, g, p);
                 mDicDocks.Add(d.X.EntityId, d);
                 mListDocks.Add(d);
             }

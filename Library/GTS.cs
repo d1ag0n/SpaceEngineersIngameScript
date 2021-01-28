@@ -47,12 +47,11 @@ namespace IngameScript
         }
 
         public bool get<T>(ref T aBlock) {
-            foreach (var b in mBlocks.Values) {
+            foreach (var b in mBlocks.Values) 
                 if (b is T) {
                     aBlock = (T)b;
                     return true;
                 }
-            }
             return false;
         }
         public void getByTag<T>(string aTag, ref T aBlock) {
@@ -64,9 +63,11 @@ namespace IngameScript
                 }
             }
         }
-        public void getByTag<T>(string aTag, List<T> aList) {
+        public void initListByTag<T>(string aTag, List<T> aList, bool aClearList = true) {
             List<IMyTerminalBlock> list;
-
+            if (aClearList) {
+                aList.Clear();
+            }
             if (mTags.TryGetValue(aTag, out list)) {
                 //g.log("found list for #", aTag, " with count ", list.Count);
                 for (int i = 0; i < list.Count; i++) {
@@ -82,21 +83,13 @@ namespace IngameScript
                 //g.log("list not found for #", aTag);
             }
         }        
-        public void initList<T>(List<T> aList) {
-            foreach (var b in mBlocks.Values) {
-                if (b is T) {
-                    aList.Add((T)b);
-                }
-            }
+        public void initList<T>(List<T> aList, bool aClearList = true) {
+            if (aClearList) aList.Clear();
+            foreach (var b in mBlocks.Values) if (b is T) aList.Add((T)b);
         }
         public bool hasTag(IMyTerminalBlock aBlock, string aTag) {
             var tags = getTags(aBlock);
-
-            for (int i = 0; i < tags.Length; i++) {
-                if (tags[i] == aTag) {
-                    return true;
-                }
-            }
+            for (int i = 0; i < tags.Length; i++) if (tags[i] == aTag) return true;
             return false;
         }
 

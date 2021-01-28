@@ -12,7 +12,8 @@ namespace IngameScript
         readonly List<string> mPersistent = new List<string>();
         public void log(double d) => log();
         public void log(MyDetectedEntityInfo e) {
-            log(e.Name);
+            log(e.Name , " ", e.EntityId);
+            log(e.Type);
         }
         public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
         public void log(params object[] args) {

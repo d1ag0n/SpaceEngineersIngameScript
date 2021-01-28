@@ -106,7 +106,7 @@ namespace IngameScript
                 //rpm = rps2rpm(angle);
                 rpm = angle;
             }
-            g.log("rotate2direction", aGyroOverride, " ", rpm);
+            //g.log("rotate2direction", aGyroOverride, " ", rpm);
             //mGyro.GyroOverride = true;
             //mGyro.SetValueFloat(aGyroOverride.ToString(), (float)rpm);
             //log(aGyroOverride, " rpm ", rpm);
@@ -205,10 +205,10 @@ namespace IngameScript
             var rotationVec = new Vector3D(-pitch_speed, yaw_speed, roll_speed); //because keen does some weird stuff with signs 
             
             var relativeRotationVec = Vector3D.TransformNormal(rotationVec, mRC.WorldMatrix);
-            g.log("ApplyGyroOverride");
+            //g.log("ApplyGyroOverride");
             foreach (var thisGyro in mGyros) {
                 var transformedRotationVec = Vector3D.TransformNormal(relativeRotationVec, Matrix.Transpose(thisGyro.WorldMatrix));
-                g.log("transformedRotationVec", transformedRotationVec);
+                //g.log("transformedRotationVec", transformedRotationVec);
                 thisGyro.GyroOverride = true;
                 thisGyro.Pitch = (float)transformedRotationVec.X;
                 thisGyro.Yaw = (float)transformedRotationVec.Y;
@@ -228,6 +228,7 @@ namespace IngameScript
         void setMissionScan(Vector3D aWorldPosition) {
             if (null != mSensor && null != mCamera) {
                 initMission();
+                mSensor.Enabled = true;
                 meMission = Missions.scan;
                 mvMissionObjective = mvMissionTranslation = k2v(v2k(aWorldPosition));
                 g.persist(gps("scan mission", mvMissionTranslation));
@@ -243,29 +244,47 @@ namespace IngameScript
 
             mDetected.Clear();
             mSensor.DetectedEntities(mDetected);
-            
+            var avoid = Vector3D.Zero;
+            Vector3D hit;
+            int hitCount = 0;
+            var myPosition = mRC.CenterOfMass;
             foreach (var e in mDetected) {
                 bool use = true;
-                foreach (var cg in mCameraRot) {
-                    if (cg.CubeGrid.EntityId == e.EntityId) {
-                        use = false;
-                        break;
+                if (e.EntityId == mCamera.CubeGrid.EntityId) {
+                    use = false;
+                } else if (e.EntityId == Me.CubeGrid.EntityId) {
+                    use = false;
+                } else {
+                    foreach (var cg in mCameraRot) {
+                        if (cg.CubeGrid.EntityId == e.EntityId) {
+                            use = false;
+                            break;
+                        }
                     }
                 }
                 if (use) {
                     g.log(e);
+                    miMissionStep = 1;
+                    hit = e.HitPosition.HasValue ? e.HitPosition.Value : e.Position;
+                    avoid += Vector3D.Normalize(myPosition - hit);
+                    hitCount++;
                 }
             }
 
+            // if (mCamera.CanScan())
+
             g.log("doMissionScan step ", miMissionStep);
+            var velo = 10;
             switch (miMissionStep) {
-                case 0: // 
-                    if (mdDistance2Objective < 10) {
-                        miMissionStep++;
-                    }
+                case 0: // navigate to current objective
+                    mvMissionObjective = mvMissionTranslation;
+                    break;
+                case 1: // recalculate objective because of collision
+                    mvMissionObjective = myPosition + ((avoid / hitCount) * 100);
+                    miMissionStep = 0;
                     break;
             }
-            trajectory(mvMissionObjective, 10.0);
+            trajectory(mvMissionObjective, 4.47);
         }
         const int cmax = 10;
         int toIndex(int x, int y, int z) => (z * cmax * cmax) + (y * cmax) + x;
@@ -311,9 +330,9 @@ namespace IngameScript
             miMissionStep = 0;
 
             meMission = Missions.none;
-            if (null != mSensor) {
-                mSensor.Enabled = false;
-            }
+            
+            mSensor.Enabled = false;
+            
             
             mvMissionTranslation =
             mvMissionObjective = Vector3D.Zero;
@@ -321,7 +340,16 @@ namespace IngameScript
             setGyrosEnabled(true);
             setGyrosOverride(false);
             mMissionConnector = null;
-            mCon.Enabled = false;
+
+            if (mCon.Status == MyShipConnectorStatus.Unconnected)
+                mCon.Enabled = false;
+            
+            mCamera.Enabled = false;
+            foreach (var r in mCameraRot) {
+                r.RotorLock = true;
+                r.Enabled = false;
+            }
+            
         }
         void setGyrosOverride(bool aValue) {
             foreach (var g in mGyros) {
@@ -664,7 +692,7 @@ namespace IngameScript
                 mSensor.FrontExtend =
                 mSensor.LeftExtend =
                 mSensor.RightExtend =
-                mSensor.TopExtend = 10;
+                mSensor.TopExtend = 20;
             }
 
 
@@ -672,17 +700,13 @@ namespace IngameScript
                 mCamera.Enabled = false;
             }
 
-            mThrusters.Clear();
             mGTS.initList(mThrusters);
 
-            mBatteries.Clear();
             mGTS.initList(mBatteries);
 
-            mFuelTanks.Clear();
             mGTS.initList(mFuelTanks);
 
-            mCameraRot.Clear();
-            mGTS.getByTag("camera", mCameraRot);
+            mGTS.initListByTag("camera", mCameraRot);
 
             for (int i = mFuelTanks.Count - 1; i > -1; i--) {
                 /*MyObjectBuilder_OxygenTank / LargeHydrogenTank
@@ -747,12 +771,13 @@ namespace IngameScript
 
        
 
-        void trajectory(Vector3D aObjective, double maxVelo = 90, bool aGyroHold = false) {
+        void trajectory(Vector3D aObjective, double aMaxVelo = 99.99, bool aGyroHold = false) {
+            const double maxVelo = 99.99;
             const double minStopDist = 200.0;
             const double maxThrottle = 0.99;
             var stopDist = mdStopDistance > minStopDist ? mdStopDistance : minStopDist;
             
-            //g.log("stopDist ", stopDist);
+            // g.log("stopDist ", stopDist);
             // 2 = 1000 / 500
             // 0.8 = 400 / 500 eighty percent "throttle"
             var throttle = mdDistance2Objective / stopDist;
@@ -761,6 +786,9 @@ namespace IngameScript
             }
             //g.log("throttle ", throttle);
             var prefVelo = maxVelo * throttle;
+            if (prefVelo > aMaxVelo) {
+                prefVelo = aMaxVelo;
+            }
             //g.log("prefVelo ", prefVelo);
             
             //var veloVec = mvLinearVelocity - (mvDirection2Objective * (99.0 * velopct));
@@ -1000,7 +1028,6 @@ namespace IngameScript
             } else if (mdPreferredVelocity > MAX_VELO) {
                 mdPreferredVelocity = MAX_VELO;
             }
-
             
             g.log("Distance to Objective ", mdDistance2Objective);
             
@@ -1234,6 +1261,8 @@ namespace IngameScript
                 } else {
                     g.log("angle nan");
                 }
+                aRoto.Enabled = true;
+                aRoto.RotorLock = false;
                 aRoto.TargetVelocityRad = (float)(v * 6.0);
             }
         }

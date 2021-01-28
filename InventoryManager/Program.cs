@@ -22,21 +22,28 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         const string tagInventory = "inventory";
-        
         const string tagAnything = "anything";
 
+        readonly Logger g;
         readonly GTS mGTS;
 
-        List<IMyEntity> mCargo;
-        List<IMyProductionBlock> mProduction;
         IMyTextPanel mLCD;
-        readonly Logger g;
+
+        
+        readonly List<IMyEntity> mCargo;
+        readonly List<IMyProductionBlock> mProduction;
+        readonly List<IMyEntity> mWorkList;
 
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
+
             g = new Logger();
-            g.log("Program construct");
             mGTS = new GTS(this, g);
+
+            mCargo = new List<IMyEntity>();
+            mProduction = new List<IMyProductionBlock>();
+            mWorkList = new List<IMyEntity>();
+
             init();
         }
         void reinit() {
@@ -49,9 +56,10 @@ namespace IngameScript
             subIndex = 0;
 
             mGTS.getByTag("lcd", ref mLCD);
-            mCargo = new List<IMyEntity>();
-            mProduction = new List<IMyProductionBlock>();
-            mGTS.getByTag(tagInventory, mCargo);
+            
+            mGTS.initListByTag(tagInventory, mCargo);
+
+            mProduction.Clear();
             for (int i = 0; i < mCargo.Count; i++) {
                 var b = mCargo[i];
                 if (b is IMyProductionBlock) {
@@ -125,20 +133,19 @@ namespace IngameScript
             }
             return result;
         }
-
+        
         void sort(IMyEntity aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag) {
             
             g.log("sorting #", aTag);
-            var list = new List<IMyEntity>();
-            mGTS.getByTag(aTag, list);
-            if (list.Count == 0 && !mGTS.hasTag((IMyTerminalBlock)aSourceCargo, tagAnything)) {
-                mGTS.getByTag(tagAnything, list);
+            
+            mGTS.initListByTag(aTag, mWorkList);
+            if (mWorkList.Count == 0 && !mGTS.hasTag((IMyTerminalBlock)aSourceCargo, tagAnything)) {
+                mGTS.initListByTag(tagAnything, mWorkList);
             }
             MyItemInfo itemInfo;
-            if (list.Count != 0) {
+            if (mWorkList.Count != 0) {
                 itemInfo = aItem.Type.GetItemInfo();
-                for (int i = 0; i < list.Count; i++) {
-                    var c = list[i];
+                foreach (var c in mWorkList) {
                     if (c.EntityId != aSourceCargo.EntityId) {
                         var inv = c.GetInventory();
 
@@ -240,7 +247,6 @@ namespace IngameScript
                 subIndex = 0;
                 index++;
             }
-            Me
         }
         void stepCargo() {
             if (mCargo.Count > 0 && index < mCargo.Count) {

@@ -62,14 +62,20 @@ namespace commandline
         static Vector3D k2v(Vector3D v) => n2v(v, 1000);
 
         static void Main(string[] args) {
+            var i = UInt64.MaxValue;
+            Console.WriteLine($"Double {double.MaxValue}");
+            Console.WriteLine($"I {uint.MaxValue}");
+            Console.WriteLine($"Double/k {double.MaxValue / 1000.0}");
+            Console.WriteLine($"Double/k > intmax {(double.MaxValue / 1000.0) > i}");
+
 
             var target = new Vector3D(986148.14, 102603.57, 1599688.09);
             
             Console.WriteLine($"target {target}");
             
-            for (int i = 0; i < 1000; i++) {
+            for ( i = 0; i < 1000; i++) {
                 
-                Console.WriteLine($"{i} {vectorFromIndex(target, i)}");
+                Console.WriteLine($"{i} {vectorFromIndex(target, (int)i)}");
                 
             }
             Console.ReadKey();
