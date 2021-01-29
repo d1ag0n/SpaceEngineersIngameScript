@@ -54,9 +54,9 @@ namespace IngameScript
             step = 0;
             index =
             subIndex = 0;
-
+            mLCD = null;
             mGTS.getByTag("lcd", ref mLCD);
-            
+            g.persist($"Got LCD {null == mLCD}");
             mGTS.initListByTag(tagInventory, mCargo);
 
             mProduction.Clear();
@@ -129,6 +129,7 @@ namespace IngameScript
             bool result = true;
             if (tag == null) {
                 result = false;
+                g.log(aItem.Amount.RawValue);
                 g.log("Tag not found ", aItem.Type);
             }
             return result;
@@ -280,6 +281,7 @@ namespace IngameScript
                         break;
                 }
             }
+            Echo($"index {index} subindex {subIndex}");
             if (updateSource.HasFlag(UpdateType.Update10)) {
                 switch (step) {
                     case Steps.cargo:

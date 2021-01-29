@@ -45,7 +45,6 @@ namespace IngameScript
                 }
             }
         }
-
         public bool get<T>(ref T aBlock) {
             foreach (var b in mBlocks.Values) 
                 if (b is T) {
@@ -56,7 +55,6 @@ namespace IngameScript
         }
         public void getByTag<T>(string aTag, ref T aBlock) {
             List<IMyTerminalBlock> list;
-
             if (mTags.TryGetValue(aTag, out list)) {
                 if (list.Count > 0) {
                     aBlock = (T)list[0];

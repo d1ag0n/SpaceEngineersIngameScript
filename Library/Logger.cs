@@ -8,14 +8,23 @@ namespace IngameScript
 {
     class Logger
     {
+        string nl => Environment.NewLine;
+        readonly StringBuilder mWork = new StringBuilder();
         readonly StringBuilder mLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>();
-        public void log(double d) => log();
-        public void log(MyDetectedEntityInfo e) {
-            log(e.Name , " ", e.EntityId);
-            log(e.Type);
+
+        public void log(MyDetectedEntityInfo e) => log(string4(e));
+        
+        string string4(MyDetectedEntityInfo e) {
+            mWork.Clear();
+            mWork.AppendLine($"{e.Name} {e.Type}");
+            mWork.AppendLine(e.EntityId.ToString());
+            mWork.Append(string4(e.Orientation.Up));
+            return mWork.ToString();
         }
-        public void log(Vector3D v) => log("X ", v.X, null, "Y ", v.Y, null, "Z ", v.Z);
+        public void log(Vector3D v) => log(string4(v));
+        string string4(Vector3D v) => $"X {v.X}{nl}Y {v.Y}{nl}Z {v.Z}";
+        
         public void log(params object[] args) {
             if (null != args) {
                 for (int i = 0; i < args.Length; i++) {
@@ -44,8 +53,9 @@ namespace IngameScript
                 mPersistent.RemoveAt(index);
             }
         }
+        public void persist(MyDetectedEntityInfo e) => persist(string4(e));
         public void persist(string aMessage) {
-            if (mPersistent.Count > 15) {
+            if (false && mPersistent.Count > 15) {
                 mPersistent.RemoveAt(0);
             }
             mPersistent.Add(aMessage);
@@ -58,6 +68,5 @@ namespace IngameScript
             }
             return mLog.ToString();
         }
-
     }
 }

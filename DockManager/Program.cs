@@ -39,7 +39,6 @@ namespace IngameScript
             calibrated,
             ready
         }
-
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             g = new Logger();
@@ -49,7 +48,6 @@ namespace IngameScript
             mDicDocks = new Dictionary<long, Dock>();
             mListDocks = new List<Dock>();
             IGC.UnicastListener.SetMessageCallback("dockcommand");
-            
         }
         void update() {
             g.log("update start");

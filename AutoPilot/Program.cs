@@ -162,8 +162,20 @@ namespace IngameScript
             setMissionObjective(mRC.CenterOfMass);
         }
         
-        void missionDamp() {
-            trajectory(mvMissionObjective);
+        void doMissionDamp() {
+            switch (mCon.Status) {
+                case MyShipConnectorStatus.Connectable:
+                    ThrustN(mdMass * mdGravity);
+                    break;
+                case MyShipConnectorStatus.Connected:
+                    ThrustN(0);
+                    rotate2vector(Vector3D.Zero);
+                    break;
+                case MyShipConnectorStatus.Unconnected:
+                    trajectory(mvMissionObjective);
+                    break;
+            }
+            
         }
         bool hasSensor => mSensor != null;
         BodyMap map;
@@ -173,16 +185,21 @@ namespace IngameScript
                 meMission = Missions.map;
             }
         }
+        void undock() {
+            setBatteryCharge(ChargeMode.Discharge);
+            mCon.Enabled = false;
+        }
         void setMissionNavigate(string aWaypointName) {
-            
-            MyWaypointInfo waypoint;
-            if (findWaypoint(aWaypointName, out waypoint)) {
+            MyWaypointInfo waypoint = MyWaypointInfo.Empty;
+            if (findWaypoint(aWaypointName, ref waypoint)) {
                 initMission();
+                undock();
                 meMission = Missions.navigate;
                 setMissionObjective(waypoint.Coords);
+
             }
         }
-        bool findWaypoint(string aName, out MyWaypointInfo aWaypoint) {
+        bool findWaypoint(string aName, ref MyWaypointInfo aWaypoint) {
             var list = new List<MyWaypointInfo>();
             mRC.GetWaypointInfo(list);
 
@@ -229,8 +246,19 @@ namespace IngameScript
             if (null != mSensor && null != mCamera) {
                 initMission();
                 mSensor.Enabled = true;
+                mCamera.Enabled = true;
+                mCamera.EnableRaycast = true;
+                foreach (var r in mCameraRot) {
+                    r.RotorLock = false;
+                    r.Enabled = true;
+                }
+
                 meMission = Missions.scan;
-                mvMissionObjective = mvMissionTranslation = k2v(v2k(aWorldPosition));
+                var k = kbox(mRC.CenterOfMass);
+                g.persist(gps("setMissionScan", k.Center));
+                //mvMissionObjective = mvMissionTranslation = k2v(v2k(aWorldPosition));
+                mvMissionObjective = mvMissionTranslation = k.Center;
+
                 g.persist(gps("scan mission", mvMissionTranslation));
             } else {
                 g.persist("Camera and Sensor required for scan mission.");
@@ -239,9 +267,9 @@ namespace IngameScript
         void doMissionScan() {
             // mvMissionTranslation is used as the original location to scan in
             // will modify mvMissionObjective to navigate in the scan zone as necessary
-
+            BoundingBoxD box;
             aimCameraTgt(mvMissionTranslation);
-
+            g.log("mvMissionTranslation", mvMissionTranslation);
             mDetected.Clear();
             mSensor.DetectedEntities(mDetected);
             var avoid = Vector3D.Zero;
@@ -249,6 +277,10 @@ namespace IngameScript
             int hitCount = 0;
             var myPosition = mRC.CenterOfMass;
             foreach (var e in mDetected) {
+                if (!mDetectedIds.Contains(e.EntityId)) {
+                    g.persist(e);
+                    mDetectedIds.Add(e.EntityId);
+                }
                 bool use = true;
                 if (e.EntityId == mCamera.CubeGrid.EntityId) {
                     use = false;
@@ -263,17 +295,28 @@ namespace IngameScript
                     }
                 }
                 if (use) {
-                    g.log(e);
                     miMissionStep = 1;
                     hit = e.HitPosition.HasValue ? e.HitPosition.Value : e.Position;
                     avoid += Vector3D.Normalize(myPosition - hit);
                     hitCount++;
                 }
             }
-
-            // if (mCamera.CanScan())
-
             g.log("doMissionScan step ", miMissionStep);
+            g.log("Camera range: ", mCamera.AvailableScanRange);
+
+            /*var c = cbox(mRC.CenterOfMass);
+            c.GetCorners(mCorners);
+            g.log(gps("cbox", c.Center));
+            for (int i = 0; i < 8; i++) {
+                g.log(gps("cbox " + i, mCorners[i]));
+            }*/
+            var k = kbox(mRC.CenterOfMass);
+            k.GetCorners(mCorners);
+            g.log(gps("kbox", k.Center));
+            for (int i = 0; i < 8; i++) {
+                g.log(gps("kbox " + i, mCorners[i]));
+            }
+
             var velo = 10;
             switch (miMissionStep) {
                 case 0: // navigate to current objective
@@ -287,7 +330,7 @@ namespace IngameScript
             trajectory(mvMissionObjective, 4.47);
         }
         const int cmax = 10;
-        int toIndex(int x, int y, int z) => (z * cmax * cmax) + (y * cmax) + x;
+        int toIndex(Vector3D v) => ((int)v.Z * cmax * cmax) + ((int)v.Y * cmax) + (int)v.X;
         Vector3D toVector(int idx) {
             int z = idx / (cmax * cmax);
             idx -= (z * cmax * cmax);
@@ -314,15 +357,33 @@ namespace IngameScript
             v.Z *= n;
             return v;
         }
-        static Vector3D v2k(Vector3D v) => v2n(v, 1000);
-        static Vector3D k2v(Vector3D v) => n2v(v, 1000);
+        Vector3D v2c(Vector3D v) => v2n(v, 100);
+        Vector3D c2v(Vector3D v) => n2v(v, 100);
+        Vector3D v2k(Vector3D v) => v2n(v, 1000);
+        Vector3D k2v(Vector3D v) => n2v(v, 1000);
+        BoundingBoxD kbox(Vector3D aWorldPosition) {
+            var k = k2v(v2k(aWorldPosition));
+            aWorldPosition = new Vector3D(1000);
+            if (k.X < 0)
+                aWorldPosition.X = -1000;
+            if (k.Y < 0)
+                aWorldPosition.Y = -1000;
+            if (k.Z < 0)
+                aWorldPosition.Z = -1000;
+            return new BoundingBoxD(k, k + aWorldPosition);
+        }
+        BoundingBoxD cbox(Vector3D aWorldPosition) {
+            var k = k2v(v2k(aWorldPosition));
+            var c = k + v2c(aWorldPosition - k);
+            k = new Vector3D(100);
+            return new BoundingBoxD(c, c + k);
+        }
         void setMissionObjective(Vector3D aObjective) {
             mvMissionObjective = aObjective;
             mdMissionDistance = (mvMissionObjective - mvMissionStart).Length();
         }
         void initMission() {
             igcMessagesFailed = igcMessagesSent = 0;
-            g.log("initMission");
             mvMissionStart = mRC.CenterOfMass;
             mdMissionDistance = 
             mdMissionAltitude =
@@ -331,7 +392,7 @@ namespace IngameScript
 
             meMission = Missions.none;
             
-            mSensor.Enabled = false;
+            
             
             
             mvMissionTranslation =
@@ -341,9 +402,9 @@ namespace IngameScript
             setGyrosOverride(false);
             mMissionConnector = null;
 
-            if (mCon.Status == MyShipConnectorStatus.Unconnected)
-                mCon.Enabled = false;
-            
+            if (mCon.Status == MyShipConnectorStatus.Unconnected) mCon.Enabled = false;
+
+            mSensor.Enabled = false;
             mCamera.Enabled = false;
             foreach (var r in mCameraRot) {
                 r.RotorLock = true;
@@ -372,7 +433,7 @@ namespace IngameScript
                     missionNavigate();
                     break;
                 case Missions.dock:
-                    missionDock();
+                    doMissionDock();
                     break;
                 case Missions.patrol:
                     if (0 == miMissionStep) {
@@ -472,7 +533,7 @@ namespace IngameScript
             sb.Append(":#FFFF00FF:");
             return sb.ToString();
         }
-        void missionDock() {
+        void doMissionDock() {
             g.log("Dock Mission: ", mMissionConnector.Name);
             var d = 0.0;
             var msg = "unknown";
@@ -526,13 +587,8 @@ namespace IngameScript
                     msg = "connecting to dock";
                     switch (mCon.Status) {
                         case MyShipConnectorStatus.Connectable:
-                            if (mdGravity > 0) {
-                                if (miMissionSubStep == 0) {
-                                    miMissionSubStep = 1;
-                                    mvMissionObjective = mRC.CenterOfMass;
-                                }
-                                missionNavigate(true);
-                            }
+                            ThrustN(mdMass * mdGravity);
+                            rotate2vector(Vector3D.Zero);
                             break;
                         case MyShipConnectorStatus.Unconnected:
                             if (3 == mMissionConnector.MessageSent) {
@@ -582,11 +638,11 @@ namespace IngameScript
                     break;
                 case DockStep.complete:
                     msg = "depature complete";
-                    missionDamp();
+                    doMissionDamp();
                     break;
                 default:
                     g.log("step unhandled, damping");
-                    missionDamp();
+                    doMissionDamp();
                     break;
             }
             g.log(msg);
@@ -666,9 +722,11 @@ namespace IngameScript
             mFuelTanks = new List<IMyGasTank>();
             mDetected = new List<MyDetectedEntityInfo>();
             mCameraRot = new List<IMyMotorStator>();
+            mDetectedIds = new HashSet<long>();
+            mCorners = new Vector3D[8];
 
             init();
-            initMission();
+            
             setMissionDamp();
             mListener = IGC.RegisterBroadcastListener("docks");
             mListener.SetMessageCallback("docks");
@@ -692,7 +750,7 @@ namespace IngameScript
                 mSensor.FrontExtend =
                 mSensor.LeftExtend =
                 mSensor.RightExtend =
-                mSensor.TopExtend = 20;
+                mSensor.TopExtend = mSensor.MaxRange;
             }
 
 
@@ -1053,7 +1111,10 @@ namespace IngameScript
                 }
             }
             g.log("altitude ", mdAltitude);
+
+
         }
+
         double mdGravity;
         Vector3D mvGravityDisplacement;
         Vector3D mvGravityDirection;
@@ -1089,20 +1150,13 @@ namespace IngameScript
                                 case "p":
                                     if (1 < args.Length) {
                                         int p;
-                                        if (int.TryParse(args[1], out p)) {
-                                            g.removeP(p);
-                                        }
-
+                                        if (int.TryParse(args[1], out p)) g.removeP(p);
                                     } else {
                                         g.removeP(0);
                                     }
                                     break;
                                 case "dock":
-                                    if (1 < args.Length) {
-                                        if (!setMissionDock(args[1])) {
-                                            g.persist($"Dock '{args[1]}' not found.");
-                                        }
-                                    }
+                                    if (1 < args.Length) if (!setMissionDock(args[1])) g.persist($"Dock '{args[1]}' not found.");
                                     break;
                                 case "damp":
                                     setMissionDamp();
@@ -1111,7 +1165,7 @@ namespace IngameScript
                                     setMissionPatrol();
                                     break;
                                 case "navigate":
-                                    setMissionNavigate(args[1]); // GPS: MOON_DOCK
+                                    if (args.Length > 1) setMissionNavigate(args[1]);
                                     break;
                                 case "test":
                                     setMissionTest();
@@ -1137,9 +1191,10 @@ namespace IngameScript
             }
 
             if (aUpdate.HasFlag(UpdateType.Update10)) {
-                g.log("igc success ", igcMessagesSent, " fail ", igcMessagesFailed);
+                
+                //g.log("igc success ", igcMessagesSent, " fail ", igcMessagesFailed);
                 foreach (var d in mDocks.Values) {
-                    g.log("Dock: ", d.Name);
+                    //g.log("Dock: ", d.Name);
                 }
                 try {
                     //initSensor();
@@ -1298,6 +1353,8 @@ namespace IngameScript
             hold
         }
 
+        readonly Vector3D[] mCorners;
+
         Connector mMissionConnector; 
         
         readonly Dictionary<long, Connector> mDocks = new Dictionary<long, Connector>();
@@ -1328,6 +1385,8 @@ namespace IngameScript
         readonly List<IMyGasTank> mFuelTanks;
         readonly List<MyDetectedEntityInfo> mDetected;
         readonly List<IMyMotorStator> mCameraRot;
+
+        readonly HashSet<long> mDetectedIds;
 
         IMyTextPanel mLCD;
         readonly IMyBroadcastListener mListener;

@@ -4,13 +4,38 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using VRage;
 using VRageMath;
 
 namespace commandline
 {
     class Program
     {
+        static BoundingBoxD kbox(Vector3D aWorldPosition) {
+            var k = v2k(aWorldPosition);
+            Console.WriteLine("K");
+            Console.WriteLine(k);
+            var v = k2v(k);
+            Console.WriteLine("V");
+            Console.WriteLine(v);
+            aWorldPosition = new Vector3D(1000);
+            if (v.X < 0)
+                aWorldPosition.X = -1000;
+            if (v.Y < 0)
+                aWorldPosition.Y = -1000;
+            if (v.Z < 0)
+                aWorldPosition.Z = -1000;
+            return new BoundingBoxD(v, v + aWorldPosition);
+        }
+        static void kwork() {
+            var origin = new Vector3D(19500, 144500, -104500);
 
+            var k = kbox(origin);
+            Console.WriteLine("ORIGIN");
+            Console.WriteLine(origin);
+            Console.WriteLine("KCENTER");
+            Console.WriteLine(k.Center);
+        }
         const int miInterval = 10;
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;
@@ -62,12 +87,14 @@ namespace commandline
         static Vector3D k2v(Vector3D v) => n2v(v, 1000);
 
         static void Main(string[] args) {
+            kwork();
+            Console.ReadKey();
+            return;
             var i = UInt64.MaxValue;
             Console.WriteLine($"Double {double.MaxValue}");
             Console.WriteLine($"I {uint.MaxValue}");
             Console.WriteLine($"Double/k {double.MaxValue / 1000.0}");
             Console.WriteLine($"Double/k > intmax {(double.MaxValue / 1000.0) > i}");
-
 
             var target = new Vector3D(986148.14, 102603.57, 1599688.09);
             
