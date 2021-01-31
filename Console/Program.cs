@@ -95,11 +95,101 @@ namespace commandline
                 }
             }
         }
-        
-        
+
+        // F=MA=MG=N
+        // M=F/A
+        // A=F/M
+        // G=A
+        // F=N
 
 
+        
+        // calculate Force required to cancel Gravity at specific angle b= 
+        static void trig1() {
+            op("trig1");
+            
+            // given
+            var B = Math.PI / 2.0; // gravity plane angle is always pi/2
+            var C = 35.0 * deg; // angle between thrust vector and gravity direction is 35deg
+            var G = 1.0; // gravity
+
+            // calculate
+            var A = Math.PI - B - C; // remaining angle
+            var b = G * Math.Sin(B) / Math.Sin(A);// length of thrust vector to gravity plane
+            
+            op($"deg = {deg}");
+            op($"A = {A}");
+            op($"B = {B}");
+            op($"C = {C}");
+            op($"G = {G}");
+            op($"sin(A) = {Math.Sin(A)}");
+            op($"sin(B) = {Math.Sin(B)}");
+            op($"b = {b}");
+
+            
+        }
+        const double deg = Math.PI / 180.0;
+        const double rad = 180.0 / Math.PI;
+        // calculate maximum angle where we can still cancel gravity
+        static void trig2() {
+            op("trig2");
+            
+            // given
+            var a = 1.0; // gravity
+            var b = 2.0; // max length of thrust vector to gravity plane, maximum based on what engines are capable of
+            var B = Math.PI / 2.0; // gravity plane angle is always pi/2
+
+            // calculate
+            var A = Math.Asin(a * Math.Sin(B) / b);
+            var C = Math.PI - B - A;
+            op($"A = {A}");
+            op($"C = {C * rad}");
+
+        }
+        static void stoppingTime() {
+            op("stoppingTime");
+            var u = 1000.0; // initial velocity
+            var a = 10.0; // acceleration
+            var t = u / a;
+            var vavg = u / 2.0; // average velocity
+
+            var d = vavg * t;
+            op($"t = {t}");
+            op($"d = {d}");
+            d = (u / 2.0) * (u / a);
+            op($"d = {d}");
+            d = (u * u) / (a * 2.0);
+            op($"d = {d}");
+        }
+        Vector3D reject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
+            aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
+        static void velocityAwayFromDirectionOfGravity() {
+            op($"Down = {Vector3D.Down}");
+            op($"Forward = {Vector3D.Forward}");
+
+            var u = new Vector3D(0, 0.5, 0.5);
+            op($"u = {u}");
+            var g = new Vector3D(0, 9.8, 0);
+
+            op($"g = {g}");
+            var gcross = g.Cross(-g);
+            op($"gcross = {gcross}");
+
+        }
+        // if my altitude is 80 and I want to be at 100
+        // traveling up at the same velocity as the acceleration of gravity
+        // i need to stop thrusting up when I am 100 - G 
+        static void op<T>(T a) => Console.WriteLine(a);
         static void Main(string[] args) {
+            velocityAwayFromDirectionOfGravity();
+            op("");
+            trig1();
+            op("");
+            trig2();
+            op("");
+            stoppingTime();
+            Console.ReadKey();
+            return;
             int i;
             var set = new HashSet<string>();
             for (i = 0; i < Base27Directions.Directions.Length; i++) {
@@ -113,9 +203,9 @@ namespace commandline
 
             var dir = (Vector3D.Forward + Vector3D.Up) * 0.5;
             Console.WriteLine(dir);
-
             Console.ReadKey();
             return;
+
             //  p = m * v
             //  (ddt / mass) - grav = 2x velo
             //  300 = 10     * (2 * 10 + 10)

@@ -281,9 +281,9 @@ namespace IngameScript
         bool mbScanComplete = true;
         BoundingBoxD mbScan;
         void setScan(BoundingBoxD aBox) {
-            
             miScanStep = -1;
             mbScanComplete = false;
+            aBox.Inflate(10);
             mbScan = aBox;
             mDetected.Clear();
             aBox.GetCorners(mvaCorners);
@@ -291,6 +291,7 @@ namespace IngameScript
         void doScan() {
             g.log("camera range ", mCamera.AvailableScanRange);
             g.log("mbScanComplete ", mbScanComplete);
+            g.log("miScanStep ", miScanStep);
             if (!mbScanComplete) {
                 if (miScanStep == -1) {
                     if (_doScan(mbScan.Center)) {
@@ -302,6 +303,7 @@ namespace IngameScript
                         miScanStep++;
                         if (miScanStep == 8) {
                             mbScanComplete = true;
+                            g.log("ZEROING CQAMERA");
                             aimCameraTgt(Vector3D.Zero);
                         }
                     }
@@ -313,10 +315,11 @@ namespace IngameScript
             var dir = aTarget - mCamera.WorldMatrix.Translation;
             var dist = dir.Normalize() + (mbScan.Max - mbScan.Min).Length();
             var ab = angleBetween(mCamera.WorldMatrix.Forward, dir);
-            if (ab < 0.25) {
+            aimCameraTgt(aTarget);
+            if (ab < 1.5) {
                 if (mCamera.AvailableScanRange > dist) {
                     aTarget += dir * dist;
-                    aimCameraTgt(aTarget);
+                    
                     var e = mCamera.Raycast(aTarget);
                     if (e.Type == MyDetectedEntityType.None) {
                         result = true;
@@ -332,11 +335,8 @@ namespace IngameScript
                                 }
                             }
                         }
-                        if (use) {
-                            use = mbScan.Contains(e.HitPosition.Value) != ContainmentType.Disjoint;
-                        }
                         if (!mDetectedIds.Contains(e.EntityId)) {
-                            g.persist(e);
+                            //g.persist(e);
                             mDetectedIds.Add(e.EntityId);
                         }
                         if (use) {
@@ -377,20 +377,23 @@ namespace IngameScript
                 miMissionStep++;
                 if (2 == miMissionStep) {
                     miMissionSubStep = 0;
-                } else if (3 == miMissionStep) {
+                } else if (4 == miMissionStep) {
                     miMissionStep = 0;
                 }
-            } else if (mbScanComplete) {
+            } else if (mbScanComplete && mbScan.Center != Vector3D.Zero) {
+                miMissionStep = 0;
                 mbScanGood = mbScan;
                 mvMissionObjective = mbScan.Center;
+                scanNavCount++;
+                g.persist(gps($"nav{scanNavCount}", mbScan.Center));
             }
 
-            if (0 == miMissionStep) {
+            if (mbScanComplete && 0 == miMissionStep) {
                 setScan(moveTowards(mbScanGood, Vector3D.Normalize(mvMissionTranslation - mRC.CenterOfMass)));
-            } else if (1 == miMissionStep) {
+            } else if (mbScanComplete && 1 == miMissionStep) {
                 var dir = (Vector3D.Normalize(mvMissionTranslation - mRC.CenterOfMass) + mvGravityDirection) * 0.5;
                 setScan(moveTowards(mbScanGood, dir));
-            } else if (2 == miMissionStep) {
+            } else if (mbScanComplete && 2 == miMissionStep) {
                 Vector3D dir = Vector3D.Zero;
                 switch (miMissionSubStep) {
                     case 0: dir = (Vector3D.Forward + Vector3D.Up) / 2.0; break;
@@ -427,9 +430,12 @@ namespace IngameScript
                     miMissionStep++;
                 }
                 setScan(moveTowards(mbScanGood, dir));
-            } else {
+            } else if (mbScanComplete) {
                 setScan(moveTowards(mbScanGood, rv()));
             }
+            g.log("miMissionStep ", miMissionStep);
+            g.log("miMissionSubStep ", miMissionSubStep);
+            doScan();
             trajectory(mvMissionObjective);
             
         }
@@ -972,9 +978,6 @@ namespace IngameScript
             const double maxThrottle = 0.99;
             var stopDist = mdStopDistance > minStopDist ? mdStopDistance : minStopDist;
 
-
-
-
             // g.log("stopDist ", stopDist);
             // 2 = 1000 / 500
             // 0.8 = 400 / 500 eighty percent "throttle"
@@ -989,7 +992,6 @@ namespace IngameScript
             if (prefVelo > aMaxVelo) {
                 prefVelo = aMaxVelo;
             }
-            
             
             g.log("prefVelo ", prefVelo);
 
