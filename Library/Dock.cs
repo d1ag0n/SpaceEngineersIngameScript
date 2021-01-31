@@ -258,9 +258,9 @@ namespace IngameScript
         public bool extend(Vector3D aTarget) {
             C.Enabled = true;
             var result = false;
-            var v = (float)(Math.Abs(aTarget.Z) - 2.65);
-            const float minExtend = 0.2f;
-            
+            //var v = (float)(Math.Abs(aTarget.Z) - 2.65);
+
+            float v = 0.2f;
             switch (C.Status) {
                 case MyShipConnectorStatus.Connectable:
                     // 0.00015
@@ -270,7 +270,7 @@ namespace IngameScript
                     } else {
                         C.PullStrength *= 1.1f;
                     }
-                    v = 0f;
+                    v = -0.1f;
                     g.log("Strength: ", C.PullStrength);
                     result = true;
                     break;
@@ -281,9 +281,7 @@ namespace IngameScript
                     state = States.connected;
                     break;
             }
-            if (v < minExtend) {
-                v = minExtend;
-            }
+            
             Z.Velocity = v;
             return result;
         }

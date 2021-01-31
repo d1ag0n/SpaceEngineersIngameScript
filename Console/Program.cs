@@ -1,4 +1,6 @@
-﻿using System;
+﻿using IngameScript;
+using Sandbox.ModAPI.Ingame;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -11,37 +13,75 @@ namespace commandline
 {
     class Program
     {
-        static BoundingBoxD kbox(Vector3D aWorldPosition) {
-            var k = v2k(aWorldPosition);
-            Console.WriteLine("K");
-            Console.WriteLine(k);
-            var v = k2v(k);
-            Console.WriteLine("V");
-            Console.WriteLine(v);
-            aWorldPosition = new Vector3D(1000);
-            if (v.X < 0)
-                aWorldPosition.X = -1000;
-            if (v.Y < 0)
-                aWorldPosition.Y = -1000;
-            if (v.Z < 0)
-                aWorldPosition.Z = -1000;
-            return new BoundingBoxD(v, v + aWorldPosition);
+
+
+        static Random r = new Random(7);
+        static Vector3D rv() {
+            var x = (r.NextDouble() - 0.5) * 1000000.0;
+            var y = (r.NextDouble() - 0.5) * 1000000.0;
+            var z = (r.NextDouble() - 0.5) * 1000000.0;
+            return new Vector3D(x, y, z);
+        }
+        static void cindex() {
+            for (int i = 0; i < 10000; i++) {
+                var v = box.toVector(i);
+                var index = box.toIndex(v);
+                if (i != index) {
+                    Console.WriteLine("index mismatch");
+                }
+            }
+            for (int i = 0; i < 10000; i++) {
+                var v = rv();
+                var c = box.c(v);
+                var cc = box.c(c.Center);
+                if (c.Center != cc.Center) {
+                    Console.WriteLine("c mismatch");
+                    Console.WriteLine(c.Center);
+                    Console.WriteLine(cc.Center);
+                }
+            }
+            Console.WriteLine("cindex complete");
+        }
+        static void cwork() {
+            for (int i = 0; i < 10000; i++) {
+                var v = rv();
+                var cbox = box.c(v);
+                var dbox = box.c(cbox.Center);
+                if (cbox.Center != dbox.Center) {
+                    Console.WriteLine("mismatch");
+                    Console.WriteLine(v);
+                    Console.WriteLine(cbox.Center);
+                    Console.WriteLine(dbox.Center);
+                }
+            }
+            Console.WriteLine("kwork complete");
         }
         static void kwork() {
-            var origin = new Vector3D(19500, 144500, -104500);
+            
+            for (int i = 0; i < 10000; i++) {
+                var v = rv();
+                var kbox = box.k(v);
+                
+                var dbox = box.k(kbox.Center);
+                if (kbox.Center != dbox.Center) {
+                    Console.WriteLine("mismatch");
+                    Console.WriteLine(v);
+                    Console.WriteLine(kbox.Center);
+                    Console.WriteLine(dbox.Center);
+                }
+            }
 
-            var k = kbox(origin);
-            Console.WriteLine("ORIGIN");
-            Console.WriteLine(origin);
-            Console.WriteLine("KCENTER");
-            Console.WriteLine(k.Center);
+            Console.WriteLine("kwork complete");
+
         }
         const int miInterval = 10;
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;
         //const double mdTimeFactor = 0.2;
-        const double mMass = 3887.0;
-        const double mVelocity = 1.71;
+        const double mdMass = 15327;
+        const double mdNewtons = 196800;
+        const double mdVelocity = 1.71;
+        const double mdGravity = 2.45;
         static void sphere() {
 
             int nx = 4;
@@ -55,42 +95,63 @@ namespace commandline
                 }
             }
         }
-        const int cmax = 10;
-        static int toIndex(int x, int y, int z) => (z * cmax * cmax) + (y * cmax) + x;
-        static Vector3D toVector(int idx) {
-            int z = idx / (cmax * cmax);
-            idx -= (z * cmax * cmax);
-            int y = idx / cmax;
-            int x = idx % cmax;
-            return new Vector3D(x, y, z);
-        }
-        static Vector3D vectorFromIndex(Vector3D aWorldPosition, int aIndex) => k2v(v2k(aWorldPosition)) + toVector(aIndex) * 100;
-        static Vector3D v2n(Vector3D v, long n) {
-            if (v.X < 0) { v.X -= n; }
-            if (v.Y < 0) { v.Y -= n; }
-            if (v.Z < 0) { v.Z -= n; }
-            v.X = (long)v.X / n;
-            v.Y = (long)v.Y / n;
-            v.Z = (long)v.Z / n;
-            return v;
-        }
-        static Vector3D n2v(Vector3D v, long n) {
-            if (v.X < 0) { v.X++; }
-            if (v.Y < 0) { v.Y++; }
-            if (v.Z < 0) { v.Z++; }
-            v.X *= n;
-            v.Y *= n;
-            v.Z *= n;
-            return v;
-        }
-        static Vector3D v2k(Vector3D v) => v2n(v, 1000);
-        static Vector3D k2v(Vector3D v) => n2v(v, 1000);
+        
+        
+
 
         static void Main(string[] args) {
+            int i;
+            var set = new HashSet<string>();
+            for (i = 0; i < Base27Directions.Directions.Length; i++) {
+                var d = Base27Directions.Directions[i];
+                if (!set.Contains(d.ToString())) {
+                    set.Add(d.ToString());
+                    Console.WriteLine($"{i} {d}");
+                }
+            }
+            Console.WriteLine(set.Count);
+
+            var dir = (Vector3D.Forward + Vector3D.Up) * 0.5;
+            Console.WriteLine(dir);
+
+            Console.ReadKey();
+            return;
+            //  p = m * v
+            //  (ddt / mass) - grav = 2x velo
+            //  300 = 10     * (2 * 10 + 10)
+            //  ddt = 10     * (2 * 10 + 10)
+            //  ddt = mass   * (2 * velocity + gravity);
+
+            //var velo = ((mdNewtons / mdMass) - mdGravity) * 0.5;
+
+            //var ddt = mdMass * (2 * mdVelocity + mdGravity);
+            //Console.WriteLine($"ddt {ddt}");
+            //Console.WriteLine($"velo {velo}");
+
+            var bb = new BoundingBoxD(new Vector3D(-10), new Vector3D(10));
+            bb.Inflate(1);
+            Console.WriteLine(bb);
+            Console.WriteLine(bb.Center);
+            Console.WriteLine(bb.Extents);
+            Console.ReadKey();
+            return;
+            cindex();
+            cwork();
             kwork();
             Console.ReadKey();
             return;
-            var i = UInt64.MaxValue;
+            var e = new MyDetectedEntityInfo();
+            Console.WriteLine(e.EntityId);
+            Console.WriteLine("CDIST");
+            Console.WriteLine((new Vector3D(100)).Length());
+            Console.WriteLine("KDIST");
+            Console.WriteLine((new Vector3D(1000)).Length());
+            Console.ReadKey();
+            return;
+            kwork();
+            Console.ReadKey();
+            return;
+            
             Console.WriteLine($"Double {double.MaxValue}");
             Console.WriteLine($"I {uint.MaxValue}");
             Console.WriteLine($"Double/k {double.MaxValue / 1000.0}");
@@ -102,7 +163,6 @@ namespace commandline
             
             for ( i = 0; i < 1000; i++) {
                 
-                Console.WriteLine($"{i} {vectorFromIndex(target, (int)i)}");
                 
             }
             Console.ReadKey();
@@ -146,7 +206,7 @@ namespace commandline
             Console.WriteLine(Guid.NewGuid());
             Console.WriteLine($"mdTimeFactor = {mdTimeFactor}");
 
-            var forceOfVelocityResult = forceOfVelocity(mMass, mVelocity, mdTimeFactor);
+            var forceOfVelocityResult = forceOfVelocity(mdMass, mdVelocity, mdTimeFactor);
             Console.WriteLine($"forceOfVelocity = {forceOfVelocityResult}");
 
             var momentumResult = momentum(forceOfVelocityResult, mdTimeFactor);
@@ -155,13 +215,13 @@ namespace commandline
             var forceOfMomentumResult = forceOfMomentum(momentumResult, mdTimeFactor);
             Console.WriteLine($"forceOfMomentum = {forceOfMomentumResult}");
 
-            var accelerationResult = acceleration(forceOfVelocityResult, mMass);
+            var accelerationResult = acceleration(forceOfVelocityResult, mdMass);
             Console.WriteLine($"acceleration = {accelerationResult}");
 
-            var forceResult = force(mMass, accelerationResult);
+            var forceResult = force(mdMass, accelerationResult);
             Console.WriteLine($"force = {forceResult}");
 
-            var desiredDampeningThrustResult = desiredDampeningThrust(mMass, mVelocity, 0);
+            var desiredDampeningThrustResult = desiredDampeningThrust(mdMass, mdVelocity, 0);
             Console.WriteLine($"desiredDampeningThrust = {desiredDampeningThrustResult}");
 
             Console.ReadKey();

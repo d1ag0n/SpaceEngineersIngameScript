@@ -1,7 +1,6 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using VRage.Game;
 
 namespace IngameScript

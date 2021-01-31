@@ -17,6 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", 
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Library\Library.projitems*{53ece70b-9576-43ff-9432-c30bbf8c55f4}*SharedItemsImports = 4
 		Library\Library.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
 		Library\Library.projitems*{6eb7eb41-9002-4602-93f1-9da21807e436}*SharedItemsImports = 4
 		Library\Library.projitems*{81c70a3c-a14c-4c0e-8607-35c4fc537876}*SharedItemsImports = 4
