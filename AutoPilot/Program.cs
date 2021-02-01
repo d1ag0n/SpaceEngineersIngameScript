@@ -528,8 +528,6 @@ namespace IngameScript
 
             trajectory(mvMissionObjective);
         }
-        
-        
         void setMissionObjective(Vector3D aObjective) {
             mvMissionObjective = aObjective;
             mdMissionDistance = (mvMissionObjective - mvMissionStart).Length();
@@ -1484,7 +1482,6 @@ namespace IngameScript
             }
         }
 
-
         Vector3D local2pos(Vector3D local, MatrixD world) =>
             Vector3D.Transform(local, world);
         Vector3D local2dir(Vector3D local, MatrixD world) =>
@@ -1493,8 +1490,6 @@ namespace IngameScript
             Vector3D.TransformNormal(world - local.Translation, MatrixD.Transpose(local));
         Vector3D world2dir(Vector3D world, MatrixD local) =>
             Vector3D.TransformNormal(world, MatrixD.Transpose(local));
-
-        
 
         enum Missions
         {

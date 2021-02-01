@@ -144,7 +144,7 @@ namespace commandline
             return result;
         }
         // projection? (a*b/b*b)*b
-        static void calculateThrustVector(Vector3D aTarget, Vector3D aCoM, Vector3D aGravity, Vector3D aThrustVector, double aMass, double aNewtons) {
+        static void zcalculateThrustVector(Vector3D aTarget, Vector3D aCoM, Vector3D aGravity, Vector3D aThrustVector, double aMass, double aNewtons) {
             // get gravity direction
             var gravityDirection = aGravity;
             var gravityMagnitude = gravityDirection.Normalize();
@@ -284,12 +284,12 @@ namespace commandline
             var gravity = new Vector3D(-0.890217840671539, -1.93874788284302, -1.20976269245148);
             var gravityDirection = Vector3D.Normalize(gravity);
 
-            var leanPosition = new Vector3D(19756.93, 143877.06, -108981.51);
-            var lean = -Vector3D.Normalize(leanPosition - com);
-            //var lean = -gravityDirection;
+            //var leanPosition = new Vector3D(19756.93, 143877.06, -108981.51);
+            //var lean = -Vector3D.Normalize(leanPosition - com);
+            var lean = -gravityDirection;
             //calculateThrustVector((Vector3D.Up + Vector3D.Forward) / 2.0, Vector3D.Zero, Vector3D.Down);
             var mass = 30123.201171875;
-            calculateThrustVector(targetBelow, com, gravity, lean, mass, mdNewtons);
+            thrustvector.calculateThrustVector(targetProjection, com, gravity, lean, mass, mdNewtons);
             Console.ReadKey();
             return;
             var ab = angleBetween(Vector3D.Right, Vector3D.Left);
