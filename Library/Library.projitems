@@ -20,6 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Methods.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PWrap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)thrustvector.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)MDK Wiki.txt" />

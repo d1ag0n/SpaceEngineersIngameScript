@@ -78,7 +78,7 @@ namespace commandline
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;
         //const double mdTimeFactor = 0.2;
-        const double mdMass = 15327;
+        //const double mdMass = 15327;
         const double mdNewtons = 196800;
         const double mdVelocity = 1.71;
         const double mdGravity = 2.45;
@@ -124,28 +124,80 @@ namespace commandline
             op($"G = {G}");
             op($"sin(A) = {Math.Sin(A)}");
             op($"sin(B) = {Math.Sin(B)}");
-            op($"b = {b}");
-
-            
+            op($"b = {b}");   
         }
+        
         const double deg = Math.PI / 180.0;
         const double rad = 180.0 / Math.PI;
+        // orthogonal projection is vector rejection?
+        static Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
+            aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
+        static double angleBetween(Vector3D a, Vector3D b) {
+            var dot = a.Dot(b);
+            if (dot < -1.0) {
+                dot = -1.0;
+            } else if (dot > 1.0) {
+                dot = 1.0;
+            }
+            var result = Math.Acos(dot);
+            //log("angleBetween ", result);
+            return result;
+        }
+        // projection? (a*b/b*b)*b
+        static void calculateThrustVector(Vector3D aTarget, Vector3D aCoM, Vector3D aGravity, Vector3D aThrustVector, double aMass, double aNewtons) {
+            // get gravity direction
+            var gravityDirection = aGravity;
+            var gravityMagnitude = gravityDirection.Normalize();
+            
+            // project the target onto the plane defined by centerOfMass and gravity normal
+            var targetProjection = project(aTarget, aCoM, gravityDirection);
+
+            // get the angle between the target and it's projected position
+            var dir2target = Vector3D.Normalize(aTarget - aCoM);
+            var dir2targetProjection = Vector3D.Normalize(targetProjection - aCoM);
+            var angle = angleBetween(dir2targetProjection, dir2target);
+            
+            var dot = gravityDirection.Dot(Vector3D.Normalize(aTarget - aCoM));
+            // - is above here
+            if (dot > 0) {
+                angle = -angle;
+            }
+
+            var leanMax = maxLean(gravityMagnitude, aMass, aNewtons, angle);
+            var t = thrustAtAngle(aGravity, gravityDirection, angle, aThrustVector, aMass);
+            op($"thrust = {t}");
+        }
+        // ship says 1.19
+        // static double maxLean(double aGravity, double aMass, double aNewtons) => Math.PI - Math.PI / 2.0 - Math.Asin((aGravity * aMass) * Math.Sin(Math.PI / 2.0) / aNewtons);
+        static double maxLean(double aGravity, double aMass, double aNewtons, double aAngle) => Math.PI - (Math.PI / 2.0 + aAngle) - Math.Asin((aGravity * aMass) * Math.Sin(Math.PI / 2.0) / aNewtons);
+
+        static double thrustAtAngle(Vector3D aGravity, Vector3D aGravityDirection, double aAngle, Vector3D aThrustVector, double aMass) {
+            var B = Math.PI / 2.0 + aAngle; // gravity plane
+            var C = angleBetween(aGravityDirection, aThrustVector);
+            var G = aGravity * aMass;
+            var A = Math.PI - B - C; // remaining angle
+            var b = G * Math.Sin(B) / Math.Sin(A);// length of thrust vector to gravity plane
+            var t = b.Length();
+            return t;
+        }
         // calculate maximum angle where we can still cancel gravity
-        static void trig2() {
+        /*static void trig2() {
             op("trig2");
             
             // given
             var a = 1.0; // gravity
             var b = 2.0; // max length of thrust vector to gravity plane, maximum based on what engines are capable of
             var B = Math.PI / 2.0; // gravity plane angle is always pi/2
-
+            op($"B = {B}");
             // calculate
             var A = Math.Asin(a * Math.Sin(B) / b);
             var C = Math.PI - B - A;
             op($"A = {A}");
             op($"C = {C * rad}");
-
-        }
+            op($"maxLean = {maxLean(a, b) * rad}");
+            op();
+        }*/
+        
         static void stoppingTime() {
             op("stoppingTime");
             var u = 1000.0; // initial velocity
@@ -161,8 +213,7 @@ namespace commandline
             d = (u * u) / (a * 2.0);
             op($"d = {d}");
         }
-        Vector3D reject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
-            aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
+        
         static void velocityAwayFromDirectionOfGravity() {
             op($"Down = {Vector3D.Down}");
             op($"Forward = {Vector3D.Forward}");
@@ -174,21 +225,93 @@ namespace commandline
             op($"g = {g}");
             var gcross = g.Cross(-g);
             op($"gcross = {gcross}");
+            var v = new Vector3D(10);
+            var MatrixD = new MatrixD();
+        }
 
+        static string nl => Environment.NewLine;
+        static void rejection() {
+            op($"{nl}rejection");
+            var g = Vector3D.Down * 7.0; // gravity
+            var a = (Vector3D.Up + Vector3D.Right) / 2.0; // velocity
+            a *= 3.0;
+            var b = g.Cross(a); // cross gravity
+            var a1 = ((a.Dot(b) / b.Dot(b)) * b);
+            var a2 = a - a1;
+            op($"g  = {g}");
+            op($"a  = {a}");
+            op($"b  = {b}");
+            op($"a1 = {a1}");
+            op($"a2 = {a2}");
+            var ra = project(new Vector3D(1.5, 1.5, 0.0), Vector3D.Zero, Vector3D.Up);
+            op($"ra = {ra}");
+        }
+        static void upComponent() {
+            var up = Vector3D.Up;
+            var velo = (Vector3D.Up + Vector3D.Right) / 2.0;
+            var dot = up.Dot(Vector3D.Right);
+            op($"upComponent = {dot}");
         }
         // if my altitude is 80 and I want to be at 100
         // traveling up at the same velocity as the acceleration of gravity
         // i need to stop thrusting up when I am 100 - G 
+        static void op() => Console.WriteLine(nl);
         static void op<T>(T a) => Console.WriteLine(a);
+        /// <summary>
+        /// Rejects vector a on vector b,,,a is target b is grav
+        /// </summary>
+        public static Vector3D Rejection(Vector3D a, Vector3D b) //reject a on b
+        {
+            if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
+                return Vector3D.Zero;
+
+            return a - a.Dot(b) / b.LengthSquared() * b;
+        }
         static void Main(string[] args) {
-            velocityAwayFromDirectionOfGravity();
-            op("");
-            trig1();
-            op("");
-            trig2();
+            
+            //GPS:ctvCoM:19745.06:143861.44:-108993.72:#FF75C9F1:
+            var com = new Vector3D(19745.06, 143861.44, -108993.72);
+
+            //GPS:targetabove:19775.06:143846.47:-108977.86:#FF75C9F1:
+            var targetAbove = new Vector3D(19775.06, 143846.47, -108977.86);
+
+            //GPS:targetbelow:19766.2:143830.21:-108975.64:#FF75C9F1:
+            var targetBelow = new Vector3D(19766.2, 143830.21, -108975.64);
+
+            //GPS:targetprojection:19772.56:143841.03:-108981.25:#FF75C9F1:
+            var targetProjection = new Vector3D(19772.56, 143841.03, -108981.25);
+
+            var gravity = new Vector3D(-0.890217840671539, -1.93874788284302, -1.20976269245148);
+            var gravityDirection = Vector3D.Normalize(gravity);
+
+            var leanPosition = new Vector3D(19756.93, 143877.06, -108981.51);
+            var lean = -Vector3D.Normalize(leanPosition - com);
+            //var lean = -gravityDirection;
+            //calculateThrustVector((Vector3D.Up + Vector3D.Forward) / 2.0, Vector3D.Zero, Vector3D.Down);
+            var mass = 30123.201171875;
+            calculateThrustVector(targetBelow, com, gravity, lean, mass, mdNewtons);
+            Console.ReadKey();
+            return;
+            var ab = angleBetween(Vector3D.Right, Vector3D.Left);
+            op($"ab = {ab}");
+
+            var thrust = Rejection(Vector3D.Right, Vector3D.Down);
+            op($"thrust = {thrust}");
+            Console.ReadKey();
+            return;
+            //trig2();
+            upComponent();
+            rejection();
             op("");
             stoppingTime();
             Console.ReadKey();
+            return;
+            op("");
+            velocityAwayFromDirectionOfGravity();
+            op("");
+            trig1();
+            
+            
             return;
             int i;
             var set = new HashSet<string>();
@@ -247,9 +370,9 @@ namespace commandline
             Console.WriteLine($"Double/k {double.MaxValue / 1000.0}");
             Console.WriteLine($"Double/k > intmax {(double.MaxValue / 1000.0) > i}");
 
-            var target = new Vector3D(986148.14, 102603.57, 1599688.09);
+            //var target = new Vector3D(986148.14, 102603.57, 1599688.09);
             
-            Console.WriteLine($"target {target}");
+            //Console.WriteLine($"target {target}");
             
             for ( i = 0; i < 1000; i++) {
                 
@@ -296,23 +419,23 @@ namespace commandline
             Console.WriteLine(Guid.NewGuid());
             Console.WriteLine($"mdTimeFactor = {mdTimeFactor}");
 
-            var forceOfVelocityResult = forceOfVelocity(mdMass, mdVelocity, mdTimeFactor);
-            Console.WriteLine($"forceOfVelocity = {forceOfVelocityResult}");
+            //var forceOfVelocityResult = forceOfVelocity(mdMass, mdVelocity, mdTimeFactor);
+            //Console.WriteLine($"forceOfVelocity = {forceOfVelocityResult}");
 
-            var momentumResult = momentum(forceOfVelocityResult, mdTimeFactor);
-            Console.WriteLine($"momentum = {momentumResult}");
+            //var momentumResult = momentum(forceOfVelocityResult, mdTimeFactor);
+            //Console.WriteLine($"momentum = {momentumResult}");
 
-            var forceOfMomentumResult = forceOfMomentum(momentumResult, mdTimeFactor);
-            Console.WriteLine($"forceOfMomentum = {forceOfMomentumResult}");
+            //var forceOfMomentumResult = forceOfMomentum(momentumResult, mdTimeFactor);
+            //Console.WriteLine($"forceOfMomentum = {forceOfMomentumResult}");
 
-            var accelerationResult = acceleration(forceOfVelocityResult, mdMass);
-            Console.WriteLine($"acceleration = {accelerationResult}");
+            //var accelerationResult = acceleration(forceOfVelocityResult, mdMass);
+            //Console.WriteLine($"acceleration = {accelerationResult}");
 
-            var forceResult = force(mdMass, accelerationResult);
-            Console.WriteLine($"force = {forceResult}");
+            //var forceResult = force(mdMass, accelerationResult);
+            //Console.WriteLine($"force = {forceResult}");
 
-            var desiredDampeningThrustResult = desiredDampeningThrust(mdMass, mdVelocity, 0);
-            Console.WriteLine($"desiredDampeningThrust = {desiredDampeningThrustResult}");
+            //var desiredDampeningThrustResult = desiredDampeningThrust(mdMass, mdVelocity, 0);
+            //Console.WriteLine($"desiredDampeningThrust = {desiredDampeningThrustResult}");
 
             Console.ReadKey();
         }
