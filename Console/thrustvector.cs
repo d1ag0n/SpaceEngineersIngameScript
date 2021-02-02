@@ -25,14 +25,21 @@ namespace commandline
             if (dot > 0) {
                 angle = -angle;
             }
+            var axis = gravityDirection.Cross(dir2target);
+            var transform = Matrix.CreateFromAxisAngle(axis, (float)angle);
 
             var leanMax = maxLean(gravityMagnitude, aMass, aNewtons, angle);
+
             var t = thrustAtAngle(aGravity, gravityDirection, angle, aThrustVector, aMass);
-            var tv = vectorThrustAtAngle(aGravity, gravityDirection, aThrustVector, aMass);
+            var gravityTransformed = Vector3D.TransformNormal(gravityDirection, transform) * gravityMagnitude;
+            
+            var tv = vectorThrustAtAngle(gravityTransformed, aThrustVector, aMass);
             Console.WriteLine($"thrustAtAngle                 = {t}");            
             Console.WriteLine($"vectorThrustAtAngle magnitude = {tv.Length()}");
-            Console.WriteLine($"vectorThrustAtAngle           = {tv}");
+            Console.WriteLine($"gravityTransformed");
+            Console.WriteLine(gravityTransformed);
         }
+        static Vector3D vectorThrustAtAngle(Vector3D aGravity, Vector3D aThrustDirection, double aMass) => (aGravity * aMass).Dot(aThrustDirection) * aThrustDirection;
 
         static double maxLean(double aGravity, double aMass, double aNewtons, double aAngle) => Math.PI - (Math.PI / 2.0 + aAngle) - Math.Asin((aGravity * aMass) * Math.Sin(Math.PI / 2.0) / aNewtons);
 
@@ -47,8 +54,10 @@ namespace commandline
             var t = b.Length();
             return t;
         }
-
-        static Vector3D vectorThrustAtAngle(Vector3D aGravity, Vector3D aGravityDirection, Vector3D aThrustDirection, double aMass) => (aGravity * aMass).Dot(aThrustDirection) * aThrustDirection;
+        static void foo() {
+            var p = new PlaneD();
+            p.i
+        }
 
         static double angleBetween(Vector3D a, Vector3D b) {
             var dot = a.Dot(b);

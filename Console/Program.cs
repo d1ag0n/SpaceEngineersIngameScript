@@ -286,7 +286,7 @@ namespace commandline
 
             //var leanPosition = new Vector3D(19756.93, 143877.06, -108981.51);
             //var lean = -Vector3D.Normalize(leanPosition - com);
-            var lean = -gravityDirection;
+            var lean = gravityDirection;
             //calculateThrustVector((Vector3D.Up + Vector3D.Forward) / 2.0, Vector3D.Zero, Vector3D.Down);
             var mass = 30123.201171875;
             thrustvector.calculateThrustVector(targetProjection, com, gravity, lean, mass, mdNewtons);
