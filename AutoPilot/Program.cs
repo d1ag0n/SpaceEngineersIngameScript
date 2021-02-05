@@ -104,7 +104,6 @@ namespace IngameScript
                     angle = -angle;
                 }
                 //rpm = rps2rpm(angle);
-                g.log($"{aGyroOverride} {angle}");
                 rpm = angle;
             }
             //g.log("rotate2direction", aGyroOverride, " ", rpm);
@@ -126,10 +125,9 @@ namespace IngameScript
             //log("angleBetween ", result);
             return result;
         }
-        // orthogonal projection is vector rejection?
+        // orthogonal projection is vector rejection
         Vector3D reject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
             aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
-
         void absMax(double a, ref double b) {
             a = Math.Abs(a);
             if (a > b) {
@@ -528,6 +526,8 @@ namespace IngameScript
 
             trajectory(mvMissionObjective);
         }
+        
+        
         void setMissionObjective(Vector3D aObjective) {
             mvMissionObjective = aObjective;
             mdMissionDistance = (mvMissionObjective - mvMissionStart).Length();
@@ -955,12 +955,11 @@ namespace IngameScript
         /// stop distance = (velocity^2)/(2* acceleration)
         /// </summary>
         void initMass() {
-            mdMass = mRC.CalculateShipMass().PhysicalMass;
-
-            /*var sm = mRC.CalculateShipMass();
+            
+            var sm = mRC.CalculateShipMass();
             absMax(sm.BaseMass, ref mdMass);
             absMax(sm.PhysicalMass, ref mdMass);
-            absMax(sm.TotalMass, ref mdMass);*/
+            absMax(sm.TotalMass, ref mdMass);
             
         }
         double forceOfVelocity(double mass, double velocity, double time) => mass * velocity / time;
@@ -1010,20 +1009,13 @@ namespace IngameScript
                 rotate2vector(Vector3D.Zero);
             } else {
                 ApplyGyroOverride(
-                    rotate2direction("Pitch", -mvGravityDirection, m.Right, m.Up, m.Down),
+                    rotate2direction("Pitch", -dir, m.Right, m.Up, m.Down),
                     0,
-                    rotate2direction("Roll", -mvGravityDirection, m.Forward, m.Up, m.Down)
+                    rotate2direction("Roll", -dir, m.Forward, m.Up, m.Down)
                 );
             }
             ThrustN(mag * thrustPercent(-dir, mRC.WorldMatrix.Up));
-
-            //ThrustN(thrustAtAngle());
-            //g.log("maxLean ", maxLean());
-            g.log("graqvity", mvGravity);
-            g.log("graqvityDirection", mvGravityDirection);
         }
-
-
         /*void foo() {
         
             // whip says
@@ -1206,17 +1198,13 @@ namespace IngameScript
 
             var sv = mRC.GetShipVelocities();
 
-            mvLinearVelocityDirection = mvLinearVelocity = sv.LinearVelocity;
-            mdLinearVelocity = mvLinearVelocityDirection.Normalize();
-            
-
-            var up = -mvGravityDirection;            
-            var dot = up.Dot(mvLinearVelocityDirection);
+            mvLinearVelocity = sv.LinearVelocity;
+            mdLinearVelocity = mvLinearVelocity.Length();
 
             mvAngularVelocity = sv.AngularVelocity;
             mdAngularVelocity = mvAngularVelocity.Length();
 
-            
+            mvLinearVelocityDirection = mvLinearVelocity / mdLinearVelocity;
             //mdStopDistance = (mdLinearVelocity * mdMass) / ((mdNewtons / 1000.0) * 2);
             //mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2);
             //mdStopDistance = (mdLinearVelocity + mdMaxAccel) * 0.5;
@@ -1257,7 +1245,6 @@ namespace IngameScript
             
             g.log("Distance to Objective ", mdDistance2Objective);
             g.log("linear velocity ", mdLinearVelocity);
-            g.log("climbRate ", dot);
             g.log("stop distance ", mdStopDistance);
 
 
@@ -1397,7 +1384,7 @@ namespace IngameScript
             }
             
             g.log("mdNewtons ", mdNewtons);
-            g.log("mdMass ", mdMass.ToString());
+            g.log("mdMass ", mdMass);
             mdMaxAccel = mdNewtons / mdMass;
             g.log("mdMaxAccel ", mdMaxAccel);
         }
@@ -1482,6 +1469,7 @@ namespace IngameScript
             }
         }
 
+
         Vector3D local2pos(Vector3D local, MatrixD world) =>
             Vector3D.Transform(local, world);
         Vector3D local2dir(Vector3D local, MatrixD world) =>
@@ -1490,6 +1478,8 @@ namespace IngameScript
             Vector3D.TransformNormal(world - local.Translation, MatrixD.Transpose(local));
         Vector3D world2dir(Vector3D world, MatrixD local) =>
             Vector3D.TransformNormal(world, MatrixD.Transpose(local));
+
+        
 
         enum Missions
         {
@@ -1576,10 +1566,10 @@ namespace IngameScript
         Vector3D mvMissionTranslation;
         //Vector3D mvCoM;
 
-
-        Vector3D mvLinearVelocity;
-        Vector3D mvAngularVelocity;
-        Vector3D mvLinearVelocityDirection;
+        
+        Vector3D mvLinearVelocity = Vector3D.Zero;
+        Vector3D mvAngularVelocity = Vector3D.Zero;
+        Vector3D mvLinearVelocityDirection = Vector3D.Zero;
 
     }
     // large connectors distance apart 2.65 
