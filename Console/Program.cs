@@ -14,7 +14,18 @@ namespace commandline
     class Program
     {
 
-
+        static void dicTest() {
+            var d = new Dictionary<int, string>();
+            d.Add(1, "");
+            d.Add(2, "");
+            d.Add(3, "");
+            d.Add(4, "");
+            d.Add(5, "");
+            foreach (var key in d.Keys) {
+                d.Remove(key);
+            }
+            Console.WriteLine("dicTestCOmplete");
+        }
         static Random r = new Random(7);
         static Vector3D rv() {
             var x = (r.NextDouble() - 0.5) * 1000000.0;
@@ -267,8 +278,36 @@ namespace commandline
 
             return a - a.Dot(b) / b.LengthSquared() * b;
         }
+
         static void Main(string[] args) {
+            var targetDir = Vector3D.Normalize(Vector3D.Right + Vector3D.Up);
+            //var targetDir = Vector3D.Right;
             
+
+
+            //var targetDir = Vector3D.Right;
+            var gravDir = Vector3D.Down;
+
+            var angle = Math.Acos(targetDir.Dot(gravDir));
+            var axis = targetDir.Cross(gravDir);
+            axis.Normalize();
+            var mat = MatrixD.CreateFromAxisAngle(axis, -(angle - Math.PI / 2.0));
+            //var virtualPlane = mRC.CenterOfMass + mvGravity;
+            var virtualNormal = Vector3D.Transform(gravDir, mat);
+            virtualNormal.Normalize();
+            Console.WriteLine($"Forward   {Vector3D.Forward}");
+            Console.WriteLine($"Up        {Vector3D.Up}");
+            Console.WriteLine($"Right     {Vector3D.Right}");
+            Console.WriteLine($"targetDir {targetDir}");
+            Console.WriteLine($"gravDir   {gravDir}");
+            Console.WriteLine($"axis      {axis}");
+            Console.WriteLine($"angle     {angle}");
+            Console.WriteLine($"fangle    {(float)angle}");
+            Console.WriteLine($"normal    {virtualNormal}");
+
+            Console.ReadKey();
+            return;
+
             //GPS:ctvCoM:19745.06:143861.44:-108993.72:#FF75C9F1:
             var com = new Vector3D(19745.06, 143861.44, -108993.72);
 
@@ -315,13 +354,7 @@ namespace commandline
             return;
             int i;
             var set = new HashSet<string>();
-            for (i = 0; i < Base27Directions.Directions.Length; i++) {
-                var d = Base27Directions.Directions[i];
-                if (!set.Contains(d.ToString())) {
-                    set.Add(d.ToString());
-                    Console.WriteLine($"{i} {d}");
-                }
-            }
+            
             Console.WriteLine(set.Count);
 
             var dir = (Vector3D.Forward + Vector3D.Up) * 0.5;

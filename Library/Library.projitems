@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)InventoryOrder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Methods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PWrap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />

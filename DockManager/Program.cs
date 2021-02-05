@@ -26,7 +26,6 @@ namespace IngameScript
         readonly Logger g;        
         readonly Dictionary<long, Dock> mDicDocks;
         readonly List<Dock> mListDocks;
-        IMySensorBlock mSensor;
         readonly IMyTextPanel lcd;
         States state = States.uninitialized;
 
@@ -43,11 +42,12 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             g = new Logger();
             gts = new GTS(this, g);
-            gts.getByTag("dockdisplay", ref lcd);
-            gts.get(ref mSensor);
+            gts.getByTag("dockconsole", ref lcd);
+            
             mDicDocks = new Dictionary<long, Dock>();
             mListDocks = new List<Dock>();
             IGC.UnicastListener.SetMessageCallback("dockcommand");
+
         }
         void update() {
             g.log("update start");

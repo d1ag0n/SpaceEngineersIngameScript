@@ -159,9 +159,9 @@ namespace IngameScript
         }
         bool calibrate(IMyPistonBase aPiston) {
             var result = false;
-            
-            aPiston.MinLimit = 0.0f;
-            aPiston.MaxLimit = 9.7f;
+
+            aPiston.MinLimit = aPiston.LowestPosition;
+            aPiston.MaxLimit = aPiston.HighestPosition;
 
             var mid = (aPiston.MaxLimit - aPiston.MinLimit) * 0.5;
 
@@ -172,24 +172,20 @@ namespace IngameScript
             } else {
                 aPiston.Velocity = (float)dif;
             }
-            g.log("pistion calibration dif ", dif);
-            g.log("pistion calibration mid ", mid);
             return result;
         }
         public bool retract() {
             var result = false;
-            if (C.Status == MyShipConnectorStatus.Unconnected) {
-                C.Enabled = false;
-                X.Velocity =
-                Y.Velocity = -0.5f;
-                Z.Velocity = -5.0f;
-                result = X.CurrentPosition == X.MinLimit && Y.CurrentPosition == Y.MinLimit && Z.CurrentPosition == Z.MinLimit;
-                if (result) {
-                    state = States.retracted;
-                } else {
-                    state = States.retracting;
-                }
+            X.Velocity =
+            Y.Velocity = 
+            Z.Velocity = -0.1f;
+            result = X.CurrentPosition == X.MinLimit && Y.CurrentPosition == Y.MinLimit && Z.CurrentPosition == Z.MinLimit;
+            if (result) {
+                state = States.retracted;
+            } else {
+                state = States.retracting;
             }
+            
             return result;
         }
         Vector3D world2pos(Vector3D world, MatrixD local) =>
@@ -208,7 +204,7 @@ namespace IngameScript
                     align(v);
                     break;
                 case States.connected:
-                        retract();
+                    retract();
                     break;
                 case States.retracting:
                     retract();
@@ -270,7 +266,11 @@ namespace IngameScript
                     } else {
                         C.PullStrength *= 1.1f;
                     }
-                    v = -0.1f;
+                    if (Z.Velocity > 0) {
+                        v = -0.1f;
+                    } else {
+                        v = Z.Velocity * 0.9f;
+                    }
                     g.log("Strength: ", C.PullStrength);
                     result = true;
                     break;

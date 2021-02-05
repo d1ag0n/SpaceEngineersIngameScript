@@ -56,7 +56,7 @@ namespace commandline
         }
         static void foo() {
             var p = new PlaneD();
-            p.i
+            
         }
 
         static double angleBetween(Vector3D a, Vector3D b) {

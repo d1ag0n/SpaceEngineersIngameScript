@@ -16,15 +16,46 @@ namespace IngameScript
         public void log(MyDetectedEntityInfo e) => log(string4(e));
         
         string string4(MyDetectedEntityInfo e) {
+            
             mWork.Clear();
             mWork.AppendLine($"{e.Name} {e.Type}");
             mWork.AppendLine(e.EntityId.ToString());
-            mWork.Append(string4(e.Orientation.Up));
+            
+            
+            //mWork.AppendLine(gps("BoxMin", e.BoundingBox.Min));
+            mWork.AppendLine(gps("BoxCenter", e.BoundingBox.Center));
+            //mWork.AppendLine(gps("BoxMax", e.BoundingBox.Max));
+            var bb = e.BoundingBox;
+            int i = 1;
+            foreach (var c in bb.GetCorners()) {
+                mWork.AppendLine(gps("corner" + i++, c));
+            }
+            mWork.AppendLine("Translation");
+            mWork.AppendLine(string4(e.Orientation.Translation));
+            mWork.AppendLine("Up");
+            mWork.AppendLine(string4(e.Orientation.Up));
+            if (e.HitPosition.HasValue) {
+                mWork.AppendLine("hit");
+                mWork.AppendLine(string4(e.HitPosition.Value));
+            }
             return mWork.ToString();
         }
+      
         public void log(Vector3D v) => log(string4(v));
         string string4(Vector3D v) => $"X {v.X}{nl}Y {v.Y}{nl}Z {v.Z}";
-        
+        public string gps(string aName, Vector3D aPos) {
+            // GPS:ARC_ABOVE:19680.65:144051.53:-109067.96:#FF75C9F1:
+            var sb = new StringBuilder("GPS:");
+            sb.Append(aName);
+            sb.Append(":");
+            sb.Append(aPos.X);
+            sb.Append(":");
+            sb.Append(aPos.Y);
+            sb.Append(":");
+            sb.Append(aPos.Z);
+            sb.Append(":#FFFF00FF:");
+            return sb.ToString();
+        }
         public void log(params object[] args) {
             if (null != args) {
                 for (int i = 0; i < args.Length; i++) {

@@ -7,22 +7,50 @@ namespace IngameScript
 {
     class GTS {
         readonly MyGridProgram program;
-        Dictionary<long, IMyTerminalBlock> mBlocks;
-        Dictionary<string, List<IMyTerminalBlock>> mTags;
-        Dictionary<long, List<string>> mArguments;
-        readonly Logger g;
+        readonly Logger g; 
+        readonly Dictionary<long, IMyTerminalBlock> mBlocks;
+        readonly Dictionary<string, List<IMyTerminalBlock>> mTags;
+        readonly Dictionary<long, Dictionary<string, List<string>>> mArguments;
+        readonly List<IMyTerminalBlock> mWork;
         
         public GTS(MyGridProgram aProgram, Logger aLogger) {
             program = aProgram;
             g = aLogger;
+            mBlocks = new Dictionary<long, IMyTerminalBlock>();
+            mTags = new Dictionary<string, List<IMyTerminalBlock>>();
+            mArguments = new Dictionary<long, Dictionary<string, List<string>>>();
+            mWork = new List<IMyTerminalBlock>();
             init();
         }
-        string[] getTags(IMyTerminalBlock aBlock) {
+        public string[] getTags(IMyTerminalBlock aBlock) {
             var tags = aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-            /*foreach (var tag in tags) {
+            for (int i = 0; i < tags.Length; i++) {
+                var tag = tags[i] = tags[i].Trim();
                 var args = tag.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-            }*/
+                if (args.Length > 0) {
+                    var argList = getTagArgs(aBlock.EntityId, tag, true);
+                    foreach (var sarg in args) {
+                        var arg = sarg.Trim();
+                        if (!argList.Contains(arg)) {
+                            argList.Add(arg);
+                        }
+                    }
+                }
+            }
             return tags;
+        }
+        public List<string> getTagArgs(long aBlock, string aTag, bool aGenerate = false) {
+            Dictionary<string, List<string>> top;
+            if (!mArguments.TryGetValue(aBlock, out top)) {
+                top = new Dictionary<string, List<string>>();
+                mArguments.Add(aBlock, top);
+            }
+            List<string> result = null;
+            if (!top.TryGetValue(aTag, out result) && aGenerate) {
+                result = new List<string>();
+                top.Add(aTag, result);
+            }
+            return result;
         }
         void initTags(IMyTerminalBlock aBlock) {
             if (null != aBlock && null != aBlock.CustomData) {
@@ -50,12 +78,12 @@ namespace IngameScript
                 if (b is T) {
                     aBlock = (T)b;
                     return true;
-                }
+                }           
             return false;
         }
         public void getByTag<T>(string aTag, ref T aBlock) {
             List<IMyTerminalBlock> list;
-            if (mTags.TryGetValue(aTag, out list)) {
+            if (mTags.TryGetValue(aTag.ToLower(), out list)) {
                 if (list.Count > 0) {
                     aBlock = (T)list[0];
                 }
@@ -85,6 +113,7 @@ namespace IngameScript
             if (aClearList) aList.Clear();
             foreach (var b in mBlocks.Values) if (b is T) aList.Add((T)b);
         }
+        
         public bool hasTag(IMyTerminalBlock aBlock, string aTag) {
             var tags = getTags(aBlock);
             for (int i = 0; i < tags.Length; i++) if (tags[i] == aTag) return true;
@@ -92,28 +121,17 @@ namespace IngameScript
         }
 
         public void init() {
-            List<IMyTerminalBlock> blocks;
-            if (null == mBlocks) {
-                blocks = new List<IMyTerminalBlock>();
-                mBlocks = new Dictionary<long, IMyTerminalBlock>();
-            } else {
-                blocks = new List<IMyTerminalBlock>(mBlocks.Count);
-                mBlocks = new Dictionary<long, IMyTerminalBlock>(mBlocks.Count);
-            }
-            mTags = new Dictionary<string, List<IMyTerminalBlock>>();
-            program.GridTerminalSystem.GetBlocks(blocks);
-            g.log("GTS init blocks found ", blocks.Count);
-            for (int i = 0; i < blocks.Count; i++) {
-                var block = blocks[i];
-                if (block.IsSameConstructAs(program.Me)) {
-                    
-                    //g.log("adding block ", block.CustomName, " ", block.CustomData);
-                    mBlocks.Add(block.EntityId, block);
-                    initTags(block);
-                } else {
-                    //g.log("Not on this grid.");
+            mTags.Clear();
+            mBlocks.Clear();
+            mArguments.Clear();
+            program.GridTerminalSystem.GetBlocks(mWork);
+            for (int i = mWork.Count - 1; i > -1; i--) {
+                if (mWork[i].IsSameConstructAs(program.Me)) {
+                    mBlocks.Add(mWork[i].EntityId, mWork[i]);
+                    initTags(mWork[i]);
                 }
             }
+            mWork.Clear();
         }
     }
 }
