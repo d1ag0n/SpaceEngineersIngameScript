@@ -1086,7 +1086,7 @@ namespace IngameScript
             var axis = mvGravityDirection.Cross(mvDirection2Objective);
             var mat = MatrixD.CreateFromAxisAngle(axis, angle);
             var lean = Vector3D.TransformNormal(-mvGravityDirection, mat); // lean is the trajectory plane normal
-            g.log($"lean", lean);
+            //g.log($"lean", lean);
             g.log(g.gps("leanNormal", mMission.Objective + lean));
             //g.log($"||lean|| = {lean.Length()}");
 
@@ -1094,7 +1094,7 @@ namespace IngameScript
             //var leanAngle = Math.Acos(leanDot);
             //g.log($"leanAngle = {leanAngle / deg}°"); // this is verification of the transformation
             var tilt = Math.Acos(mRC.WorldMatrix.Down.Dot(mvGravityDirection));
-            g.log($"tilt = {tilt}");
+            g.log($"tilt = {rad2deg(tilt)}");
             // calculate distance from plane
             double comDot; // distance from trajectory plane - below + above
             var comProjection = project(mRC.CenterOfMass, mMission.Objective, lean, out comDot);
@@ -1103,26 +1103,80 @@ namespace IngameScript
 
             //var force = forceAtLean(angle, 1 / deg, 1, 1);
 
+
+            var v2g = project(mvLinearVelocity, mvGravityDirection);
+            var v2gMag = v2g.Length();
+            g.log("||v2g||", v2gMag);
+            //g.log("v2g", v2g);
+
             var force = forceAtLean(Math.PI / 2.0 + angle, tilt, mdGravity, mdMass);
+
+            var v2gDot = mvGravityDirection.Dot(mvLinearVelocityDirection);
+            g.log("v2gDot ", v2gDot);
+            var altitudeDiff = mdAltitude - 100.0;
+            const double altitudeDeviation = 0.5;
+            
+
+
+            if (altitudeDiff > altitudeDeviation) {
+                g.log("too high");
+                if (v2gDot > 0) {
+                    g.log("ship is going down");
+                    if (v2gMag < 0.1) {
+                        force = 0;
+                    }
+                } else {
+                    g.log("ship is going up");
+                    force = 0;
+                }
+            } else if (altitudeDiff < -altitudeDeviation) {
+                g.log("too low");
+                if (v2gDot > 0) {
+                    g.log("ship is going down");
+                    if (v2gMag < 1) {
+                        force += mdMass * mdGravity;
+                    } else {
+                        // going down too fast
+                        force += mdMass * mdLinearVelocity;
+                    }
+                } else {
+                    g.log("ship is going up");
+                    if (v2gMag < 1) {
+                        force += mdMass * mdGravity;
+                    }
+                }
+            }
+            
             g.log($"force = {force}");
             ThrustN(force);
-            /*
+            
             mat = mRC.WorldMatrix;
-            ApplyGyroOverride(
-                //rotate2direction("Pitch", desiredDir, mat.Right, mat.Up, mat.Down),
-                rotate2direction("Pitch", -mvGravityDirection, mat.Right, mat.Up, mat.Down),
-                0,//rotate2direction("Yaw", front(Vector3D.Right, mvGravityDirection), mat.Right, mat.Up, mat.Down),
-                rotate2direction("Roll", -mvGravityDirection, mat.Forward, mat.Up, mat.Down)
-            );
-            */
-            foreach (var gy in mGyros) {
-                gy.GyroOverride = false;
+            if (tilt > maxLean) {
+
+                ApplyGyroOverride(
+                    //rotate2direction("Pitch", desiredDir, mat.Right, mat.Up, mat.Down),
+                    rotate2direction("Pitch", -mvGravityDirection, mat.Right, mat.Up, mat.Down),
+                    0,//rotate2direction("Yaw", front(Vector3D.Right, mvGravityDirection), mat.Right, mat.Up, mat.Down),
+                    rotate2direction("Roll", -mvGravityDirection, mat.Forward, mat.Up, mat.Down)
+                );
+            } else {
+
+                foreach (var gy in mGyros) {
+                    gy.GyroOverride = false;
+                }
             }
+            //*/
             g.log("done");
         }
         Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, out double aDot) {
             aDot = Vector3D.Dot(aTarget - aPlane, aNormal);
             return aTarget - (aDot * aNormal);
+        }
+        /// <param name="a">any vector</param>
+        /// <param name="b">any unit vector</param>
+        /// <returns></returns>
+        Vector3D project(Vector3D a, Vector3D b) {
+            return a.Dot(b) * b;
         }
         /// <summary>
         /// returns force needed to maintain a trajectory on a virtual plane
@@ -1150,6 +1204,13 @@ namespace IngameScript
             // c nothing
             //var B = Math.Acos(mvDirection2Objective.Dot(mvGravityDirection));
             //var C = Math.Acos(mvGravityDirection.Dot(mRC.WorldMatrix.Down));
+
+            g.log("forceAtLean");
+            g.log($"B       = {B}");
+            g.log($"C       = {C}");
+            g.log($"gravity = {gravity}");
+            g.log($"mass    = {mass}");
+
             var A = Math.PI - B - C;
             var b = (gravity * mass) * (Math.Sin(B) / Math.Sin(A));
             return b;
@@ -1862,9 +1923,10 @@ namespace IngameScript
         void ThrustN(double aNewtons) => ThrustN((float)aNewtons);
         void ThrustN(float aNewtons) {
             float fMax, fPercent;
-            
-            mdNewtons = 0;
+
             g.log("ThrustN requested ", aNewtons, "N");
+            g.log("ThrustN requested ", (aNewtons / mdNewtons) * 100.0, "%");
+            mdNewtons = 0;
             
             foreach (var t in mThrusters) {
                 
