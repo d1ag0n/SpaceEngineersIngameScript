@@ -19,6 +19,7 @@ namespace IngameScript
         public Vector3D Start;
         public Vector3D Objective;
         public Vector3D Translation;
+        public Vector3D Direction;
 
         public enum Details
         {
@@ -31,6 +32,7 @@ namespace IngameScript
             rotate,
             map,
             scan,
+            calibrate,
             none
         }
 

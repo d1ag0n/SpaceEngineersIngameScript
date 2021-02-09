@@ -279,7 +279,104 @@ namespace commandline
             return a - a.Dot(b) / b.LengthSquared() * b;
         }
 
+        Vector3D reject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
+            aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
+
+        static Vector3D VectorProjection(Vector3D a, Vector3D b) { // project a onto b 
+            if (Vector3D.IsZero(b))
+                return new Vector3D(0, 0, 0);
+            Vector3D projection = a.Dot(b) / b.LengthSquared() * b;
+            return projection;
+        }
+
+        static Vector3D calcddt(double m, Vector3D v, Vector3D dv, Vector3D g) {
+            return m * (2 * (v - dv + g));
+        }
+        static double desiredDampeningThrust(double mass, double velocity, double gravity) => mass * (2 * velocity + gravity);
+        static double forceOfVelocity(double mass, double velocity, double time) => mass * velocity / time;
+        static double momentum(double force, double time) => force * time;
+        static double forceOfMomentum(double momentum, double time) => momentum / time;
+        static double acceleration(double force, double mass) => force / mass;
+        static double force(double mass, double acceleration) => mass * acceleration;
+        static double accelerationFromDelta(double deltaVelocity, double deltaTime) => deltaVelocity / deltaTime;
+        static Program() {
+            Console.WriteLine($"Forward   {Vector3D.Forward}"); // Forward   X:0 Y:0 Z:-1
+            Console.WriteLine($"Up        {Vector3D.Up}");      // Up        X:0 Y:1 Z:0
+            Console.WriteLine($"Right     {Vector3D.Right}");   // Right     X:1 Y:0 Z:0
+        }
+        // U = FxL
+        // D = FxR
+        // L = FxD
+        // R = FxU
+        // F = RxD
+        // B = RxU
+        static Vector3D up(Vector3D forward, Vector3D left) => forward.Cross(left);
+        static Vector3D down(Vector3D forward, Vector3D right) => forward.Cross(right);
+        static Vector3D left(Vector3D forward, Vector3D down) => forward.Cross(down);
+        static Vector3D right(Vector3D forward, Vector3D up) => forward.Cross(up);
+        static Vector3D front(Vector3D right, Vector3D down) => right.Cross(down);
+        static Vector3D back(Vector3D right, Vector3D up) => right.Cross(up);
+
+        static double rps2rpm(double rps) => (rps / (Math.PI * 2)) * 60.0;
+        static double rpm2rps(double rpm) => (rpm * (Math.PI * 2)) / 60.0;
+
         static void Main(string[] args) {
+            double d = 90;
+            int k = (int)d / 100;
+            Console.WriteLine($"i    = {k}");
+            var rps = 0.1;
+            var rpm = 59;
+            var result = rpm2rps(rpm);
+            Console.WriteLine($"rps    = {rps}");
+            Console.WriteLine($"rpm    = {rpm}");
+            Console.WriteLine($"result = {result}");
+            Console.WriteLine();
+            
+            // todo check if Vector3D.Transform behaves differently with non normal axis
+            // todo check if Vector3D.Transform returns a normal when passed a normal
+
+
+            var f = 10.0; // n
+            var m = 1.0;
+            var v = new Vector3D(2, 0, 0);
+
+            var p = m * v; // kgm/s
+            
+            var g = new Vector3D(0, -2, 0);
+            var dv = new Vector3D(-1, 0, 0);
+
+            int i = 1;  
+            int j = 22;
+            j = +i;
+            var ddt = m * (2 * v + g);
+
+            
+            Console.WriteLine($"up = {up(Vector3D.Forward, Vector3D.Left)}");
+            Console.WriteLine($"m = {m}");
+            Console.WriteLine($"v = {v}");
+            Console.WriteLine($"g = {g}");
+            Console.WriteLine($"ddt = {ddt}");
+            Console.WriteLine($"j = {+j}");
+
+            // maxAcceleration = thrusterThrust / shipMass
+            // f = ma
+            // a = f/m
+            // derpy says
+            // maxAcceleration = thrusterThrust / shipMass - 9.81;
+            // boosterFireDuration = Speed / maxAcceleration / 2;
+            // minAltitude = Speed * boosterFireDuration + landingOffset;
+
+
+            //var antiGrav = Vector3D.Up;
+
+
+            //Console.WriteLine($"ddt       {ddt}");
+            //Console.WriteLine($"ddtDir    {ddtDir}");
+            //Console.WriteLine($"ddtMag    {ddtMag}");
+            
+            Console.WriteLine(Math.PI / 2.0);
+            Console.ReadKey();
+            return;
             var targetDir = Vector3D.Normalize(Vector3D.Right + Vector3D.Up);
             //var targetDir = Vector3D.Right;
             
@@ -352,7 +449,7 @@ namespace commandline
             
             
             return;
-            int i;
+            //int i;
             var set = new HashSet<string>();
             
             Console.WriteLine(set.Count);
@@ -476,13 +573,7 @@ namespace commandline
         // var desiredDampeningThrust = mass * (2 * velocity + gravity);
         // dont use this one
 
-        static double desiredDampeningThrust(double mass, double velocity, double gravity) => mass * (2 * velocity + gravity);
-        static double forceOfVelocity(double mass, double velocity, double time) => mass * velocity / time;
-        static double momentum(double force, double time) => force * time;
-        static double forceOfMomentum(double momentum, double time) => momentum / time;
-        static double acceleration(double force, double mass) => force / mass;
-        static double force(double mass, double acceleration) => mass * acceleration;        
-        static double accelerationFromDelta(double deltaVelocity, double deltaTime) => deltaVelocity / deltaTime;
+
 
     }/*
       * If v is the vector that points 'up' and p0 is some point on your plane, and finally p is the point that might be below the plane, 
