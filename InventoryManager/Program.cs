@@ -59,7 +59,6 @@ namespace IngameScript
 
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
-
             g = new Logger();
             mGTS = new GTS(this, g);
             

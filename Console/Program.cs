@@ -27,6 +27,12 @@ namespace commandline
             Console.WriteLine("dicTestCOmplete");
         }
         static Random r = new Random(7);
+        static Vector3D rd() {
+            var x = r.NextDouble() - 0.5;
+            var y = r.NextDouble() - 0.5;
+            var z = r.NextDouble() - 0.5;
+            return Vector3D.Normalize(new Vector3D(x, y, z));
+        }
         static Vector3D rv() {
             var x = (r.NextDouble() - 0.5) * 1000000.0;
             var y = (r.NextDouble() - 0.5) * 1000000.0;
@@ -319,8 +325,48 @@ namespace commandline
 
         static double rps2rpm(double rps) => (rps / (Math.PI * 2)) * 60.0;
         static double rpm2rps(double rpm) => (rpm * (Math.PI * 2)) / 60.0;
+        static void gpsx() {
+            int i = 0;
+            while (true) gps((i++).ToString(), rd());
+            
+        }
+        static Vector2I gps(string s, Vector3D dir, bool force = false) {
+            double azimuth, elevation;
+            Vector3D.GetAzimuthAndElevation(dir, out azimuth, out elevation);
+            if (double.IsNaN(azimuth)) {
+                azimuth = 0;
+            }
+            int yaw = (int)MathHelper.ToDegrees(azimuth);
+            int pitch = (int)MathHelper.ToDegrees(elevation);
+            
+            return new Vector2I(yaw, pitch);
 
+
+        }
+
+        static void sort() {
+            var item = 1;
+            var sortedList = new List<int> { 2, 6, 3, 9 };
+            while (item < sortedList.Count) {
+                var insertLocation = item - 1;
+                while (insertLocation > -1 && sortedList[insertLocation] < sortedList[item]) {
+                    insertLocation--;
+                }
+                sortedList.Insert(insertLocation + 1, sortedList[item]);
+                sortedList.RemoveAt(item + 1);
+                item++;
+            }
+            return;
+        }
+
+        static Vector3D[] vecs ={ Vector3D.Left, Vector3D.Right, Vector3D.Up, Vector3D.Down, Vector3D.Forward, Vector3D.Backward };
         static void Main(string[] args) {
+            
+            sort();
+            gpsx();
+            Console.ReadKey();
+            return;
+
             double d = 90;
             int k = (int)d / 100;
             Console.WriteLine($"i    = {k}");

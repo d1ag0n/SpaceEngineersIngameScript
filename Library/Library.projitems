@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Mission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PWrap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scanner.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)thrustvector.cs" />
   </ItemGroup>

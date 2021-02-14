@@ -14,7 +14,13 @@ namespace IngameScript
         readonly List<string> mPersistent = new List<string>();
 
         public void log(MyDetectedEntityInfo e) => log(string4(e));
-        
+        string string4(BoundingBoxD b) {
+            mWork.Clear();
+            mWork.AppendLine(b.Min.ToString());
+            mWork.AppendLine(b.Center.ToString());
+            mWork.AppendLine(b.Max.ToString());
+            return mWork.ToString();
+        }
         string string4(MyDetectedEntityInfo e) {
             
             mWork.Clear();
@@ -28,7 +34,7 @@ namespace IngameScript
             var bb = e.BoundingBox;
             int i = 1;
             foreach (var c in bb.GetCorners()) {
-                mWork.AppendLine(gps("corner" + i++, c));
+                //mWork.AppendLine(gps("corner" + i++, c));
             }
             mWork.AppendLine("Translation");
             mWork.AppendLine(string4(e.Orientation.Translation));
@@ -84,6 +90,9 @@ namespace IngameScript
                 mPersistent.RemoveAt(index);
             }
         }
+
+        public void persist(Vector3D v) => persist(string4(v));
+        public void persist(BoundingBoxD b) => persist(string4(b));
         public void persist(MyDetectedEntityInfo e) => persist(string4(e));
         public void persist(string aMessage) {
             if (false && mPersistent.Count > 15) {

@@ -22,7 +22,8 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        readonly GTS gts;
+      
+            readonly GTS gts;
         readonly Logger g;        
         readonly Dictionary<long, Dock> mDicDocks;
         readonly List<Dock> mListDocks;

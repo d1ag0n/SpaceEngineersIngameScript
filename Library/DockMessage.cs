@@ -19,6 +19,8 @@ namespace IngameScript
             DockId = data.Item1;
             Command = data.Item2;
             Position = data.Item3;
+
+            
         }
         public DockMessage(long aDockId, string aCommand, Vector3D aPosition) {
             DockId = aDockId;
