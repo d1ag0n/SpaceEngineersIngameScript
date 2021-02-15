@@ -123,5 +123,23 @@ namespace IngameScript
 
             return yawTan <= 1 && pitchTan <= 1;
         }
+        /*
+        /// Whip's Get Rotation Angles Method v14 - 9/25/18 ///
+        MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
+        Dependencies: AngleBetween
+        * /
+        void GetRotationAngles(Vector3D targetVector, MatrixD worldMatrix, out double yaw, out double pitch) {
+            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
+            var flattenedTargetVector = new Vector3D(localTargetVector.X, 0, localTargetVector.Z);
+
+            yaw = AngleBetween(Vector3D.Forward, flattenedTargetVector) * Math.Sign(localTargetVector.X); //right is positive
+            if (Math.Abs(yaw) < 1E-6 && localTargetVector.Z > 0) //check for straight back case
+                yaw = Math.PI;
+
+            if (Vector3D.IsZero(flattenedTargetVector)) //check for straight up case
+                pitch = MathHelper.PiOver2 * Math.Sign(localTargetVector.Y);
+            else
+                pitch = AngleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.Y); //up is positive
+        }//*/
     }
 }

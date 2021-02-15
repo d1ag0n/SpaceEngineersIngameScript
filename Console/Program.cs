@@ -361,7 +361,20 @@ namespace commandline
 
         static Vector3D[] vecs ={ Vector3D.Left, Vector3D.Right, Vector3D.Up, Vector3D.Down, Vector3D.Forward, Vector3D.Backward };
         static void Main(string[] args) {
-            
+
+            double dz = -72.11;
+            double z = -63.95;
+            double m = 10.0;
+
+
+            var apply = z - dz;
+
+            var force = apply * -m;
+
+
+
+            Console.ReadKey();
+            return;
             sort();
             gpsx();
             Console.ReadKey();
@@ -383,7 +396,7 @@ namespace commandline
 
 
             var f = 10.0; // n
-            var m = 1.0;
+            //var m = 1.0;
             var v = new Vector3D(2, 0, 0);
 
             var p = m * v; // kgm/s

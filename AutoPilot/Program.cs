@@ -910,6 +910,10 @@ namespace IngameScript
             
             mGTS.initList(mGyros);
             mGTS.initList(mThrusters);
+            mdNewtons = 0;
+            foreach (var t in mThrusters) {
+                mdNewtons += t.MaxEffectiveThrust;
+            }
             mGTS.initList(mBatteries);
             mGTS.initList(mFuelTanks);
 
@@ -982,12 +986,7 @@ namespace IngameScript
         double forceOfAcceleration(double mass, double acceleration) => mass * acceleration;
         double accelerationFromDelta(double deltaVelocity, double deltaTime) => deltaVelocity / deltaTime;
 
-        Vector3D up(Vector3D forward, Vector3D left) => forward.Cross(left);
-        Vector3D down(Vector3D forward, Vector3D right) => forward.Cross(right);
-        Vector3D left(Vector3D forward, Vector3D down) => forward.Cross(down);
-        Vector3D right(Vector3D forward, Vector3D up) => forward.Cross(up);
-        Vector3D front(Vector3D right, Vector3D down) => right.Cross(down);
-        Vector3D back(Vector3D right, Vector3D up) => right.Cross(up);
+        
         // mass init calculate max lean
         int miLastTrajectoryPlane;
         double mdTrajectoryAngle;
@@ -1040,28 +1039,112 @@ namespace IngameScript
                 rotate2direction("Roll", ddtDir, mat.Forward, mat.Up, mat.Down)
             );
         }
+        Vector3D up(Vector3D forward, Vector3D left) => forward.Cross(left);
+        Vector3D down(Vector3D forward, Vector3D right) => forward.Cross(right);
+        Vector3D left(Vector3D forward, Vector3D down) => forward.Cross(down);
+        Vector3D right(Vector3D forward, Vector3D up) => forward.Cross(up);
+        Vector3D front(Vector3D right, Vector3D down) => right.Cross(down);
+        Vector3D back(Vector3D right, Vector3D up) => right.Cross(up);
+
+        Vector3D mitigateZ(Vector3D localVelo, double desiredVelo, ref double force) {
+            var apply = (desiredVelo - localVelo.Z) * -mdMass;
+            var applyAbs = Math.Abs(apply);
+            if (applyAbs > force) {
+                localVelo.Z = force * Math.Sign(apply);
+                force = mdNewtons / 4.0;
+            } else {
+                localVelo.Z = apply;
+                force -= applyAbs;
+            }
+            g.log("z mitigation ", localVelo.Z);
+            return localVelo;
+        }
+        Vector3D mitigateX(Vector3D localVelo, double desiredVelo, ref double force) {
+            var apply = localVelo.X * mdMass;
+            var applyAbs = Math.Abs(apply);
+            if (applyAbs > force) {
+                localVelo.X = force * Math.Sign(apply);
+                force = mdNewtons / 4.0;
+            } else {
+                localVelo.X = apply;
+                force -= applyAbs;
+            }
+            return localVelo;
+        }
         void calculateTrajectory() {
+            MatrixD mat;
+            double ddtMag;
+
+            // elfie wolfe says
+            // shipVector = shipControllers[0].GetShipVelocities().LinearVelocity;
+            // shipToGravityVector = VectorProjection(shipVector, gravityVector);
+            // shipToHorizontalVector = (shipVector - shipToGravityVector);
+
+            var stopDist = mdStopDistance + 500.0;
+            var desiredVelo = 100.0 * MathHelper.Clamp(mdDistance2Objective / stopDist, 0.0, 1.0);
+
             g.log("calculateTrajectory");
-            var desiredVelo = MathHelper.Clamp(mdDistance2Objective * 0.1, 0.0, 99.0);
+            g.log("mdStopDistance ", mdStopDistance);
+            
 
             var desiredVec = mvLinearVelocity - mvDirection2Objective * desiredVelo;
 
             // var desiredDampeningThrust = mass * (2 * velocity + gravity);
             //var ddt = mdMass * (2 * mvLinearVelocity + mvGravity);
+            // todo double desiredVelo and bring 2 x velo back into equation
             var ddt = mdMass * (desiredVec + mvGravity);
             var ddtDir = ddt;
-            var ddtMag = ddt.Normalize();
+            var ddtLenSq = ddt.LengthSquared();
 
-            if (false && ddtMag > mdNewtons) {
-                var force = mdNewtons - mdMass * mdGravity;
-                ddt = -mvDirection2Objective * force + mvGravity * mdMass;
-                ddtDir = ddt;
-                ddtMag = ddt.Normalize();
+
+            if (ddtLenSq > mdNewtons * mdNewtons) {
+                // ddt is requesting more force than we can apply
+                desiredVelo = -desiredVelo;
+                g.log("desiredVelo    ", desiredVelo);
+                var r = right(mvDirection2Objective, -mvGravityDirection);
+                var d = down(mvDirection2Objective, r);
+                var f = front(r, d);
+                g.log("front", f);
+                g.log("grav", -mvGravityDirection);
+                g.log("ab ", angleBetween(f, -mvGravityDirection).ToString());
+                mat = MatrixD.CreateWorld(mRC.CenterOfMass, f, -mvGravityDirection);
+
+                var localVelo = world2dir(mvLinearVelocity, mat);
+
+                // what it is now
+                g.log("localVelo", localVelo);
+
+                // critical step to counter gravity and velocity on the gravity axis
+                // todo consider distance to objective and allow for velocitty in the up direction to be mitigated by gravity
+                localVelo.Y -= mdGravity;
+                localVelo.Y *= mdMass;
+                var force = mdNewtons - Math.Abs(localVelo.Y);
+                
+                g.log("force after grav ", force);
+
+                // desiredVelo is - because forward is -Z
+                
+                if (true || localVelo.Z < desiredVelo || Math.Abs(localVelo.X) < 10.0) {
+                    g.log("Z first");
+                    localVelo = mitigateZ(localVelo, desiredVelo, ref force);
+                    localVelo = mitigateX(localVelo, desiredVelo, ref force);
+                } else {
+                    g.log("X first");
+                    localVelo = mitigateX(localVelo, desiredVelo, ref force);
+                    localVelo = mitigateZ(localVelo, desiredVelo, ref force);
+                }
+
+                ddtDir = local2dir(-localVelo, mat);
+                ddtMag = mdNewtons;
+            } else {
+                g.log("desiredVelo    ", desiredVelo);
+                ddtMag = ddtDir.Normalize();
+                ddtDir = -ddtDir;
             }
-            ddtDir = -ddtDir;
+            
             
             var ab = angleBetween(mRC.WorldMatrix.Up, ddtDir);
-            g.log("ab = ", ab);
+            
             if (ab > Math.PI / 4) {
                 double dot;
                 ab = angleBetween(mRC.WorldMatrix.Up, -mvGravityDirection, out dot);
@@ -1077,7 +1160,7 @@ namespace IngameScript
             }
 
             ThrustN(ddtMag);
-            var mat = mRC.WorldMatrix;
+            mat = mRC.WorldMatrix;
 
             ApplyGyroOverride(
                 rotate2direction("Pitch", ddtDir, mat.Right, mat.Up, mat.Down),
@@ -1780,17 +1863,28 @@ namespace IngameScript
             var target = mRC.CenterOfMass + (mvGravityDirection * mdAltitudeAbsHighest);
             var e = new MyDetectedEntityInfo();
             if (scanner.Scan(target, ref e)) {
-                if (e.Type == MyDetectedEntityType.Planet) {
-                    if (!mKnownPlanets.Contains(e.EntityId)) {
-                        mKnownPlanets.Add(e.EntityId);
-                        g.persist(g.gps("planet", e.Position));
+                if (!processPlanet(e)) {
+                    target = mRC.CenterOfMass + rv() * 1000.0;
+                    if (scanner.Scan(target, ref e)) {
+                        processPlanet(e);
                     }
-                    mPlanet = e;
-                    var dir = mRC.CenterOfMass - mPlanet.Value.Position;
-                    var len = dir.Normalize();
-                    underSea = len - mdAltitudeSea;
                 }
             }
+        }
+
+        bool processPlanet(MyDetectedEntityInfo e) {
+            if (e.Type == MyDetectedEntityType.Planet) {
+                if (!mKnownPlanets.Contains(e.EntityId)) {
+                    mKnownPlanets.Add(e.EntityId);
+                    g.persist(g.gps("planet", e.Position));
+                }
+                mPlanet = e;
+                var dir = mRC.CenterOfMass - mPlanet.Value.Position;
+                var len = dir.Normalize();
+                underSea = len - mdAltitudeSea;
+                return true;
+            }
+            return false;
         }
         
         double getAltitude(Vector3D aTarget) {
@@ -1859,6 +1953,9 @@ namespace IngameScript
                 mPlanet = null;
             }
             g.log("objective altitude ", getAltitude(mMission.Objective));
+            if (mPlanet.HasValue) {
+                g.log("planet exists");
+            }
             mdRawAccel = mdNewtons / mdMass;
             mdMaxAccel = mdRawAccel - mdGravity;
             var minAccel = mdGravity * 2.0;
@@ -1892,14 +1989,14 @@ namespace IngameScript
                 
                 var CoM = mRC.CenterOfMass;
                 if (mPlanet.HasValue) {
-                    g.log(g.gps("mMission.Objective", mMission.Objective));
+                    //g.log(g.gps("mMission.Objective", mMission.Objective));
                     var alt = getAltitude(mMission.Objective);
                     var dir = Vector3D.Normalize(mRC.CenterOfMass - mPlanet.Value.Position);
                     CoM = mPlanet.Value.Position + (dir * (alt + underSea));
-                    g.log(g.gps("CoMCalculated", CoM));
+                    //g.log(g.gps("CoMCalculated", CoM));
                 }
                 mvObjectiveProjection = project(mMission.Objective, CoM, -mvGravityDirection, out mdObjectiveDot);
-                g.log(g.gps("mvObjectiveProjection", mvObjectiveProjection));
+                //g.log(g.gps("mvObjectiveProjection", mvObjectiveProjection));
                 mvDirection2Objective = Vector3D.Normalize(mvObjectiveProjection - mRC.CenterOfMass);
                 mdDistance2Objective = (mvObjectiveProjection - mRC.CenterOfMass).Length();
             }
@@ -1907,7 +2004,7 @@ namespace IngameScript
 
             g.log("mdDistance2Objective ", mdDistance2Objective);
             g.log("mdLinearVelocity     ", mdLinearVelocity);
-            g.log("mdObjectiveDot       ", mdObjectiveDot);
+            //g.log("mdObjectiveDot       ", mdObjectiveDot);
             /*
             g.log("mdDistance2Objective ", mdDistance2Objective);
             g.log("mdLinearVelocity     ", mdLinearVelocity);
@@ -2049,28 +2146,27 @@ namespace IngameScript
                 Echo(str);
             }
         }
-        void ThrustN(double aNewtons) => ThrustN((float)aNewtons);
-        void ThrustN(float aNewtons) {
-            float fMax, fPercent;
+        
+        void ThrustN(double aNewtons) {
 
             g.log("ThrustN requested ", aNewtons, "N");
             g.log("ThrustN requested ", (aNewtons / mdNewtons) * 100.0, "%");
+
+            var distribution = aNewtons / mThrusters.Count;
+
             mdNewtons = 0;
             
             foreach (var t in mThrusters) {
                 
-                fMax = t.MaxEffectiveThrust;
-                mdNewtons += fMax;
+                var max = t.MaxEffectiveThrust;
+                mdNewtons += max;
                 if (aNewtons > 0) {
-                    if (aNewtons > fMax) {
-                        fPercent = 1;
-                        aNewtons -= fMax;
-                    } else {
-                        fPercent = aNewtons / fMax;
-                        aNewtons = 0;
+                    var percent = 1.0;
+                    if (distribution < max) {
+                        percent = distribution / max;
                     }
                     t.Enabled = true;
-                    t.ThrustOverridePercentage = fPercent;
+                    t.ThrustOverridePercentage = (float)percent;
                 } else {
                     t.Enabled = false;
                 }
