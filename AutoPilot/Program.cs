@@ -102,7 +102,7 @@ namespace IngameScript
         }
         double rotate2direction(string aGyroOverride, Vector3D aDirection, Vector3D aNormal, Vector3D aIntersect1, Vector3D aIntersect2) {
             //log("rotate2direction");
-            var angle = angleBetween(aDirection, aIntersect1);
+            var angle = MAF.angleBetween(aDirection, aIntersect1);
             //log(aGyroOverride, " angle ", angle);
             
             if (angle > mdRotateEpsilon) {
@@ -121,25 +121,7 @@ namespace IngameScript
             return angle;
         }
         
-        double angleBetween(Vector3D a, Vector3D b) {
-            double result = 0;
-            if (Vector3D.IsZero(a) || Vector3D.IsZero(b)) {
-                
-            } else {
-                result = Math.Acos(MathHelper.Clamp(a.Dot(b) / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1, 1));
-            }
-            return result;
-        }
-        double angleBetween(Vector3D a, Vector3D b, out double dot) {
-            double result = 0;
-            if (Vector3D.IsZero(a) || Vector3D.IsZero(b)) {
-                dot = 0;
-            } else {
-                dot = a.Dot(b);
-                result = Math.Acos(MathHelper.Clamp(dot / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1, 1));
-            }
-            return result;
-        }
+        
         
         
         void absMax(double a, ref double b) {
@@ -237,7 +219,7 @@ namespace IngameScript
                 0,
                 rotate2direction("Roll", mMission.Direction, mat.Forward, mat.Up, mat.Down)
             );
-            var ab = angleBetween(mRC.WorldMatrix.Down, -mMission.Direction);
+            var ab = MAF.angleBetween(mRC.WorldMatrix.Down, -mMission.Direction);
             g.log("calibrate");
             g.log("angle              ", ab);
             g.log("angularVeloSquared ", mdAngularVelocitySquared);
@@ -894,7 +876,7 @@ namespace IngameScript
         
         double thrustPercent(Vector3D aDirection, Vector3D aNormal) {
             var result = 0.0;
-            var offset = angleBetween(aDirection, aNormal);
+            var offset = MAF.angleBetween(aDirection, aNormal);
             var d = 4.0;
             if (offset < Math.PI / d) {
                 result = 1.0 - (offset / (Math.PI / d));
@@ -1041,7 +1023,7 @@ namespace IngameScript
             var ddtDir = ddt;
             double force = ddtDir.Normalize();
 
-            var ab = angleBetween(-mvGravityDirection, ddtDir);
+            var ab = MAF.angleBetween(-mvGravityDirection, ddtDir);
 
             g.log("objective altitude ", getAltitude(mMission.Objective));
             
@@ -1053,7 +1035,7 @@ namespace IngameScript
                 ddtDir = Vector3D.TransformNormal(-mvGravityDirection, mat);
                 force = forceAtLean(Math.PI / 2.0, ab, mdGravity, mdMass);
             }
-            ab = angleBetween(mvGravityDirection, mRC.WorldMatrix.Down);
+            ab = MAF.angleBetween(mvGravityDirection, mRC.WorldMatrix.Down);
             
             
             ThrustN(force);
@@ -1134,7 +1116,7 @@ namespace IngameScript
                 // shipToHorizontalVector = (shipVector - shipToGravityVector);
 
                 double v2oDot;
-                var v2o = project(mvLinearVelocity + mvGravity, mvDirection2Objective, out v2oDot);
+                var v2o = MAF.project(mvLinearVelocity + mvGravity, mvDirection2Objective, out v2oDot);
                 var vflat = mvLinearVelocity - v2o;
 
                 ddtDir = mvGravity * mdMass;
@@ -1168,11 +1150,11 @@ namespace IngameScript
 
             if (mdGravity > 0) {
 
-                var ab = angleBetween(mRC.WorldMatrix.Up, ddtDir);
+                var ab = MAF.angleBetween(mRC.WorldMatrix.Up, ddtDir);
 
                 if (ab > Math.PI / 4) {
                     double dot;
-                    ab = angleBetween(mRC.WorldMatrix.Up, -mvGravityDirection, out dot);
+                    ab = MAF.angleBetween(mRC.WorldMatrix.Up, -mvGravityDirection, out dot);
                     if (dot < 0) {
                         ddtMag = 0;
                     } else {
@@ -1331,11 +1313,7 @@ namespace IngameScript
             g.log("done");
         }
         
-        Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
-        Vector3D project(Vector3D a, Vector3D b, out double aDot) {
-            aDot = a.Dot(b);
-            return aDot / b.LengthSquared() * b;
-        }
+        
         
         // todo use reject?
         // orthogonal projection is vector rejection
@@ -1921,7 +1899,7 @@ namespace IngameScript
             if (e.Type == MyDetectedEntityType.Planet) {
                 if (!mKnownPlanets.Contains(e.EntityId)) {
                     mKnownPlanets.Add(e.EntityId);
-                    g.persist(g.gps("planet", e.Position));
+                    //g.persist(g.gps("planet", e.Position));
                 }
                 mPlanet = e;
                 var dir = mRC.CenterOfMass - mPlanet.Value.Position;
@@ -1967,12 +1945,12 @@ namespace IngameScript
                 mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitudeSea);
                 
                 g.log("mdAltitudeSea ", mdAltitudeSea);
+                g.log("mdSeaLevel    ", mdSeaLevel);
                 //g.log("mdAltitudeSurface ", mdAltitudeSurface);
 
                 if (!mPlanet.HasValue) {
                     findPlanet();
                 } else {
-
                     var ppsFromVec = new PPS(mPlanet.Value.Position, mdSeaLevel, mRC.CenterOfMass);
                     g.log(ppsFromVec.ToString());
                     g.log(g.gps("ppsFromVec", ppsFromVec.Position));
@@ -1986,6 +1964,7 @@ namespace IngameScript
                     var ppsToVec = new PPS(mPlanet.Value.Position, mdSeaLevel, ppsFromPps.Position);
                     g.log(ppsToVec.ToString());
                     g.log(g.gps("ppsToVec", ppsToVec.Position));
+                    g.log("");
 
                 }
             } else {

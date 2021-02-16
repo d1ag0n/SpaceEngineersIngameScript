@@ -363,14 +363,22 @@ namespace commandline
         static void Main(string[] args) {
 
             double azimuth, elevation;
-            var v = (Vector3D.Up * 9999999);
-            v.Normalize();
+            var v = new Vector3D(0.0122403541067893, -0.99984900692911, 0.012334385846631);
+            //v.Normalize();
+            v = Vector3D.Up;
+            v = Vector3D.Down;
             Vector3D.GetAzimuthAndElevation(v, out azimuth, out elevation);
 
-            
-            
+            //-0.79
+            //X 0.0122403541067893
+            //Y -0.99984900692911
+            //Z 0.012334385846631
+            var planet = new Vector3D(16384.5, 136384.5, -113615.5);
+            var com = new Vector3D(21259, 143276.07, -108741.04);
+            var sea = 9497.57;
+            var pps1 = new PPS(planet, sea, com);
+            var pps2 = new PPS(planet, sea, pps1.North, pps1.East, pps1.Altitude);
 
-            
 
 
             Console.ReadKey();
