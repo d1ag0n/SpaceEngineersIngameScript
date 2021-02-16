@@ -26,10 +26,10 @@ namespace IngameScript
             if (double.IsNaN(Azimuth)) {
                 Azimuth = 0;
             } else {
-                Azimuth += Math.PI;
+                Azimuth += MathHelperD.PiOver2;
             }
-            if (double.IsNaN(Elevation)) {                
-                Elevation = 0;
+            if (double.IsNaN(Elevation)) {
+                throw new Exception();
             } else {
                 Elevation += MathHelper.PiOver2;
             }
@@ -43,10 +43,9 @@ namespace IngameScript
             Elevation = aElevation;
             Altitude = aAltitude;
             var dir = Vector3D.Zero;            
-            Vector3D.CreateFromAzimuthAndElevation(Azimuth == 0 ? 0 : Azimuth - Math.PI, Elevation == 0 ? 0 : Elevation - MathHelper.PiOver2, out dir);
+            Vector3D.CreateFromAzimuthAndElevation(Azimuth - MathHelperD.PiOver2, Elevation - MathHelperD.PiOver2, out dir);
             Position = Planet + dir * (SeaLevel + Altitude);
         }
-
         public override string ToString() {
             return $"PPS {MathHelper.ToDegrees(Azimuth)}° {MathHelper.ToDegrees(Elevation)}° {Altitude}m";
         }

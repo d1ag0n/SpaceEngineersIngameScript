@@ -1961,13 +1961,13 @@ namespace IngameScript
             if (!mvGravity.IsZero()) {
                 mdGravity = mvGravityDirection.Normalize();
 
-                g.log("mdGravity ", mdGravity.ToString());
+                //g.log("mdGravity ", mdGravity.ToString());
                 double e = 0;
                 mRC.TryGetPlanetElevation(MyPlanetElevation.Surface, out mdAltitudeSurface);
                 mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitudeSea);
                 
                 g.log("mdAltitudeSea ", mdAltitudeSea);
-                g.log("mdAltitudeSurface ", mdAltitudeSurface);
+                //g.log("mdAltitudeSurface ", mdAltitudeSurface);
 
                 if (!mPlanet.HasValue) {
                     findPlanet();
@@ -2180,7 +2180,6 @@ namespace IngameScript
                 //g.log("igc success ", igcMessagesSent, " fail ", igcMessagesFailed);
                 g.log((lag.Sum() / lag.Count).ToString());
                 g.log("Time ", time);
-                g.log("rotation time ", rotationTime.ToString());
 
                 foreach (var d in mDocks.Values) {
                     g.log("Dock: ", d.Name);

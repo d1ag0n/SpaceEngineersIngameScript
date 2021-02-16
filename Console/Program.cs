@@ -362,10 +362,12 @@ namespace commandline
         static Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
         static void Main(string[] args) {
 
-            var v = new Vector3D(0, -10, -1.2);
-            var g = new Vector3D(0, 0, 2);
+            double azimuth, elevation;
+            var v = (Vector3D.Up * 9999999);
+            v.Normalize();
+            Vector3D.GetAzimuthAndElevation(v, out azimuth, out elevation);
 
-            var ep = project(v, g);
+            
             
 
             
