@@ -10,6 +10,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
+        //·²‖
         MyDetectedEntityInfo? mPlanet;
         
         public void rotate2vector(Vector3D aTarget) {
@@ -94,7 +95,7 @@ namespace IngameScript
             // m.Translation = aPlane
             // m.Up = aNormal
             // m.Forward = aIntersect
-            var position = project(aTarget, aPlane, aNormal);
+            var position = orthoProject(aTarget, aPlane, aNormal);
             var displacement = position - aPlane;
             var direction = Vector3D.Normalize(displacement);
             return rotate2direction(aGyroOverride, direction, aNormal, aIntersect1, aIntersect2);
@@ -139,9 +140,7 @@ namespace IngameScript
             }
             return result;
         }
-        // orthogonal projection is vector rejection
-        Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
-            aTarget - (Vector3D.Dot(aTarget - aPlane, aNormal) * aNormal);
+        
         
         void absMax(double a, ref double b) {
             a = Math.Abs(a);
@@ -175,7 +174,7 @@ namespace IngameScript
             g.log("mMission.Step ", mMission.Step);
             switch (mMission.Step) {
                 case 0:
-                    if (mdAvailableMass > 0) {
+                    if (false && mdAvailableMass > 0) {
                         g.log($"Please add {mdAvailableMass}kg to cargo.");
                     } else {
                         mMission.Step++;
@@ -249,7 +248,11 @@ namespace IngameScript
         void setMissionDamp() {
             initMission();
             mMission.Objective = mRC.CenterOfMass;
-            initVelocity();
+        }
+        void setMissionFollow() {
+            initMission();
+            mMission.Objective = mRC.CenterOfMass;
+            mMission.Detail = Mission.Details.follow;
         }
         
         void doMissionDamp() {
@@ -634,10 +637,31 @@ namespace IngameScript
                 case Mission.Details.calibrate:
                     doMissionCalibrate();
                     break;
+                case Mission.Details.follow:
+                    doMissionFollow();
+                    break;
                 default:
                     g.log("mission unhandled");
                     break;
             }
+        }
+        void doMissionFollow() {
+            mDetected.Clear();
+            mSensor.DetectedEntities(mDetected);
+            g.log("detected ", mDetected.Count);
+            foreach (var e in mDetected) {
+                g.log(e.Type);
+                if (e.Type == MyDetectedEntityType.CharacterHuman) {
+                    var p = e.Position - mRC.CenterOfMass;
+                    var d = p;
+                    var m = d.Normalize();
+                    g.log(m);
+                    if (m > 30.0) {
+                        mMission.Objective = mRC.CenterOfMass + d * 20.0;
+                    }
+                }
+            }
+            calculateTrajectory();
         }
         Connector findConnector(string aConnector) {
             g.log("findConnector");
@@ -669,7 +693,7 @@ namespace IngameScript
                 mMission.Detail = Mission.Details.dock;
                 var approachPlane = mMission.Connector.Position + (mMission.Connector.Direction * approachDistance);
                 mMission.Connector.ApproachFinal = mMission.Connector.Position + (mMission.Connector.Direction * finalDistance);
-                var projectedPosition = project(mRC.CenterOfMass, approachPlane, mMission.Connector.Direction);
+                var projectedPosition = orthoProject(mRC.CenterOfMass, approachPlane, mMission.Connector.Direction);
                 var projectedDirection = Vector3D.Normalize(projectedPosition - approachPlane);
                 mMission.Connector.Approach = approachPlane + (projectedDirection * approachDistance);
                 mMission.Connector.Objective = mMission.Connector.Position + (mMission.Connector.Direction * (4.0 + (mCon.WorldMatrix.Translation - mRC.CenterOfMass).Length()));
@@ -907,6 +931,7 @@ namespace IngameScript
             mGTS.get(ref mRC);
             mGTS.get(ref mLCD);
             mGTS.get(ref mCon);
+            mGTS.get(ref mSensor);
             
             mGTS.initList(mGyros);
             mGTS.initList(mThrusters);
@@ -1075,17 +1100,21 @@ namespace IngameScript
             MatrixD mat;
             double ddtMag;
 
-            // elfie wolfe says
-            // shipVector = shipControllers[0].GetShipVelocities().LinearVelocity;
-            // shipToGravityVector = VectorProjection(shipVector, gravityVector);
-            // shipToHorizontalVector = (shipVector - shipToGravityVector);
 
-            var stopDist = mdStopDistance + 500.0;
-            var desiredVelo = 100.0 * MathHelper.Clamp(mdDistance2Objective / stopDist, 0.0, 1.0);
+            // 14.37 / 12.55
+            var desiredVelo = 99.9 * MathHelper.Clamp(mdDistance2Objective / mdStopDistance, 0.0, 1.0);
+            if (desiredVelo > mdDistance2Objective || mdDistance2Objective < 100) {
+                if (desiredVelo > mdDistance2Objective * 0.1) {
+                    desiredVelo = mdDistance2Objective * 0.1;
+                }
+            }
+            
+            //var desiredVelo = Math.Sqrt(mdDistance2Objective * mdMaxAccel);
+            
 
             g.log("calculateTrajectory");
             g.log("mdStopDistance ", mdStopDistance);
-            
+            g.log("desiredVelo    ", desiredVelo);
 
             var desiredVec = mvLinearVelocity - mvDirection2Objective * desiredVelo;
 
@@ -1096,69 +1125,65 @@ namespace IngameScript
             var ddtDir = ddt;
             var ddtLenSq = ddt.LengthSquared();
 
-
             if (ddtLenSq > mdNewtons * mdNewtons) {
                 // ddt is requesting more force than we can apply
-                desiredVelo = -desiredVelo;
-                g.log("desiredVelo    ", desiredVelo);
-                var r = right(mvDirection2Objective, -mvGravityDirection);
-                var d = down(mvDirection2Objective, r);
-                var f = front(r, d);
-                g.log("front", f);
-                g.log("grav", -mvGravityDirection);
-                g.log("ab ", angleBetween(f, -mvGravityDirection).ToString());
-                mat = MatrixD.CreateWorld(mRC.CenterOfMass, f, -mvGravityDirection);
 
-                var localVelo = world2dir(mvLinearVelocity, mat);
+                // elfie wolfe says
+                // shipVector = shipControllers[0].GetShipVelocities().LinearVelocity;
+                // shipToGravityVector = VectorProjection(shipVector, gravityVector);
+                // shipToHorizontalVector = (shipVector - shipToGravityVector);
 
-                // what it is now
-                g.log("localVelo", localVelo);
+                double v2oDot;
+                var v2o = project(mvLinearVelocity + mvGravity, mvDirection2Objective, out v2oDot);
+                var vflat = mvLinearVelocity - v2o;
 
-                // critical step to counter gravity and velocity on the gravity axis
-                // todo consider distance to objective and allow for velocitty in the up direction to be mitigated by gravity
-                localVelo.Y -= mdGravity;
-                localVelo.Y *= mdMass;
-                var force = mdNewtons - Math.Abs(localVelo.Y);
+                ddtDir = mvGravity * mdMass;
+                var force = mdNewtons - mdGravity * mdMass;
+
+                ddtDir += vflat * mdMass;
+                force -= vflat.Length();
+
                 
-                g.log("force after grav ", force);
-
-                // desiredVelo is - because forward is -Z
                 
-                if (true || localVelo.Z < desiredVelo || Math.Abs(localVelo.X) < 10.0) {
-                    g.log("Z first");
-                    localVelo = mitigateZ(localVelo, desiredVelo, ref force);
-                    localVelo = mitigateX(localVelo, desiredVelo, ref force);
+                var dif = v2oDot - desiredVelo;
+                // -9 = 1 - 10 going too slow
+                //  9 = 10 - 1 going too fast
+                if (dif > 0) {
+                    // to fast
+                    g.log("too fast");
+                    ddtDir += mvDirection2Objective * force;
                 } else {
-                    g.log("X first");
-                    localVelo = mitigateX(localVelo, desiredVelo, ref force);
-                    localVelo = mitigateZ(localVelo, desiredVelo, ref force);
+                    // too slow
+                    g.log("too slow");
+                    ddtDir -= mvDirection2Objective * force;
                 }
-
-                ddtDir = local2dir(-localVelo, mat);
+                
+                ddtDir = -ddtDir;
                 ddtMag = mdNewtons;
             } else {
-                g.log("desiredVelo    ", desiredVelo);
+                g.log("swapped");
                 ddtMag = ddtDir.Normalize();
                 ddtDir = -ddtDir;
             }
-            
-            
-            var ab = angleBetween(mRC.WorldMatrix.Up, ddtDir);
-            
-            if (ab > Math.PI / 4) {
-                double dot;
-                ab = angleBetween(mRC.WorldMatrix.Up, -mvGravityDirection, out dot);
-                if (dot < 0) {
-                    ddtMag = 0;
-                } else {
-                    if (ab > Math.PI / 4.0) {
+
+            if (mdGravity > 0) {
+
+                var ab = angleBetween(mRC.WorldMatrix.Up, ddtDir);
+
+                if (ab > Math.PI / 4) {
+                    double dot;
+                    ab = angleBetween(mRC.WorldMatrix.Up, -mvGravityDirection, out dot);
+                    if (dot < 0) {
                         ddtMag = 0;
                     } else {
-                        ddtMag = forceAtLean(Math.PI / 2.0, ab, mdGravity, mdMass);
+                        if (ab > Math.PI / 4.0) {
+                            ddtMag = 0;
+                        } else {
+                            ddtMag = forceAtLean(Math.PI / 2.0, ab, mdGravity, mdMass);
+                        }
                     }
                 }
             }
-
             ThrustN(ddtMag);
             mat = mRC.WorldMatrix;
 
@@ -1305,23 +1330,35 @@ namespace IngameScript
             
             g.log("done");
         }
-        void accelRatio() {
-            
+        
+        Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
+        Vector3D project(Vector3D a, Vector3D b, out double aDot) {
+            aDot = a.Dot(b);
+            return aDot / b.LengthSquared() * b;
         }
-        Vector3D project(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, out double aDot) {
-            aDot = Vector3D.Dot(aTarget - aPlane, aNormal);
-            return aTarget - (aDot * aNormal);
+        
+        // todo use reject?
+        // orthogonal projection is vector rejection
+        Vector3D orthoProject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
+            aTarget - ((aTarget - aPlane).Dot(aNormal) * aNormal);
+
+        // todo use reject?
+        Vector3D orthoProject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, out double aDot) {
+            aDot = (aTarget - aPlane).Dot(aNormal);
+            return aTarget - (aDot * aNormal); 
+        }
+        
+        Vector3D reject(Vector3D a, Vector3D b) => a - a.Dot(b) / b.Dot(b) * b;
+        Vector3D reject(Vector3D a, Vector3D b, out double aDot) {
+            aDot = a.Dot(b);
+            return a - aDot / b.Dot(b) * b;
         }
         /// <param name="a">any vector</param>
         /// <param name="b">any unit vector</param>
         /// <returns></returns>
-        Vector3D project(Vector3D a, Vector3D b) {
-            return a.Dot(b) * b;
-        }
-        Vector3D project(Vector3D a, Vector3D b, out double dot) {
-            dot = a.Dot(b);
-            return dot * b;
-        }
+
+
+
         /// <summary>
         /// returns force needed to maintain a trajectory on a virtual plane
         /// </summary>
@@ -1365,10 +1402,18 @@ namespace IngameScript
             g.log("trajectory3");
             MatrixD mat;
             //var desVeloVec = mvDirection2Objective * mdDistance2Objective;
-            
-            var percent = MathHelper.Clamp(mdDistance2Objective / mdStopDistance, 0.01, 1.0);
-            g.log("percent ", percent);
-            var velo = 99.99 * percent;
+
+            // 500 / 1000 = 0.5
+            // mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2);
+            // 500 = v / (mdMaxAccel * 2)
+            // d = v / (10 * 2)
+            // d = v / 20
+            // 10 = v / 20
+            // 10 = 200 / 20
+            var velo = Math.Sqrt(mdDistance2Objective * (mdMaxAccel * 2));
+            //var percent = MathHelper.Clamp(mdDistance2Objective / mdStopDistance, 0.01, 1.0);
+            //g.log("percent ", percent);
+            //var velo = 99.99 * percent;
             
             
             if (mdDistance2Objective < 20) {
@@ -1859,7 +1904,7 @@ namespace IngameScript
             // pitch = asin(-d.Y);
             // yaw = atan2(d.X, d.Z)
             mPlanet = null;
-            underSea = 0;
+            mdSeaLevel = 0;
             var target = mRC.CenterOfMass + (mvGravityDirection * mdAltitudeAbsHighest);
             var e = new MyDetectedEntityInfo();
             if (scanner.Scan(target, ref e)) {
@@ -1880,8 +1925,8 @@ namespace IngameScript
                 }
                 mPlanet = e;
                 var dir = mRC.CenterOfMass - mPlanet.Value.Position;
-                var len = dir.Normalize();
-                underSea = len - mdAltitudeSea;
+                var mag = dir.Normalize();
+                mdSeaLevel = mag - mdAltitudeSea;
                 return true;
             }
             return false;
@@ -1894,11 +1939,11 @@ namespace IngameScript
                 var disp = aTarget - p.Position;
                 var dir = disp;
                 var dist = dir.Normalize();
-                result = dist - underSea;
+                result = dist - mdSeaLevel;
             }
             return result;
         }
-        double azimuth, elevation, underSea;
+        double mdSeaLevel;
 
         void initVelocity() {
             var sm = mRC.CalculateShipMass();
@@ -1927,28 +1972,24 @@ namespace IngameScript
                 if (!mPlanet.HasValue) {
                     findPlanet();
                 } else {
-                    var p = mPlanet.Value;
-                    //g.log($"In gravity well of planet.");
-                    var dir = Vector3D.Normalize(mRC.CenterOfMass - p.Position);
-                    Vector3D.GetAzimuthAndElevation(dir, out azimuth, out elevation);
 
-                    if (double.IsNaN(azimuth)) {
-                        g.persist("azimuth NAN");
-                        azimuth = 0;
-                    } else {
-                        azimuth += Math.PI / 2;
-                    }
-                    if (double.IsNaN(elevation)) {
-                        g.persist("elevation NAN");
-                        elevation = 0;
-                    } else {
-                        elevation += Math.PI / 2;
-                    }
+                    var ppsFromVec = new PPS(mPlanet.Value.Position, mdSeaLevel, mRC.CenterOfMass);
+                    g.log(ppsFromVec.ToString());
+                    g.log(g.gps("ppsFromVec", ppsFromVec.Position));
+                    g.log("");
                     
-                    g.log("PPS ", MathHelper.ToDegrees(azimuth), "° ", MathHelper.ToDegrees(elevation), "° ", mdAltitudeSea, "m");
+                    var ppsFromPps = new PPS(mPlanet.Value.Position, mdSeaLevel, ppsFromVec.Azimuth, ppsFromVec.Elevation, ppsFromVec.Altitude);
+                    g.log(ppsFromPps.ToString());
+                    g.log(g.gps("ppsFromPps", ppsFromPps.Position));
+                    g.log("");
+
+                    var ppsToVec = new PPS(mPlanet.Value.Position, mdSeaLevel, ppsFromPps.Position);
+                    g.log(ppsToVec.ToString());
+                    g.log(g.gps("ppsToVec", ppsToVec.Position));
+
                 }
             } else {
-                underSea = 
+                mdSeaLevel = 
                 mdGravity = 0;
                 mPlanet = null;
             }
@@ -1978,9 +2019,13 @@ namespace IngameScript
             mvAngularVelocity = sv.AngularVelocity;
             mdAngularVelocitySquared = mvAngularVelocity.LengthSquared();
 
+            // v10 / 1
+            // 100 / 2
             mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2);
+            mdStopDistance += mdLinearVelocity * 15.0;
+            //mdStopDistance = (10000) / (mdMaxAccel * 2);
 
-            mdStopDistance += mdLinearVelocity * 5.0;
+            
             //mdStopDistance = 10000.0 / ((mdRawAccel - mdGravity) * 2);
             if (mdGravity == 0) {
                 mvDirection2Objective = mvDisplacement2Objective = mMission.Objective - mRC.CenterOfMass;
@@ -1992,11 +2037,11 @@ namespace IngameScript
                     //g.log(g.gps("mMission.Objective", mMission.Objective));
                     var alt = getAltitude(mMission.Objective);
                     var dir = Vector3D.Normalize(mRC.CenterOfMass - mPlanet.Value.Position);
-                    CoM = mPlanet.Value.Position + (dir * (alt + underSea));
+                    CoM = mPlanet.Value.Position + (dir * (alt + mdSeaLevel));
                     //g.log(g.gps("CoMCalculated", CoM));
                 }
-                mvObjectiveProjection = project(mMission.Objective, CoM, -mvGravityDirection, out mdObjectiveDot);
-                //g.log(g.gps("mvObjectiveProjection", mvObjectiveProjection));
+                mvObjectiveProjection = orthoProject(mMission.Objective, CoM, -mvGravityDirection, out mdObjectiveDot);
+                g.log(g.gps("mvObjectiveProjection", mvObjectiveProjection));
                 mvDirection2Objective = Vector3D.Normalize(mvObjectiveProjection - mRC.CenterOfMass);
                 mdDistance2Objective = (mvObjectiveProjection - mRC.CenterOfMass).Length();
             }
@@ -2098,8 +2143,25 @@ namespace IngameScript
                                     setMissionCalibrate();
                                     break;
                                     break;
-                                case "step":
-                                    //stepOkay = true;
+                                case "follow":
+                                    setMissionFollow();
+                                    break;
+                                case "pps":
+                                    if (args.Length > 3) {
+                                        if (mPlanet.HasValue) {
+                                            try {
+                                                var pps = new PPS(
+                                                    mPlanet.Value.Position,
+                                                    mdSeaLevel,
+                                                    MathHelper.ToRadians(double.Parse(args[1])),
+                                                    MathHelper.ToRadians(double.Parse(args[2])),
+                                                    double.Parse(args[3])
+                                                );
+                                                setMissionDamp();
+                                                mMission.Objective = pps.Position;
+                                            } catch (Exception ex) { g.persist("failed to parse pps"); }
+                                        }
+                                    }
                                     break;
                             }
                         }
@@ -2323,7 +2385,7 @@ namespace IngameScript
         readonly List<IMyGasTank> mFuelTanks = new List<IMyGasTank>();
         readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
         
-
+        
         readonly HashSet<long> mDetectedIds = new HashSet<long>();
 
         Mission mMission;
@@ -2335,7 +2397,7 @@ namespace IngameScript
 
         
         IMyShipConnector mCon;
-
+        IMySensorBlock mSensor;
 
         int miDock = 0;
         //int miCount = 0;

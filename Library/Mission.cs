@@ -33,6 +33,7 @@ namespace IngameScript
             map,
             scan,
             calibrate,
+            follow,
             none
         }
 

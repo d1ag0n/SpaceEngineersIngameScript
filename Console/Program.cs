@@ -359,22 +359,23 @@ namespace commandline
             return;
         }
 
-        static Vector3D[] vecs ={ Vector3D.Left, Vector3D.Right, Vector3D.Up, Vector3D.Down, Vector3D.Forward, Vector3D.Backward };
+        static Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
         static void Main(string[] args) {
 
-            double dz = -72.11;
-            double z = -63.95;
-            double m = 10.0;
+            var v = new Vector3D(0, -10, -1.2);
+            var g = new Vector3D(0, 0, 2);
 
+            var ep = project(v, g);
+            
 
-            var apply = z - dz;
-
-            var force = apply * -m;
-
+            
 
 
             Console.ReadKey();
             return;
+        }
+        static void zMain() {
+            
             sort();
             gpsx();
             Console.ReadKey();
@@ -398,7 +399,7 @@ namespace commandline
             var f = 10.0; // n
             //var m = 1.0;
             var v = new Vector3D(2, 0, 0);
-
+            double m;
             var p = m * v; // kgm/s
             
             var g = new Vector3D(0, -2, 0);
