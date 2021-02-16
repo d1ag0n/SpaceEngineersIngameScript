@@ -12,11 +12,6 @@ namespace IngameScript
         public readonly Vector3D Position;
         public readonly double SeaLevel, Azimuth, Elevation, Altitude;
 
-        // elfie wolfe says
-        // shipVector = shipControllers[0].GetShipVelocities().LinearVelocity;
-        // shipToGravityVector = VectorProjection(shipVector, gravityVector);
-        // shipToHorizontalVector = (shipVector - shipToGravityVector);
-
         public PPS(Vector3D aPlanet, double aSeaLevel, Vector3D aPosition) {
             Planet = aPlanet;
             Position = aPosition;
