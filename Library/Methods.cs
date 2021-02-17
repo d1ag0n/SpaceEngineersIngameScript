@@ -7,6 +7,7 @@ namespace IngameScript
 {
     class Methods
     {
+        // this isnt mine I copied it from somewhere
         void fintimeofcol() {
             // Find the time of collision (distance / relative velocity)
             //float timeToCollision = ((shotOrigin - targetOrigin).magnitude - shotRadius - targetRadius) / (shotVelOrth.magnitude - targetVelOrth.magnitude);
@@ -15,6 +16,7 @@ namespace IngameScript
             //Vector3 shotVel = shotVelOrth + shotVelTang;
             //Vector3 shotCollisionPoint = shotOrigin + shotVel * timeToCollision;
         }
+        // this isnt mine I copied it from somewhere
         Vector3D FindInterceptVector(Vector3 shotOrigin, double shotSpeed, Vector3D targetOrigin, Vector3 targetVel) {
 
             Vector3D dirToTarget = Vector3.Normalize(targetOrigin - shotOrigin);

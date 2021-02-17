@@ -40,17 +40,22 @@ namespace commandline
             return new Vector3D(x, y, z);
         }
         static void cindex() {
-            for (int i = 0; i < 10000; i++) {
-                var v = box.toVector(i);
-                var index = box.toIndex(v);
+            for (int i = 0; i < 100000; i++) {
+                var v = BOX.CIndexToVector(i);
+                var index = BOX.CVectorToIndex(v);
                 if (i != index) {
                     Console.WriteLine("index mismatch");
                 }
             }
-            for (int i = 0; i < 10000; i++) {
+            for (int i = 0; i < 100000; i++) {
                 var v = rv();
-                var c = box.c(v);
-                var cc = box.c(c.Center);
+                var c = BOX.GetCBox(v);
+                var ci = BOX.CVectorToIndex(c.Center);
+                var cc = BOX.GetCBox(c.Center);
+                var cci = BOX.CVectorToIndex(cc.Center);
+                if (ci != cci) {
+                    Console.WriteLine("index mismatch");
+                }
                 if (c.Center != cc.Center) {
                     Console.WriteLine("c mismatch");
                     Console.WriteLine(c.Center);
@@ -60,10 +65,10 @@ namespace commandline
             Console.WriteLine("cindex complete");
         }
         static void cwork() {
-            for (int i = 0; i < 10000; i++) {
+            for (int i = 0; i < 100000; i++) {
                 var v = rv();
-                var cbox = box.c(v);
-                var dbox = box.c(cbox.Center);
+                var cbox = BOX.GetCBox(v);
+                var dbox = BOX.GetCBox(cbox.Center);
                 if (cbox.Center != dbox.Center) {
                     Console.WriteLine("mismatch");
                     Console.WriteLine(v);
@@ -71,15 +76,15 @@ namespace commandline
                     Console.WriteLine(dbox.Center);
                 }
             }
-            Console.WriteLine("kwork complete");
+            Console.WriteLine("work complete");
         }
         static void kwork() {
             
-            for (int i = 0; i < 10000; i++) {
+            for (int i = 0; i < 100000; i++) {
                 var v = rv();
-                var kbox = box.k(v);
+                var kbox = BOX.GetKBox(v);
                 
-                var dbox = box.k(kbox.Center);
+                var dbox = BOX.GetKBox(kbox.Center);
                 if (kbox.Center != dbox.Center) {
                     Console.WriteLine("mismatch");
                     Console.WriteLine(v);
@@ -361,6 +366,18 @@ namespace commandline
 
         static Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
         static void Main(string[] args) {
+            cwork();
+            kwork();
+            cindex();
+            //GPS:above:12696.62:140308.05:-105223.81:#FF75C9F1:
+            var pos = new Vector3D(12696.62, 140308.05, -105223.81);
+            var kbox = BOX.GetKBox(pos);
+            var cbox = BOX.GetCBox(pos);
+
+            Console.ReadKey();
+            return;
+        }
+        static void zzMain(string[] args) {
 
             var lag = new Lag(10);
             double azimuth, elevation;

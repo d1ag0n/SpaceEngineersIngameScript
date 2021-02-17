@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)BodyMap.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)box.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Dock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
