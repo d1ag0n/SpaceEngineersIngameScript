@@ -371,9 +371,15 @@ namespace commandline
             cindex();
             //GPS:above:12696.62:140308.05:-105223.81:#FF75C9F1:
             var pos = new Vector3D(12696.62, 140308.05, -105223.81);
+            var dir = Vector3D.Normalize(pos - Vector3D.Zero);
             var kbox = BOX.GetKBox(pos);
             var cbox = BOX.GetCBox(pos);
 
+            var cmove = BOX.MoveC(cbox.Center, dir);
+            var kmove = BOX.MoveK(kbox.Center, dir);
+
+            int d = (int)Base6Directions.GetClosestDirection((Vector3)dir);
+            Vector3D cd = Base6Directions.Directions[d];
             Console.ReadKey();
             return;
         }

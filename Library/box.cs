@@ -39,7 +39,8 @@ namespace IngameScript
         /// <returns></returns>
         public static BoundingBoxD GetCBox(Vector3D aWorldPosition) {
             var k = KToWorld(WorldToK(aWorldPosition));
-            var c = k + c2v(v2c(aWorldPosition - k));
+            var v2cresult = KToC(aWorldPosition - k);
+            var c = k + CToK(v2cresult);
             k = new Vector3D(100);
             if (c.X < 0)
                 k.X = -100;
@@ -76,17 +77,43 @@ namespace IngameScript
         /// <returns></returns>
         public static Vector3D KToWorld(Vector3D v) => n2v(v, 1000);
         /// <summary>
-        /// C resolution boxing
+        /// Returns the world position that is the same relative position in the adjacent cbox 
+        /// that is closest to the provided direction, uses base6 directions only
+        /// intended to receive a cbox center as the aWorldPosition but this is not necessary
         /// </summary>
-        /// <param name="v"></param>
+        /// <param name="aWorldPosition">position in the world</param>
+        /// <param name="aWorldDirection">unit vector direction in world space</param>
         /// <returns></returns>
-        static Vector3D v2c(Vector3D v) => v2n(v, 100);
+        public static Vector3D MoveC(Vector3D aWorldPosition, Vector3D aWorldDirection) => MoveN(aWorldPosition, aWorldDirection, 100.0);
         /// <summary>
-        /// C resolution unboxing
+        /// Returns the world position that is the same relative position in the adjacent kbox 
+        /// that is closest to the provided direction, uses base6 directions only
+        /// intended to receive a kbox center as the aWorldPosition but this is not necessary
+        /// </summary>
+        /// <param name="aWorldPosition">position in the world</param>
+        /// <param name="aWorldDirection">unit vector direction in world space</param>
+        /// <returns></returns>
+        public static Vector3D MoveK(Vector3D aWorldPosition, Vector3D aWorldDirection) => MoveN(aWorldPosition, aWorldDirection, 1000.0);
+        static Vector3D MoveN(Vector3D aWorldPosition, Vector3D aWorldDirection, double n) {
+            int d = (int)Base6Directions.GetClosestDirection((Vector3)aWorldDirection);
+            Vector3D dir = Base6Directions.Directions[d];
+            aWorldPosition.X += dir.X * n;
+            aWorldPosition.Y += dir.Y * n;
+            aWorldPosition.Z += dir.Z * n;
+            return aWorldPosition;
+        }
+        /// <summary>
+        /// C resolution boxing, previous v2c
         /// </summary>
         /// <param name="v"></param>
         /// <returns></returns>
-        static Vector3D c2v(Vector3D v) => n2v(v, 100);
+        static Vector3D KToC(Vector3D v) => v2n(v, 100);
+        /// <summary>
+        /// C resolution unboxing, previous c2v
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
+        static Vector3D CToK(Vector3D v) => n2v(v, 100);
         /// <summary>
         /// variable resolution unboxing
         /// </summary>
