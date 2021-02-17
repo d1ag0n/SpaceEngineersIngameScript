@@ -11,7 +11,7 @@ namespace IngameScript
     /// kbox exists in the world
     /// cbox exists in the kbox
     /// </summary>
-    class BOX
+    static class BOX
     {
         const int cmax = 10;
         public const double cdist = 173.205080756888;

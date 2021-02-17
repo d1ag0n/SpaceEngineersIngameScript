@@ -375,12 +375,23 @@ namespace commandline
             var kbox = BOX.GetKBox(pos);
             var cbox = BOX.GetCBox(pos);
 
+            var klocal = BOX.WorldToK(pos);
+
             var cmove = BOX.MoveC(cbox.Center, dir);
             var kmove = BOX.MoveK(kbox.Center, dir);
 
+            var map = new BoxMap();
+
+            var info = map.getInfo(pos);
+            info.reserved += 1;
+            info = map.getInfo(pos);
+            info.reserved += 1;
+            info = map.getInfo(pos);
+            info.reserved += 1;
+            info = map.getInfo(pos);
             int d = (int)Base6Directions.GetClosestDirection((Vector3)dir);
             Vector3D cd = Base6Directions.Directions[d];
-            Console.ReadKey();
+            //Console.ReadKey();
             return;
         }
         static void zzMain(string[] args) {

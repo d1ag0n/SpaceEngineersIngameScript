@@ -52,8 +52,8 @@ namespace IngameScript
         Steps step;
         int index = 0;
         int subIndex = 0;
-        readonly DateTime epoch = new DateTime(2020, 1, 1);
-        double time => (DateTime.Now - epoch).TotalSeconds;
+        
+        
         double lastBroadcast = 0;
         double lastShipment = 0;
 
@@ -383,18 +383,18 @@ namespace IngameScript
         }
         bool confirmOrder(InventoryOrder aOrder) => IGC.SendUnicastMessage(aOrder.Shipper, tagShip, new MyTuple<uint, long>(aOrder.Id, aOrder.Volume));
         void broadcastOrders() {
-            if (time - lastBroadcast > broadcastInterval) {
+            if (MAF.time - lastBroadcast > broadcastInterval) {
                 var keys = unconfirmedOutgoing.Keys.ToArray();
                 foreach (var key in keys) {
                     var item = unconfirmedOutgoing[key];
-                    if (time - item.Time > broadcastInterval * 2) {
+                    if (MAF.time - item.Time > broadcastInterval * 2) {
                         item.Order.OpenOrders.Remove(item.Item);
                         unconfirmedOutgoing.Remove(key);
                     }
                 }
 
                 IGC.SendBroadcastMessage(tagInventory, inventory.SerializeOrders(lastShipment));
-                lastBroadcast = time;
+                lastBroadcast = MAF.time;
             }
         }
         bool sendOrder(InventoryOrder aOrder) => IGC.SendUnicastMessage(aOrder.Receiver, tagOrder, aOrder.Serialize());
@@ -458,7 +458,7 @@ namespace IngameScript
                             po.Item = tag;
                             po.Receiver = source;
                             po.Shipper = Me.EntityId;
-                            po.Time = time;
+                            po.Time = MAF.time;
                             po.Volume = available;
                             
                             if (sendOrder(po)) {

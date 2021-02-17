@@ -7,6 +7,8 @@ namespace IngameScript
 {
     static class MAF
     {
+        static readonly DateTime epoch = new DateTime(2020, 1, 1);
+        public static double time => (DateTime.Now - epoch).TotalSeconds;
         public static double angleBetween(Vector3D a, Vector3D b) {
             double result = 0;
             if (!Vector3D.IsZero(a) && !Vector3D.IsZero(b))
