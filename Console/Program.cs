@@ -383,11 +383,9 @@ namespace commandline
             var map = new BoxMap();
 
             var info = map.getInfo(pos);
-            info.reserved += 1;
+            
             info = map.getInfo(pos);
-            info.reserved += 1;
             info = map.getInfo(pos);
-            info.reserved += 1;
             info = map.getInfo(pos);
             int d = (int)Base6Directions.GetClosestDirection((Vector3)dir);
             Vector3D cd = Base6Directions.Directions[d];

@@ -16,10 +16,26 @@ namespace IngameScript
         public int Step;
         public int SubStep;
         
+        /// <summary>
+        /// where the mission started
+        /// </summary>
         public Vector3D Start;
+        /// <summary>
+        /// currently flying to this position
+        /// </summary>
         public Vector3D Objective;
+        /// <summary>
+        /// where the mission stops
+        /// </summary>
         public Vector3D Translation;
-        public Vector3D Direction;
+        /// <summary>
+        /// arbitrary direction valie
+        /// </summary>
+        public Vector3D PendingDirection;
+        /// <summary>
+        /// arbitrary 
+        /// </summary>
+        public Vector3D PendingPosition;
 
         public enum Details
         {
@@ -34,6 +50,7 @@ namespace IngameScript
             scan,
             calibrate,
             follow,
+            boxnav,
             none
         }
 

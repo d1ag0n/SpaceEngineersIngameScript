@@ -141,7 +141,7 @@ namespace IngameScript
                 //result = 0.0;
             }
             if (result > 60.0) {
-                g.log("dying ", result);
+                g.persist($"dying {result}");
                 //Me.Enabled = false;
             }
             return result * scale;
@@ -167,7 +167,7 @@ namespace IngameScript
                     calculateTrajectory();
                     if (mdDistance2Objective < 1.0) {
                         mMission.Step++;
-                        mMission.Direction = -mvGravityDirection;
+                        mMission.PendingDirection= -mvGravityDirection;
                         foreach (var g in mGyros) {
                             g.GyroOverride = false;
                         }
@@ -177,7 +177,7 @@ namespace IngameScript
                     ThrustN(mdNewtons);
                     if (calibrate()) {
                         mMission.Step++;
-                        mMission.Direction = Vector3D.Normalize(mRC.WorldMatrix.Left + mRC.WorldMatrix.Forward);
+                        mMission.PendingDirection= Vector3D.Normalize(mRC.WorldMatrix.Left + mRC.WorldMatrix.Forward);
                     }
                     break;
                 case 3:
@@ -185,7 +185,7 @@ namespace IngameScript
                     if (calibrate()) {
                         mdRotationTime = time;
                         mMission.Step++;
-                        mMission.Direction = mRC.WorldMatrix.Down;
+                        mMission.PendingDirection = mRC.WorldMatrix.Down;
                     }
                     break;
                 case 4:
@@ -213,11 +213,11 @@ namespace IngameScript
             
             var mat = mRC.WorldMatrix;
             ApplyGyroOverride(
-                rotate2direction("Pitch", mMission.Direction, mat.Right, mat.Up, mat.Down),
+                rotate2direction("Pitch", mMission.PendingDirection, mat.Right, mat.Up, mat.Down),
                 0,
-                rotate2direction("Roll", mMission.Direction, mat.Forward, mat.Up, mat.Down)
+                rotate2direction("Roll", mMission.PendingDirection, mat.Forward, mat.Up, mat.Down)
             );
-            var ab = MAF.angleBetween(mRC.WorldMatrix.Down, -mMission.Direction);
+            var ab = MAF.angleBetween(mRC.WorldMatrix.Down, -mMission.PendingDirection);
             g.log("calibrate");
             g.log("angle              ", ab);
             g.log("angularVeloSquared ", mdAngularVelocitySquared);
@@ -227,7 +227,7 @@ namespace IngameScript
         }
         void setMissionDamp() {
             initMission();
-            mMission.Objective = mRC.CenterOfMass;
+            mMission.Objective = mRC.CenterOfMass - mvGravityDirection;
         }
         void setMissionFollow() {
             initMission();
@@ -251,8 +251,6 @@ namespace IngameScript
             }
             
         }
-        
-        BodyMap map;
 
         void dock() {
             setBatteryCharge(ChargeMode.Recharge);
@@ -266,13 +264,23 @@ namespace IngameScript
             setGyrosEnabled(true);
             mCon.Enabled = false;
         }
+        void setBoxNavigation(string aWaypointName) {
+            MyWaypointInfo waypoint = MyWaypointInfo.Empty;
+            if (findWaypoint(aWaypointName, ref waypoint)) {
+                initMission();
+                undock();                
+                mMission.Detail = Mission.Details.boxnav;
+                mMission.Objective = mRC.CenterOfMass - mvGravityDirection;
+                mMission.Translation = waypoint.Coords;
+            }
+        }
         void setMissionNavigate(string aWaypointName) {
             MyWaypointInfo waypoint = MyWaypointInfo.Empty;
             if (findWaypoint(aWaypointName, ref waypoint)) {
                 initMission();
                 undock();
                 mMission.Detail = Mission.Details.navigate;
-                setMissionObjective(waypoint.Coords);
+                mMission.Objective = waypoint.Coords;
 
             }
         }
@@ -341,12 +349,9 @@ namespace IngameScript
                 if (findWaypoint(aWaypointName, ref wp)) {
                     initMission();
 
-                    
-
                     mVisits.Clear();
 
                     scanNavCount = 0;
-                    
           
                     mMission.Detail = Mission.Details.scan;
                     
@@ -365,19 +370,20 @@ namespace IngameScript
                 g.persist("Camera required for scan mission.");
             }
         }
+        
 
         int miScanStep;
         bool mbScanComplete;
         BoundingBoxD mbScan;
-        void setScan(BoundingBoxD aBox) {
+        void setScan(BoundingBoxD aBox, double aInflate = mdScanInflate) {
             miScanStep = -1;
             mbScanComplete = false;
-            mbScan = aBox.Inflate(mdScanInflate);
+            mbScan = aBox.Inflate(aInflate);
             mDetected.Clear();
             aBox.GetCorners(mvaCorners);
         }
         //bool stepOkay = false;
-        void doScan() {
+        void doScan(double aInflate = mdScanInflate) {
             g.log("doScan");
             g.log("mbScanComplete ", mbScanComplete);
             g.log("miScanStep ", miScanStep);
@@ -390,7 +396,7 @@ namespace IngameScript
                             //g.persist(g.gps("scanned", mbScan.Center));
                             mbScanComplete = true;
                             if (mDetected.Count == 0) {
-                                mbScanGood = mbScan.Inflate(-mdScanInflate);
+                                mbScanGood = mbScan.Inflate(-aInflate);
                             }
                         }
                     }
@@ -434,14 +440,12 @@ namespace IngameScript
             return false;
         }
         
-        BoundingBoxD c2direction(Vector3D aDirection) {
-            var cbox = box.c(mRC.WorldMatrix.Translation);
-            IMyTerminalBlock b;
-            return box.c(cbox.Center + (aDirection * box.cdist));
-        }
         const double mdScanInflate = 20;
-        readonly Random r = new Random(9);
-        Vector3D ranDir() => Vector3D.Normalize(new Vector3D(r.NextDouble() - 0.5, r.NextDouble() - 0.5, r.NextDouble() - 0.5));
+        readonly Random random = new Random(9);
+        Vector3D ranDir() => Vector3D.Normalize(new Vector3D(random.NextDouble() - 0.5, random.NextDouble() - 0.5, random.NextDouble() - 0.5));
+        Vector3D ranBoxPos(BoundingBoxD aBox) => 
+            new Vector3D(random.NextDouble() * (aBox.Max.X - aBox.Min.X), random.NextDouble() * (aBox.Max.Y - aBox.Min.Y), random.NextDouble() * (aBox.Max.Z - aBox.Min.Z));
+        
         BoundingBoxD mbScanGood;
         //bool stepOkay = false;
         void doMissionScan() {
@@ -548,11 +552,7 @@ namespace IngameScript
             
         }
         bool bYawAround = false;
-        void setMissionObjective(Vector3D aObjective) {
-            mMission.Objective = aObjective;
-            mMission.Distance = (mMission.Objective - mMission.Start).Length();
-
-        }
+        
         void initMission() {
             bYawAround = false;
             if (null == mMission) {
@@ -615,6 +615,9 @@ namespace IngameScript
                     break;
                 case Mission.Details.follow:
                     doMissionFollow();
+                    break;
+                case Mission.Details.boxnav:
+                    doMissionBoxNav();
                     break;
                 default:
                     g.log("mission unhandled");
@@ -702,7 +705,7 @@ namespace IngameScript
             switch (step) {
                 case DockStep.departFinal:
                 case DockStep.approach:
-                    setMissionObjective(mMission.Connector.Approach);
+                    mMission.Objective = mMission.Connector.Approach;
                     if (DockStep.departFinal == step) {
                         msg = "depart approach area";
                     } else {
@@ -724,7 +727,7 @@ namespace IngameScript
                     break;
                 case DockStep.approachFinal:
                 case DockStep.depart:
-                    setMissionObjective(mMission.Connector.ApproachFinal);
+                    mMission.Objective = mMission.Connector.ApproachFinal;
                     msg = "rendezvous with final approach";
                     var precision = 10.0;
                     if (DockStep.depart == step) {
@@ -735,7 +738,7 @@ namespace IngameScript
                     
                     if (precision > missionNavigate()) {
                         if (step == DockStep.approachFinal) {
-                            setMissionObjective(mMission.Connector.Objective);
+                            mMission.Objective = mMission.Connector.Objective;
                         }
                         mMission.Step++;
                     }
@@ -828,7 +831,160 @@ namespace IngameScript
             }
             g.log(msg);
         }
-        bool moon = false;
+        
+        void doMissionBoxNav() {
+            calculateTrajectory();
+            // mMission.Translation will be final objective
+            // mMission.Objective will be center of cboxes
+            // steps
+            // ~ any obstruction in current cbox should pause and move to step n
+            // 0 get next cbox in direction of objective
+            // 1 scan cbox / wait for reservation
+            //   - if obstructed report scan obstruction 1 time
+            //     - move to step n
+            //   - once reservation is received move to step 2
+            // 2 navigate to cbox center
+            //   - continue scanning random positions in target cbox
+            //   - if obstruction scanned damp at current position, report obstruction 1 time, move to step n
+            //   - once inside the cbox continue to step 0
+            BoundingBoxD cbox, dest;
+            switch (mMission.Step) {
+                case 0:
+                    cbox = BOX.GetCBox(mRC.CenterOfMass);
+                    if (cbox.Contains(mMission.Translation) == ContainmentType.Contains) {
+                        mMission.Step = 4;
+                    } else {
+                        dest = BOX.GetCBox(BOX.MoveC(cbox.Center, mvDirection2Objective));
+                        mMission.PendingPosition = dest.Center;
+                        setScan(dest, 0);
+                        mMission.Step++;
+                    }
+                    break;
+                case 1:
+                    doBoxScan();
+                    if (mDetected.Count > 0) {
+                        boxNavPause();
+                    } else {
+                        if (getReservation(mMission.PendingPosition)) {
+                            mMission.Step++;
+                            mMission.Objective = mMission.PendingPosition;
+                        }
+                    }
+                    break;
+                case 2:
+                    doBoxScan();
+                    if (mDetected.Count > 0) {
+                        boxNavPause();
+                    } else {
+                        cbox = BOX.GetCBox(mMission.PendingPosition);
+                        if (cbox.Contains(mRC.CenterOfMass) == ContainmentType.Contains) {
+                            mMission.Step = 0;
+                            mMission.SubStep = 0;
+                        }
+                    }
+                    break;
+                case 3: // n
+                    // the box in the direction of our objective is obstructed
+                    // SubSteps - will need to be reset to 0 at some point probably once we progress 
+                    // 0 first attempt at finding another way in gravity we should try -gravity first
+                    //   - in space we could just skip to substep n
+                    //   - get new cbox, setScan, move to step 1 basically almost everything in step 0 todo extract logic?
+                    // default substep - 1 base6direction ?? 7 Stuck?
+                    //
+                    switch (mMission.SubStep) {
+                        case 0:
+                            cbox = BOX.GetCBox(mRC.CenterOfMass);
+                            dest = BOX.GetCBox(BOX.MoveC(cbox.Center, -mvGravityDirection));
+                            mMission.PendingPosition = dest.Center;
+                            setScan(dest, 0);
+                            mMission.Step = 1;
+                            mMission.SubStep++;
+                            break;
+                        default:
+                            if (mMission.SubStep < 7) {
+                                cbox = BOX.GetCBox(mRC.CenterOfMass);
+                                dest = BOX.GetCBox(BOX.MoveC(cbox.Center, -mvGravityDirection));
+                                mMission.PendingPosition = dest.Center;
+                                setScan(dest, 0);
+                                mMission.Step = 1;
+                                mMission.SubStep++;
+                            } else {
+                                // todo AABB nav + reservation?
+                                // switch back to cbox nav after moving into two cboxes?
+                            }
+                            break;
+                    }
+                    break;
+                case 4:
+                    // we made it
+                    // continue navigation to cbox center
+                    // continue scanning
+                    // ?? switch to AABB navigation
+                    doBoxScan();
+                    if (mDetected.Count > 0) {
+                        g.persist("I almost made it but something got in the way...");
+                        setMissionDamp();
+                    } else {
+                        if (mdDistance2Objective < 5.0) {
+                            g.persist("I made it.");
+                            setMissionDamp();
+                            mMission.Objective = BOX.GetCBox(mRC.CenterOfMass).Center;
+                        }
+                    }
+                    break;
+            }
+        }
+        void boxNavPause() {
+            // todo report
+            mbScanComplete = true;
+            mMission.Objective = mRC.CenterOfMass - mvGravityDirection;
+            mMission.Step = 3;
+            
+            // todo move to step n
+        }
+        void doBoxScan() {
+            if (!mbScanComplete) {
+                switch (miScanStep) {
+                    case -1:
+                        // scan center
+                        if (_doBoxScan(mbScan.Center)) {
+                            miScanStep++;
+                        }
+                        break;
+                    case 9:
+                        // scan random position
+                        _doBoxScan(ranBoxPos(mbScan));
+                        break;
+                    default:
+                        // scan corners
+                        if (_doBoxScan(mvaCorners[miScanStep])) {
+                            miScanStep++;
+                        }
+                        break;
+                }
+            }
+        }
+        /// <summary>
+        /// returns true if aTarget was scanned
+        /// </summary>
+        /// <param name="aPosition"></param>
+        /// <returns></returns>
+        bool _doBoxScan(Vector3D aTarget) {
+            // todo scan and store in mDetected
+            MyDetectedEntityInfo e = new MyDetectedEntityInfo();
+            
+            if (scanner.Scan(aTarget, ref e)) {
+                if (e.Type != MyDetectedEntityType.None) {
+                    mDetected.Add(e);
+                }
+                return true;
+            }
+            return false;
+        }
+        bool getReservation(Vector3D aCBoxCenter) {
+            // todo getreservation
+            return true;
+        }
         double missionNavigate(bool aSlow = false) {
             
 
@@ -1597,6 +1753,82 @@ namespace IngameScript
         bool mbAutoCharge = false;
         double time = 0;
         readonly Lag lag = new Lag(25);
+        void processCommand(string aArgument) {
+            try {
+                if (null != aArgument) {
+                    var args = aArgument.Split(' ');
+                    
+                    if (0 < args.Length) {
+                        switch (args[0]) {
+                            case "p":
+                                if (args.Length > 1) {
+                                    int p;
+                                    if (int.TryParse(args[1], out p))
+                                        g.removeP(p);
+                                } else {
+                                    g.removeP(0);
+                                }
+                                break;
+                            case "dock":
+                                if (args.Length > 1)
+                                    if (!setMissionDock(args[1]))
+                                        g.persist($"Dock '{args[1]}' not found.");
+                                break;
+                            case "damp":
+                                setMissionDamp();
+                                break;
+                            case "patrol":
+                                setMissionPatrol();
+                                break;
+                            case "navigate":
+                                if (args.Length > 1)
+                                    setMissionNavigate(args[1]);
+                                break;
+                            case "box":
+                                if (args.Length > 1) {
+                                    setBoxNavigation(args[1]);
+                                }
+                                break;
+                            case "test":
+                                setMissionTest();
+                                break;
+                            case "depart":
+                                undock();
+                                break;
+                            case "scan":
+                                if (args.Length > 1)
+                                    setMissionScan(args[1]);
+                                break;
+                            case "calibrate":
+                                setMissionCalibrate();
+                                break;
+                            case "follow":
+                                setMissionFollow();
+                                break;
+                            case "pps":
+                                if (args.Length > 3) {
+                                    if (mPlanet.HasValue) {
+                                        try {
+                                            var pps = new PPS(
+                                                mPlanet.Value.Position,
+                                                mdSeaLevel,
+                                                MathHelper.ToRadians(double.Parse(args[1])),
+                                                MathHelper.ToRadians(double.Parse(args[2])),
+                                                double.Parse(args[3])
+                                            );
+                                            setMissionDamp();
+                                            mMission.Objective = pps.Position;
+                                        } catch (Exception ex) { g.persist("failed to parse pps"); }
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                g.persist(ex.ToString());
+            }
+        }
         void Main(string argument, UpdateType aUpdate) {
 
             var runtimeAverage = lag.update(Runtime.LastRunTimeMs);
@@ -1604,74 +1836,7 @@ namespace IngameScript
             time += Runtime.TimeSinceLastRun.TotalSeconds;
             string str;
             if ((aUpdate & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
-                try {
-                    if (null != argument) {
-                        var args = argument.Split(' ');
-                        if (0 < args.Length) {
-                            switch (args[0]) {
-                                case "p":
-                                    if (1 < args.Length) {
-                                        int p;
-                                        if (int.TryParse(args[1], out p))
-                                            g.removeP(p);
-                                    } else {
-                                        g.removeP(0);
-                                    }
-                                    break;
-                                case "dock":
-                                    if (1 < args.Length)
-                                        if (!setMissionDock(args[1]))
-                                            g.persist($"Dock '{args[1]}' not found.");
-                                    break;
-                                case "damp":
-                                    setMissionDamp();
-                                    break;
-                                case "patrol":
-                                    setMissionPatrol();
-                                    break;
-                                case "navigate":
-                                    if (args.Length > 1)
-                                        setMissionNavigate(args[1]);
-                                    break;
-                                case "test":
-                                    setMissionTest();
-                                    break;
-                                case "depart":
-                                    undock();
-                                    break;
-                                case "scan":
-                                    if (args.Length > 1)
-                                        setMissionScan(args[1]);
-                                    break;
-                                case "calibrate":
-                                    setMissionCalibrate();
-                                    break;
-                                case "follow":
-                                    setMissionFollow();
-                                    break;
-                                case "pps":
-                                    if (args.Length > 3) {
-                                        if (mPlanet.HasValue) {
-                                            try {
-                                                var pps = new PPS(
-                                                    mPlanet.Value.Position,
-                                                    mdSeaLevel,
-                                                    MathHelper.ToRadians(double.Parse(args[1])),
-                                                    MathHelper.ToRadians(double.Parse(args[2])),
-                                                    double.Parse(args[3])
-                                                );
-                                                setMissionDamp();
-                                                mMission.Objective = pps.Position;
-                                            } catch (Exception ex) { g.persist("failed to parse pps"); }
-                                        }
-                                    }
-                                    break;
-                            }
-                        }
-                    }
-                } catch (Exception ex) {
-                    g.persist(ex.ToString());
-                }
+                processCommand(argument);
             }
             if ((aUpdate & (UpdateType.IGC)) != 0) {
                 receiveMessage();
@@ -1885,7 +2050,7 @@ namespace IngameScript
         readonly List<IMyGyro> mGyros = new List<IMyGyro>();
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
         readonly List<IMyGasTank> mFuelTanks = new List<IMyGasTank>();
-        readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
+        readonly List<MyDetectedEntityInfo> mDetected =new List<MyDetectedEntityInfo>();
         
         readonly HashSet<long> mDetectedIds = new HashSet<long>();
 

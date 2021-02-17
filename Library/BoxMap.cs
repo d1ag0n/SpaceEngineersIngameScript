@@ -5,7 +5,6 @@ using VRageMath;
 
 namespace IngameScript
 {
-    // this might not be a good name for this class
     class BoxMap
     {
         const double reservationTime = 5 * 60;
@@ -22,12 +21,14 @@ namespace IngameScript
                 result = new BoxInfo();
                 result.Position = aCBoxCenter;
                 kmap.Add(ckey, result);
+            } else {
+                if (result.Reserved + reservationTime < MAF.time) {
+                    result.Reserved =
+                    result.Reserver = 0;
+                    kmap[ckey] = result;
+                }
             }
-
-            if (result.Reserved + reservationTime < MAF.time) {
-                result.Reserved =
-                result.Reserver = 0;
-            }
+            
             return result;
         }
         Dictionary<int, BoxInfo> getKMap(Vector3D aPosition, out Vector3D aKBox) {
@@ -49,11 +50,28 @@ namespace IngameScript
             var ckey = BOX.CVectorToIndex(info.Position - kbox);
             kmap[ckey] = info;
         }
-        public void dropReservation(long sender, Vector3D aCBoxCenter) {
+        public BoxInfo dropReservation(long sender, Vector3D aCBoxCenter) {
             var info = getInfo(aCBoxCenter);
             if (sender == info.Reserver) {
                 info.Reserved =
                 info.Reserver = 0;
+                setInfo(info);
+            }
+            return info;
+        }
+        public BoxInfo setReservation(long sender, Vector3D aCBoxCenter) {
+            var info = getInfo(aCBoxCenter);
+            if (info.Reserver == 0) {
+                info.Reserved = MAF.time;
+                info.Reserver = sender;
+                setInfo(info);
+            }
+            return info;
+        }
+        public void reportObstruction(Vector3D aCBoxCenter) {
+            var info = getInfo(aCBoxCenter);
+            if (!info.Obstructed) {
+                info.Obstructed = true;
                 setInfo(info);
             }
         }

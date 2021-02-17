@@ -36,7 +36,7 @@ namespace IngameScript
             }
         }
         /// <summary>
-        /// returns true if we found a camera that will scan the target location
+        /// returns true if we found a camera that will scan the target location and scanned it
         /// </summary>
         /// <param name="aTarget"></param>
         /// <param name="aAddDistance"></param>
