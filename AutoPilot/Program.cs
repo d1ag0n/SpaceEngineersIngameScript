@@ -183,7 +183,7 @@ namespace IngameScript
                 case 3:
                     ThrustN(mdNewtons);
                     if (calibrate()) {
-                        rotationTime = time;
+                        mdRotationTime = time;
                         mMission.Step++;
                         mMission.Direction = mRC.WorldMatrix.Down;
                     }
@@ -191,7 +191,7 @@ namespace IngameScript
                 case 4:
                     ThrustN(0);
                     if (calibrate()) {
-                        rotationTime = time - rotationTime;
+                        mdRotationTime = time - mdRotationTime;
                         var obj = mMission.Objective;
                         setMissionDamp();
                         mMission.Objective = obj;
@@ -199,7 +199,7 @@ namespace IngameScript
                     break;
             }
         }
-        double rotationTime = 5.0;
+        double mdRotationTime = 5.0;
         const double updatesPerSecond = 10;
         const double timeFlashMax = .5; //in seconds  
         const double proportionalConstant = 2.0;
@@ -321,7 +321,7 @@ namespace IngameScript
         int scanNavCount = 0;
         BoundingBoxD moveTowardsPos(BoundingBoxD aBox, Vector3D aTarget) {
             var disp = aBox.Max - aBox.Min;
-            var mag = disp.Length();
+            var mag = disp.Length() * 0.75;
             var dir = Vector3D.Normalize(aTarget - aBox.Center);
             return new BoundingBoxD(aBox.Min + (dir * mag), aBox.Max + (dir * mag));
         }
@@ -333,12 +333,16 @@ namespace IngameScript
         }
         readonly HashSet<Vector3L> mVisits = new HashSet<Vector3L>();
 
+        double mdScanBoxDist;
+
         void setMissionScan(string aWaypointName) {
             if (scanner.hasCamera) {
                 var wp = MyWaypointInfo.Empty;
                 if (findWaypoint(aWaypointName, ref wp)) {
                     initMission();
-                    mdBBSize = (Me.CubeGrid.WorldAABB.Max - Me.CubeGrid.WorldAABB.Min).Length();
+
+                    
+
                     mVisits.Clear();
 
                     scanNavCount = 0;
@@ -354,7 +358,7 @@ namespace IngameScript
 
                     mbScan =
                     mbScanGood = Me.CubeGrid.WorldAABB;
-                    
+                    mdScanBoxDist = (mbScan.Max - mbScan.Min).Length();
                     mbScanComplete = true;
                 }
             } else {
@@ -368,8 +372,7 @@ namespace IngameScript
         void setScan(BoundingBoxD aBox) {
             miScanStep = -1;
             mbScanComplete = false;
-            mbScan = aBox.Inflate(5);
-            
+            mbScan = aBox.Inflate(mdScanInflate);
             mDetected.Clear();
             aBox.GetCorners(mvaCorners);
         }
@@ -387,27 +390,32 @@ namespace IngameScript
                             //g.persist(g.gps("scanned", mbScan.Center));
                             mbScanComplete = true;
                             if (mDetected.Count == 0) {
-                                mbScanGood = mbScan;
+                                mbScanGood = mbScan.Inflate(-mdScanInflate);
                             }
                         }
                     }
                 }
                 if (miScanStep == -1) {
-                    if (_doScan(mbScan.Center)) {
+                    if (_doScan(mbScan.Center, mdScanBoxDist)) {
                         miScanStep++;
                     }
                 }
             }
         }
         // returns true if target was scanned
-        double mdBBSize;
-        bool _doScan(Vector3D aTarget) {
+        bool _doScan(Vector3D aTarget, double aAddDist = 0) {
             g.log("_doScan", aTarget);
             var e = new MyDetectedEntityInfo();
+            var disp = aTarget - mRC.CenterOfMass;
+            var len2 = disp.LengthSquared();
+            if (len2 > 25000000) {
+                g.log("too far");
+                return false;
+            }
             if (Me.CubeGrid.WorldAABB.Contains(aTarget) == ContainmentType.Contains) {
                 return true;
             }
-            if (scanner.Scan(aTarget, ref e, mdBBSize)) {
+            if (scanner.Scan(aTarget, ref e, aAddDist)) {
 
                 if (e.Type == MyDetectedEntityType.None) {
                     g.log("could scan");
@@ -430,9 +438,8 @@ namespace IngameScript
             var cbox = box.c(mRC.WorldMatrix.Translation);
             IMyTerminalBlock b;
             return box.c(cbox.Center + (aDirection * box.cdist));
-            
         }
-        
+        const double mdScanInflate = 20;
         readonly Random r = new Random(9);
         Vector3D ranDir() => Vector3D.Normalize(new Vector3D(r.NextDouble() - 0.5, r.NextDouble() - 0.5, r.NextDouble() - 0.5));
         BoundingBoxD mbScanGood;
@@ -452,7 +459,7 @@ namespace IngameScript
             //var detected = false;
 
             if (mDetected.Count > 0 && mMission.Step < 2) {
-                if (mbScan.Contains(mMission.Translation) == ContainmentType.Contains) {
+                if (mbScanGood.Contains(mRC.CenterOfMass) == ContainmentType.Contains && mbScan.Contains(mMission.Translation) == ContainmentType.Contains) {
                     g.persist("damping at last good scan");
                     var t = mbScanGood.Center;
                     setMissionDamp();
@@ -474,10 +481,8 @@ namespace IngameScript
                     mMission.Objective = t;
                     return;
                 }
-                
-                
                 mMission.Objective = mbScanGood.Center;
-                
+                //if ((mRC.CenterOfMass - mMission.Translation).LengthSquared() > (mbScanGood.Center - mMission.Translation).LengthSquared()) { }
                 scanNavCount++;
                 //g.persist(g.gps($"{mMission.Step} - {scanNavCount}", mMission.Objective));
                 mMission.Step = 0;
@@ -546,6 +551,7 @@ namespace IngameScript
         void setMissionObjective(Vector3D aObjective) {
             mMission.Objective = aObjective;
             mMission.Distance = (mMission.Objective - mMission.Start).Length();
+
         }
         void initMission() {
             bYawAround = false;
@@ -728,11 +734,13 @@ namespace IngameScript
                     // goto beginning of final approach
                     
                     if (precision > missionNavigate()) {
+                        if (step == DockStep.approachFinal) {
+                            setMissionObjective(mMission.Connector.Objective);
+                        }
                         mMission.Step++;
                     }
                     break;
                 case DockStep.dock:
-                    setMissionObjective(mMission.Connector.Objective);
                     msg = "rendezvous with dock";
                     d = missionNavigate(true);
                     
@@ -749,6 +757,17 @@ namespace IngameScript
                     msg = "connecting to dock";
                     switch (mCon.Status) {
                         case MyShipConnectorStatus.Connectable:
+                            if (3 == mMission.Connector.MessageSent) {
+                                var dockMessage = new DockMessage(mMission.Connector.DockId, "Align", mCon.WorldMatrix.Translation);
+                                if (IGC.SendUnicastMessage(mMission.Connector.ManagerId, "DockMessage", dockMessage.Data())) {
+                                    igcMessagesSent++;
+                                    mMission.Connector.MessageSent = 0;
+                                } else {
+                                    igcMessagesFailed++;
+                                }
+                            } else {
+                                mMission.Connector.MessageSent++;
+                            }
                             ThrustN(mdMass * mdGravity);
                             rotate2vector(Vector3D.Zero);
                             break;
@@ -767,7 +786,7 @@ namespace IngameScript
                             if (mdGravity == 0) {
                                 rotate2vector(mRC.CenterOfMass + (mMission.Connector.Direction * 500.0));
                             } else {
-                                missionNavigate();
+                                calculateTrajectory(true);
                             }
                             
                             break;
@@ -779,6 +798,9 @@ namespace IngameScript
                     break;
                 case DockStep.wait:
                     msg = "connected to dock";
+                    if (mCon.Status == MyShipConnectorStatus.Unconnected) {
+                        mMission.Step++;
+                    }
                     /*if (lowBattery() || lowFuel()) {
                         mMission.Step = (int)DockStep.charging;
                     } else {
@@ -889,8 +911,8 @@ namespace IngameScript
                 MyObjectBuilder_OxygenTank / SmallHydrogenTankSmall*/
                 var t = mFuelTanks[i];
                 var n = t.BlockDefinition.SubtypeName;
-                if ("SmallHydrogenTank" == n) {
-                } else {
+                var filter = new string[] { "SmallHydrogenTank", "LargeHydrogenTank" };
+                if (!filter.Contains(n)) {
                     mFuelTanks.RemoveAt(i);
                     g.persist($"Removed tank {n}.");
                 }
@@ -963,19 +985,25 @@ namespace IngameScript
         void calculateTrajectory(bool aSlow = false) {
             MatrixD mat;
             double ddtMag;
-
-            var desiredVelo = 99.9 * MathHelper.Clamp(mdDistance2Objective / mdStopDistance, 0.0, aSlow ? 0.1 : 1.0);
+            
+            var desiredVelo = 99.8 * MathHelper.Clamp(mdDistance2Objective / mdStopDistance, 0.0, aSlow ? 0.1 : 1.0);
             if (desiredVelo > mdDistance2Objective || mdDistance2Objective < 100) {
                 if (desiredVelo > mdDistance2Objective * 0.1) {
                     desiredVelo = mdDistance2Objective * 0.1;
                 }
+            }
+            if (aSlow && desiredVelo > 10.0) {
+                desiredVelo = 10.0;
             }
 
             g.log("calculateTrajectory");
             g.log("mdStopDistance ", mdStopDistance);
             g.log("desiredVelo    ", desiredVelo);
 
-            var desiredVec = mvLinearVelocity - mvDirection2Objective * desiredVelo;
+            var factor = mdGravity == 0 ? 2.0 : 2.0;
+
+            var desiredVec = (mvLinearVelocity * factor) - (mvDirection2Objective * desiredVelo * factor);
+            
 
             // var desiredDampeningThrust = mass * (2 * velocity + gravity);
             //var ddt = mdMass * (2 * mvLinearVelocity + mvGravity);
@@ -984,7 +1012,7 @@ namespace IngameScript
             var ddtDir = ddt;
             var ddtLenSq = ddt.LengthSquared();
 
-            if (ddtLenSq > mdNewtons * mdNewtons) {
+            if (mdGravity > 0 && ddtLenSq > mdNewtons * mdNewtons) {
                 // ddt is requesting more force than we can apply
 
                 // elfie wolfe says
@@ -1021,11 +1049,8 @@ namespace IngameScript
                 ddtMag = ddtDir.Normalize();
                 ddtDir = -ddtDir;
             }
-
+            var ab = MAF.angleBetween(mRC.WorldMatrix.Up, ddtDir);
             if (mdGravity > 0) {
-
-                var ab = MAF.angleBetween(mRC.WorldMatrix.Up, ddtDir);
-
                 if (ab > Math.PI / 4) {
                     double dot;
                     ab = MAF.angleBetween(mRC.WorldMatrix.Up, -mvGravityDirection, out dot);
@@ -1038,6 +1063,10 @@ namespace IngameScript
                             ddtMag = forceAtLean(Math.PI / 2.0, ab, mdGravity, mdMass);
                         }
                     }
+                }
+            } else {
+                if (ab > Math.PI / 16) {
+                    ddtMag = 0;
                 }
             }
             ThrustN(ddtMag);
@@ -1430,6 +1459,7 @@ namespace IngameScript
         double mdSeaLevel;
 
         void initVelocity() {
+            g.log("rotation time ", mdRotationTime);
             var sm = mRC.CalculateShipMass();
             mdMass = sm.PhysicalMass;
             mdTotalMass = sm.TotalMass;
@@ -1445,7 +1475,8 @@ namespace IngameScript
             if (!mvGravity.IsZero()) {
                 mdGravity = mvGravityDirection.Normalize();
 
-                //g.log("mdGravity ", mdGravity.ToString());
+                g.log("mdGravity ", mdGravity.ToString());
+                g.log("mvGravity", mvGravity);
                 double e = 0;
                 mRC.TryGetPlanetElevation(MyPlanetElevation.Surface, out mdAltitudeSurface);
                 mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitudeSea);
@@ -1474,7 +1505,10 @@ namespace IngameScript
                 // F=MA
                 // A=F/M
                 // M=F/A
-                // 12=3*4
+                // F = 12
+                // M =  3
+                // A =  4
+                // 12=3*4 
                 // 4=12/3
                 // 3=12/4
                 mdAvailableMass = mdNewtons / minAccel;
@@ -1491,14 +1525,14 @@ namespace IngameScript
 
             // v10 / 1
             // 100 / 2
-            mdStopDistance = (mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2);
-            mdStopDistance += mdLinearVelocity * 15.0;
+            mdStopDistance = ((mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2)) + (mdLinearVelocity * 20.0); // + rotation time
             //mdStopDistance = (10000) / (mdMaxAccel * 2);
 
             
             //mdStopDistance = 10000.0 / ((mdRawAccel - mdGravity) * 2);
             if (mdGravity == 0) {
                 mvDirection2Objective = mvDisplacement2Objective = mMission.Objective - mRC.CenterOfMass;
+                mvDirection2Objective.Normalize();
                 mdDistance2Objective = (mMission.Objective - mRC.CenterOfMass).Length();
             } else {
                 
@@ -1510,7 +1544,7 @@ namespace IngameScript
                     CoM = mPlanet.Value.Position + (dir * (alt + mdSeaLevel));
                     //g.log(g.gps("CoMCalculated", CoM));
                 }
-                mvObjectiveProjection = orthoProject(mMission.Objective, CoM, -mvGravityDirection, out mdObjectiveDot);
+                mvObjectiveProjection = MAF.orthoProject(mMission.Objective, CoM, -mvGravityDirection, out mdObjectiveDot);
                 g.log(g.gps("mvObjectiveProjection", mvObjectiveProjection));
                 mvDirection2Objective = Vector3D.Normalize(mvObjectiveProjection - mRC.CenterOfMass);
                 mdDistance2Objective = (mvObjectiveProjection - mRC.CenterOfMass).Length();
@@ -1519,6 +1553,12 @@ namespace IngameScript
 
             g.log("mdDistance2Objective ", mdDistance2Objective);
             g.log("mdLinearVelocity     ", mdLinearVelocity);
+            g.log("mdAvailableMass      ", mdAvailableMass);
+
+            g.log("mdMass               ", mdMass);
+            g.log("mdTotalMass          ", mdTotalMass);
+            g.log("mdBaseMass           ", mdBaseMass);
+
             //g.log("mdObjectiveDot       ", mdObjectiveDot);
             /*
             g.log("mdDistance2Objective ", mdDistance2Objective);

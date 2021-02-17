@@ -42,12 +42,12 @@ namespace IngameScript
         /// <param name="aAddDistance"></param>
         /// <param name="e"></param>
         /// <returns></returns>
-        public bool Scan(Vector3D aTarget, ref MyDetectedEntityInfo aEntity, double aAddDistance = 0) {
+        public bool Scan(Vector3D aTarget, ref MyDetectedEntityInfo aEntity, double aAddDist = 0) {
 
             for (int i = 0; i < cameras.Count; i++) {
                 var c = cameras[i];
                 var dir = aTarget - c.WorldMatrix.Translation;
-                var dist = dir.Normalize() + aAddDistance;
+                var dist = dir.Normalize() + aAddDist;
 
                 double azimuth = 0, elevation = 0;
                 if (c.AvailableScanRange > dist) {
