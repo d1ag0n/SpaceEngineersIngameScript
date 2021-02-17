@@ -29,5 +29,21 @@ namespace IngameScript
             aDot = a.Dot(b);
             return aDot / b.LengthSquared() * b;
         }
+        // todo use reject?
+        // orthogonal projection is vector rejection
+        public static Vector3D orthoProject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
+            aTarget - ((aTarget - aPlane).Dot(aNormal) * aNormal);
+
+        // todo use reject?
+        public static Vector3D orthoProject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal, out double aDot) {
+            aDot = (aTarget - aPlane).Dot(aNormal);
+            return aTarget - (aDot * aNormal);
+        }
+
+        public static Vector3D reject(Vector3D a, Vector3D b) => a - a.Dot(b) / b.Dot(b) * b;
+        public static Vector3D reject(Vector3D a, Vector3D b, out double aDot) {
+            aDot = a.Dot(b);
+            return a - aDot / b.Dot(b) * b;
+        }
     }
 }
