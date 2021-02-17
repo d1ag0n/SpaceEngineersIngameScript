@@ -31,7 +31,7 @@ namespace IngameScript
             Position = Planet + dir * (SeaLevel + Altitude);
         }
         public override string ToString() {
-            return $"PPS {MathHelper.ToDegrees(Azimuth).ToString("N2")}° {MathHelper.ToDegrees(Elevation).ToString("N2")}° {Altitude.ToString("N2")}m";
+            return $"PPS {MathHelper.ToDegrees(Azimuth).ToString("F2")}° {MathHelper.ToDegrees(Elevation).ToString("F2")}° {Altitude.ToString("F2")}m";
         }
     }
 }

@@ -16,6 +16,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GTS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InventoryOrder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Methods.cs" />

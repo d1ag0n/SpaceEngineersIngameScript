@@ -54,11 +54,11 @@ namespace IngameScript
             var sb = new StringBuilder("GPS:");
             sb.Append(aName);
             sb.Append(":");
-            sb.Append(aPos.X);
+            sb.Append(aPos.X.ToString("F2"));
             sb.Append(":");
-            sb.Append(aPos.Y);
+            sb.Append(aPos.Y.ToString("F2"));
             sb.Append(":");
-            sb.Append(aPos.Z);
+            sb.Append(aPos.Z.ToString("F2"));
             sb.Append(":#FFFF00FF:");
             return sb.ToString();
         }
@@ -72,7 +72,7 @@ namespace IngameScript
                         mLog.AppendLine();
                         log((Vector3D)arg);
                     } else if (arg is double) {
-                        mLog.Append(((double)arg).ToString("N"));
+                        mLog.Append(((double)arg).ToString("F3"));
                     } else {
                         mLog.Append(arg.ToString());
                     }

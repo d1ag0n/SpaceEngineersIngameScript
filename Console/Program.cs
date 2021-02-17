@@ -362,6 +362,7 @@ namespace commandline
         static Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
         static void Main(string[] args) {
 
+            var lag = new Lag(10);
             double azimuth, elevation;
             var v = new Vector3D(0.0122403541067893, -0.99984900692911, 0.012334385846631);
             //v.Normalize();
@@ -377,7 +378,6 @@ namespace commandline
             var com = new Vector3D(21259, 143276.07, -108741.04);
             var sea = 9497.57;
             var pps1 = new PPS(planet, sea, com);
-            var pps2 = new PPS(planet, sea, pps1.North, pps1.East, pps1.Altitude);
 
 
 
