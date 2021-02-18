@@ -47,7 +47,7 @@ namespace commandline
                     Console.WriteLine("index mismatch");
                 }
             }
-            for (int i = 0; i < 100000; i++) {
+            for (int i = 0; i < 1000000; i++) {
                 var v = rv();
                 var c = BOX.GetCBox(v);
                 var ci = BOX.CVectorToIndex(c.Center);
@@ -65,7 +65,7 @@ namespace commandline
             Console.WriteLine("cindex complete");
         }
         static void cwork() {
-            for (int i = 0; i < 100000; i++) {
+            for (int i = 0; i < 1000000; i++) {
                 var v = rv();
                 var cbox = BOX.GetCBox(v);
                 var dbox = BOX.GetCBox(cbox.Center);
@@ -80,7 +80,7 @@ namespace commandline
         }
         static void kwork() {
             
-            for (int i = 0; i < 100000; i++) {
+            for (int i = 0; i < 1000000; i++) {
                 var v = rv();
                 var kbox = BOX.GetKBox(v);
                 
@@ -366,9 +366,10 @@ namespace commandline
 
         static Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
         static void Main(string[] args) {
-            cwork();
-            kwork();
-            cindex();
+            //cwork();
+            //kwork();
+            //cindex();
+            var roughAxis = Base6Directions.GetClosestDirection(Vector3D.Zero);
             var b = Vector3D.Backward;
             b.X = 0.0000001;
             b.Normalize();
