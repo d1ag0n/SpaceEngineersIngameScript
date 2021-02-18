@@ -24,25 +24,25 @@ namespace IngameScript
         string string4(MyDetectedEntityInfo e) {
             
             mWork.Clear();
-            mWork.AppendLine($"{e.Name} {e.Type}");
-            mWork.AppendLine(e.EntityId.ToString());
+            mWork.AppendLine($"{e.Name} {e.Type} {e.EntityId}");
+            //mWork.AppendLine(e.EntityId.ToString());
             
             
             //mWork.AppendLine(gps("BoxMin", e.BoundingBox.Min));
-            mWork.AppendLine(gps("BoxCenter", e.BoundingBox.Center));
+            //mWork.AppendLine(gps("BoxCenter", e.BoundingBox.Center));
             //mWork.AppendLine(gps("BoxMax", e.BoundingBox.Max));
             var bb = e.BoundingBox;
             int i = 1;
             foreach (var c in bb.GetCorners()) {
                 //mWork.AppendLine(gps("corner" + i++, c));
             }
-            mWork.AppendLine("Translation");
-            mWork.AppendLine(string4(e.Orientation.Translation));
-            mWork.AppendLine("Up");
-            mWork.AppendLine(string4(e.Orientation.Up));
+            //mWork.AppendLine("Translation");
+            //mWork.AppendLine(string4(e.Orientation.Translation));
+            //mWork.AppendLine("Up");
+            //mWork.AppendLine(string4(e.Orientation.Up));
             if (e.HitPosition.HasValue) {
-                mWork.AppendLine("hit");
-                mWork.AppendLine(string4(e.HitPosition.Value));
+                //mWork.AppendLine("hit");
+                mWork.AppendLine(gps("hit", e.HitPosition.Value));
             }
             return mWork.ToString();
         }

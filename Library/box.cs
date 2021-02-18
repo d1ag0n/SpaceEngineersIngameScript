@@ -13,6 +13,7 @@ namespace IngameScript
     /// </summary>
     static class BOX
     {
+        static readonly Vector3D[] points = new Vector3D[2];
         const int cmax = 10;
         public const double cdist = 173.205080756888;
         /// <summary>
@@ -30,7 +31,9 @@ namespace IngameScript
                 aWorldPosition.Y = -1000;
             if (v.Z < 0)
                 aWorldPosition.Z = -1000;
-            return new BoundingBoxD(v, v + aWorldPosition);
+            points[0] = v;
+            points[1] = v + aWorldPosition;
+            return BoundingBoxD.CreateFromPoints(points);
         }
         /// <summary>
         /// Returns the bounding C box in world coordinates
@@ -48,8 +51,9 @@ namespace IngameScript
                 k.Y = -100;
             if (c.Z < 0)
                 k.Z = -100;
-            
-            return new BoundingBoxD(c, c + k);
+            points[0] = c;
+            points[1] = c + k;
+            return BoundingBoxD.CreateFromPoints(points);
         }
         /// <summary>
         /// Returns the index of the cbox for the given cbox position
@@ -94,6 +98,21 @@ namespace IngameScript
         /// <param name="aWorldDirection">unit vector direction in world space</param>
         /// <returns></returns>
         public static Vector3D MoveK(Vector3D aWorldPosition, Vector3D aWorldDirection) => MoveN(aWorldPosition, aWorldDirection, 1000.0);
+        public static BoundingBoxD moveTowardsDir(BoundingBoxD aBox, Vector3D aDir) {
+            var disp = aBox.Max - aBox.Min;
+            var mag = disp.Length();
+            points[0] = aBox.Min + (aDir * mag);
+            points[1] = aBox.Max + (aDir * mag);
+            return BoundingBoxD.CreateFromPoints(points);
+        }
+        public static BoundingBoxD moveTowardsPos(BoundingBoxD aBox, Vector3D aTarget) {
+            var disp = aBox.Max - aBox.Min;
+            var mag = disp.Length() * 0.75;
+            var dir = Vector3D.Normalize(aTarget - aBox.Center);
+            points[0] = aBox.Min + (dir * mag);
+            points[1] = aBox.Max + (dir * mag);
+            return BoundingBoxD.CreateFromPoints(points);
+        }
         static Vector3D MoveN(Vector3D aWorldPosition, Vector3D aWorldDirection, double n) {
             int d = (int)Base6Directions.GetClosestDirection((Vector3)aWorldDirection);
             Vector3D dir = Base6Directions.Directions[d];

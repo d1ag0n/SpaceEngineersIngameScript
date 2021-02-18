@@ -369,13 +369,38 @@ namespace commandline
             cwork();
             kwork();
             cindex();
-            //GPS:above:12696.62:140308.05:-105223.81:#FF75C9F1:
+            var b = Vector3D.Backward;
+            b.X = 0.0000001;
+            b.Normalize();
+            var ab = MAF.angleBetween(Vector3D.Forward, b);
             var pos = new Vector3D(12696.62, 140308.05, -105223.81);
+            //var pos = new Vector3D(12696.62, 140308.05, 105223.81);
+
+            var cbox = BOX.GetCBox(pos);
+            var dest = BOX.GetCBox(BOX.MoveC(cbox.Center, Vector3D.Up));
+
+            var result = cbox.Contains(cbox.Center);
+            
+            //GPS:above:12696.62:140308.05:-105223.81:#FF75C9F1:
+            
+
             var dir = Vector3D.Normalize(pos - Vector3D.Zero);
             var kbox = BOX.GetKBox(pos);
-            var cbox = BOX.GetCBox(pos);
+            cbox = BOX.GetCBox(pos);
+        /*
+            var res = 
+                this.Min.X > point.X ||
+                point.X > this.Max.X || 
+                (
+                    this.Min.Y > point.Y || 
+                    point.Y > this.Max.Y
+                ) || (
+                    this.Min.Z > point.Z || 
+                    point.Z > this.Max.Z
+                ) ? ContainmentType.Disjoint : ContainmentType.Contains;
+        */
 
-            var klocal = BOX.WorldToK(pos);
+        var klocal = BOX.WorldToK(pos);
 
             var cmove = BOX.MoveC(cbox.Center, dir);
             var kmove = BOX.MoveK(kbox.Center, dir);
@@ -573,11 +598,8 @@ namespace commandline
             //Console.WriteLine($"ddt {ddt}");
             //Console.WriteLine($"velo {velo}");
 
-            var bb = new BoundingBoxD(new Vector3D(-10), new Vector3D(10));
-            bb.Inflate(1);
-            Console.WriteLine(bb);
-            Console.WriteLine(bb.Center);
-            Console.WriteLine(bb.Extents);
+            
+            
             Console.ReadKey();
             return;
             cindex();

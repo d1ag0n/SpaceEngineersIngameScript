@@ -327,18 +327,8 @@ namespace IngameScript
         }
 
         int scanNavCount = 0;
-        BoundingBoxD moveTowardsPos(BoundingBoxD aBox, Vector3D aTarget) {
-            var disp = aBox.Max - aBox.Min;
-            var mag = disp.Length() * 0.75;
-            var dir = Vector3D.Normalize(aTarget - aBox.Center);
-            return new BoundingBoxD(aBox.Min + (dir * mag), aBox.Max + (dir * mag));
-        }
-        BoundingBoxD moveTowardsDir(BoundingBoxD aBox, Vector3D aDir) {
-            var disp = aBox.Max - aBox.Min;
-            var mag = disp.Length();
-            return new BoundingBoxD(aBox.Min + (aDir * mag), aBox.Max + (aDir * mag));
-
-        }
+        
+        
         readonly HashSet<Vector3L> mVisits = new HashSet<Vector3L>();
 
         double mdScanBoxDist;
@@ -375,12 +365,22 @@ namespace IngameScript
         int miScanStep;
         bool mbScanComplete;
         BoundingBoxD mbScan;
+        int setScanCount = 0;
         void setScan(BoundingBoxD aBox, double aInflate = mdScanInflate) {
+            setScanCount++;
             miScanStep = -1;
             mbScanComplete = false;
             mbScan = aBox.Inflate(aInflate);
+
+            //g.persist(g.gps("ss#" + setScanCount, mbScan.Center));
             mDetected.Clear();
             aBox.GetCorners(mvaCorners);
+            int i = 0;
+            /*foreach (var c in mvaCorners) {
+                g.persist(g.gps("ss#" + setScanCount + "." + i, c));
+                i++;
+            }*/
+
         }
         //bool stepOkay = false;
         void doScan(double aInflate = mdScanInflate) {
@@ -444,7 +444,11 @@ namespace IngameScript
         readonly Random random = new Random(9);
         Vector3D ranDir() => Vector3D.Normalize(new Vector3D(random.NextDouble() - 0.5, random.NextDouble() - 0.5, random.NextDouble() - 0.5));
         Vector3D ranBoxPos(BoundingBoxD aBox) => 
-            new Vector3D(random.NextDouble() * (aBox.Max.X - aBox.Min.X), random.NextDouble() * (aBox.Max.Y - aBox.Min.Y), random.NextDouble() * (aBox.Max.Z - aBox.Min.Z));
+            new Vector3D(
+                aBox.Min.X + random.NextDouble() * (aBox.Max.X - aBox.Min.X), 
+                aBox.Min.Y + random.NextDouble() * (aBox.Max.Y - aBox.Min.Y), 
+                aBox.Min.Z + random.NextDouble() * (aBox.Max.Z - aBox.Min.Z)
+            );
         
         BoundingBoxD mbScanGood;
         //bool stepOkay = false;
@@ -496,10 +500,10 @@ namespace IngameScript
             if (mbScanComplete) {
                 if (0 == mMission.Step) {
                     bYawAround = false;
-                    setScan(moveTowardsPos(mbScanGood, mMission.Translation));
+                    setScan(BOX.moveTowardsPos(mbScanGood, mMission.Translation));
                 } else if (1 == mMission.Step) {
                     bYawAround = false;                    
-                    setScan(moveTowardsDir(mbScanGood, -mvGravityDirection));
+                    setScan(BOX.moveTowardsDir(mbScanGood, -mvGravityDirection));
                 } else if (2 == mMission.Step) {
                     bYawAround = true;
                     var dir = Vector3D.Zero;
@@ -536,13 +540,13 @@ namespace IngameScript
 
                     if (mMission.SubStep < 26) {
                         mMission.SubStep++;
-                        setScan(moveTowardsDir(mbScanGood, dir));
+                        setScan(BOX.moveTowardsDir(mbScanGood, dir));
                     } else if (mMission.SubStep == 26) {
                         mMission.Step++;
                     }
                 } else {
                     bYawAround = true;
-                    setScan(moveTowardsDir(mbScanGood, ranDir()));
+                    setScan(BOX.moveTowardsDir(mbScanGood, ranDir()));
                 }
             }
             g.log("mMission.Step    ", mMission.Step);
@@ -745,7 +749,7 @@ namespace IngameScript
                     break;
                 case DockStep.dock:
                     msg = "rendezvous with dock";
-                    d = missionNavigate(true);
+                    d = missionNavigate(false);
                     
                     if (d < 5.0) {
                         mCon.Enabled = true;
@@ -848,13 +852,17 @@ namespace IngameScript
             //   - if obstruction scanned damp at current position, report obstruction 1 time, move to step n
             //   - once inside the cbox continue to step 0
             BoundingBoxD cbox, dest;
+            g.log("mMission.Step    ", mMission.Step);
+            g.log("mMission.SubStep ", mMission.SubStep);
+            g.log("miScanStep       ", miScanStep);
+            
             switch (mMission.Step) {
                 case 0:
                     cbox = BOX.GetCBox(mRC.CenterOfMass);
                     if (cbox.Contains(mMission.Translation) == ContainmentType.Contains) {
                         mMission.Step = 4;
                     } else {
-                        dest = BOX.GetCBox(BOX.MoveC(cbox.Center, mvDirection2Objective));
+                        dest = BOX.GetCBox(BOX.MoveC(cbox.Center, Vector3D.Normalize(mMission.Translation - mRC.CenterOfMass)));                        
                         mMission.PendingPosition = dest.Center;
                         setScan(dest, 0);
                         mMission.Step++;
@@ -863,23 +871,34 @@ namespace IngameScript
                 case 1:
                     doBoxScan();
                     if (mDetected.Count > 0) {
+                        g.persist("1 pausing");
                         boxNavPause();
                     } else {
                         if (getReservation(mMission.PendingPosition)) {
                             mMission.Step++;
                             mMission.Objective = mMission.PendingPosition;
+                            g.persist(g.gps("to", mMission.Objective));
                         }
                     }
                     break;
                 case 2:
                     doBoxScan();
                     if (mDetected.Count > 0) {
+                        g.persist("2 pausing");
                         boxNavPause();
                     } else {
                         cbox = BOX.GetCBox(mMission.PendingPosition);
-                        if (cbox.Contains(mRC.CenterOfMass) == ContainmentType.Contains) {
+                        var ct = cbox.Contains(mRC.CenterOfMass);
+                        g.log(ct);
+                        if (ct == ContainmentType.Contains) {
+                            g.persist("2 stepping to 0");
                             mMission.Step = 0;
                             mMission.SubStep = 0;
+                        } else {
+                            g.log(g.gps("pendPos", cbox.Center));
+                            foreach (var c in cbox.GetCorners()) {
+                                g.log(g.gps("ppc", c));
+                            }
                         }
                     }
                     break;
@@ -897,15 +916,17 @@ namespace IngameScript
                             dest = BOX.GetCBox(BOX.MoveC(cbox.Center, -mvGravityDirection));
                             mMission.PendingPosition = dest.Center;
                             setScan(dest, 0);
+                            g.persist("n0 stepping to 1");
                             mMission.Step = 1;
                             mMission.SubStep++;
                             break;
                         default:
                             if (mMission.SubStep < 7) {
                                 cbox = BOX.GetCBox(mRC.CenterOfMass);
-                                dest = BOX.GetCBox(BOX.MoveC(cbox.Center, -mvGravityDirection));
+                                dest = BOX.GetCBox(BOX.MoveC(cbox.Center, Base6Directions.Directions[mMission.SubStep - 1]));
                                 mMission.PendingPosition = dest.Center;
                                 setScan(dest, 0);
+                                g.persist("nd stepping to 1");
                                 mMission.Step = 1;
                                 mMission.SubStep++;
                             } else {
@@ -939,7 +960,6 @@ namespace IngameScript
             mbScanComplete = true;
             mMission.Objective = mRC.CenterOfMass - mvGravityDirection;
             mMission.Step = 3;
-            
             // todo move to step n
         }
         void doBoxScan() {
@@ -951,7 +971,7 @@ namespace IngameScript
                             miScanStep++;
                         }
                         break;
-                    case 9:
+                    case 8:
                         // scan random position
                         _doBoxScan(ranBoxPos(mbScan));
                         break;
@@ -1151,11 +1171,11 @@ namespace IngameScript
             if (aSlow && desiredVelo > 10.0) {
                 desiredVelo = 10.0;
             }
-
+            /*
             g.log("calculateTrajectory");
             g.log("mdStopDistance ", mdStopDistance);
             g.log("desiredVelo    ", desiredVelo);
-
+            */
             var factor = mdGravity == 0 ? 2.0 : 2.0;
 
             var desiredVec = (mvLinearVelocity * factor) - (mvDirection2Objective * desiredVelo * factor);
@@ -1574,7 +1594,7 @@ namespace IngameScript
             // yaw = atan2(d.X, d.Z)
             mPlanet = null;
             mdSeaLevel = 0;
-            var target = mRC.CenterOfMass + (mvGravityDirection * mdAltitudeAbsHighest);
+            var target = mRC.CenterOfMass + (mvGravityDirection * (mdAltitudeAbsHighest + (mRC.CubeGrid.WorldAABB.Perimeter / 4.0)));
             var e = new MyDetectedEntityInfo();
             if (scanner.Scan(target, ref e)) {
                 if (!processPlanet(e)) {
@@ -1615,7 +1635,8 @@ namespace IngameScript
         double mdSeaLevel;
 
         void initVelocity() {
-            g.log("rotation time ", mdRotationTime);
+
+            //g.log("rotation time ", mdRotationTime);
             var sm = mRC.CalculateShipMass();
             mdMass = sm.PhysicalMass;
             mdTotalMass = sm.TotalMass;
@@ -1631,8 +1652,6 @@ namespace IngameScript
             if (!mvGravity.IsZero()) {
                 mdGravity = mvGravityDirection.Normalize();
 
-                g.log("mdGravity ", mdGravity.ToString());
-                g.log("mvGravity", mvGravity);
                 double e = 0;
                 mRC.TryGetPlanetElevation(MyPlanetElevation.Surface, out mdAltitudeSurface);
                 mRC.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out mdAltitudeSea);
@@ -1652,7 +1671,7 @@ namespace IngameScript
                 mdGravity = 0;
                 mPlanet = null;
             }
-            g.log("objective altitude ", getAltitude(mMission.Objective));
+            //g.log("objective altitude ", getAltitude(mMission.Objective));
 
             mdRawAccel = mdNewtons / mdMass;
             mdMaxAccel = mdRawAccel - mdGravity;
@@ -1681,15 +1700,14 @@ namespace IngameScript
 
             // v10 / 1
             // 100 / 2
-            mdStopDistance = ((mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2)) + (mdLinearVelocity * 20.0); // + rotation time
+            mdStopDistance = ((mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2)) + (mdLinearVelocity * 25.0);
             //mdStopDistance = (10000) / (mdMaxAccel * 2);
 
             
             //mdStopDistance = 10000.0 / ((mdRawAccel - mdGravity) * 2);
             if (mdGravity == 0) {
                 mvDirection2Objective = mvDisplacement2Objective = mMission.Objective - mRC.CenterOfMass;
-                mvDirection2Objective.Normalize();
-                mdDistance2Objective = (mMission.Objective - mRC.CenterOfMass).Length();
+                mdDistance2Objective = mvDirection2Objective.Normalize();
             } else {
                 
                 var CoM = mRC.CenterOfMass;
@@ -1707,13 +1725,13 @@ namespace IngameScript
             }
             
 
-            g.log("mdDistance2Objective ", mdDistance2Objective);
-            g.log("mdLinearVelocity     ", mdLinearVelocity);
-            g.log("mdAvailableMass      ", mdAvailableMass);
+            //g.log("mdDistance2Objective ", mdDistance2Objective);
+            //g.log("mdLinearVelocity     ", mdLinearVelocity);
+            //g.log("mdAvailableMass      ", mdAvailableMass);
 
-            g.log("mdMass               ", mdMass);
-            g.log("mdTotalMass          ", mdTotalMass);
-            g.log("mdBaseMass           ", mdBaseMass);
+            //g.log("mdMass               ", mdMass);
+            //g.log("mdTotalMass          ", mdTotalMass);
+            //g.log("mdBaseMass           ", mdBaseMass);
 
             //g.log("mdObjectiveDot       ", mdObjectiveDot);
             /*
@@ -1805,6 +1823,24 @@ namespace IngameScript
                             case "follow":
                                 setMissionFollow();
                                 break;
+                            case "alti":
+                                if (args.Length > 1) {
+                                    if (mPlanet.HasValue) {
+                                        try {
+                                            var pps = new PPS(mPlanet.Value.Position, mdSeaLevel, mRC.CenterOfMass);
+                                            pps = new PPS(
+                                                mPlanet.Value.Position,
+                                                mdSeaLevel,
+                                                pps.Azimuth,
+                                                pps.Elevation,
+                                                double.Parse(args[1])
+                                            );
+                                            setMissionDamp();
+                                            mMission.Objective = pps.Position;
+                                        } catch (Exception ex) { g.persist("failed to parse pps"); }
+                                    }
+                                }
+                                break;
                             case "pps":
                                 if (args.Length > 3) {
                                     if (mPlanet.HasValue) {
@@ -1830,7 +1866,10 @@ namespace IngameScript
             }
         }
         void Main(string argument, UpdateType aUpdate) {
-
+            float value;
+            if (float.TryParse(argument, out value)) {
+                Echo("Success " + value.ToString());
+            }
             var runtimeAverage = lag.update(Runtime.LastRunTimeMs);
             
             time += Runtime.TimeSinceLastRun.TotalSeconds;
@@ -1877,8 +1916,8 @@ namespace IngameScript
         
         void ThrustN(double aNewtons) {
 
-            g.log("ThrustN requested ", aNewtons, "N");
-            g.log("ThrustN requested ", (aNewtons / mdNewtons) * 100.0, "%");
+            //g.log("ThrustN requested ", aNewtons, "N");
+            //g.log("ThrustN requested ", (aNewtons / mdNewtons) * 100.0, "%");
 
             var distribution = aNewtons / mThrusters.Count;
 
@@ -1900,7 +1939,7 @@ namespace IngameScript
                 }
             }
             
-            g.log("mdNewtons ", mdNewtons);
+            //g.log("mdNewtons ", mdNewtons);
             
         }
         void motor2Angle(IMyMotorStator aHinge, float aAngle) {

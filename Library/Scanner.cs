@@ -9,6 +9,7 @@ namespace IngameScript
     class Scanner
     {
         readonly List<IMyCameraBlock> cameras = new List<IMyCameraBlock>();
+
         
         readonly Logger g;
         readonly MyGridProgram program;
@@ -34,6 +35,7 @@ namespace IngameScript
             foreach (var c in cameras) {
                 c.EnableRaycast = true;
             }
+            g.persist("id " + program.Me.CubeGrid.EntityId);
         }
         /// <summary>
         /// returns true if we found a camera that will scan the target location and scanned it
@@ -50,6 +52,7 @@ namespace IngameScript
                 var dist = dir.Normalize() + aAddDist;
 
                 double azimuth = 0, elevation = 0;
+
                 if (c.AvailableScanRange > dist) {
                     /*if (testCameraAngles(c, dir, ref yaw, ref pitch)) {
                         e = c.Raycast(dist, (float)pitch, (float)yaw);
@@ -63,7 +66,10 @@ namespace IngameScript
                         var e = c.Raycast(dist, (float)elevation, (float)azimuth);
                         
                         if (e.EntityId != program.Me.CubeGrid.EntityId) {
-                            aEntity = e;
+                            if (e.Type != MyDetectedEntityType.None) {
+                                g.persist(e);
+                                aEntity = e;
+                            }
                         } else {
                             if (i < cameras.Count - 1) {
                                 continue;
@@ -71,7 +77,6 @@ namespace IngameScript
                         }
                         return true;
                     }
-                    
                 }
             }
             return false;
