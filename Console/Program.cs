@@ -365,15 +365,33 @@ namespace commandline
         }
 
         static Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
+        static void getRotationAnglesFromDown(Vector3D targetVector, out double pitch, out double roll) {
+            targetVector = Vector3D.Up;
+            var m = MatrixD.CreateWorld(Vector3D.Zero, Vector3.Forward, Vector3.Up);
+
+            var localTargetVector = MAF.world2dir(targetVector, m);
+            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
+
+            pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);
+            if (localTargetVector.Z > 0)
+                pitch = -pitch;
+
+            roll = MAF.angleBetween(localTargetVector, flattenedTargetVector);
+            if (localTargetVector.X > 0)
+                roll = -roll;
+        }
         static void Main(string[] args) {
             //cwork();
             //kwork();
             //cindex();
+            
+            double pitch, roll;
+            getRotationAnglesFromDown(Vector3D.Up, out pitch, out roll);
             var roughAxis = Base6Directions.GetClosestDirection(Vector3D.Zero);
             var b = Vector3D.Backward;
             b.X = 0.0000001;
             b.Normalize();
-            var ab = MAF.angleBetween(Vector3D.Forward, b);
+             ab = MAF.angleBetween(Vector3D.Forward, b);
             var pos = new Vector3D(12696.62, 140308.05, -105223.81);
             //var pos = new Vector3D(12696.62, 140308.05, 105223.81);
 

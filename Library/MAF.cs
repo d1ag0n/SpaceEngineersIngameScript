@@ -48,5 +48,15 @@ namespace IngameScript
             aDot = a.Dot(b);
             return a - aDot / b.Dot(b) * b;
         }
+
+        public static Vector3D local2pos(Vector3D local, MatrixD world) =>
+            Vector3D.Transform(local, world);
+        public static Vector3D local2dir(Vector3D local, MatrixD world) =>
+            Vector3D.TransformNormal(local, world);
+        public static Vector3D world2pos(Vector3D world, MatrixD local) =>
+            Vector3D.TransformNormal(world - local.Translation, MatrixD.Transpose(local));
+        public static Vector3D world2dir(Vector3D world, MatrixD local) =>
+            Vector3D.TransformNormal(world, MatrixD.Transpose(local));
+
     }
 }
