@@ -49,14 +49,51 @@ namespace IngameScript
             return a - aDot / b.Dot(b) * b;
         }
 
-        public static Vector3D local2pos(Vector3D local, MatrixD world) =>
-            Vector3D.Transform(local, world);
-        public static Vector3D local2dir(Vector3D local, MatrixD world) =>
-            Vector3D.TransformNormal(local, world);
-        public static Vector3D world2pos(Vector3D world, MatrixD local) =>
-            Vector3D.TransformNormal(world - local.Translation, MatrixD.Transpose(local));
-        public static Vector3D world2dir(Vector3D world, MatrixD local) =>
-            Vector3D.TransformNormal(world, MatrixD.Transpose(local));
 
+        // keen forums
+        public static Vector3D local2pos(Vector3D position, MatrixD world) =>
+            Vector3D.Transform(position, world);
+        public static Vector3D local2dir(Vector3D direction, MatrixD world) =>
+            Vector3D.TransformNormal(direction, world);
+        public static Vector3D world2pos(Vector3D position, MatrixD world) =>
+            Vector3D.TransformNormal(position - world.Translation, MatrixD.Transpose(world));
+        public static Vector3D world2dir(Vector3D direction, MatrixD aWorld) =>
+            Vector3D.TransformNormal(direction, MatrixD.Transpose(aWorld));
+
+        // whiplash code modified by d1ag0n
+        public static Vector2 getYawPitch(Vector3D targetVector, MatrixD aWorld) {
+            var result = Vector2.Zero;
+            
+            var localTargetVector = world2dir(targetVector, aWorld);
+            var flattenedTargetVector = new Vector3D(localTargetVector.X, 0, localTargetVector.Z);
+
+            result.X = (float)MAF.angleBetween(Vector3D.Forward, flattenedTargetVector);
+            if (localTargetVector.X < 0)
+                result.X = -result.X;
+
+            result.Y = (float)MAF.angleBetween(localTargetVector, flattenedTargetVector);
+            if (targetVector.X > 0)
+                result.Y = -result.Y;
+
+            return result;
+        }
+        /*
+        /// Whip's Get Rotation Angles Method v14 - 9/25/18 ///
+        MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
+        Dependencies: AngleBetween
+        * /
+        void GetRotationAngles(Vector3D targetVector, MatrixD worldMatrix, out double yaw, out double pitch) {
+            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
+            var flattenedTargetVector = new Vector3D(localTargetVector.X, 0, localTargetVector.Z);
+
+            yaw = AngleBetween(Vector3D.Forward, flattenedTargetVector) * Math.Sign(localTargetVector.X); //right is positive
+            if (Math.Abs(yaw) < 1E-6 && localTargetVector.Z > 0) //check for straight back case
+                yaw = Math.PI;
+
+            if (Vector3D.IsZero(flattenedTargetVector)) //check for straight up case
+                pitch = MathHelper.PiOver2 * Math.Sign(localTargetVector.Y);
+            else
+                pitch = AngleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.Y); //up is positive
+        }//*/
     }
 }

@@ -380,18 +380,33 @@ namespace commandline
             if (localTargetVector.X > 0)
                 roll = -roll;
         }
+        const double updatesPerSecond = 6.0;
+        const double proportionalConstant = 5.0;
+        const double integralConstant = 0.1;
+        const double derivativeConstant = 1.0;
+        const double pidLimit = 10;
+        const double timeLimit = 1.0 / updatesPerSecond;
+
         static void Main(string[] args) {
             //cwork();
             //kwork();
             //cindex();
+
             
+
+            var pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, -pidLimit, pidLimit, timeLimit);
+            var pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, -pidLimit, pidLimit, timeLimit);
             double pitch, roll;
             getRotationAnglesFromDown(Vector3D.Up, out pitch, out roll);
+
+            pitch = pidPitch.Control(pitch);
+            roll = pidRoll.Control(roll);
+
             var roughAxis = Base6Directions.GetClosestDirection(Vector3D.Zero);
             var b = Vector3D.Backward;
             b.X = 0.0000001;
             b.Normalize();
-             ab = MAF.angleBetween(Vector3D.Forward, b);
+             //ab = MAF.angleBetween(Vector3D.Forward, b);
             var pos = new Vector3D(12696.62, 140308.05, -105223.81);
             //var pos = new Vector3D(12696.62, 140308.05, 105223.81);
 

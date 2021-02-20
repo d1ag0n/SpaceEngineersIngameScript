@@ -7,48 +7,63 @@ using VRageMath;
 namespace IngameScript
 {
     class Gyro {
+        const double updatesPerSecond = 6.0;
+        double proportionalConstant = 2.5;
+        double integralConstant = 0.1;
+        double derivativeConstant = 1.0;
+        double pidLimit = 10;
+        const double timeLimit = 1.0 / updatesPerSecond;
+
+        PID pidPitch;
+        PID pidRoll;
+
         readonly GTS gts;
-        //readonly Logger g;
+        readonly Logger g;
         readonly List<IMyGyro> mGyros = new List<IMyGyro>();
         readonly IMyShipController mRC;
         public Gyro(GTS aGTS, Logger aLogger) {
             gts = aGTS;
-            //g = aLogger;
+            g = aLogger;
             gts.initList(mGyros);
             gts.get(ref mRC);
+            initPid();
             manual(false);
         }
-        /*
-         * 
-         * 
-         * 
-         * 
-         */
+        void initPid() {
+            pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
+            pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
+        }
+        public void setPid(double p, double i, double d) {
+            proportionalConstant = p;
+            integralConstant = i;
+            derivativeConstant = d;
+            initPid();
+        }
+
         public void Rotate(Vector3D aDesiredDown) {
             double pitch, roll;
             Vector3D dir;
 
             var sv = mRC.GetShipVelocities();
             var av = MAF.world2dir(sv.AngularVelocity, mRC.WorldMatrix);
+            //var av = sv.AngularVelocity;
 
 
             if (aDesiredDown.IsZero()) {
-
-                aDesiredDown = Vector3D.Down;
                 applyGyroOverride(0, 0, 0);
                 return;
             }
 
 
 
-            var roughDesiredDirection = Base6Directions.GetClosestDirection(aDesiredDown);
+            //var roughDesiredDirection = Base6Directions.GetClosestDirection(aDesiredDown);
             //g.log("my down from ", roughDesiredDirection, "-ish");
             //g.log(MAF.angleBetween(mRC.WorldMatrix.Down, aDesiredDown));
 
             //g.log("angular velocity", av);
-            var rps = av.Length();
+            //var rps = av.Length();
             //g.log("angular rps ", rps);
-            var rpm = rps * MathHelper.RadiansPerSecondToRPM;
+            //var rpm = rps * MathHelper.RadiansPerSecondToRPM;
             //g.log("angular rpm ", rpm);
 
             // local angular velocity
@@ -59,8 +74,12 @@ namespace IngameScript
             // +Z = -roll
             // -Z = +roll
 
-
+            //g.log("dd", aDesiredDown);
             getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
+            //g.log("pitch ", pitch);
+            //g.log("roll  ", roll);
+            //applyGyroOverride(pitch, 0.0, roll);
+            //return;
             //g.log("pitch ", pitch);
             //g.log("roll  ", roll);
 
@@ -123,6 +142,8 @@ namespace IngameScript
 
             //pitch_speed = pidPitch.Control(pitch_speed);
             //roll_speed = pidRoll.Control(roll_speed);
+
+
             // Large gyro 3.36E+07
             // Small gyro 448000
             var rotationVec = new Vector3D(-pitch_speed, yaw_speed, roll_speed); //because keen does some weird stuff with signs             
@@ -147,20 +168,7 @@ namespace IngameScript
         Dependencies: AngleBetween
         modified by d1ag0n for pitch and roll
         */
-        void getRotationAngles(Vector3D targetVector, out double pitch, out double roll) {
-
-            var m = mRC.WorldMatrix;
-            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(m));
-            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
-
-            pitch = MAF.angleBetween(Vector3D.Forward, flattenedTargetVector);
-            if (localTargetVector.Y < 0)
-                pitch = -pitch;
-
-            roll = MAF.angleBetween(localTargetVector, flattenedTargetVector);
-            if (localTargetVector.X > 0)
-                roll = -roll;
-        }
+        
 
         void getRotationAnglesFromDown(Vector3D targetVector, out double pitch, out double roll) {
             var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(mRC.WorldMatrix));

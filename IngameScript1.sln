@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gyro", "Gyro\Gyro.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrajectoryConsole", "TrajectoryConsole\TrajectoryConsole.csproj", "{EB76C6AF-EDAE-4E61-85CD-FAF4621C156F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arm", "Arm\Arm.csproj", "{F79D8F2B-636E-400C-BA34-54DD32C03F4C}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Library\Library.projitems*{53ece70b-9576-43ff-9432-c30bbf8c55f4}*SharedItemsImports = 4
@@ -30,6 +32,7 @@ Global
 		Library\Library.projitems*{6eb7eb41-9002-4602-93f1-9da21807e436}*SharedItemsImports = 4
 		Library\Library.projitems*{81c70a3c-a14c-4c0e-8607-35c4fc537876}*SharedItemsImports = 4
 		Library\Library.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
+		Library\Library.projitems*{f79d8f2b-636e-400c-ba34-54dd32c03f4c}*SharedItemsImports = 4
 		Library\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -97,6 +100,13 @@ Global
 		{EB76C6AF-EDAE-4E61-85CD-FAF4621C156F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EB76C6AF-EDAE-4E61-85CD-FAF4621C156F}.Release|x64.ActiveCfg = Release|Any CPU
 		{EB76C6AF-EDAE-4E61-85CD-FAF4621C156F}.Release|x64.Build.0 = Release|Any CPU
+		{F79D8F2B-636E-400C-BA34-54DD32C03F4C}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{F79D8F2B-636E-400C-BA34-54DD32C03F4C}.Debug|x64.ActiveCfg = Debug|x64
+		{F79D8F2B-636E-400C-BA34-54DD32C03F4C}.Debug|x64.Build.0 = Debug|x64
+		{F79D8F2B-636E-400C-BA34-54DD32C03F4C}.Release|Any CPU.ActiveCfg = Debug|x64
+		{F79D8F2B-636E-400C-BA34-54DD32C03F4C}.Release|Any CPU.Build.0 = Debug|x64
+		{F79D8F2B-636E-400C-BA34-54DD32C03F4C}.Release|x64.ActiveCfg = Debug|x64
+		{F79D8F2B-636E-400C-BA34-54DD32C03F4C}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

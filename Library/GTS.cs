@@ -84,8 +84,11 @@ namespace IngameScript
         public void getByTag<T>(string aTag, ref T aBlock) {
             List<IMyTerminalBlock> list;
             if (mTags.TryGetValue(aTag.ToLower(), out list)) {
-                if (list.Count > 0) {
-                    aBlock = (T)list[0];
+                foreach (var b in list) {
+                    if (b is T) {
+                        aBlock = (T)b;
+                        return;
+                    }
                 }
             }
         }

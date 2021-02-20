@@ -167,27 +167,39 @@ namespace IngameScript
                     calculateTrajectory();
                     if (mdDistance2Objective < 1.0) {
                         mMission.Step++;
-                        mMission.PendingDirection= -mvGravityDirection;
+                        mMission.PendingDirection = Vector3D.Down;
                         mGyro.Rotate(Vector3D.Zero);
                     }
                     break;
                 case 2:
-                    ThrustN(mdNewtons);
+                    if (mdGravity > 0) {
+                        ThrustN(mdNewtons);
+                    } else {
+                        ThrustN(0);
+                    }
                     if (calibrate()) {
                         mMission.Step++;
-                        mMission.PendingDirection= Vector3D.Normalize(mRC.WorldMatrix.Left + mRC.WorldMatrix.Forward);
+                        mMission.PendingDirection = Vector3D.Up;
                     }
                     break;
                 case 3:
-                    ThrustN(mdNewtons);
+                    if (mdGravity > 0) {
+                        ThrustN(mdNewtons);
+                    } else {
+                        ThrustN(0);
+                    }
                     if (calibrate()) {
                         mdRotationTime = time;
                         mMission.Step++;
-                        mMission.PendingDirection = mRC.WorldMatrix.Down;
+                        mMission.PendingDirection = Vector3D.Down;
                     }
                     break;
                 case 4:
-                    ThrustN(0);
+                    if (mdGravity > 0) {
+                        ThrustN(mdNewtons);
+                    } else {
+                        ThrustN(0);
+                    }
                     if (calibrate()) {
                         mdRotationTime = time - mdRotationTime;
                         var obj = mMission.Objective;
@@ -198,8 +210,8 @@ namespace IngameScript
             }
         }
         double mdRotationTime = 5.0;
-        const double updatesPerSecond = 10;
         const double timeFlashMax = .5; //in seconds  
+        const double updatesPerSecond = 10;
         const double proportionalConstant = 2.0;
         const double integralConstant = 0.0;
         const double derivativeConstant = 0.9;
@@ -216,7 +228,7 @@ namespace IngameScript
                 0,
                 rotate2direction("Roll", mMission.PendingDirection, mat.Forward, mat.Up, mat.Down)
             );*/
-            var ab = MAF.angleBetween(mRC.WorldMatrix.Down, -mMission.PendingDirection);
+            var ab = MAF.angleBetween(mRC.WorldMatrix.Down, mMission.PendingDirection);
             g.log("calibrate");
             g.log("angle              ", ab);
             g.log("angularVeloSquared ", mdAngularVelocitySquared);
@@ -1005,7 +1017,7 @@ namespace IngameScript
                 result = 0.0;
                 
             }
-            g.log("navigate result ", result);
+            //g.log("navigate result ", result);
             return result;
 
             //rotate2vector(Vector3D.Zero);
@@ -1145,6 +1157,7 @@ namespace IngameScript
         void calculateTrajectory(bool aSlow = false) {
             MatrixD mat;
             double ddtMag;
+
             
             var desiredVelo = 99.8 * MathHelper.Clamp(mdDistance2Objective / mdStopDistance, 0.0, aSlow ? 0.1 : 1.0);
             if (desiredVelo > mdDistance2Objective || mdDistance2Objective < 100) {
@@ -1155,23 +1168,29 @@ namespace IngameScript
             if (aSlow && desiredVelo > 10.0) {
                 desiredVelo = 10.0;
             }
-            /*
-            g.log("calculateTrajectory");
-            g.log("mdStopDistance ", mdStopDistance);
-            g.log("desiredVelo    ", desiredVelo);
-            */
+            
+            //g.log("calculateTrajectory");
+            //g.log("mdStopDistance        ", mdStopDistance);
+            //g.log("desiredVelo           ", desiredVelo);
+            //g.log("mvLinearVelocity      ", mvLinearVelocity);
+            //g.log("mvDirection2Objective ", mvDirection2Objective);
+            
+
             var factor = mdGravity == 0 ? 2.0 : 2.0;
 
             var desiredVec = (mvLinearVelocity * factor) - (mvDirection2Objective * desiredVelo * factor);
-            
+
+            //g.log("desiredVec", desiredVec);
 
             // var desiredDampeningThrust = mass * (2 * velocity + gravity);
             //var ddt = mdMass * (2 * mvLinearVelocity + mvGravity);
             // todo double desiredVelo and bring 2 x velo back into equation
+            //g.log("mvGravity", mvGravity);
             var ddt = mdMass * (desiredVec + mvGravity);
             var ddtDir = ddt;
             var ddtLenSq = ddt.LengthSquared();
 
+            //g.log("mdGravity ", mdGravity);
             if (mdGravity > 0 && ddtLenSq > mdNewtons * mdNewtons) {
                 // ddt is requesting more force than we can apply
 
@@ -1207,7 +1226,6 @@ namespace IngameScript
                 ddtMag = mdNewtons;
             } else {
                 ddtMag = ddtDir.Normalize();
-                
             }
             var ab = MAF.angleBetween(mRC.WorldMatrix.Down, ddtDir);
             if (mdGravity > 0) {
@@ -1691,8 +1709,17 @@ namespace IngameScript
             
             //mdStopDistance = 10000.0 / ((mdRawAccel - mdGravity) * 2);
             if (mdGravity == 0) {
+
                 mvDirection2Objective = mvDisplacement2Objective = mMission.Objective - mRC.CenterOfMass;
-                mdDistance2Objective = mvDirection2Objective.Normalize();
+
+                
+                if (!mvDirection2Objective.IsZero()) {
+                    mdDistance2Objective = mvDirection2Objective.Normalize();
+                } else {
+                    mdDistance2Objective = 0;
+                }
+                
+                
             } else {
                 
                 var CoM = mRC.CenterOfMass;
@@ -1704,7 +1731,7 @@ namespace IngameScript
                     //g.log(g.gps("CoMCalculated", CoM));
                 }
                 mvObjectiveProjection = MAF.orthoProject(mMission.Objective, CoM, -mvGravityDirection, out mdObjectiveDot);
-                g.log(g.gps("mvObjectiveProjection", mvObjectiveProjection));
+                //g.log(g.gps("mvObjectiveProjection", mvObjectiveProjection));
                 mvDirection2Objective = Vector3D.Normalize(mvObjectiveProjection - mRC.CenterOfMass);
                 mdDistance2Objective = (mvObjectiveProjection - mRC.CenterOfMass).Length();
             }
@@ -1841,6 +1868,31 @@ namespace IngameScript
                                             mMission.Objective = pps.Position;
                                         } catch (Exception ex) { g.persist("failed to parse pps"); }
                                     }
+                                }
+                                break;
+                            case "gps2pps":
+                                if (args.Length > 1) {
+                                    if (mPlanet.HasValue) {
+                                        try {
+                                            var wp = MyWaypointInfo.Empty;
+                                            if (findWaypoint(args[1], ref wp)) {
+                                                var pps = new PPS(mPlanet.Value.Position, mdSeaLevel, wp.Coords);
+                                                g.persist(pps.ToString());
+                                            }
+                                        } catch (Exception ex) { g.persist("failed to parse pps"); }
+                                    }
+                                }
+                                break;
+                            case "pid":
+                                if (args.Length > 3) {
+                                    try {
+                                        var p = double.Parse(args[1]);
+                                        var i = double.Parse(args[2]);
+                                        var d = double.Parse(args[3]);
+                                        mGyro.setPid(p, i, d);
+                                        g.persist($"pid {p} {i} {d}");
+                                    } catch (Exception ex) { g.persist("failed to parse pid"); }
+
                                 }
                                 break;
                         }

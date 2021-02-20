@@ -35,7 +35,7 @@ namespace IngameScript
             foreach (var c in cameras) {
                 c.EnableRaycast = true;
             }
-            g.persist("id " + program.Me.CubeGrid.EntityId);
+            //g.persist("id " + program.Me.CubeGrid.EntityId);
         }
         /// <summary>
         /// returns true if we found a camera that will scan the target location and scanned it
@@ -67,7 +67,7 @@ namespace IngameScript
                         
                         if (e.EntityId != program.Me.CubeGrid.EntityId) {
                             if (e.Type != MyDetectedEntityType.None) {
-                                g.persist(e);
+                                //g.persist(e);
                                 aEntity = e;
                             }
                         } else {

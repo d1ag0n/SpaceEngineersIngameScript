@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using VRageMath;
 
 namespace IngameScript
 {
@@ -21,6 +22,25 @@ namespace IngameScript
                 pos = 0;
             }
             return sum / times.Length;
+        }
+    }
+    class V3DLag
+    {
+        Vector3D[] values;
+        Vector3D sum;
+        int pos = 0;
+        public V3DLag(int samples) {
+            values = new Vector3D[samples];
+        }
+        public Vector3D update(Vector3D value) {
+            sum -= values[pos];
+            values[pos] = value;
+            sum += value;
+            pos++;
+            if (pos == values.Length) {
+                pos = 0;
+            }
+            return sum / values.Length;
         }
     }
 }
