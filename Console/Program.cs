@@ -391,8 +391,11 @@ namespace commandline
             //cwork();
             //kwork();
             //cindex();
-
-            
+            var rem = Math.IEEERemainder(-16.3, 4.1);
+            rem = 306.0 % 5.0;
+            rem = 306.0 / 5.0;
+            var angle = (1.5 + MathHelperD.TwoPi) % MathHelperD.TwoPi;
+            var epsilon = 0.2f * (MathHelper.Pi / 180.0f);
 
             var pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, -pidLimit, pidLimit, timeLimit);
             var pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, -pidLimit, pidLimit, timeLimit);

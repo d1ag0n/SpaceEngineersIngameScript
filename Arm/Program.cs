@@ -31,6 +31,7 @@ namespace IngameScript
         readonly List<Finger> fingers = new List<Finger>();
         bool walkComplete = false;
         readonly IMyCockpit control;
+        readonly IMyMotorStator test;
 
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
@@ -56,6 +57,8 @@ namespace IngameScript
                 g.persist("firstFinger not okay");
             }
             gts.getByTag("control", ref control);
+            gts.getByTag("test", ref test);
+
         }
 
         Vector3D target = Vector3D.Zero;
@@ -95,8 +98,11 @@ namespace IngameScript
             }
             g.log("target angle ", angle);
         }
-        V3DLag targetLag = new V3DLag(6);
+        V3DLag targetLag = new V3DLag(18);
+        Lag lag = new Lag(60 * 6);
         public void Main(string argument, UpdateType updateSource) {
+            g.log(lag.update(Runtime.LastRunTimeMs));
+            g.log("test ", test.Angle.ToString());
             try {
                 var bcontrol = control != null;
                 procArgument(argument);
@@ -128,16 +134,22 @@ namespace IngameScript
                         if (target == Vector3D.Zero) {
                             r.TargetVelocityRad = 0;
                         } else {
-                            var dif = control.WorldMatrix.Translation - r.WorldMatrix.Translation;
-                            pointRotoAtTarget(r, targetLag.update(target - dif));
+                            pointRotoAtTarget(r, targetLag.update(target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation)));
+                            //pointRotoAtTarget(r, target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation));
                         }
                         //pointRotoAtTarget(r, finger.WorldMatrix.Translation);
                     }
                 }
+                var locked = true;
                 foreach (var f in fingers) {
-                    //f.zero();
-                    f.setHingeAngle(0.5f);
-                    f.setRotorAngle(angle);
+                    if (!f.zero()) {
+                        locked = false;
+                    }
+                    //f.setHingeAngle(0.0f);
+                    ///f.setRotorAngle(angle);
+                }
+                if (locked) {
+                    g.log("all locked");
                 }
             } catch (Exception ex) {
                 g.persist(ex.ToString());

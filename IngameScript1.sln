@@ -23,8 +23,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrajectoryConsole", "Trajec
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arm", "Arm\Arm.csproj", "{F79D8F2B-636E-400C-BA34-54DD32C03F4C}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Finger", "Finger\Finger.shproj", "{0629D3B7-3A06-48AB-B1A7-32B5513C406D}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Finger\Finger.projitems*{0629d3b7-3a06-48ab-b1a7-32b5513c406d}*SharedItemsImports = 13
 		Library\Library.projitems*{53ece70b-9576-43ff-9432-c30bbf8c55f4}*SharedItemsImports = 4
 		Library\Library.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
 		Library\Library.projitems*{60452262-c0c2-4b73-a047-a270ba83b831}*SharedItemsImports = 4
