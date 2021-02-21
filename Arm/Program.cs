@@ -43,7 +43,7 @@ namespace IngameScript
             }
 
             gts.initListByTag("control", controlRotors);
-            g.persist("control rotors found " + controlRotors.Count);
+            //g.persist("control rotors found " + controlRotors.Count);
 
             IMyMotorAdvancedStator first = null;
             gts.getByTag("arm", ref first);
@@ -81,7 +81,7 @@ namespace IngameScript
             } else {
                 g.log("walk complete found ", fingers.Count, " fingers");
                 if (firstFinger != null) {
-                    firstFinger.info();
+                    //firstFinger.info();
                 }
             }
         }
@@ -98,7 +98,8 @@ namespace IngameScript
                 MathHelper.LimitRadians(ref val);
                 angle = val;
             }
-            g.log("target angle ", angle);
+            
+            //g.log("target angle ", angle);
         }
         V3DLag targetLag = new V3DLag(18);
         Lag lag = new Lag(60 * 6);
@@ -109,12 +110,25 @@ namespace IngameScript
                 procArgument(argument);
                 doWalk();
                 doLook();
+                var angle = MathHelper.TwoPi / (fingers.Count * 2);
+                //g.log("angle " + angle);
                 foreach (var f in fingers) {
                     //if (!f.zero()) {
                     //locked = false;
                     //}
-                    f.setHingeAngle(0.2f);
-                    f.setStatorAngle(angle);
+                    if (f != lastFinger && f != lastFinger.parent) {
+
+                        f.setHingeAngle(0);
+                        f.setStatorAngle(0);
+                    }
+                }
+                if (lastFinger != null) {
+                    //lastFinger.info();
+                    lastFinger.pointAtTarget(new Vector3D(0, 0, -100));
+                    if (lastFinger.parent != null) {
+                        //lastFinger.info();
+                        lastFinger.parent.pointAtTarget(new Vector3D(0, 0, -100));
+                    }
                 }
             } catch (Exception ex) {
                 g.persist(ex.ToString());

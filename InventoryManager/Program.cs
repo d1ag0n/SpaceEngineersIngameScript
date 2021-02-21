@@ -171,7 +171,7 @@ namespace IngameScript
                 foreach (var c in mWorkList) {
                     if (c.EntityId != aSourceCargo.EntityId) {
                         var inv = c.GetInventory();
-
+                        // todo remove this check and just check return value of TransferItemTo
                         if (aSourceInventory.CanTransferItemTo(inv, aItem.Type)) {
                             var max = (float)inv.MaxVolume;
                             var cur = (float)inv.CurrentVolume;
