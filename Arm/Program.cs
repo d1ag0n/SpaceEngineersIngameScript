@@ -47,7 +47,7 @@ namespace IngameScript
 
             IMyMotorAdvancedStator first = null;
             gts.getByTag("arm", ref first);
-            var finger = new Finger(first, g, true);
+            var finger = new Finger(first, g);
             if (finger.okay) {
                 fingers.Add(finger);
                 firstFinger = finger;
@@ -88,7 +88,9 @@ namespace IngameScript
         float angle = 0;
         void procArgument(string arg) {
             float val;
-            if (arg == "pi") {
+            if (arg == "p") {
+                g.removeP(0);
+            } else if (arg == "pi") {
                 angle = MathHelper.Pi;
             } else if (arg == "2pi") {
                 angle = MathHelper.TwoPi;
@@ -102,54 +104,17 @@ namespace IngameScript
         Lag lag = new Lag(60 * 6);
         public void Main(string argument, UpdateType updateSource) {
             g.log(lag.update(Runtime.LastRunTimeMs));
-            g.log("test ", test.Angle.ToString());
             try {
                 var bcontrol = control != null;
                 procArgument(argument);
                 doWalk();
-                if (controlRotors.Count > 0 && control != null) {
-                    g.log("control okay");
-                    var target = Vector3D.Zero;
-                    IMyEntity tip = null;
-                    if (lastFinger == null) {
-                        if (firstFinger.okay) {
-                            tip = firstFinger.tip;
-                            if (tip == null) {
-                                tip = firstFinger.hinge;
-                            }
-                        }
-                    } else {
-                        if (lastFinger.okay) {
-                            tip = lastFinger.tip;
-                            if (tip == null) {
-                                tip = lastFinger.hinge;
-                            }
-                        }
-                    }
-                    if (tip != null) {
-                        target = tip.WorldMatrix.Translation;
-                    }
-                    
-                    foreach (var r in controlRotors) {
-                        if (target == Vector3D.Zero) {
-                            r.TargetVelocityRad = 0;
-                        } else {
-                            pointRotoAtTarget(r, targetLag.update(target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation)));
-                            //pointRotoAtTarget(r, target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation));
-                        }
-                        //pointRotoAtTarget(r, finger.WorldMatrix.Translation);
-                    }
-                }
-                var locked = true;
+                doLook();
                 foreach (var f in fingers) {
-                    if (!f.zero()) {
-                        locked = false;
-                    }
-                    //f.setHingeAngle(0.0f);
-                    ///f.setRotorAngle(angle);
-                }
-                if (locked) {
-                    g.log("all locked");
+                    //if (!f.zero()) {
+                    //locked = false;
+                    //}
+                    f.setHingeAngle(0.2f);
+                    f.setStatorAngle(angle);
                 }
             } catch (Exception ex) {
                 g.persist(ex.ToString());
@@ -159,6 +124,43 @@ namespace IngameScript
                 lcd.WriteText(str);
             }
             Echo(str);
+        }
+        void doLook() {
+            if (controlRotors.Count > 0 && control != null) {
+                g.log("control okay");
+                var target = Vector3D.Zero;
+                IMyEntity tip = null;
+                if (lastFinger == null) {
+                    if (firstFinger != null) {
+                        if (firstFinger.okay) {
+                            tip = firstFinger.tip;
+                            if (tip == null) {
+                                tip = firstFinger.hinge;
+                            }
+                        }
+                    }
+                } else {
+                    if (lastFinger.okay) {
+                        tip = lastFinger.tip;
+                        if (tip == null) {
+                            tip = lastFinger.hinge;
+                        }
+                    }
+                }
+                if (tip != null) {
+                    target = tip.WorldMatrix.Translation;
+                }
+
+                foreach (var r in controlRotors) {
+                    if (target == Vector3D.Zero) {
+                        r.TargetVelocityRad = 0;
+                    } else {
+                        pointRotoAtTarget(r, targetLag.update(target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation)));
+                        //pointRotoAtTarget(r, target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation));
+                    }
+                    //pointRotoAtTarget(r, finger.WorldMatrix.Translation);
+                }
+            }
         }
         void pointRotoAtTarget(IMyMotorStator aRoto, Vector3D aTarget) {
             // cos(angle) = dot(vecA, vecB) / (len(vecA)*len(vecB))

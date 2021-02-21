@@ -29,6 +29,12 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Dock", "Dock\Dock.shproj", 
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Connector", "Connector\Connector.shproj", "{2E5EBFA6-57A6-4A3B-B793-F708A0ADC035}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Mission", "Mission\Mission.shproj", "{F1CFC2C0-6A86-477C-8065-F07745E218C4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "mixins", "mixins", "{95DC9D43-E5E3-49A1-874A-FE21B363B720}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "programs", "programs", "{627FE829-2AFB-4EB8-B25D-A42F2B5F5574}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Dock\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -41,6 +47,7 @@ Global
 		Library\Library.projitems*{6eb7eb41-9002-4602-93f1-9da21807e436}*SharedItemsImports = 4
 		Library\Library.projitems*{81c70a3c-a14c-4c0e-8607-35c4fc537876}*SharedItemsImports = 4
 		Library\Library.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
+		Mission\Mission.projitems*{f1cfc2c0-6a86-477c-8065-f07745e218c4}*SharedItemsImports = 13
 		Finger\Finger.projitems*{f79d8f2b-636e-400c-ba34-54dd32c03f4c}*SharedItemsImports = 4
 		Library\Library.projitems*{f79d8f2b-636e-400c-ba34-54dd32c03f4c}*SharedItemsImports = 4
 		Library\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
@@ -120,6 +127,15 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FA185618-A62B-480F-ABC7-76F155FBDC58} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4} = {627FE829-2AFB-4EB8-B25D-A42F2B5F5574}
+		{EB76C6AF-EDAE-4E61-85CD-FAF4621C156F} = {627FE829-2AFB-4EB8-B25D-A42F2B5F5574}
+		{0629D3B7-3A06-48AB-B1A7-32B5513C406D} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{00CF050B-D297-420D-AAA4-1EC9A26EC72D} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{2E5EBFA6-57A6-4A3B-B793-F708A0ADC035} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{F1CFC2C0-6A86-477C-8065-F07745E218C4} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}
