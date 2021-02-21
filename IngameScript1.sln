@@ -25,12 +25,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arm", "Arm\Arm.csproj", "{F
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Finger", "Finger\Finger.shproj", "{0629D3B7-3A06-48AB-B1A7-32B5513C406D}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "GTS", "GTS\GTS.shproj", "{37082DA2-A974-4678-B5A5-52056530D9A8}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Dock", "Dock\Dock.shproj", "{00CF050B-D297-420D-AAA4-1EC9A26EC72D}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Connector", "Connector\Connector.shproj", "{2E5EBFA6-57A6-4A3B-B793-F708A0ADC035}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Dock\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
 		Finger\Finger.projitems*{0629d3b7-3a06-48ab-b1a7-32b5513c406d}*SharedItemsImports = 13
-		GTS\GTS.projitems*{37082da2-a974-4678-b5a5-52056530d9a8}*SharedItemsImports = 13
+		Connector\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
 		Library\Library.projitems*{53ece70b-9576-43ff-9432-c30bbf8c55f4}*SharedItemsImports = 4
 		Library\Library.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
 		Library\Library.projitems*{60452262-c0c2-4b73-a047-a270ba83b831}*SharedItemsImports = 4
@@ -38,6 +41,7 @@ Global
 		Library\Library.projitems*{6eb7eb41-9002-4602-93f1-9da21807e436}*SharedItemsImports = 4
 		Library\Library.projitems*{81c70a3c-a14c-4c0e-8607-35c4fc537876}*SharedItemsImports = 4
 		Library\Library.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
+		Finger\Finger.projitems*{f79d8f2b-636e-400c-ba34-54dd32c03f4c}*SharedItemsImports = 4
 		Library\Library.projitems*{f79d8f2b-636e-400c-ba34-54dd32c03f4c}*SharedItemsImports = 4
 		Library\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
 	EndGlobalSection

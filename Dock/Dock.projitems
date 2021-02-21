@@ -3,9 +3,15 @@
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <SharedGUID>37082da2-a974-4678-b5a5-52056530d9a8</SharedGUID>
+    <SharedGUID>00cf050b-d297-420d-aaa4-1ec9a26ec72d</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>GTS</Import_RootNamespace>
+    <Import_RootNamespace>Dock</Import_RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ATC.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Dock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
+  </ItemGroup>
 </Project>

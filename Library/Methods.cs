@@ -7,6 +7,8 @@ namespace IngameScript
 {
     class Methods
     {
+        // http://danikgames.com/blog/moving-target-intercept-in-3d/
+
         // this isnt mine I copied it from somewhere
         void fintimeofcol() {
             // Find the time of collision (distance / relative velocity)

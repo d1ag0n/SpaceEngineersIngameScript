@@ -12,9 +12,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ATC.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Dock.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GTS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Gyro.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)InventoryOrder.cs" />

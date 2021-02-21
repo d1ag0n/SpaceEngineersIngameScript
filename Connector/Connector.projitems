@@ -3,9 +3,12 @@
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <SharedGUID>37082da2-a974-4678-b5a5-52056530d9a8</SharedGUID>
+    <SharedGUID>2e5ebfa6-57a6-4a3b-b793-f708a0adc035</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>GTS</Import_RootNamespace>
+    <Import_RootNamespace>Connector</Import_RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
+  </ItemGroup>
 </Project>
