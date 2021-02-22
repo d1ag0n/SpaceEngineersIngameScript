@@ -23,7 +23,7 @@ namespace IngameScript
     {
         readonly GTS gts;
         readonly Logger g;
-        readonly IMyTextPanel lcd;
+        readonly List<IMyTextPanel> mLCDs = new List<IMyTextPanel>();
 
         readonly Finger firstFinger;
         Finger lastFinger;
@@ -32,13 +32,14 @@ namespace IngameScript
         bool walkComplete = false;
         readonly IMyCockpit control;
         readonly IMyMotorStator test;
+        const double fingerLength = 5.2;
 
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             g = new Logger();
             gts = new GTS(this, g);
-            gts.getByTag("control", ref lcd);
-            if (lcd != null) {
+            gts.initListByTag("control", mLCDs);
+            foreach(var lcd in mLCDs) {
                 lcd.ContentType = ContentType.TEXT_AND_IMAGE;
             }
 
@@ -47,8 +48,10 @@ namespace IngameScript
 
             IMyMotorAdvancedStator first = null;
             gts.getByTag("arm", ref first);
+            
             var finger = new Finger(first, g);
             if (finger.okay) {
+                mvTarget = first.WorldMatrix.Translation + first.WorldMatrix.Up * 1000.0;
                 fingers.Add(finger);
                 firstFinger = finger;
                 //g.persist(g.gps("firstFinger", firstFinger.hinge.WorldMatrix.Translation));
@@ -58,10 +61,10 @@ namespace IngameScript
             }
             gts.getByTag("control", ref control);
             gts.getByTag("test", ref test);
-
+            gts.get(ref mSensor);
         }
 
-        Vector3D target = Vector3D.Zero;
+        Vector3D mvTarget = new Vector3D(0, 0, -100);
         void doWalk() {
             Finger finger = null;
             if (!walkComplete) {
@@ -88,7 +91,11 @@ namespace IngameScript
         float angle = 0;
         void procArgument(string arg) {
             float val;
-            if (arg == "p") {
+            if (arg == "go") {
+                foreach (var f in fingers) f.go();
+            } else if (arg == "stop") {
+                foreach (var f in fingers) f.stop();
+            } else if (arg == "p") {
                 g.removeP(0);
             } else if (arg == "pi") {
                 angle = MathHelper.Pi;
@@ -103,6 +110,17 @@ namespace IngameScript
         }
         V3DLag targetLag = new V3DLag(18);
         Lag lag = new Lag(60 * 6);
+        readonly IMySensorBlock mSensor;
+        readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
+        void doDetect() {
+            mSensor.DetectedEntities(mDetected);
+            foreach (var e in mDetected) {
+                if (e.Type == MyDetectedEntityType.CharacterHuman) {
+                    mvTarget = e.Position;
+                    return;
+                }
+            }
+        }
         public void Main(string argument, UpdateType updateSource) {
             g.log(lag.update(Runtime.LastRunTimeMs));
             try {
@@ -110,38 +128,36 @@ namespace IngameScript
                 procArgument(argument);
                 doWalk();
                 doLook();
+                //doDetect();
                 var angle = MathHelper.TwoPi / (fingers.Count * 2);
-                //g.log("angle " + angle);
+                if (fingers.Count > 1) {
+                    var len = (fingers[0].stator.WorldMatrix.Translation - fingers[1].stator.WorldMatrix.Translation).Length();
+                    g.log("first offset " + fingers[0].stator.Displacement.ToString());
+                    g.log("Finger length " + len.ToString());
+                }
+                var close = true;
+                var stopped = 0;
                 foreach (var f in fingers) {
-                    //if (!f.zero()) {
-                    //locked = false;
-                    //}
-                    if (f != lastFinger && f != lastFinger.parent) {
-
-                        f.setHingeAngle(0);
-                        f.setStatorAngle(0);
+                    //if (!f.zero()) close = false;
+                    
+                    f.pointAtTarget(mvTarget);
+                    if (f.stopped) {
+                        stopped++;
                     }
                 }
-                if (lastFinger != null) {
-                    //lastFinger.info();
-                    lastFinger.pointAtTarget(new Vector3D(0, 0, -100));
-                    if (lastFinger.parent != null) {
-                        //lastFinger.info();
-                        lastFinger.parent.pointAtTarget(new Vector3D(0, 0, -100));
-                    }
-                }
+                g.log("stop count ", stopped);
             } catch (Exception ex) {
                 g.persist(ex.ToString());
             }
             var str = g.clear();
-            if (lcd != null) {
+            foreach(var lcd in mLCDs) { 
                 lcd.WriteText(str);
             }
             Echo(str);
         }
         void doLook() {
             if (controlRotors.Count > 0 && control != null) {
-                g.log("control okay");
+                //g.log("control okay");
                 var target = Vector3D.Zero;
                 IMyEntity tip = null;
                 if (lastFinger == null) {
@@ -169,7 +185,8 @@ namespace IngameScript
                     if (target == Vector3D.Zero) {
                         r.TargetVelocityRad = 0;
                     } else {
-                        pointRotoAtTarget(r, targetLag.update(target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation)));
+                        var tgt = targetLag.update(target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation));
+                        pointRotoAtTarget(r, tgt + lastFinger.hinge.WorldMatrix.Left * 5.0);
                         //pointRotoAtTarget(r, target - (control.WorldMatrix.Translation - r.WorldMatrix.Translation));
                     }
                     //pointRotoAtTarget(r, finger.WorldMatrix.Translation);

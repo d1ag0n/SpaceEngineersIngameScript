@@ -26,20 +26,57 @@ namespace IngameScript
         //float hingeValue, statorValue;
         //bool hingeLocked, statorLocked;
         static int index = 0;
+        public readonly int Identity;
 
         //const float torque = 1000000000f;
         //const float hingeLimit = 1.570796f;
-        const float epsilon = 0.2f * (MathHelper.Pi / 180.0f);
+        const float epsilon = 1.0f * (MathHelper.Pi / 180.0f);
+
+        const float factorMax = 0.2f;
+        const float factorMin = 0.1f;
+        float factor { 
+            get {
+                return 0.1f;
+                var range = factorMax - factorMin;
+                var chunk = range / index;
+                return factorMin + (chunk * (Identity + 1));
+            }
+        }
 
         public bool okay {
             get; private set;
         }
+        public bool stopped { get; private set; }
+        float statorStop = 0.0f;
+        float hingeStop = 0.0f;
+        public void stop() {
+            statorStop = stator.Angle;
+            
+            stator.LowerLimitRad = stator.Angle;
+            stator.UpperLimitRad = stator.Angle;
 
+            hingeStop = hinge.Angle;
+            hinge.LowerLimitRad = hinge.Angle;
+            hinge.UpperLimitRad = hinge.Angle;
+            stopped = true;
+        }
+        public void go() {
+            stopped = false;
+            stator.LowerLimitRad = float.MinValue;
+            stator.UpperLimitRad = float.MaxValue;
+
+            hinge.LowerLimitRad = -MathHelper.PiOver2;
+            hinge.UpperLimitRad = MathHelper.PiOver2;
+        }
         public Finger(IMyMotorAdvancedStator aStator, Logger aLogger, Finger aParent = null) {
             okay = false;
             stator = aStator;
             g = aLogger;
             parent = aParent;
+            if (aParent == null) {
+                index = 0;
+            }
+            Identity = index++;
             try {
                 var dir = Base6Directions.GetIntVector(stator.Top.Orientation.Up);
                 var attachment = stator.TopGrid.GetCubeBlock(stator.Top.Position + dir);
@@ -52,9 +89,7 @@ namespace IngameScript
                 }
                 
                 if (okay) {
-                    index++;
-
-                    stator.CustomName = "Finger - Stator - " + index.ToString("D3");
+                    stator.CustomName = "Finger - Stator - " + Identity.ToString("D3");
                     stator.TargetVelocityRad = 0;
                     //stator.Torque = torque;
                     //stator.BrakingTorque = torque;
@@ -74,10 +109,10 @@ namespace IngameScript
                                 statorOffset = MathHelper.PiOver2;
                                 break;
                         }*/
-                        //g.persist(index + " rotor forward " + stator.Orientation.Forward);
+                        //g.persist(Identity + " rotor forward " + stator.Orientation.Forward);
                     }
 
-                    hinge.CustomName = "Finger - Hinge  - " + index.ToString("D3");
+                    hinge.CustomName = "Finger - Hinge  - " + Identity.ToString("D3");
                     hinge.TargetVelocityRad = 0;
                     //hinge.Torque = torque;
                     //hinge.BrakingTorque = torque;
@@ -89,8 +124,8 @@ namespace IngameScript
                         case Base6Directions.Direction.Backward: hingeOffset = 0; break;
                     }
 
-
-                    //g.persist("finger " + index + " hingeOffset " + hingeOffset.ToString());
+                    stop();
+                    //g.persist("finger " + Identity + " hingeOffset " + hingeOffset.ToString());
 
                     //g.persist("hinge front " + hinge.Orientation.Forward);
                     //g.persist("rotor front " + stator.Top.Orientation.Forward);
@@ -142,106 +177,117 @@ namespace IngameScript
                 }//*/
                 
             } catch(Exception ex) {
-
                 g.persist("Finger initialization FAILED: " + ex.ToString());
             }
+            
         }
-
+        bool hingeClose, statorClose;
+        public bool close => hingeClose && statorClose;
+        public bool zero() {
+            setStatorAngle(float.MaxValue);
+            setHingeAngle(0);
+            return close;
+        }
         public Finger next() {
             Finger result = null;
-            var top = hinge.Top;
-            if (okay && top != null && top.BlockDefinition.SubtypeId == "LargeHingeHead") {
-                var dir = Base6Directions.GetIntVector(top.Orientation.Left);
-                var attachment = hinge.TopGrid.GetCubeBlock(top.Position + dir);
-                if (attachment != null) {
-                    var block = attachment.FatBlock;
-                    if (block.BlockDefinition.SubtypeId == "LargeAdvancedStator") {
-                        result = new Finger(block as IMyMotorAdvancedStator, g, this);
-                        
-                        
-                        
-                        var tf = Base6Directions.GetVector(top.Orientation.Forward);
-                        var bf = Base6Directions.GetVector(block.Orientation.Forward);
-                        
-                        
-                        
-                        var ab = MAF.angleBetween(tf, bf);
-                        if (ab < 2 && ab > 1) {
-                            var tu = Base6Directions.GetVector(top.Orientation.Up);
-                            var br = -Base6Directions.GetVector(block.Orientation.Left);
-                            var dot = tu.Dot(bf);
-                            //g.persist("dot " + dot);
-                            if (dot < 1) {
-                                ab = -ab;
+            if (okay) {
+                var top = hinge.Top;
+                if (top != null && top.BlockDefinition.SubtypeId == "LargeHingeHead") {
+                    var dir = Base6Directions.GetIntVector(top.Orientation.Left);
+                    var attachment = hinge.TopGrid.GetCubeBlock(top.Position + dir);
+                    if (attachment != null) {
+                        var block = attachment.FatBlock;
+                        if (block.BlockDefinition.SubtypeId == "LargeAdvancedStator") {
+                            result = new Finger(block as IMyMotorAdvancedStator, g, this);
+                            
+                            var tf = Base6Directions.GetVector(top.Orientation.Forward);
+                            var bf = Base6Directions.GetVector(block.Orientation.Forward);
+                            var ab = MAF.angleBetween(tf, bf);
+                            if (ab < 2 && ab > 1) {
+                                var tu = Base6Directions.GetVector(top.Orientation.Up);
+                                var br = -Base6Directions.GetVector(block.Orientation.Left);
+                                var dot = tu.Dot(bf);
+                                //g.persist("dot " + dot);
+                                if (dot < 1) {
+                                    ab = -ab;
+                                }
                             }
+                            //g.persist(Identity + " ab " + ab);
+                            result.statorOffset = (float)(ab + Math.PI);
                         }
-                        //g.persist(index + " ab " + ab);
-                        
-                        result.statorOffset = (float)(ab + Math.PI);
                     }
                 }
             }
             return result;
         }
 
-        public void zero() {
-            setStatorAngle(0);
-            setHingeAngle(0);
+        void setHingeAngle(float aAngle) {
+            hingeClose = setStator(hinge, aAngle - hinge.Angle);
+            if (parent == null || parent.stopped) {
+                if (hinge.Angle > hinge.LowerLimitRad && hinge.Angle < aAngle) {
+                    hinge.LowerLimitRad = hinge.Angle;
+                }
+                if (hinge.Angle < hinge.UpperLimitRad && hinge.Angle > aAngle) {
+                    hinge.UpperLimitRad = hinge.Angle;
+                }
+            }
         }
-
-        public void setHingeAngle(float aAngle) =>
-            setStator(hinge, (aAngle - hinge.Angle), 0.1f);
         public void pointAtTarget(Vector3D aTarget) {
-            var local = MAF.world2pos(aTarget, stator.WorldMatrix);
-            var localFlat = new Vector3D(local.X, 0, local.Z);
-            double dot;
-            var ab = MAF.angleBetween(Vector3D.Forward, localFlat, out dot);
-
-            if (hinge.Angle > 0) {
-                ab += Math.PI;
-            }
-            //ab = MathHelper.Pi - ab;
-            /*
-            MathHelper.LimitRadians(ref angle);
-            if (angle > MathHelper.Pi) {
-                angle -= MathHelper.TwoPi;
-            } else if (angle < -MathHelper.Pi) {
-                angle += MathHelper.TwoPi;
-            }
-            setStator(stator, angle, 0.1f);
-            //*/
-            g.log("stator point at target ab " + ab + " dot " + dot);
-            setStatorAngle((float)ab, false);
-
-            ab = MAF.angleBetween(Vector3D.Up, local, out dot);
-            g.log("hinge point at target ab " + ab + " dot " + dot);
-
-            setHingeAngle(-(float)ab);
-        }
-        public void setStatorAngle(float aAngle, bool offset = true) {
-            if (offset) {
-                //var phOffset = parent == null ? 0f : parent.hingeOffset;
-                //var psOffset = parent == null ? 0f : parent.statorOffset;
-                aAngle = (aAngle + hingeOffset - statorOffset) - stator.Angle;
+            if (stopped) {
+                setHingeAngle(hingeStop);
+                setStatorAngle(0, false);
             } else {
-                aAngle = (aAngle + hingeOffset) - stator.Angle;
+                var targetVector = Vector3D.Normalize(aTarget - stator.WorldMatrix.Translation);
+                var local = MAF.world2dir(targetVector, stator.WorldMatrix);
+                var localFlat = new Vector3D(local.X, 0, local.Z);
+
+                var ab = MAF.angleBetween(Vector3D.Left, localFlat);
+
+                if (local.Z < 0) {
+                    ab -= MathHelper.PiOver2;
+                } else {
+                    ab += MathHelper.PiOver2;
+                    ab = -ab;
+                }
+
+                setStatorAngle((float)ab, false);
+
+                ab = MAF.angleBetween(Vector3D.Up, local);
+                setHingeAngle(-(float)ab);
+                if (close && (parent == null || parent.stopped)) {
+                    stop();
+                }
             }
-            MathHelper.LimitRadians(ref aAngle);
-            if (aAngle > MathHelper.Pi) {
-                aAngle -= MathHelper.TwoPi;
-            } else if (aAngle < -MathHelper.Pi) {
-                aAngle += MathHelper.TwoPi;
+        }
+        void setStatorAngle(float aAngle, bool offset = true) {
+            if (stopped && aAngle != float.MaxValue) {
+                aAngle = statorStop - stator.Angle;
+            } else {
+                if (offset) {
+                    if (aAngle == float.MaxValue) {
+                        aAngle = 0;
+                    }
+                    //var phOffset = parent == null ? 0f : parent.hingeOffset;
+                    //var psOffset = parent == null ? 0f : parent.statorOffset;
+                    aAngle = (aAngle + hingeOffset - statorOffset) - stator.Angle;
+                } else {
+                    
+                    aAngle = (aAngle + hingeOffset) - stator.Angle;
+                }
+
+                MathHelper.LimitRadians(ref aAngle);
+                if (aAngle > MathHelper.Pi) {
+                    aAngle -= MathHelper.TwoPi;
+                } else if (aAngle < -MathHelper.Pi) {
+                    aAngle += MathHelper.TwoPi;
+                }
             }
-            // = !
-            setStator(stator, aAngle, 0.1f);
+            statorClose = setStator(stator, aAngle);
         }
         
-        void setStator(IMyMotorAdvancedStator aStator, float angle, float factor) {
-            if (Math.Abs(angle) < epsilon) {
-                aStator.TargetVelocityRad = 0;
-            } else {
-                aStator.TargetVelocityRad = angle * factor;
-            }
+        bool setStator(IMyMotorAdvancedStator aStator, float angle) {
+            aStator.TargetVelocityRad = angle * factor;
+            return Math.Abs(angle) < epsilon;
         }
         public void info() {
             g.log("Finger");
