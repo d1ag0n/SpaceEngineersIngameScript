@@ -95,7 +95,7 @@ namespace IngameScript
         public void persist(BoundingBoxD b) => persist(string4(b));
         public void persist(MyDetectedEntityInfo e) => persist(string4(e));
         public void persist(string aMessage) {
-            if (false && mPersistent.Count > 15) {
+            if (mPersistent.Count > 9) {
                 mPersistent.RemoveAt(0);
             }
             mPersistent.Add(aMessage);

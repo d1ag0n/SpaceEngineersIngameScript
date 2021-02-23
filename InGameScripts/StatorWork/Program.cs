@@ -20,15 +20,67 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
-
+        Vector3D mvTarget;
+        readonly Stator stator;
+        readonly Logger g;
+        readonly List<IMyTextPanel> mLCDs = new List<IMyTextPanel>();
+        readonly IMyRemoteControl mRC;
+        readonly List<MyWaypointInfo> waypoints = new List<MyWaypointInfo>();
+        readonly IMySensorBlock mSensor;
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            g = new Logger();
+            var gts = new GTS(this, g);
+            IMyMotorStator block = null;
+            gts.get(ref block);
+            gts.initList(mLCDs, false);
+            stator = new Stator(block, g);
+            gts.get(ref mRC);
+            gts.get(ref mSensor);
         }
 
         public void Save() {
         }
+        void procArgument(string argument) {
 
+            waypoints.Clear();
+            mRC.GetWaypointInfo(waypoints);
+            foreach (var wp in waypoints) {
+                if (wp.Name.ToLower() == argument) {
+                    stator.setTarget(wp.Coords);
+                    return;
+                }
+            }
+            float angle;
+            if (float.TryParse(argument, out angle)) {
+                stator.setTarget(angle);
+            }
+        }
+        readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
+        void doDetect() {
+            mSensor.DetectedEntities(mDetected);
+            foreach (var e in mDetected) {
+                if (e.Type == MyDetectedEntityType.CharacterHuman) {
+                    stator.setTarget(e.Position);
+                    break;
+                }
+            }
+            mDetected.Clear();
+        }
         public void Main(string argument, UpdateType updateSource) {
+            try {
+                //procArgument(argument);
+                doDetect();
+                stator.Info();
+                stator.Update();
+            } catch(Exception ex) {
+                g.persist(ex.ToString());
+            }
+            var str = g.clear();
+            foreach(var lcd in mLCDs) { 
+                lcd.WriteText(str);
+            }
+            Echo(str);
         }
     }
 }

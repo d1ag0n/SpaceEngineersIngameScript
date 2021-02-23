@@ -388,6 +388,8 @@ namespace commandline
         const double timeLimit = 1.0 / updatesPerSecond;
 
         static void Main(string[] args) {
+            float f = -1;
+            MathHelper.LimitRadians(ref f);
             var dot = Vector3D.Right.Dot(Vector3D.Left);
             //cwork();
             //kwork();

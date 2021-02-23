@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatorWork", "InGameScripts
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Programs\Console\Console.csproj", "{53ECE70B-9576-43FF-9432-C30BBF8C55F4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fixer", "InGameScripts\Fixer\Fixer.csproj", "{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -139,6 +141,13 @@ Global
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|x64.ActiveCfg = Release|Any CPU
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|x64.Build.0 = Release|Any CPU
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}.Debug|x64.ActiveCfg = Debug|x64
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}.Debug|x64.Build.0 = Debug|x64
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}.Release|Any CPU.ActiveCfg = Debug|x64
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}.Release|Any CPU.Build.0 = Debug|x64
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}.Release|x64.ActiveCfg = Debug|x64
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -160,6 +169,7 @@ Global
 		{60452262-C0C2-4B73-A047-A270BA83B831} = {74B1D5CF-65FF-4DE8-A7D5-9756439360A7}
 		{0F1F645A-24C1-49AD-8F30-373946E8AC1D} = {74B1D5CF-65FF-4DE8-A7D5-9756439360A7}
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4} = {627FE829-2AFB-4EB8-B25D-A42F2B5F5574}
+		{14044C9A-84E2-4258-B5CD-7BCD9B75F0A5} = {74B1D5CF-65FF-4DE8-A7D5-9756439360A7}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}
