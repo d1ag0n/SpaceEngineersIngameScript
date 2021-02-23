@@ -47,13 +47,14 @@ namespace IngameScript {
             mRC.GetWaypointInfo(waypoints);
             foreach (var wp in waypoints) {
                 if (wp.Name.ToLower() == argument) {
-                    stator.setTarget(wp.Coords);
+                    stator.SetTarget(wp.Coords);
                     return;
                 }
             }
             float angle;
             if (float.TryParse(argument, out angle)) {
-                stator.setTarget(angle);
+                g.persist("angle set @ " + angle);
+                stator.SetTarget(angle);
             }
         }
         readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
@@ -61,7 +62,7 @@ namespace IngameScript {
             mSensor.DetectedEntities(mDetected);
             foreach (var e in mDetected) {
                 if (e.Type == MyDetectedEntityType.CharacterHuman) {
-                    stator.setTarget(e.Position);
+                    stator.SetTarget(e.Position);
                     break;
                 }
             }
@@ -69,8 +70,8 @@ namespace IngameScript {
         }
         public void Main(string argument, UpdateType updateSource) {
             try {
-                //procArgument(argument);
-                doDetect();
+                procArgument(argument);
+                //doDetect();
                 stator.Info();
                 stator.Update();
             } catch(Exception ex) {

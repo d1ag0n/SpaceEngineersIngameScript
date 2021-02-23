@@ -9,17 +9,20 @@ namespace IngameScript
 {
     class Finger
     {
+        Vector3D mvTarget;
+        float mfTarget;
+        FingerMode mode;
         // orange #EE4C00
         // blue #085FA6
         // red #B20909
         // yellow #E8B323   
-        public readonly IMyMotorAdvancedStator stator;
-        public readonly IMyMotorAdvancedStator hinge;
+        public readonly Stator stator;
+        public readonly Stator hinge;
         public IMyEntity tip => hinge == null ? null : hinge.Top;
         readonly Logger g;
         public readonly Finger parent;
-        readonly float hingeOffset = MathHelper.Pi;
-        float statorOffset;
+        //readonly float hingeOffset = MathHelper.Pi;
+        //float statorOffset;
         //float parentHingeOffset = 0;
         //float parentStatorOffset = 0;
 
@@ -34,159 +37,76 @@ namespace IngameScript
 
         const float factorMax = 0.2f;
         const float factorMin = 0.1f;
-        float factor { 
+
+        enum FingerMode {
+            hold,
+            point,
+            crane
+        }
+        /*float factor { 
             get {
                 return 0.1f;
                 var range = factorMax - factorMin;
                 var chunk = range / index;
                 return factorMin + (chunk * (Identity + 1));
             }
-        }
+        }*/
 
         public bool okay {
             get; private set;
         }
         public bool stopped { get; private set; }
-        float statorStop = 0.0f;
-        float hingeStop = 0.0f;
-        public void stop() {
-            statorStop = stator.Angle;
-            
-            stator.LowerLimitRad = stator.Angle;
-            stator.UpperLimitRad = stator.Angle;
-
-            hingeStop = hinge.Angle;
-            hinge.LowerLimitRad = hinge.Angle;
-            hinge.UpperLimitRad = hinge.Angle;
+        
+        public void Stop() {
+            stator.Stop();
+            hinge.Stop();
             stopped = true;
         }
-        public void go() {
+        public void Go() {
+            stator.Go();
+            hinge.Go();
             stopped = false;
-            stator.LowerLimitRad = float.MinValue;
-            stator.UpperLimitRad = float.MaxValue;
-
-            hinge.LowerLimitRad = -MathHelper.PiOver2;
-            hinge.UpperLimitRad = MathHelper.PiOver2;
         }
         public Finger(IMyMotorAdvancedStator aStator, Logger aLogger, Finger aParent = null) {
             okay = false;
-            stator = aStator;
+            stator = new Stator(aStator, aLogger);
+            
             g = aLogger;
             parent = aParent;
             if (aParent == null) {
                 index = 0;
             }
             Identity = index++;
+            aStator.CustomName = "Finger - Stator - " + Identity.ToString("D3");
             try {
-                var dir = Base6Directions.GetIntVector(stator.Top.Orientation.Up);
-                var attachment = stator.TopGrid.GetCubeBlock(stator.Top.Position + dir);
+                var dir = Base6Directions.GetIntVector(aStator.Top.Orientation.Up);
+                var attachment = aStator.TopGrid.GetCubeBlock(aStator.Top.Position + dir);
+                Base6Directions.Direction hingeDir;
                 if (attachment != null) {
-                    var block = attachment.FatBlock;
+                    var block = attachment.FatBlock as IMyTerminalBlock;
                     if (block is IMyMotorAdvancedStator && block.BlockDefinition.SubtypeId == "LargeHinge") {
-                        hinge = block as IMyMotorAdvancedStator;
+                        hinge = new Stator(block as IMyMotorAdvancedStator, aLogger);
+                        block.CustomName = "Finger - Hinge  - " + Identity.ToString("D3") + " " + block.Orientation.Forward;
                         okay = true;
+                        switch (block.Orientation.Forward) {
+                            case Base6Directions.Direction.Right:
+                                stator.mfOffset = -MathHelper.PiOver2;
+                                break;
+                            case Base6Directions.Direction.Left:
+                                stator.mfOffset = MathHelper.PiOver2;
+                                break;
+                        }
                     }
                 }
-                
-                if (okay) {
-                    stator.CustomName = "Finger - Stator - " + Identity.ToString("D3");
-                    stator.TargetVelocityRad = 0;
-                    //stator.Torque = torque;
-                    //stator.BrakingTorque = torque;
-                    stator.RotorLock = false;
-                    //stator.LowerLimitRad = float.MinValue;
-                    //stator.UpperLimitRad = float.MaxValue;
-                    if (parent != null) {
-
-                        /*
-                        switch (stator.Orientation.Forward) {
-                            case Base6Directions.Direction.Forward:
-                                statorOffset = MathHelper.Pi;
-                                break;
-                            case Base6Directions.Direction.Backward:
-                                break;
-                            case Base6Directions.Direction.Up:
-                                statorOffset = MathHelper.PiOver2;
-                                break;
-                        }*/
-                        //g.persist(Identity + " rotor forward " + stator.Orientation.Forward);
-                    }
-
-                    hinge.CustomName = "Finger - Hinge  - " + Identity.ToString("D3");
-                    hinge.TargetVelocityRad = 0;
-                    //hinge.Torque = torque;
-                    //hinge.BrakingTorque = torque;
-                    hinge.RotorLock = false;
-
-                    switch (hinge.Orientation.Forward) {
-                        case Base6Directions.Direction.Left: hingeOffset = -MathHelper.PiOver2; break;
-                        case Base6Directions.Direction.Right: hingeOffset = MathHelper.PiOver2; break;
-                        case Base6Directions.Direction.Backward: hingeOffset = 0; break;
-                    }
-
-                    stop();
-                    //g.persist("finger " + Identity + " hingeOffset " + hingeOffset.ToString());
-
-                    //g.persist("hinge front " + hinge.Orientation.Forward);
-                    //g.persist("rotor front " + stator.Top.Orientation.Forward);
-                }
-                ///*
-                if (aParent == null) {
-                    return;
-                    var m = stator.WorldMatrix;
-                    var t = m.Translation;
-
-                    g.persist(g.gps("S F", t + m.Forward));
-                    g.persist(g.gps("S B", t + m.Backward));
-                    g.persist(g.gps("S L", t + m.Left));
-                    g.persist(g.gps("S R", t + m.Right));
-                    g.persist(g.gps("S U", t + m.Up));
-                    g.persist(g.gps("S D", t + m.Down));
-
-                    m = hinge.Top.WorldMatrix;
-                    t = m.Translation;
-
-                    g.persist(g.gps("T F", t + m.Forward));
-                    g.persist(g.gps("T B", t + m.Backward));
-                    g.persist(g.gps("T L", t + m.Left));
-                    g.persist(g.gps("T R", t + m.Right));
-                    g.persist(g.gps("T U", t + m.Up));
-                    g.persist(g.gps("T D", t + m.Down));
-                    return;
-                    m = stator.Top.WorldMatrix;
-                    t = m.Translation;
-
-                    g.persist(g.gps("R F", t + m.Forward));
-                    g.persist(g.gps("R B", t + m.Backward));
-                    g.persist(g.gps("R L", t + m.Left));
-                    g.persist(g.gps("R R", t + m.Right));
-                    g.persist(g.gps("R U", t + m.Up));
-                    g.persist(g.gps("R D", t + m.Down));
-
-                    m = hinge.WorldMatrix;
-                    t = m.Translation;
-
-                    g.persist(g.gps("H F", t + m.Forward));
-                    g.persist(g.gps("H B", t + m.Backward));
-                    g.persist(g.gps("H L", t + m.Left));
-                    g.persist(g.gps("H R", t + m.Right));
-                    g.persist(g.gps("H U", t + m.Up));
-                    g.persist(g.gps("H D", t + m.Down));
-
-                    
-                }//*/
-                
             } catch(Exception ex) {
                 g.persist("Finger initialization FAILED: " + ex.ToString());
             }
-            
         }
         bool hingeClose, statorClose;
         public bool close => hingeClose && statorClose;
-        public bool zero() {
-            setStatorAngle(float.MaxValue);
-            setHingeAngle(0);
-            return close;
+        public void SetTargetZero() {
+            stator.SetTarget(0);
+            hinge.SetTarget(0);
         }
         public Finger next() {
             Finger result = null;
@@ -213,27 +133,32 @@ namespace IngameScript
                                 }
                             }
                             //g.persist(Identity + " ab " + ab);
-                            result.statorOffset = (float)(ab + Math.PI);
+                            result.stator.mfOffset += (float)(ab + Math.PI);
                         }
                     }
                 }
             }
             return result;
         }
-
-        void setHingeAngle(float aAngle) {
-            hingeClose = setStator(hinge, aAngle - hinge.Angle);
-            if (parent == null || parent.stopped) {
-                if (hinge.Angle > hinge.LowerLimitRad && hinge.Angle < aAngle) {
-                    hinge.LowerLimitRad = hinge.Angle;
-                }
-                if (hinge.Angle < hinge.UpperLimitRad && hinge.Angle > aAngle) {
-                    hinge.UpperLimitRad = hinge.Angle;
-                }
-            }
+        public void Update() {
+            stator.Update();
+            hinge.Update();
         }
-        public void pointAtTarget(Vector3D aTarget) {
-            if (stopped) {
+        public void SetTarget(float aTarget) {
+            mfTarget = aTarget;
+            mode = FingerMode.hold;
+            stator.SetTarget(aTarget);
+            hinge.SetTarget(aTarget);
+        }
+  
+        public void SetTarget(Vector3D aTarget) {
+            mvTarget = aTarget;
+            mode = FingerMode.point;
+            stator.SetTarget(aTarget);
+            hinge.SetTarget(aTarget);
+            
+            
+            /*if (stopped) {
                 setHingeAngle(hingeStop);
                 setStatorAngle(0, false);
             } else {
@@ -257,9 +182,9 @@ namespace IngameScript
                 if (close && (parent == null || parent.stopped)) {
                     stop();
                 }
-            }
+            }*/
         }
-        void setStatorAngle(float aAngle, bool offset = true) {
+        /*void setStatorAngle(float aAngle, bool offset = true) {
             if (stopped && aAngle != float.MaxValue) {
                 aAngle = statorStop - stator.Angle;
             } else {
@@ -269,10 +194,11 @@ namespace IngameScript
                     }
                     //var phOffset = parent == null ? 0f : parent.hingeOffset;
                     //var psOffset = parent == null ? 0f : parent.statorOffset;
-                    aAngle = (aAngle + hingeOffset - statorOffset) - stator.Angle;
+                    //aAngle = (aAngle + hingeOffset - statorOffset) - stator.Angle;
+                    aAngle = (aAngle - statorOffset) - stator.Angle;
                 } else {
-                    
-                    aAngle = (aAngle + hingeOffset) - stator.Angle;
+                    //aAngle = (aAngle + hingeOffset) - stator.Angle;
+                    aAngle = aAngle  - stator.Angle;
                 }
 
                 MathHelper.LimitRadians(ref aAngle);
@@ -282,17 +208,16 @@ namespace IngameScript
                     aAngle += MathHelper.TwoPi;
                 }
             }
-            statorClose = setStator(stator, aAngle);
-        }
+            stator.setTarget(aAngle);
+        }*/
         
-        bool setStator(IMyMotorAdvancedStator aStator, float angle) {
-            aStator.TargetVelocityRad = angle * factor;
-            return Math.Abs(angle) < epsilon;
-        }
-        public void info() {
-            g.log("Finger");
-            g.log("Rotor angle ", stator.Angle);
-            g.log("Hinge angle ", hinge.Angle);
+
+        public void Info() {
+            g.log("Finger " + Identity);
+            //g.log("Stator");
+            //stator.Info();
+            g.log("Hinge");
+            hinge.Info();
         }
         // aAngle = 4
         // angle = 5
@@ -346,7 +271,7 @@ namespace IngameScript
         // aAngle = 0
         // angle = 6.28
         // 6.28 = 0 - angle
-
+        /*
         
         void pointRotoAtTarget(IMyMotorStator aRoto, Vector3D aTarget) {
             // cos(angle) = dot(vecA, vecB) / (len(vecA)*len(vecB))
@@ -398,6 +323,6 @@ namespace IngameScript
                 var max = 0.2;
                 aRoto.TargetVelocityRad = (float)MathHelper.Clamp(v, -max, max);
             }
-        }
+        }*/
     }
 }
