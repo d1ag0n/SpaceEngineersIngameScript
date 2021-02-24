@@ -18,7 +18,7 @@ namespace IngameScript {
         /// <summary>
         /// Does not apply to hinge, when true will point with the side opposite of offset when that side is closer
         /// </summary>
-        public bool reverse = false;
+        bool reverse = false;
         /// <summary>
         /// Does not apply to hinge, if the opposite side is being used to point
         /// </summary>
@@ -53,7 +53,7 @@ namespace IngameScript {
             } else {
                 //g.persist(aStator.BlockDefinition.SubtypeId);
             }
-            
+            aStator.ShowOnHUD = true;
             Go();
         }
         public void Info() {

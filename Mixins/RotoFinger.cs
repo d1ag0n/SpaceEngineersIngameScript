@@ -77,6 +77,10 @@ namespace IngameScript
             hinge.Go();
             stopped = false;
         }
+
+        float mfHingeOffset = 0;
+        float mfStatorOffset = 0;
+
         public RotoFinger(IMyMotorAdvancedStator aStator, Logger aLogger, GTS aGTS, RotoFinger aParent = null) {
             okay = false;
             stator = new Stator(aStator, aLogger);
@@ -101,7 +105,8 @@ namespace IngameScript
                     okay = true;
 
                     var hingeUp = hingeRotor.Orientation.Up;
-                    hingeRotor.CustomName = "Finger - " + Identity.ToString("D2") + " - Tip - up:" + hingeUp;
+                    hingeRotor.CustomName = "Finger - " + Identity.ToString("D2") + " - Hinge - up:" + hingeUp;
+
                     // offset stator based on hinge up direction
                     switch (hingeUp) {
                         case Base6Directions.Direction.Backward:
@@ -111,31 +116,41 @@ namespace IngameScript
                             stator.mfOffset = -MathHelper.PiOver2;
                             break;
                         case Base6Directions.Direction.Right:
-                            break;
-                        case Base6Directions.Direction.Left:
                             stator.mfOffset = MathHelper.Pi;
                             break;
+                        case Base6Directions.Direction.Left:
+                            //stator.mfOffset = MathHelper.Pi;
+                            break;
                     }
-                    aStator.CustomName = "Finger - " + Identity.ToString("D2") + " - Base";
-                    if (parent != null) {
-                        stator.mfOffset -= parent.stator.mfOffset;
+                    mfHingeOffset = stator.mfOffset;
+                    
+                    // stator the front of the stator is really identified by its up direction
+                    // because after the first finger the grid the stator is on will always have up=up
+                    var statorFront = aStator.Orientation.Forward;
+                    var statorUp = aStator.Orientation.Up;
 
-                        var statorFront = aStator.Orientation.Forward;
-                        aStator.CustomName += " - front:" + statorFront;
+                    aStator.CustomName = "Finger - " + Identity.ToString("D2") + " - Base - front:" + statorFront + " - up:" + statorUp;
+                    
+                    if (parent != null) {
+                        //stator.mfOffset -= parent.stator.mfOffset;
+                        //stator.mfOffset -= parent.mfHingeOffset;
+                        //stator.mfOffset -= parent.mfStatorOffset;
                         // offset stator based on its forward direction
                         switch (statorFront) {
                             case Base6Directions.Direction.Left:
-                                stator.mfOffset += MathHelper.PiOver2;
+                                mfStatorOffset = -MathHelper.PiOver2;
                                 break;
                             case Base6Directions.Direction.Right:
-                                stator.mfOffset -= MathHelper.PiOver2;
+                                mfStatorOffset = MathHelper.PiOver2;
                                 break;
                             case Base6Directions.Direction.Down:
-                                stator.mfOffset += MathHelper.PiOver2;
-                                // was here;
-                                //???
+                                mfStatorOffset = MathHelper.PiOver2;
+                                break;
+                            case Base6Directions.Direction.Up:
+                                mfStatorOffset = -MathHelper.PiOver2;
                                 break;
                         }
+                        stator.mfOffset += mfStatorOffset;
                     }
                     var hingeFront = hingeRotor.Orientation.Forward;
                     hingeRotor.CustomName += " - front:" + hingeFront;
@@ -143,7 +158,7 @@ namespace IngameScript
                     // offset hinge based on forward dir
                     switch (hingeFront) {
                         case Base6Directions.Direction.Down:
-                            //hinge.mfOffset = MathHelper.Pi;
+                            //hinge.mfOffset = MathHelper.PiOver2;
                             break;
                         case Base6Directions.Direction.Left:
                             hinge.mfOffset = -MathHelper.PiOver2;
@@ -189,8 +204,8 @@ namespace IngameScript
                             piston.CustomName = "Finger - " + result.Identity.ToString("D2") + " - Piston - " + dir;
                         }
                         switch (dir) {
-                            case Base6Directions.Direction.Backward:
-                                //hinge.mfOffset += -MathHelper.Pi;
+                            case Base6Directions.Direction.Right:
+                                hinge.mfOffset += MathHelper.PiOver2;
                                 break;
                         }
 
