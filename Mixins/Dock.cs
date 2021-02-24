@@ -66,6 +66,7 @@ namespace IngameScript
         I mean my naiive first implementation would be to:
         1. Get a direction vector from the head of the piston apparatus to the desired position
         2. Project that direction vector onto each piston axis and take the length to see how much further you need to extend from the current position.
+        // todo something better than whatever is below
         */
         void checkAnglesX() {
             var mx = X.WorldMatrix;

@@ -7,7 +7,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    class Finger
+    class RotoFinger
     {
         Vector3D mvTarget;
         float mfTarget;
@@ -16,11 +16,20 @@ namespace IngameScript
         // blue #085FA6
         // red #B20909
         // yellow #E8B323   
+        /// <summary>
+        /// bottom of finger handles yaw
+        /// </summary>
         public readonly Stator stator;
+        /// <summary>
+        /// top of finger handles pitch
+        /// </summary>
         public readonly Stator hinge;
+        
+        IMyExtendedPistonBase piston;
         public IMyEntity tip => hinge == null ? null : hinge.Top;
         readonly Logger g;
-        public readonly Finger parent;
+        readonly GTS gts;
+        public readonly RotoFinger parent;
         //readonly float hingeOffset = MathHelper.Pi;
         //float statorOffset;
         //float parentHingeOffset = 0;
@@ -68,35 +77,77 @@ namespace IngameScript
             hinge.Go();
             stopped = false;
         }
-        public Finger(IMyMotorAdvancedStator aStator, Logger aLogger, Finger aParent = null) {
+        public RotoFinger(IMyMotorAdvancedStator aStator, Logger aLogger, GTS aGTS, RotoFinger aParent = null) {
             okay = false;
             stator = new Stator(aStator, aLogger);
-            
+            //stator.reverse = true;
             g = aLogger;
+            gts = aGTS;
             parent = aParent;
             if (aParent == null) {
                 index = 0;
             }
             Identity = index++;
-            aStator.CustomName = "Finger - Stator - " + Identity.ToString("D3");
+            
+            
+            
+            
             try {
-                var dir = Base6Directions.GetIntVector(aStator.Top.Orientation.Up);
-                var attachment = aStator.TopGrid.GetCubeBlock(aStator.Top.Position + dir);
-                Base6Directions.Direction hingeDir;
-                if (attachment != null) {
-                    var block = attachment.FatBlock as IMyTerminalBlock;
-                    if (block is IMyMotorAdvancedStator && block.BlockDefinition.SubtypeId == "LargeHinge") {
-                        hinge = new Stator(block as IMyMotorAdvancedStator, aLogger);
-                        block.CustomName = "Finger - Hinge  - " + Identity.ToString("D3") + " " + block.Orientation.Forward;
-                        okay = true;
-                        switch (block.Orientation.Forward) {
-                            case Base6Directions.Direction.Right:
-                                stator.mfOffset = -MathHelper.PiOver2;
-                                break;
+                //var dir = Base6Directions.GetIntVector(aStator.Top.Orientation.Up);
+                IMyMotorAdvancedStator hingeRotor = null;
+                gts.getByGrid(aStator.TopGrid.EntityId, ref hingeRotor);
+                if (hingeRotor != null) {
+                    hinge = new Stator(hingeRotor, aLogger);
+                    okay = true;
+
+                    var hingeUp = hingeRotor.Orientation.Up;
+                    hingeRotor.CustomName = "Finger - " + Identity.ToString("D2") + " - Tip - up:" + hingeUp;
+                    // offset stator based on hinge up direction
+                    switch (hingeUp) {
+                        case Base6Directions.Direction.Backward:
+                            stator.mfOffset = MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Forward:
+                            stator.mfOffset = -MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Right:
+                            break;
+                        case Base6Directions.Direction.Left:
+                            stator.mfOffset = MathHelper.Pi;
+                            break;
+                    }
+                    aStator.CustomName = "Finger - " + Identity.ToString("D2") + " - Base";
+                    if (parent != null) {
+                        stator.mfOffset -= parent.stator.mfOffset;
+
+                        var statorFront = aStator.Orientation.Forward;
+                        aStator.CustomName += " - front:" + statorFront;
+                        // offset stator based on its forward direction
+                        switch (statorFront) {
                             case Base6Directions.Direction.Left:
-                                stator.mfOffset = MathHelper.PiOver2;
+                                stator.mfOffset += MathHelper.PiOver2;
+                                break;
+                            case Base6Directions.Direction.Right:
+                                stator.mfOffset -= MathHelper.PiOver2;
+                                break;
+                            case Base6Directions.Direction.Down:
+                                stator.mfOffset += MathHelper.PiOver2;
+                                // was here;
+                                //???
                                 break;
                         }
+                    }
+                    var hingeFront = hingeRotor.Orientation.Forward;
+                    hingeRotor.CustomName += " - front:" + hingeFront;
+
+                    // offset hinge based on forward dir
+                    switch (hingeFront) {
+                        case Base6Directions.Direction.Down:
+                            //hinge.mfOffset = MathHelper.Pi;
+                            break;
+                        case Base6Directions.Direction.Left:
+                            hinge.mfOffset = -MathHelper.PiOver2;
+                            break;
                     }
                 }
             } catch(Exception ex) {
@@ -109,33 +160,54 @@ namespace IngameScript
             stator.SetTarget(0);
             hinge.SetTarget(0);
         }
-        public Finger next() {
-            Finger result = null;
+        public RotoFinger next() {
+            RotoFinger result = null;
             if (okay) {
-                var top = hinge.Top;
-                if (top != null && top.BlockDefinition.SubtypeId == "LargeHingeHead") {
-                    var dir = Base6Directions.GetIntVector(top.Orientation.Left);
-                    var attachment = hinge.TopGrid.GetCubeBlock(top.Position + dir);
-                    if (attachment != null) {
-                        var block = attachment.FatBlock;
-                        if (block.BlockDefinition.SubtypeId == "LargeAdvancedStator") {
-                            result = new Finger(block as IMyMotorAdvancedStator, g, this);
-                            
-                            var tf = Base6Directions.GetVector(top.Orientation.Forward);
-                            var bf = Base6Directions.GetVector(block.Orientation.Forward);
-                            var ab = MAF.angleBetween(tf, bf);
-                            if (ab < 2 && ab > 1) {
-                                var tu = Base6Directions.GetVector(top.Orientation.Up);
-                                var br = -Base6Directions.GetVector(block.Orientation.Left);
-                                var dot = tu.Dot(bf);
-                                //g.persist("dot " + dot);
-                                if (dot < 1) {
-                                    ab = -ab;
-                                }
-                            }
-                            //g.persist(Identity + " ab " + ab);
-                            result.stator.mfOffset += (float)(ab + Math.PI);
+                var topGrid = hinge.TopGrid;
+                if (topGrid != null) {
+                    gts.getByGrid(topGrid.EntityId, ref piston);
+                    IMyMotorAdvancedStator rotor = null;
+
+                    Base6Directions.Direction dir = Base6Directions.Direction.Right;
+                    if (piston == null) {
+                        gts.getByGrid(hinge.TopGrid.EntityId, ref rotor);
+                        if (rotor != null) {
+                            dir = rotor.Orientation.Up;
                         }
+                    } else {
+                        dir = piston.Orientation.Up;
+                        
+                        gts.getByGrid(piston.TopGrid.EntityId, ref rotor);
+                        
+                    }
+
+                    if (rotor != null) {
+                        
+                        result = new RotoFinger(rotor, g, gts, this);
+                        
+                        if (piston != null) {
+                            piston.CustomName = "Finger - " + result.Identity.ToString("D2") + " - Piston - " + dir;
+                        }
+                        switch (dir) {
+                            case Base6Directions.Direction.Backward:
+                                //hinge.mfOffset += -MathHelper.Pi;
+                                break;
+                        }
+
+                        var bf = Base6Directions.GetVector(rotor.Orientation.Forward);
+
+                        //var ab = MAF.angleBetween(tf, bf);
+                        /*if (ab < 2 && ab > 1) {
+                            var tu = Base6Directions.GetVector(top.Orientation.Up);
+                            var br = -Base6Directions.GetVector(rotor.Orientation.Left);
+                            var dot = tu.Dot(bf);
+                            //g.persist("dot " + dot);
+                            if (dot < 1) {
+                                ab = -ab;
+                            }
+                        }*/
+                        //g.persist(Identity + " ab " + ab);
+                        //result.stator.mfOffset += (float)(ab + Math.PI);
                     }
                 }
             }
@@ -156,7 +228,7 @@ namespace IngameScript
             mvTarget = aTarget;
             mode = FingerMode.point;
             stator.SetTarget(aTarget);
-            hinge.SetTarget(aTarget);
+            hinge.SetTarget(aTarget);   
             
             
             /*if (stopped) {
@@ -216,9 +288,9 @@ namespace IngameScript
         public void Info() {
             g.log("Finger " + Identity);
             //g.log("Stator");
-            //stator.Info();
-            g.log("Hinge");
-            hinge.Info();
+            stator.Info();
+            //g.log("Hinge");
+            //hinge.Info();
         }
         // aAngle = 4
         // angle = 5

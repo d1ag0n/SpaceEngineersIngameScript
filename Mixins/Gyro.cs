@@ -54,8 +54,6 @@ namespace IngameScript
                 return;
             }
 
-
-
             //var roughDesiredDirection = Base6Directions.GetClosestDirection(aDesiredDown);
             //g.log("my down from ", roughDesiredDirection, "-ish");
             //g.log(MAF.angleBetween(mRC.WorldMatrix.Down, aDesiredDown));
