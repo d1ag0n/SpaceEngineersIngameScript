@@ -80,7 +80,83 @@ namespace IngameScript
 
         float mfHingeOffset = 0;
         float mfStatorOffset = 0;
+        void genHingeOffset() {
 
+        }
+
+        /// <summary>
+        /// generate offset for non primary fingers only
+        /// </summary>
+        /// <param name="statorUp"></param>
+        /// <param name="statorFront"></param>
+        void genStatorOffset(Base6Directions.Direction statorUp, Base6Directions.Direction statorFront) {
+            switch (statorUp) {
+                case Base6Directions.Direction.Backward:
+                    switch (statorFront) {
+                        case Base6Directions.Direction.Left:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Right:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Down:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Up:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                    }
+                    break;
+                case Base6Directions.Direction.Forward:
+                    switch (statorFront) {
+                        case Base6Directions.Direction.Left:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Right:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Down:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Up:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                    }
+                    break;
+                case Base6Directions.Direction.Left:
+                    switch (statorFront) {
+                        case Base6Directions.Direction.Left:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Right:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Down:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Up:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                    }
+                    break;
+                case Base6Directions.Direction.Right:
+                    switch (statorFront) {
+                        case Base6Directions.Direction.Left:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Right:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Down:
+                            mfStatorOffset += MathHelper.PiOver2;
+                            break;
+                        case Base6Directions.Direction.Up:
+                            mfStatorOffset += -MathHelper.PiOver2;
+                            break;
+                    }
+                    break;
+            }
+        }
         public RotoFinger(IMyMotorAdvancedStator aStator, Logger aLogger, GTS aGTS, RotoFinger aParent = null) {
             okay = false;
             stator = new Stator(aStator, aLogger);
@@ -92,9 +168,6 @@ namespace IngameScript
                 index = 0;
             }
             Identity = index++;
-            
-            
-            
             
             try {
                 //var dir = Base6Directions.GetIntVector(aStator.Top.Orientation.Up);
@@ -110,48 +183,32 @@ namespace IngameScript
                     // offset stator based on hinge up direction
                     switch (hingeUp) {
                         case Base6Directions.Direction.Backward:
-                            stator.mfOffset = MathHelper.PiOver2;
+                            mfHingeOffset = MathHelper.PiOver2;
                             break;
                         case Base6Directions.Direction.Forward:
-                            stator.mfOffset = -MathHelper.PiOver2;
+                            mfHingeOffset = -MathHelper.PiOver2;
                             break;
                         case Base6Directions.Direction.Right:
-                            stator.mfOffset = MathHelper.Pi;
+                            mfHingeOffset = MathHelper.Pi;
                             break;
                         case Base6Directions.Direction.Left:
                             //stator.mfOffset = MathHelper.Pi;
                             break;
                     }
-                    mfHingeOffset = stator.mfOffset;
-                    
-                    // stator the front of the stator is really identified by its up direction
-                    // because after the first finger the grid the stator is on will always have up=up
+                    stator.mfOffset += mfHingeOffset;
+
+                    // stator the front of the stator really depends on its up direction
+                    // because after the first finger, the grid the stator is on will always have up=up
                     var statorFront = aStator.Orientation.Forward;
                     var statorUp = aStator.Orientation.Up;
 
                     aStator.CustomName = "Finger - " + Identity.ToString("D2") + " - Base - front:" + statorFront + " - up:" + statorUp;
                     
                     if (parent != null) {
-                        //stator.mfOffset -= parent.stator.mfOffset;
-                        //stator.mfOffset -= parent.mfHingeOffset;
-                        //stator.mfOffset -= parent.mfStatorOffset;
-                        // offset stator based on its forward direction
-                        switch (statorFront) {
-                            case Base6Directions.Direction.Left:
-                                mfStatorOffset = -MathHelper.PiOver2;
-                                break;
-                            case Base6Directions.Direction.Right:
-                                mfStatorOffset = MathHelper.PiOver2;
-                                break;
-                            case Base6Directions.Direction.Down:
-                                mfStatorOffset = MathHelper.PiOver2;
-                                break;
-                            case Base6Directions.Direction.Up:
-                                mfStatorOffset = -MathHelper.PiOver2;
-                                break;
-                        }
-                        stator.mfOffset += mfStatorOffset;
+                        stator.mfOffset -= parent.stator.mfOffset;
+                        genStatorOffset(stator, statorFront);
                     }
+                    
                     var hingeFront = hingeRotor.Orientation.Forward;
                     hingeRotor.CustomName += " - front:" + hingeFront;
 
