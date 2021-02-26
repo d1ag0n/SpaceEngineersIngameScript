@@ -2,17 +2,18 @@
 using System.Collections.Generic;
 using System.Text;
 using Sandbox.ModAPI.Ingame;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript
 {
     class GTS {
         readonly MyGridProgram program;
         readonly Logger g;
-        readonly Dictionary<long, IMyTerminalBlock> mBlocks = new Dictionary<long, IMyTerminalBlock>();
+        readonly Dictionary<long, IMyCubeBlock> mBlocks = new Dictionary<long, IMyCubeBlock>();
         readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
         readonly Dictionary<long, Dictionary<string, List<string>>> mArguments = new Dictionary<long, Dictionary<string, List<string>>>();
-        readonly List<IMyTerminalBlock> mWork = new List<IMyTerminalBlock>();
-        readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
+        readonly List<IMyEntity> mWork = new List<IMyEntity>();
+        readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
         
         public GTS(MyGridProgram aProgram, Logger aLogger) {
             program = aProgram;
@@ -124,20 +125,25 @@ namespace IngameScript
             mTags.Clear();
             mBlocks.Clear();
             mArguments.Clear();
-            program.GridTerminalSystem.GetBlocks(mWork);
+            program.GridTerminalSystem.GetBlocksOfType<IMyEntity>(mWork);
+            //program.GridTerminalSystem.GetBlocks(mWork);
             g.persist("GTS found " + mWork.Count + " blocks");
             foreach (var b in mWork) { 
-                if (b.IsSameConstructAs(program.Me)) {
-                    mBlocks.Add(b.EntityId, b);
-                    initTags(b);
+                if (b is IMyTerminalBlock) {
+                    var tb = b as IMyTerminalBlock;
+                    if (tb.IsSameConstructAs(program.Me)) {
+                        mBlocks.Add(b.EntityId, tb);
+                        initTags(tb);
+                    }
                 }
-                addByGrid(b);
+                if (b is IMyCubeBlock)
+                    addByGrid(b as IMyCubeBlock);
             }
             mWork.Clear();
         }
 
         public void getByGrid<T>(long grid, ref T block) {
-            List<IMyTerminalBlock> list;
+            List<IMyCubeBlock> list;
             if (mGridBlocks.TryGetValue(grid, out list)) {
                 foreach(var b in list) {
                     if (b is T) {
@@ -148,10 +154,10 @@ namespace IngameScript
             }
         }
 
-        void addByGrid(IMyTerminalBlock b) {
-            List<IMyTerminalBlock> list;
+        void addByGrid(IMyCubeBlock b) {
+            List<IMyCubeBlock> list;
             if (!mGridBlocks.TryGetValue(b.CubeGrid.EntityId, out list)) {
-                list = new List<IMyTerminalBlock>();
+                list = new List<IMyCubeBlock>();
                 mGridBlocks.Add(b.CubeGrid.EntityId, list);
             }
             list.Add(b);

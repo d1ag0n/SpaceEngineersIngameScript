@@ -30,7 +30,8 @@ namespace IngameScript {
         readonly IMySensorBlock mSensor;
         readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
         RotoFinger lastFinger;
-        Vector3D mvTarget;
+        Vector3D mvTarget = new Vector3D(13115.33, 139870.21, -105437.42);
+        //GPS:dead:13115.33:139870.21:-105437.42:#FF75C9F1:
 
         bool walkComplete = true;
 
@@ -43,9 +44,10 @@ namespace IngameScript {
             IMyMotorAdvancedStator stator = null;
             gts.getByTag("arm", ref stator);
             if (stator != null) {
-                mvTarget = stator.WorldMatrix.Translation + stator.WorldMatrix.Up * 1000.0;
+                //mvTarget = stator.WorldMatrix.Translation + stator.WorldMatrix.Up * 1000.0;
                 firstFinger = lastFinger = new RotoFinger(stator, g, gts);
-                firstFinger.SetTargetZero();
+                //firstFinger.SetTarget(mvTarget);
+                firstFinger.SetTarget(0);
                 fingers.Add(firstFinger);
                 walkComplete = false;
             }
@@ -68,15 +70,15 @@ namespace IngameScript {
         void doWalk() {
             RotoFinger finger;
             if (!walkComplete) {
-                
-                finger = lastFinger.next();
+                finger = lastFinger.nextFinger;
                 if (finger == null) {
                     walkComplete = true;
                     g.persist("walk complete found " + fingers.Count + " fingers");
                 } else if (finger.okay) {
                     lastFinger = finger;
                     fingers.Add(finger);
-                    finger.SetTargetZero();
+                    //finger.SetTarget(mvTarget);
+                    finger.SetTarget(0);
                 } else {
                     walkComplete = true;
                     g.persist("FINGER WAS NOT OKAY");
@@ -84,14 +86,17 @@ namespace IngameScript {
             }
         }
         void procArg(string arg) {
-            if (arg == "zero") {
-                foreach(var f in fingers) {
-                    f.SetTargetZero();
+            float angle;
+            if (arg == "up") {
+                if (firstFinger != null) {
+                    mvTarget = firstFinger.stator.WorldMatrix.Translation + firstFinger.stator.WorldMatrix.Up * 1000.0;
+                    foreach (var f in fingers) {
+                        f.SetTarget(mvTarget);
+                    }
                 }
-            } else if (arg == "up") {
-                foreach (var f in fingers) {
-                    f.SetTarget(mvTarget);
-                }
+            } else if (float.TryParse(arg, out angle)) {
+                foreach (var f in fingers)
+                    f.SetTarget(angle);
             }
         }
         public void Main(string argument, UpdateType updateSource) {

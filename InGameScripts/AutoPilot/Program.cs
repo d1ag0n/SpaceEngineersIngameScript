@@ -1892,7 +1892,6 @@ namespace IngameScript
                                         mGyro.setPid(p, i, d);
                                         g.persist($"pid {p} {i} {d}");
                                     } catch (Exception ex) { g.persist("failed to parse pid"); }
-
                                 }
                                 break;
                         }

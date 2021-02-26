@@ -388,6 +388,14 @@ namespace commandline
         const double timeLimit = 1.0 / updatesPerSecond;
 
         static void Main(string[] args) {
+            float ab = (float)MAF.angleBetween(Vector3D.Right, Vector3D.Forward);
+            bool val = ab == MathHelper.PiOver2;
+            
+            var po2 = MathHelper.Pi / 2.0f;
+
+            var s1 = ab.ToString("f12");
+            var s2 = MathHelper.PiOver2.ToString("f12");
+
             Nullable<int> x;
             x = null;
             if (!x.HasValue) {

@@ -77,6 +77,8 @@ namespace IngameScript
 
             return result;
         }
+        public static bool nearEqual(double a, double b, double epsilon = 0.000001) =>
+            Math.Abs(a - b) < epsilon;
         /*
         /// Whip's Get Rotation Angles Method v14 - 9/25/18 ///
         MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
