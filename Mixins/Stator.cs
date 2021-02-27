@@ -74,14 +74,26 @@ namespace IngameScript {
 
             stator.TargetVelocityRad = 0;
             if (hinge) {
-                stator.UpperLimitRad = hingeUpper;
-                stator.LowerLimitRad = hingeLower;
+                if (stator.UpperLimitRad != hingeUpper) {
+                    stator.UpperLimitRad = hingeUpper;
+                }
+                if (stator.LowerLimitRad != hingeLower) {
+                    stator.LowerLimitRad = hingeLower;
+                }
             } else {
-                stator.UpperLimitRad = float.MaxValue;
-                stator.LowerLimitRad = float.MinValue;
+                if (stator.UpperLimitRad != float.MaxValue) {
+                    stator.UpperLimitRad = float.MaxValue;
+                }
+                if (stator.LowerLimitRad != float.MinValue) {
+                    stator.LowerLimitRad = float.MinValue;
+                }
             }
-            stator.RotorLock = false;
-            stator.Enabled = true;
+            if (stator.RotorLock) {
+                stator.RotorLock = false;
+            }
+            if (!stator.Enabled) {
+                stator.Enabled = true;
+            }
             held = false;
         }
         public void Stop() {
@@ -162,7 +174,7 @@ namespace IngameScript {
             var angleAbs = Math.Abs(aAngle);
             bool result = Math.Abs(aAngle) < epsilon;
             if (result) {
-                stator.TargetVelocityRad = 0;
+                Go();
                 //stator.UpperLimitRad = stator.Angle;
                 //stator.LowerLimitRad = stator.Angle;
             } else {
@@ -172,6 +184,7 @@ namespace IngameScript {
             return result;
         }
         void limiter() {
+            return;
             var upper = stator.Angle + lockStep;
             var lower = stator.Angle - lockStep;
 

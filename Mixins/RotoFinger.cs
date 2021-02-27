@@ -76,7 +76,7 @@ namespace IngameScript
         public bool stopped { get; private set; }
         
         public void Stop() {
-            g.persist("finger stopped");
+            
             stator.Stop();
             hinge.Stop();
             stopped = true;
@@ -111,20 +111,47 @@ namespace IngameScript
                     if (hinge.TopGrid != null) {
                         gts.getByGrid(hinge.TopGrid.EntityId, ref piston);
                     }
-                    var hingeUp = hingeRotor.Orientation.Up;
-                    if (previousFinger == null) {
-                        switch (hingeUp) {
-                            case Base6Directions.Direction.Forward:
-                                stator.mfOffset -= MathHelper.PiOver2;
-                                break;
-                            case Base6Directions.Direction.Backward:
-                                stator.mfOffset += MathHelper.PiOver2;
-                                break;
-                            case Base6Directions.Direction.Right:
-                                stator.mfOffset += MathHelper.Pi;
-                                break;
+                    bool near;
+                    float ab;
+                    var dot = double.NaN;
+                    var hingeUpDir = hinge.stator.Orientation.Up;
+
+                    var statorTopLeft = Base6Directions.GetVector(stator.Top.Orientation.Left);
+                    var statorTopBack = -Base6Directions.GetVector(stator.Top.Orientation.Forward);
+                    var hingeUp = Base6Directions.GetVector(hingeUpDir);
+                    ab = (float)MAF.angleBetween(hingeUp, statorTopLeft);
+                    near = MAF.nearEqual(ab, MathHelper.PiOver2);
+
+                    if (near) {
+                        dot = hingeUp.Dot(statorTopBack);
+                        if (dot < 0) {
+                            ab = -ab;
                         }
                     }
+
+                    stator.mfOffset += ab;
+                    stator.stator.CustomName += " ab:" + ab.ToString("f2") + " d:" + dot.ToString("f2");
+
+                    if (previousFinger != null) {
+                        //stator.mfOffset -= previousFinger.stator.mfOffset;
+                        // angle between previous.hinge.top.up and this.stator.back
+                        var previousHingeTopUp = Base6Directions.GetVector(previousFinger.hinge.stator.Top.Orientation.Up);
+                        var statorFront = Base6Directions.GetVector(stator.stator.Orientation.Forward);
+                        var statorLeft = Base6Directions.GetVector(stator.stator.Orientation.Left);
+                        ab = (float)MAF.angleBetween(previousHingeTopUp, statorLeft);
+                        near = MAF.nearEqual(ab, MathHelper.PiOver2);
+                        if (near) {
+                            dot = previousHingeTopUp.Dot(statorFront);
+                            if (dot < 0) {
+                                ab = -ab;
+                            }
+                        }
+                        stator.mfOffset += ab;
+                        g.persist(Identity + " ab phtu & sb " + ab + " dot:" + dot);
+
+                    }
+
+                    //}
                     hingeRotor.CustomName = "Finger - " + Identity.ToString("D2") + " - Bend";
 
                     // var statorFront = aStator.Orientation.Forward;
@@ -137,13 +164,9 @@ namespace IngameScript
                         var hingeBack = -Base6Directions.GetVector(hinge.stator.Orientation.Forward);
                         var hingeLeft = Base6Directions.GetVector(hinge.stator.Orientation.Left);
 
-                        float ab = (float)MAF.angleBetween(statorTopUp, hingeBack);
-                        double dot = double.NaN;
-                        var near = MAF.nearEqual(ab, MathHelper.PiOver2);
-
-                        g.persist("ab          " + ab.ToString("f12"));
-                        g.persist("p/2         " + MathHelper.PiOver2.ToString("f12"));
-                        g.persist("ab near p/2 " + near);
+                        ab = (float)MAF.angleBetween(statorTopUp, hingeBack);
+                        dot = double.NaN;
+                        near = MAF.nearEqual(ab, MathHelper.PiOver2);
 
                         if (near) {
                             dot = statorTopUp.Dot(hingeLeft);
@@ -155,6 +178,7 @@ namespace IngameScript
                         hinge.stator.CustomName += " c:" + ab.ToString("f2") + " d:" + dot.ToString("f2");
                         hinge.mfOffset += ab;
                     }
+
                 }
             } catch(Exception ex) {
                 g.persist("Finger initialization FAILED: " + ex.ToString());
@@ -169,7 +193,7 @@ namespace IngameScript
                 if (topGrid != null) {
                     
                     IMyMotorAdvancedStator rotor = null;
-                    if (piston == null) {
+                    if (piston == null || piston.TopGrid == null) {
                         gts.getByGrid(hinge.TopGrid.EntityId, ref rotor);
                     } else {
                         gts.getByGrid(piston.TopGrid.EntityId, ref rotor);
@@ -177,7 +201,7 @@ namespace IngameScript
 
                     if (rotor != null) {
                         result = new RotoFinger(rotor, g, gts, this);
-                        result.stator.mfOffset -= stator.mfOffset;
+                        
 
                         // https://math.stackexchange.com/a/7934
                         // If v is the vector that points 'up' and p0 is some point on your plane, and finally p is the point that 
@@ -211,6 +235,7 @@ namespace IngameScript
             return result;
         }
         public void Update() {
+            g.log(Identity + " " + stator.mfOffset);
             stator.Update();
             hinge.Update();
         }
