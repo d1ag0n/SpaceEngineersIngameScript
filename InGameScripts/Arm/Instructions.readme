@@ -1,0 +1,12 @@
+﻿R e a d m e
+-----------
+
+Control Station
+Currently no controls but make a setup like control.png
+Tag each custom data with #control
+lcd is optional
+
+make a rotor for the arm put #arm in custom data
+add an arbitrary number of advanced rotors and hinges
+
+
