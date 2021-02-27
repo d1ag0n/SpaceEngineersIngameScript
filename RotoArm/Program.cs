@@ -48,6 +48,7 @@ namespace IngameScript {
                 firstFinger = lastFinger = new RotoFinger(stator, g, gts);
                 //firstFinger.SetTarget(mvTarget);
                 firstFinger.SetTurnTarget(0);
+                firstFinger.SetBendTarget(0.1f);
                 fingers.Add(firstFinger);
                 walkComplete = false;
             }
@@ -78,6 +79,7 @@ namespace IngameScript {
                     lastFinger = finger;
                     fingers.Add(finger);
                     //finger.SetTarget(mvTarget);
+                    finger.SetBendTarget(0.1f);
                     finger.SetTurnTarget(0);
                 } else {
                     walkComplete = true;
