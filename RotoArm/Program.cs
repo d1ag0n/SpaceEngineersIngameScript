@@ -47,7 +47,7 @@ namespace IngameScript {
                 //mvTarget = stator.WorldMatrix.Translation + stator.WorldMatrix.Up * 1000.0;
                 firstFinger = lastFinger = new RotoFinger(stator, g, gts);
                 //firstFinger.SetTarget(mvTarget);
-                firstFinger.SetTarget(0);
+                firstFinger.SetTurnTarget(0);
                 fingers.Add(firstFinger);
                 walkComplete = false;
             }
@@ -78,7 +78,7 @@ namespace IngameScript {
                     lastFinger = finger;
                     fingers.Add(finger);
                     //finger.SetTarget(mvTarget);
-                    finger.SetTarget(0);
+                    finger.SetTurnTarget(0);
                 } else {
                     walkComplete = true;
                     g.persist("FINGER WAS NOT OKAY");
@@ -96,7 +96,7 @@ namespace IngameScript {
                 }
             } else if (float.TryParse(arg, out angle)) {
                 foreach (var f in fingers)
-                    f.SetTarget(angle);
+                    f.SetBendTarget(angle);
             }
         }
         public void Main(string argument, UpdateType updateSource) {
