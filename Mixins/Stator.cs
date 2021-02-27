@@ -11,6 +11,7 @@ namespace IngameScript {
         const float lockStep = 2.0f * (MathHelper.Pi / 180.0f);
         const float hingeUpper = 90.0f * (MathHelper.Pi / 180.0f);
         const float hingeLower = -90.0f * (MathHelper.Pi / 180.0f);
+        
 
         /// <summary>
         /// offset in radians + or - 
@@ -33,6 +34,9 @@ namespace IngameScript {
         public float Displacement => stator.Displacement;
         readonly bool hinge;
 
+        readonly float softLower;
+        readonly float softUpper;
+
         public enum StatorMode {
             point,
             hold,
@@ -44,7 +48,23 @@ namespace IngameScript {
         float mfTarget;
         public StatorMode Mode { get; private set; }
         bool held;
+        readonly string holdMessage;
+        readonly string moveMessage;
 
+        /// <summary>
+        /// Using the limits will cause the rotor to behave like a hinge these are soft limits
+        /// all provided limits limit the 0 position of the rotor in radians, values outside of > 0 < pi are clamped
+        /// </summary>
+        /// <param name="aStator"></param>
+        /// <param name="aLogger"></param>
+        /// <param name="aLower">Lower limit > 0 < pi</param>
+        /// <param name="aUpper">upper limit > 0 < pi</param>
+        public Stator(IMyMotorStator aStator, Logger aLogger, float aLower = 0, float aUpper = 0) {
+            stator = aStator;
+            g = aLogger;
+            softLower = aLower;
+            softUpper = aUpper;
+        }
         public Stator(IMyMotorStator aStator, Logger aLogger) {
             stator = aStator;
             g = aLogger;
@@ -54,6 +74,8 @@ namespace IngameScript {
                 //g.persist(aStator.BlockDefinition.SubtypeId);
             }
             aStator.ShowOnHUD = true;
+            holdMessage = stator.CustomName + " holding";
+            moveMessage = stator.CustomName + " moving";
             Go();
         }
         public void Info() {
@@ -70,24 +92,8 @@ namespace IngameScript {
             g.log("mfTarget          ", mfTarget);
             g.log("mvTarget          ", mvTarget);
         }
-        public void Go() {
-
+        void Go() {
             stator.TargetVelocityRad = 0;
-            if (hinge) {
-                if (stator.UpperLimitRad != hingeUpper) {
-                    stator.UpperLimitRad = hingeUpper;
-                }
-                if (stator.LowerLimitRad != hingeLower) {
-                    stator.LowerLimitRad = hingeLower;
-                }
-            } else {
-                if (stator.UpperLimitRad != float.MaxValue) {
-                    stator.UpperLimitRad = float.MaxValue;
-                }
-                if (stator.LowerLimitRad != float.MinValue) {
-                    stator.LowerLimitRad = float.MinValue;
-                }
-            }
             if (stator.RotorLock) {
                 stator.RotorLock = false;
             }
@@ -96,8 +102,7 @@ namespace IngameScript {
             }
             held = false;
         }
-        public void Stop() {
-            g.persist("stator stopped");
+        void Stop() {
             stator.TargetVelocityRad = 0;
             stator.UpperLimitRad = stator.Angle;
             stator.LowerLimitRad = stator.Angle;
@@ -106,13 +111,19 @@ namespace IngameScript {
         public void SetTarget(float aTarget) {
             mfTarget = aTarget;
             Mode = StatorMode.hold;
+            Go();
         }
         public void SetTarget(Vector3D aTarget) {
             mvTarget = aTarget;
             Mode = StatorMode.point;
+            Go();
         }
+
         public bool Update() {
-            if (!held) {
+            if (held) {
+                //g.log(holdMessage + " " + mfOffset);
+            } else {
+                //g.log(moveMessage + " " + mfOffset);
                 if (Mode == StatorMode.hold) {
                     return setStatorAngle(mfTarget);
                 } else if (Mode == StatorMode.point) {
@@ -171,12 +182,9 @@ namespace IngameScript {
                     aAngle -= MathHelper.Pi;
                 }
             }
-            var angleAbs = Math.Abs(aAngle);
             bool result = Math.Abs(aAngle) < epsilon;
             if (result) {
-                Go();
-                //stator.UpperLimitRad = stator.Angle;
-                //stator.LowerLimitRad = stator.Angle;
+                Stop();
             } else {
                 stator.TargetVelocityRad = aAngle * SpeedFactor;
                 limiter();
@@ -184,7 +192,7 @@ namespace IngameScript {
             return result;
         }
         void limiter() {
-            return;
+            
             var upper = stator.Angle + lockStep;
             var lower = stator.Angle - lockStep;
 

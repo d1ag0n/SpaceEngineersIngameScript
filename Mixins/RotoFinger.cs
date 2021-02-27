@@ -60,16 +60,6 @@ namespace IngameScript
         }
         public bool stopped { get; private set; }
         
-        public void Stop() {
-            stator.Stop();
-            hinge.Stop();
-            stopped = true;
-        }
-        public void Go() {
-            stator.Go();
-            hinge.Go();
-            stopped = false;
-        }
         public RotoFinger(IMyMotorAdvancedStator aStator, Logger aLogger, GTS aGTS, RotoFinger aPrevious = null) {
             if (aStator == null || aLogger == null || aGTS == null || aStator.Top == null) {
                 return;
@@ -86,6 +76,8 @@ namespace IngameScript
             }
 
             aStator.CustomName = "Finger - " + Identity.ToString("D2") + " - Turn";
+            if (Identity == 4)
+            g.persist(aStator.CustomName);
             try {
                 IMyMotorAdvancedStator hingeRotor = null;
                 gts.getByGrid(aStator.TopGrid.EntityId, ref hingeRotor);
@@ -110,10 +102,13 @@ namespace IngameScript
                         }
                     }
                     stator.mfOffset += ab;
+                    if (Identity == 4)
+                        g.persist($"ab hu stl {ab} {dot}");
                     if (previousFinger != null) {
                         var previousHingeTopUp = Base6Directions.GetVector(previousFinger.hinge.stator.Top.Orientation.Up);
                         var statorFront = Base6Directions.GetVector(stator.stator.Orientation.Forward);
                         var statorLeft = Base6Directions.GetVector(stator.stator.Orientation.Left);
+                        var statorRight = -Base6Directions.GetVector(stator.stator.Orientation.Left);
                         if (previousFinger.piston == null) {
                             ab = (float)MAF.angleBetween(previousHingeTopUp, statorLeft);
                             if (MAF.nearEqual(ab, MathHelper.PiOver2)) {
@@ -123,15 +118,23 @@ namespace IngameScript
                                 }
                             }
                             stator.mfOffset += ab;
+                            if (Identity == 4)
+                                g.persist($"ab phtu sl {ab} {dot}");
                         } else {
                             var previousPistonLeft = Base6Directions.GetVector(previousFinger.piston.Orientation.Left);
-                            var previousPistonTopLeft = Base6Directions.GetVector(previousFinger.piston.Top.Orientation.Left);
                             ab = (float)MAF.angleBetween(previousHingeTopUp, previousPistonLeft);
                             if (MAF.nearEqual(ab, MathHelper.PiOver2)) {
                                 var previousPistonFront = Base6Directions.GetVector(previousFinger.piston.Orientation.Forward);
-                                dot = previousHingeTopUp.Dot(previousPistonLeft);
+                                dot = previousHingeTopUp.Dot(previousPistonFront);
+                                if (dot < 0) {
+                                    ab = -ab;
+                                }
                             }
                             stator.mfOffset += ab;
+                            if (Identity == 4)
+                                g.persist($"ab phtu ppl {ab} {dot}");
+
+                            var previousPistonTopLeft = Base6Directions.GetVector(previousFinger.piston.Top.Orientation.Left);
                             ab = (float)MAF.angleBetween(previousPistonTopLeft, statorLeft);
                             if (MAF.nearEqual(ab, MathHelper.PiOver2)) {
                                 dot = previousPistonTopLeft.Dot(statorFront);
@@ -140,6 +143,8 @@ namespace IngameScript
                                 }
                             }
                             stator.mfOffset += ab;
+                            if (Identity == 4)
+                                g.persist($"ab pptl sl {ab} {dot}");
                         }
 
                     }
@@ -183,7 +188,7 @@ namespace IngameScript
                         gts.getByGrid(piston.TopGrid.EntityId, ref rotor);
                     }
 
-                    if (rotor != null) {
+                    if (rotor != null && rotor.Top != null) {
                         result = new RotoFinger(rotor, g, gts, this);
                         
                         var hingeTopRight = -Base6Directions.GetVector(hinge.Top.Orientation.Left);
@@ -213,29 +218,40 @@ namespace IngameScript
             return result;
         }
         public void Update() {
+            if (mode == FingerMode.hold) {
+                g.log("update turn ", mfTurnTarget, " bend ", mfBendTarget);
+            } else if (mode == FingerMode.point) {
+                g.log("update pointing");
+            } else {
+                g.log("update unknown mode");
+            }
             stator.Update();
             hinge.Update();
         }
 
-        public void SetTurnTarget(float aTarget) {
-            mfTurnTarget = aTarget;
+        public void SetTargetTurnBend(float aTurn, float aBend) {
+            
+            mfTurnTarget = aTurn;
+            mfBendTarget = aBend;
             mode = FingerMode.hold;
-            stator.SetTarget(aTarget);
+
+            stator.SetTarget(aTurn);
             stator.reverse = false;
-        }
-        public void SetBendTarget(float aTarget) {
-            mfBendTarget = aTarget;
-            mode = FingerMode.hold;
-            hinge.SetTarget(aTarget);
-            stator.reverse = false;
+
+            hinge.SetTarget(aBend);
+            hinge.reverse = false;
         }
   
-        public void SetTarget(Vector3D aTarget) {
+        public void SetTargetWorld(Vector3D aTarget) {
+            
             mvTarget = aTarget;
             mode = FingerMode.point;
+            
             stator.SetTarget(aTarget);
-            hinge.SetTarget(aTarget);
             stator.reverse = true;
+
+            hinge.SetTarget(aTarget);
+            hinge.reverse = false;
         }
 
         public void Info() {

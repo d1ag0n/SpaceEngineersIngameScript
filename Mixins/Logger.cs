@@ -101,7 +101,7 @@ namespace IngameScript
             mPersistent.Add(aMessage);
         }
         public string get() {
-            for (int i = 0; i < mPersistent.Count; i++) {
+            for (int i = mPersistent.Count - 1; i >= 0; i--) {
                 mLog.Insert(0, Environment.NewLine);
                 mLog.Insert(0, mPersistent[i]);
                 mLog.Insert(0, $"#{i} ");

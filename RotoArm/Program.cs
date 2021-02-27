@@ -44,11 +44,10 @@ namespace IngameScript {
             IMyMotorAdvancedStator stator = null;
             gts.getByTag("arm", ref stator);
             if (stator != null) {
-                //mvTarget = stator.WorldMatrix.Translation + stator.WorldMatrix.Up * 1000.0;
+                mvTarget = stator.WorldMatrix.Translation + stator.WorldMatrix.Down * 1000.0;
                 firstFinger = lastFinger = new RotoFinger(stator, g, gts);
                 //firstFinger.SetTarget(mvTarget);
-                firstFinger.SetTurnTarget(0);
-                firstFinger.SetBendTarget(0.1f);
+                firstFinger.SetTargetTurnBend(0, 0);
                 fingers.Add(firstFinger);
                 walkComplete = false;
             }
@@ -79,8 +78,7 @@ namespace IngameScript {
                     lastFinger = finger;
                     fingers.Add(finger);
                     //finger.SetTarget(mvTarget);
-                    finger.SetBendTarget(0.1f);
-                    finger.SetTurnTarget(0);
+                    finger.SetTargetTurnBend(0, 0);
                 } else {
                     walkComplete = true;
                     g.persist("FINGER WAS NOT OKAY");
@@ -89,16 +87,19 @@ namespace IngameScript {
         }
         void procArg(string arg) {
             float angle;
+            g.log("parsing " + arg);
             if (arg == "up") {
                 if (firstFinger != null) {
                     mvTarget = firstFinger.stator.WorldMatrix.Translation + firstFinger.stator.WorldMatrix.Up * 1000.0;
                     foreach (var f in fingers) {
-                        f.SetTarget(mvTarget);
+                        f.SetTargetWorld(mvTarget);
                     }
                 }
             } else if (float.TryParse(arg, out angle)) {
-                foreach (var f in fingers)
-                    f.SetBendTarget(angle);
+
+                foreach (var f in fingers) {
+                    f.SetTargetTurnBend(0, angle);
+                }
             }
         }
         public void Main(string argument, UpdateType updateSource) {
