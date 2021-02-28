@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Sandbox.ModAPI.Ingame;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
@@ -18,7 +16,7 @@ namespace IngameScript {
         /// </summary>
         public float mfOffset = 0;//22.5f * (MathHelper.Pi / 180.0f);
         /// <summary>
-        /// Does not apply to hinge, when true will point with the side opposite of offset when that side is closer
+        /// Does not apply to hinge, when true will point with the position opposite of offset when that position is closer
         /// </summary>
         public bool reverse = false;
         /// <summary>
@@ -33,14 +31,14 @@ namespace IngameScript {
         public MatrixD WorldMatrix => stator.WorldMatrix;
         public float Displacement => stator.Displacement;
         readonly bool hinge;
+        readonly bool softHinge;
 
         readonly float softLower;
         readonly float softUpper;
 
         public enum StatorMode {
             point,
-            hold,
-            idle
+            hold
         }
         public readonly IMyMotorStator stator;
         readonly Logger g;
@@ -48,11 +46,9 @@ namespace IngameScript {
         float mfTarget;
         public StatorMode Mode { get; private set; }
         bool held;
-        readonly string holdMessage;
-        readonly string moveMessage;
 
         /// <summary>
-        /// Using the limits will cause the rotor to behave like a hinge these are soft limits
+        /// Using the limits will cause the rotor to behave like a hinge
         /// all provided limits limit the 0 position of the rotor in radians, values outside of > 0 < pi are clamped
         /// </summary>
         /// <param name="aStator"></param>
@@ -64,33 +60,29 @@ namespace IngameScript {
             g = aLogger;
             softLower = aLower;
             softUpper = aUpper;
+            softHinge = true;
         }
         public Stator(IMyMotorStator aStator, Logger aLogger) {
             stator = aStator;
             g = aLogger;
-            if (hinge = aStator.BlockDefinition.SubtypeId == "LargeHinge") {
-
-            } else {
-                //g.persist(aStator.BlockDefinition.SubtypeId);
-            }
+            hinge = aStator.BlockDefinition.SubtypeId == "LargeHinge";
             aStator.ShowOnHUD = true;
-            holdMessage = stator.CustomName + " holding";
-            moveMessage = stator.CustomName + " moving";
             Go();
         }
         public void Info() {
             g.log("CustomName        ", stator.CustomName);
             g.log("Angle             ", stator.Angle);
             g.log("TargetVelocityRad ", stator.TargetVelocityRad);
-            g.log("Upper             ", stator.UpperLimitRad);
-            g.log("Lower             ", stator.LowerLimitRad);
-            g.log("Torque            ", stator.Torque);
-            g.log("BrakingTorque     ", stator.BrakingTorque);
-            g.log("Displacement      ", stator.Displacement);
+            //g.log("Upper             ", stator.UpperLimitRad);
+            //g.log("Lower             ", stator.LowerLimitRad);
+            //g.log("Torque            ", stator.Torque);
+            //g.log("BrakingTorque     ", stator.BrakingTorque);
+            //g.log("Displacement      ", stator.Displacement);
             g.log("held              ", held);
             g.log("mode              ", Mode);
             g.log("mfTarget          ", mfTarget);
-            g.log("mvTarget          ", mvTarget);
+            g.log("mfOffset          ", mfOffset);
+            //g.log("mvTarget          ", mvTarget);
         }
         void Go() {
             stator.TargetVelocityRad = 0;
@@ -108,22 +100,32 @@ namespace IngameScript {
             stator.LowerLimitRad = stator.Angle;
             held = true;
         }
+        /// <summary>
+        /// target angle -pi to pi radians away from offset
+        /// </summary>
+        /// <param name="aTarget"></param>
         public void SetTarget(float aTarget) {
             mfTarget = aTarget;
             Mode = StatorMode.hold;
             Go();
         }
+        /// <summary>
+        /// set a target in world space
+        /// </summary>
+        /// <param name="aTarget"></param>
         public void SetTarget(Vector3D aTarget) {
             mvTarget = aTarget;
             Mode = StatorMode.point;
             Go();
         }
 
+        /// <summary>
+        /// returns true when the target is reached
+        /// when target is an angle the stator will lock when the angle is within epsilon
+        /// </summary>
+        /// <returns></returns>
         public bool Update() {
-            if (held) {
-                //g.log(holdMessage + " " + mfOffset);
-            } else {
-                //g.log(moveMessage + " " + mfOffset);
+            if (!held) {
                 if (Mode == StatorMode.hold) {
                     return setStatorAngle(mfTarget);
                 } else if (Mode == StatorMode.point) {
@@ -136,14 +138,14 @@ namespace IngameScript {
         }
 
         void getTargetVectors(out Vector3D local, out Vector3D localFlat) {
-            var targetVector = Vector3D.Normalize(mvTarget - stator.WorldMatrix.Translation);
-            local = MAF.world2dir(targetVector, stator.WorldMatrix);
+            local = MAF.world2pos(mvTarget, stator.WorldMatrix);
             localFlat = new Vector3D(local.X, 0, local.Z);
         }
         bool pointAtTarget() {
             Vector3D local, localFlat;
             getTargetVectors(out local, out localFlat);
             if (hinge) {
+                
                 float angle = (float)MAF.angleBetween(Vector3D.Left, localFlat);
                 if (localFlat.Z > 0) {
                     angle = -angle;
@@ -155,9 +157,13 @@ namespace IngameScript {
                 return result;
             } else {
                 var ab = MAF.angleBetween(Vector3D.Backward, localFlat);
+                g.log("ab ", ab);
+                
                 if (local.X > 0) {
-                    ab = MathHelperD.TwoPi - ab;
+                    ab = MathHelper.TwoPi - ab;
                 }
+                g.log("ab ", ab);
+
                 return setStatorAngle((float)ab);
             }
         }
@@ -165,6 +171,7 @@ namespace IngameScript {
         bool setStatorAngle(float aAngle) {
             aAngle += mfOffset;            
             aAngle -= stator.Angle;
+            MathHelper.LimitRadians(ref aAngle);
             
             if (aAngle > MathHelper.Pi) {
                 aAngle -= MathHelper.TwoPi;
@@ -192,14 +199,20 @@ namespace IngameScript {
             return result;
         }
         void limiter() {
-            
-            var upper = stator.Angle + lockStep;
-            var lower = stator.Angle - lockStep;
 
-            if (stator.TargetVelocityRad > 0) {
-                lower = stator.Angle - epsilon;
+            //var upper = stator.Angle + lockStep;
+            //var lower = stator.Angle - lockStep;
+            float upper, lower;
+            var velo = stator.TargetVelocityRad;
+            var a = stator.Angle;
+            if (velo > 0) {
+                lower = a - epsilon;
+                upper = a + velo;
             } else if (stator.TargetVelocityRad < 0) {
                 upper = stator.Angle + epsilon;
+                lower = a + velo;
+            } else {
+                upper = lower = stator.Angle;
             }
 
             if (hinge) {
