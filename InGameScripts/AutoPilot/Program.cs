@@ -1866,7 +1866,7 @@ namespace IngameScript
                                             );
                                             setMissionDamp();
                                             mMission.Objective = pps.Position;
-                                        } catch (Exception ex) { g.persist("failed to parse pps"); }
+                                        } catch { g.persist("failed to parse pps"); }
                                     }
                                 }
                                 break;
@@ -1879,7 +1879,7 @@ namespace IngameScript
                                                 var pps = new PPS(mPlanet.Value.Position, mdSeaLevel, wp.Coords);
                                                 g.persist(pps.ToString());
                                             }
-                                        } catch (Exception ex) { g.persist("failed to parse pps"); }
+                                        } catch { g.persist("failed to parse pps"); }
                                     }
                                 }
                                 break;
@@ -1891,7 +1891,7 @@ namespace IngameScript
                                         var d = double.Parse(args[3]);
                                         mGyro.setPid(p, i, d);
                                         g.persist($"pid {p} {i} {d}");
-                                    } catch (Exception ex) { g.persist("failed to parse pid"); }
+                                    } catch { g.persist("failed to parse pid"); }
                                 }
                                 break;
                         }

@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}</ProjectGuid>
+    <ProjectGuid>{141C66B8-DC4E-4706-A0D8-5782573812F4}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>IngameScript</RootNamespace>
-    <AssemblyName>InventoryManager</AssemblyName>
+    <AssemblyName>SmartPilot</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -27,7 +27,6 @@
   <ItemGroup>
     <Reference Include="netstandard" />
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -47,10 +46,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </AdditionalFiles>
     <Compile Include="Program.cs" />
+    <AdditionalFiles Include="Instructions.readme" />
     <AdditionalFiles Include="thumb.png" />
     <AdditionalFiles Include="MDK\whitelist.cache" />
   </ItemGroup>
-  <Import Project="..\..\Mixins\Library.projitems" Label="Shared" />
+  <Import Project="..\Mixins\SmartPilot.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">
     <Copy SourceFiles="MDK\MDK.options.props" DestinationFolder="$(TargetDir)\MDK" />

@@ -49,21 +49,26 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrientationInfo", "Orientat
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "OrientationInfo", "Mixins\OrientationInfo.shproj", "{6C40D436-D4C5-4686-8C44-2179BC367042}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "AutoPilot", "Mixins\AutoPilot.shproj", "{4941E846-35F4-421B-B602-9D4766F96BDB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPilot", "SmartPilot\SmartPilot.csproj", "{141C66B8-DC4E-4706-A0D8-5782573812F4}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SmartPilot", "Mixins\SmartPilot.shproj", "{6677010C-396D-4DA2-83DF-E933B21A4689}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
 		Mixins\Finger.projitems*{0629d3b7-3a06-48ab-b1a7-32b5513c406d}*SharedItemsImports = 13
 		Mixins\Stator.projitems*{0f1f645a-24c1-49ad-8f30-373946e8ac1d}*SharedItemsImports = 4
+		Mixins\SmartPilot.projitems*{141c66b8-dc4e-4706-a0d8-5782573812f4}*SharedItemsImports = 4
 		Mixins\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9}*SharedItemsImports = 13
+		Mixins\AutoPilot.projitems*{4941e846-35f4-421b-b602-9d4766f96bdb}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{5257316b-e548-4c22-9209-6d99073e9230}*SharedItemsImports = 4
-		Mixins\Library.projitems*{53ece70b-9576-43ff-9432-c30bbf8c55f4}*SharedItemsImports = 4
-		Mixins\Connector.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
-		Mixins\Dock.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
-		Mixins\Library.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
-		Mixins\Mission.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
+		Mixins\AutoPilot.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
 		Mixins\Stator.projitems*{5f82ad74-3d6b-47fe-a9e0-a057ff01556f}*SharedItemsImports = 13
 		Mixins\Library.projitems*{60452262-c0c2-4b73-a047-a270ba83b831}*SharedItemsImports = 4
+		Mixins\SmartPilot.projitems*{6677010c-396d-4da2-83df-e933b21a4689}*SharedItemsImports = 13
 		Mixins\OrientationInfo.projitems*{6c40d436-d4c5-4686-8c44-2179bc367042}*SharedItemsImports = 13
 		Mixins\Library.projitems*{6c90fb01-443c-4ef9-bef4-9e1046b1f0a0}*SharedItemsImports = 4
 		Mixins\Library.projitems*{6eb7eb41-9002-4602-93f1-9da21807e436}*SharedItemsImports = 4
@@ -71,8 +76,6 @@ Global
 		Mixins\OrientationInfo.projitems*{a34069b7-6d6c-4fc6-8aa9-1d96eacdd470}*SharedItemsImports = 4
 		Mixins\Library.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
 		Mixins\Mission.projitems*{f1cfc2c0-6a86-477c-8065-f07745e218c4}*SharedItemsImports = 13
-		Mixins\Finger.projitems*{f79d8f2b-636e-400c-ba34-54dd32c03f4c}*SharedItemsImports = 4
-		Mixins\Library.projitems*{f79d8f2b-636e-400c-ba34-54dd32c03f4c}*SharedItemsImports = 4
 		Mixins\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -176,6 +179,13 @@ Global
 		{A34069B7-6D6C-4FC6-8AA9-1D96EACDD470}.Release|Any CPU.Build.0 = Debug|x64
 		{A34069B7-6D6C-4FC6-8AA9-1D96EACDD470}.Release|x64.ActiveCfg = Debug|x64
 		{A34069B7-6D6C-4FC6-8AA9-1D96EACDD470}.Release|x64.Build.0 = Debug|x64
+		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Debug|x64.ActiveCfg = Debug|x64
+		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Debug|x64.Build.0 = Debug|x64
+		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|Any CPU.ActiveCfg = Debug|x64
+		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|Any CPU.Build.0 = Debug|x64
+		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|x64.ActiveCfg = Debug|x64
+		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -192,6 +202,8 @@ Global
 		{41AAEBE1-73A6-4D0D-9C89-C3A4BCAB6EC9} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{3F86D443-F507-4FC2-967C-8636614FC5FE} = {627FE829-2AFB-4EB8-B25D-A42F2B5F5574}
 		{6C40D436-D4C5-4686-8C44-2179BC367042} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{4941E846-35F4-421B-B602-9D4766F96BDB} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{6677010C-396D-4DA2-83DF-E933B21A4689} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}

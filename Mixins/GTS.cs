@@ -100,7 +100,7 @@ namespace IngameScript
                 for (int i = 0; i < list.Count; i++) {
                     var b = list[i];
                     if (b is T) {
-                        g.log("adding ", b.CustomName);
+                        //g.log("adding ", b.CustomName);
                         aList.Add((T)b);
                     } else {
                         g.log("not added ", b, " ", b.CustomName);
@@ -127,7 +127,7 @@ namespace IngameScript
             mArguments.Clear();
             program.GridTerminalSystem.GetBlocksOfType<IMyEntity>(mWork);
             //program.GridTerminalSystem.GetBlocks(mWork);
-            g.persist("GTS found " + mWork.Count + " blocks");
+            //g.persist("GTS found " + mWork.Count + " blocks");
             foreach (var b in mWork) { 
                 if (b is IMyTerminalBlock) {
                     var tb = b as IMyTerminalBlock;

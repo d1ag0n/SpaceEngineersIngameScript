@@ -26,6 +26,7 @@ namespace IngameScript
     }
     class V3DLag
     {
+        bool accurate = false;
         Vector3D[] values;
         Vector3D sum;
         int pos = 0;
@@ -39,8 +40,9 @@ namespace IngameScript
             pos++;
             if (pos == values.Length) {
                 pos = 0;
+                accurate = true;
             }
-            return sum / values.Length;
+            return accurate ? sum / values.Length : value;
         }
     }
 }

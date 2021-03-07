@@ -35,6 +35,7 @@ namespace IngameScript {
             gts.get(ref block);
             gts.initList(mLCDs, false);
             stator = new Stator(block, g);
+            stator.SpeedFactor = 5.0f;
             gts.get(ref mRC);
             gts.get(ref mSensor);
         }
@@ -71,7 +72,7 @@ namespace IngameScript {
         public void Main(string argument, UpdateType updateSource) {
             try {
                 procArgument(argument);
-                //doDetect();
+                doDetect();
                 stator.Info();
                 stator.Update();
             } catch(Exception ex) {

@@ -1,12 +1,18 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
 namespace IngameScript
 {
+    /// <summary>
+    /// For helping to control an arm made of rotors. The arm begins at first rotor.
+    /// It then expects an additional rotor with it's up perpendicular to the up of the first rotor
+    /// Then an optional piston. Blocks out of this order are undefined
+    /// You can add an arbitrary number of fingers to the arm.
+    /// Currently the class will handle setting the angle of each finger.
+    /// Pointing by target is currently broken
+    /// </summary>
     class RotoFinger
     {
         Vector3D mvTarget;
@@ -52,7 +58,8 @@ namespace IngameScript
 
         enum FingerMode {
             hold,
-            point
+            point,
+            manual
         }
 
         public bool okay {
@@ -102,8 +109,7 @@ namespace IngameScript
                         }
                     }
                     stator.mfOffset += ab;
-                    if (Identity == 4)
-                        g.persist($"ab hu stl {ab} {dot}");
+                    //if (Identity == 4) g.persist($"ab hu stl {ab} {dot}");
                     if (previousFinger != null) {
                         var previousHingeTopUp = Base6Directions.GetVector(previousFinger.hinge.stator.Top.Orientation.Up);
                         var statorFront = Base6Directions.GetVector(stator.stator.Orientation.Forward);
@@ -118,8 +124,7 @@ namespace IngameScript
                                 }
                             }
                             stator.mfOffset += ab;
-                            if (Identity == 4)
-                                g.persist($"ab phtu sl {ab} {dot}");
+                            //if (Identity == 4) g.persist($"ab phtu sl {ab} {dot}");
                         } else {
                             var previousPistonLeft = Base6Directions.GetVector(previousFinger.piston.Orientation.Left);
                             ab = (float)MAF.angleBetween(previousHingeTopUp, previousPistonLeft);
@@ -131,8 +136,7 @@ namespace IngameScript
                                 }
                             }
                             stator.mfOffset += ab;
-                            if (Identity == 4)
-                                g.persist($"ab phtu ppl {ab} {dot}");
+                            //if (Identity == 4) g.persist($"ab phtu ppl {ab} {dot}");
 
                             var previousPistonTopLeft = Base6Directions.GetVector(previousFinger.piston.Top.Orientation.Left);
                             ab = (float)MAF.angleBetween(previousPistonTopLeft, statorLeft);
@@ -143,8 +147,7 @@ namespace IngameScript
                                 }
                             }
                             stator.mfOffset += ab;
-                            if (Identity == 4)
-                                g.persist($"ab pptl sl {ab} {dot}");
+                            //if (Identity == 4) g.persist($"ab pptl sl {ab} {dot}");
                         }
 
                     }
@@ -217,16 +220,20 @@ namespace IngameScript
             }
             return result;
         }
-        public void Update() {
+        public bool Update() {
             if (mode == FingerMode.hold) {
-                g.log("update turn ", mfTurnTarget, " bend ", mfBendTarget);
+                //g.log("update turn ", mfTurnTarget, " bend ", mfBendTarget);
             } else if (mode == FingerMode.point) {
                 g.log("update pointing");
-            } else {
-                g.log("update unknown mode");
+            } else if (mode == FingerMode.manual) {
+                return true;
             }
-            stator.Update();
-            hinge.Update();
+            return stator.Update() & hinge.Update();
+        }
+        public void SetManual() {
+            mode = FingerMode.manual;
+            hinge.stator.UpperLimitRad = float.MaxValue;
+            hinge.stator.LowerLimitRad = float.MinValue;
         }
 
         public void SetTargetTurnBend(float aTurn, float aBend) {

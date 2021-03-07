@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Finger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Stator.cs" />
   </ItemGroup>
 </Project>

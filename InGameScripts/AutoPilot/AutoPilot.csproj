@@ -68,10 +68,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <Import Project="..\..\Mixins\Library.projitems" Label="Shared" />
-  <Import Project="..\..\Mixins\Connector.projitems" Label="Shared" />
-  <Import Project="..\..\Mixins\Mission.projitems" Label="Shared" />
-  <Import Project="..\..\Mixins\Dock.projitems" Label="Shared" />
+  <Import Project="..\..\Mixins\AutoPilot.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">
     <Copy SourceFiles="MDK\MDK.options.props" DestinationFolder="$(TargetDir)\MDK" />

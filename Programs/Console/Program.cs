@@ -13,7 +13,39 @@ namespace commandline
 {
     class Program
     {
+        static void chord() {
 
+            long a = 0;
+            long b = 220;
+            long r = 0;
+
+            r = a / b;
+            return;
+
+            float f = -4;
+            MathHelper.LimitRadians(ref f);
+            //var a = 5.0f; // chord
+            var s = 10.0f; // arc length
+
+            // h height of arc
+            // r height of triangle below arc
+            // R radius = h+r
+            // s=  rθ
+            // r =  R cos(1/2 θ)
+            // r = 1/2 a cot(1/2 θ)
+            // r = 1/2 sqrt(4 r^2 - a^2)
+
+
+            var count = 6;
+
+            var d1 = (count * (count + 1)) / 2;
+            var d2 = count * (count + 1) / 2;
+
+            int c1 = 6 / 2;
+            int c2 = 5 / 2;
+
+            return;
+        }
         static void dicTest() {
             var d = new Dictionary<int, string>();
             d.Add(1, "");
@@ -388,6 +420,8 @@ namespace commandline
         const double timeLimit = 1.0 / updatesPerSecond;
 
         static void Main(string[] args) {
+            chord();
+            return;
             float ab = (float)MAF.angleBetween(Vector3D.Right, Vector3D.Forward);
             bool val = ab == MathHelper.PiOver2;
             

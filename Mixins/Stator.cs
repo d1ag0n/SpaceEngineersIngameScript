@@ -49,7 +49,7 @@ namespace IngameScript {
 
         /// <summary>
         /// Using the limits will cause the rotor to behave like a hinge
-        /// all provided limits limit the 0 position of the rotor in radians, values outside of > 0 < pi are clamped
+        /// limit the angle above/below offset in radians, values between 0 and pi
         /// </summary>
         /// <param name="aStator"></param>
         /// <param name="aLogger"></param>
@@ -167,16 +167,19 @@ namespace IngameScript {
                 return setStatorAngle((float)ab);
             }
         }
-            
         bool setStatorAngle(float aAngle) {
             aAngle += mfOffset;            
             aAngle -= stator.Angle;
             MathHelper.LimitRadians(ref aAngle);
-            
-            if (aAngle > MathHelper.Pi) {
-                aAngle -= MathHelper.TwoPi;
-            } else if (aAngle < -MathHelper.Pi) {
-                aAngle += MathHelper.TwoPi;
+
+            if (!softHinge) {
+                if (aAngle > MathHelper.Pi) {
+                    aAngle -= MathHelper.TwoPi;
+                /*} else if (aAngle < -MathHelper.Pi) {
+                    aAngle += MathHelper.TwoPi;*/
+                }
+            } else {
+
             }
 
             isReverse = false;

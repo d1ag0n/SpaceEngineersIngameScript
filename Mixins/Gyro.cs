@@ -41,11 +41,7 @@ namespace IngameScript
         }
 
         public void Rotate(Vector3D aDesiredDown) {
-            double pitch, roll;
-            Vector3D dir;
 
-            var sv = mRC.GetShipVelocities();
-            var av = MAF.world2dir(sv.AngularVelocity, mRC.WorldMatrix);
             //var av = sv.AngularVelocity;
 
 
@@ -73,7 +69,7 @@ namespace IngameScript
             // -Z = +roll
 
             //g.log("dd", aDesiredDown);
-            getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
+
             //g.log("pitch ", pitch);
             //g.log("roll  ", roll);
             //applyGyroOverride(pitch, 0.0, roll);
@@ -91,19 +87,31 @@ namespace IngameScript
             // pitchDif = lastPitch - pitchCheck
             // 
 
+            double pitch, roll;
+
+            var sv = mRC.GetShipVelocities();
+            var av = MAF.world2dir(sv.AngularVelocity, mRC.WorldMatrix);
+
+            getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
+
             var min = 0.1;
             var pitchDif = pitch - av.X;
-            //g.log("pitchDif ", pitchDif);
-            if (Math.Abs(pitchDif) < min)
+
+            if (Math.Abs(pitchDif) < min) {
                 pitchDif = 0;
+            }
 
             var rollDif = roll + av.Z;
-            //g.log("rollDif  ", rollDif);
-            if (Math.Abs(rollDif) < min)
+            
+            if (Math.Abs(rollDif) < min) {
                 rollDif = 0;
+            }
 
             var fact = 6.0;
             applyGyroOverride(pitch + pitchDif * fact, av.Y, roll + rollDif * fact);
+            
+            //g.log("pitchDif ", pitchDif);
+            //g.log("rollDif  ", rollDif);
             //lastPitch = pitch;
             //lastRoll = roll;
             //applyGyroOverride(0.0, 0.0, 0.5);

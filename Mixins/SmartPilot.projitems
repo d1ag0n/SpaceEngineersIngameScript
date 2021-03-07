@@ -3,18 +3,17 @@
   <PropertyGroup>
     <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
     <HasSharedItems>true</HasSharedItems>
-    <SharedGUID>41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9</SharedGUID>
+    <SharedGUID>6677010c-396d-4da2-83df-e933b21a4689</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>IngameScript</Import_RootNamespace>
+    <Import_RootNamespace>SmartPilot</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)GTS.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IAccept.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LCDManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)RotoArm.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)RotoFinger.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Stator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Thrust.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThrustManager.cs" />
   </ItemGroup>
 </Project>
