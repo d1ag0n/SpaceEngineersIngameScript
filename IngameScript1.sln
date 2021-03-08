@@ -65,6 +65,7 @@ Global
 		Mixins\RotoFinger.projitems*{41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9}*SharedItemsImports = 13
 		Mixins\AutoPilot.projitems*{4941e846-35f4-421b-b602-9d4766f96bdb}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{5257316b-e548-4c22-9209-6d99073e9230}*SharedItemsImports = 4
+		Mixins\SmartPilot.projitems*{53ece70b-9576-43ff-9432-c30bbf8c55f4}*SharedItemsImports = 4
 		Mixins\AutoPilot.projitems*{582c28db-1277-4bc5-9b3d-d5bece33bf65}*SharedItemsImports = 4
 		Mixins\Stator.projitems*{5f82ad74-3d6b-47fe-a9e0-a057ff01556f}*SharedItemsImports = 13
 		Mixins\Library.projitems*{60452262-c0c2-4b73-a047-a270ba83b831}*SharedItemsImports = 4

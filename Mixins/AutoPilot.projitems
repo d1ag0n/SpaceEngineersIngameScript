@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mission.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PPS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Scanner.cs" />

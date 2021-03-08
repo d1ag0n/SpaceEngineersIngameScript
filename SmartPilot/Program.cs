@@ -11,9 +11,10 @@ namespace IngameScript {
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             g = new Logger();
-            mThrust = new ThrustManager(g);
-            mLCD = new LCDManager(g);
+            mThrust = new ThrustManager();
+            mLCD = new LCDManager();
             mModules.Add(mThrust);
+            mModules.Add(mLCD);
             GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(null, p => {
                 foreach (var m in mModules) m.Accept(p); return false; 
             });

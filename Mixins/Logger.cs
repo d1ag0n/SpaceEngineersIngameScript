@@ -6,13 +6,13 @@ using VRageMath;
 
 namespace IngameScript
 {
-    class Logger
+    class Logger : Module<string>
     {
         string nl => Environment.NewLine;
         readonly StringBuilder mWork = new StringBuilder();
         readonly StringBuilder mLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>();
-
+        
         public void log(MyDetectedEntityInfo e) => log(string4(e));
         string string4(BoundingBoxD b) {
             mWork.Clear();
@@ -46,7 +46,9 @@ namespace IngameScript
             }
             return mWork.ToString();
         }
-      
+
+        public override bool Accept(IMyTerminalBlock b) => false;
+
         public void log(Vector3D v) => log(string4(v));
         string string4(Vector3D v) => $"X {v.X}{nl}Y {v.Y}{nl}Z {v.Z}";
         public string gps(string aName, Vector3D aPos) {

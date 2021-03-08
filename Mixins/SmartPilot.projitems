@@ -9,10 +9,16 @@
     <Import_RootNamespace>SmartPilot</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IAccept.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LCDManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PPS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Thrust.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustManager.cs" />
   </ItemGroup>

@@ -8,13 +8,14 @@ using VRageMath;
 namespace IngameScript {
     class ThrustManager : Module<IMyThrust> {
 
+        readonly Logger g;
         readonly List<Thrust> mThrust = new List<Thrust>();
         
-
-        readonly Logger g;
-        public ThrustManager(Logger aLogger) {
-            g = aLogger;
+        public ThrustManager() {
+            GetModule(out g);
         }
+
+
         public override bool Accept(IMyTerminalBlock b) {
             bool result = false;
             if (base.Accept(b)) {
@@ -55,6 +56,7 @@ namespace IngameScript {
             foreach (var t in mThrust) {
                 g.log(t.mGroup);
             }
+
         }
         public IMyThrust Get(int aIndex) {
             IMyThrust result = null;

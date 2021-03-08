@@ -10,8 +10,8 @@ namespace IngameScript {
     class LCDManager : Module<IMyTextPanel> {
         readonly List<IMyTextPanel> mLCDs = new List<IMyTextPanel>();
         readonly Logger g;
-        public LCDManager(Logger aLogger) {
-            g = aLogger;
+        public LCDManager() {
+            GetModule(out g);
         }
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);

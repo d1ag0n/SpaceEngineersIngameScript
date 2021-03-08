@@ -14,7 +14,8 @@ namespace commandline
     class Program
     {
         static void chord() {
-
+            var g1 = new Logger();
+            var t = new ThrustManager();
             long a = 0;
             long b = 220;
             long r = 0;
