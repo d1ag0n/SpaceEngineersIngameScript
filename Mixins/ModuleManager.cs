@@ -4,8 +4,14 @@ using System.Collections.Generic;
 
 namespace IngameScript {
     public static class ModuleManager {
-
+        static readonly List<IAccept> allModules = new List<IAccept>();
         static readonly Dictionary<int, List<IAccept>> modules = new Dictionary<int, List<IAccept>>();
+        public static bool Accept(IMyTerminalBlock b) {
+            foreach (var m in allModules) {
+                m.Accept(b);
+            }
+            return false;
+        }
         public static void Add<T>(Module<T> m) {
             Logger g;
             List<IAccept> list;
@@ -22,6 +28,7 @@ namespace IngameScript {
                 modules.Add(hash, list);
             }
             list.Add(m);
+            allModules.Add(m);
         }
         public static bool GetModule<S>(out S aComponent) {
             var hash = typeof(S).GetHashCode();

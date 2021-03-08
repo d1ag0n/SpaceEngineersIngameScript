@@ -6,29 +6,18 @@ using VRageMath;
 
 namespace IngameScript
 {
-    class Gyro {
+    class GyroModule : Module<IMyGyro> {
+
+
+        /*
         const double updatesPerSecond = 6.0;
         double proportionalConstant = 2.5;
         double integralConstant = 0.1;
         double derivativeConstant = 1.0;
         double pidLimit = 10;
         const double timeLimit = 1.0 / updatesPerSecond;
-
         PID pidPitch;
         PID pidRoll;
-
-        readonly GTS gts;
-        readonly Logger g;
-        readonly List<IMyGyro> mGyros = new List<IMyGyro>();
-        readonly IMyShipController mRC;
-        public Gyro(GTS aGTS, Logger aLogger) {
-            gts = aGTS;
-            g = aLogger;
-            gts.initList(mGyros);
-            gts.get(ref mRC);
-            initPid();
-            manual(false);
-        }
         void initPid() {
             pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
             pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
@@ -39,13 +28,37 @@ namespace IngameScript
             derivativeConstant = d;
             initPid();
         }
+        */
+        
 
+        ShipControllerModule _controller;
+        ShipControllerModule controller {
+            get {
+                if (_controller == null) {
+                    GetModule(out _controller);
+                }
+                return _controller;
+            }
+        }
+        
+        public GyroModule() {
+            //initPid();
+            
+        }
+        
+        public override bool Accept(IMyTerminalBlock b) {
+            var result = base.Accept(b);
+            if (result) {
+                init(b as IMyGyro);
+            }
+            return result;
+        }
         public void Rotate(Vector3D aDesiredDown) {
 
             //var av = sv.AngularVelocity;
 
 
-            if (aDesiredDown.IsZero()) {
+            if (aDesiredDown.IsZero() || controller == null) {
                 applyGyroOverride(0, 0, 0);
                 return;
             }
@@ -89,8 +102,8 @@ namespace IngameScript
 
             double pitch, roll;
 
-            var sv = mRC.GetShipVelocities();
-            var av = MAF.world2dir(sv.AngularVelocity, mRC.WorldMatrix);
+            var sv = controller.GetShipVelocities();
+            var av = MAF.world2dir(sv.AngularVelocity, controller.WorldMatrix);
 
             getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
 
@@ -119,28 +132,23 @@ namespace IngameScript
         }
 
         public void setGyrosEnabled(bool aValue) {
-            foreach (var g in mGyros)
-                g.Enabled = aValue;
+            foreach (var gy in Blocks) {
+                gy.Enabled = aValue;
+            }
         }
 
-        bool lastManual = true;
-        void manual(bool enabled) {
-            if (lastManual != enabled) {
-                lastManual = enabled;
-                foreach (var gy in mGyros) {
-                    if (gy.GyroOverride) {
-                        gy.Yaw = 0;
-                        gy.Pitch = 0;
-                        gy.Roll = 0;
-                        gy.GyroOverride = !enabled;
-                    } else {
-                        gy.GyroOverride = !enabled;
-                        gy.Yaw = 0;
-                        gy.Pitch = 0;
-                        gy.Roll = 0;
-                    }
-                }
+
+        static void init(IMyGyro aGyro) {
+
+            if (!aGyro.Enabled) {
+                aGyro.Enabled = true;
             }
+            if (!aGyro.GyroOverride) {
+                aGyro.GyroOverride = true; ;
+            }
+            aGyro.Yaw = 0;
+            aGyro.Pitch = 0;
+            aGyro.Roll = 0;
         }
 
         //Whip's ApplyGyroOverride Method v10 - 8/19/17
@@ -154,9 +162,9 @@ namespace IngameScript
             // Small gyro 448000
             var rotationVec = new Vector3D(-pitch_speed, yaw_speed, roll_speed); //because keen does some weird stuff with signs             
 
-            var relativeRotationVec = Vector3D.TransformNormal(rotationVec, mRC.WorldMatrix);
+            var relativeRotationVec = Vector3D.TransformNormal(rotationVec, controller.WorldMatrix);
 
-            foreach (var gy in mGyros) {
+            foreach (var gy in Blocks) {
                 var transformedRotationVec = Vector3D.TransformNormal(relativeRotationVec, Matrix.Transpose(gy.WorldMatrix));
                 //g.log("transformedRotationVec", transformedRotationVec);
 
@@ -175,7 +183,7 @@ namespace IngameScript
         modified by d1ag0n for pitch and roll
         */
         void getRotationAnglesFromDown(Vector3D targetVector, out double pitch, out double roll) {
-            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(mRC.WorldMatrix));
+            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(controller.WorldMatrix));
             var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
 
             pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);

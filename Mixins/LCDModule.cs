@@ -1,16 +1,12 @@
 using Sandbox.ModAPI.Ingame;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using VRage.Game.GUI.TextPanel;
-using VRage.ObjectBuilders;
-using VRageMath;
 
 namespace IngameScript {
-    class LCDManager : Module<IMyTextPanel> {
+    class LCDModule : Module<IMyTextPanel> {
         readonly List<IMyTextPanel> mLCDs = new List<IMyTextPanel>();
         readonly Logger g;
-        public LCDManager() {
+        public LCDModule() {
             GetModule(out g);
         }
         public override bool Accept(IMyTerminalBlock b) {

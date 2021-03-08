@@ -1,23 +1,24 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
+using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
-        readonly ThrustManager mThrust;
         readonly Logger g;
-        readonly LCDManager mLCD;
-        readonly List<IAccept> mModules = new List<IAccept>();
+        readonly ThrusterModule mThrust;
+        readonly GyroModule mGyro;
+        readonly ShipControllerModule mController;
+        readonly LCDModule mLCD;
+        
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             g = new Logger();
-            mThrust = new ThrustManager();
-            mLCD = new LCDManager();
-            mModules.Add(mThrust);
-            mModules.Add(mLCD);
-            GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(null, p => {
-                foreach (var m in mModules) m.Accept(p); return false; 
-            });
+            mController = new ShipControllerModule();
+            mThrust = new ThrusterModule();
+            mGyro = new GyroModule();
+            mLCD = new LCDModule();
+            GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(null, p => ModuleManager.Accept(p));
         }
 
         public void Save() { }
@@ -35,6 +36,7 @@ namespace IngameScript {
             }
             try {
                 mThrust.Update();
+                mGyro.Rotate(Vector3D.Down);
             } catch(Exception ex) {
                 g.persist(ex.ToString());
             }
