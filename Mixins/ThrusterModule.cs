@@ -5,7 +5,6 @@ using System.Collections.Generic;
 namespace IngameScript {
     class ThrusterModule : Module<IMyThrust> {
         
-        readonly LoggerModule g;
         readonly List<IMyThrust> mIon = new List<IMyThrust>();
         readonly List<IMyThrust> mAtmos = new List<IMyThrust>();
         readonly List<IMyThrust> mHydro = new List<IMyThrust>();
@@ -17,9 +16,6 @@ namespace IngameScript {
             Not
         }
 
-        public ThrusterModule() {
-            GetModule(out g);
-        }
         public static enGroup Group(IMyThrust aThrust) {
             switch (aThrust.BlockDefinition.SubtypeName) {
                 case "LargeBlockLargeHydrogenThrust":
@@ -81,7 +77,7 @@ namespace IngameScript {
             return result;
         }
         public void Update() {
-            g.log("Thruster count=", Blocks.Count);
+            logger.log("Thruster count=", Blocks.Count);
             foreach (var t in Blocks) {
                 //g.log(t.CustomName);
             }
