@@ -6,7 +6,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    class Logger : Module<string>
+    public class LoggerModule : Module<string>
     {
         string nl => Environment.NewLine;
         readonly StringBuilder mWork = new StringBuilder();

@@ -1,36 +1,107 @@
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public static class ModuleManager {
+        static readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
+        
+        
         static readonly HashSet<long> mRegistry = new HashSet<long>();
-        static readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
+        static readonly List<IMyEntity> mBlocks = new List<IMyEntity>();
         static readonly List<IAccept> mModules = new List<IAccept>();
+        
         static readonly Dictionary<int, List<IAccept>> mModuleList = new Dictionary<int, List<IAccept>>();
+        static readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
         public static MyGridProgram Program { get; private set; }
         public static void Initialize(MyGridProgram aProgram = null) {
             if (Program == null) {
-                if (aProgram == null) { 
+                if (aProgram == null) {
                     throw new ArgumentException("Program cannot be null.");
                 }
-                Program = aProgram; 
+                Program = aProgram;
+
+                new LoggerModule();
+                new ShipControllerModule();
+                
+            } else {
+                foreach (var list in mTags.Values) {
+                    list.Clear();
+                }
+                foreach (var list in mGridBlocks.Values) {
+                    list.Clear();
+                }
+                mRegistry.Clear();
+                mBlocks.Clear();
             }
+            
             Program.GridTerminalSystem.GetBlocksOfType(mBlocks, block => mRegistry.Add(block.EntityId));
+            
+            foreach (var block in mBlocks) {
+                initTags(block as IMyTerminalBlock);                
+                addByGrid(block as IMyCubeBlock);
+            }
+            
             foreach (var module in mModules) {
                 foreach (var block in mBlocks) {
-                    module.Accept(block);
+                    if (block is IMyTerminalBlock) {
+                        module.Accept(block as IMyTerminalBlock);
+                    }
                 }
             }
         }
+        static void addByGrid(IMyCubeBlock aBlock) {
+            List<IMyCubeBlock> list;
+            if (aBlock != null) {
+                if (!mGridBlocks.TryGetValue(aBlock.CubeGrid.EntityId, out list)) {
+                    list = new List<IMyCubeBlock>();
+                    mGridBlocks.Add(aBlock.CubeGrid.EntityId, list);
+                }
+                list.Add(aBlock);
+            }
+        }
+        static void initTags(IMyTerminalBlock aBlock) {
+            if (null != aBlock) {
+                var tags = getTags(aBlock);
+                for (int i = 0; i < tags.Length; i++) {
+                    var tag = tags[i].Trim().ToLower();
+                    List<IMyTerminalBlock> list;
+                    if (mTags.ContainsKey(tag)) {
+                        list = mTags[tag];
+                    } else {
+                        mTags[tag] = list = new List<IMyTerminalBlock>();
+                    }
+                    if (!list.Contains(aBlock)) {
+                        list.Add(aBlock);
+                    }
+                }
+            }
+        }
+        static string[] getTags(IMyTerminalBlock aBlock) =>
+            aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+
         /*public static bool Accept(IMyTerminalBlock b) {
             foreach (var m in allModules) {
                 m.Accept(b);
             }
             return false;
         }*/
+
+        public static bool GetByGrid<T>(long grid, ref T block) {
+            List<IMyCubeBlock> list;
+            if (mGridBlocks.TryGetValue(grid, out list)) {
+                foreach (var b in list) {
+                    if (b is T) {
+                        block = (T)b;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
         public static void Add<T>(Module<T> aModule) {
-            Logger g;
+            LoggerModule g;
             List<IAccept> list;
 
             var type = aModule.GetType();
@@ -43,7 +114,7 @@ namespace IngameScript {
             list.Add(aModule);
             mModules.Add(aModule);
             foreach(var block in mBlocks) {
-                aModule.Accept(block);
+                aModule.Accept(block as IMyTerminalBlock);
             }
         }
         public static bool GetModule<S>(out S aComponent) {

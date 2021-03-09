@@ -7,11 +7,10 @@ using VRage.Game.ModAPI.Ingame;
 namespace IngameScript
 {
     class GTS {
-        readonly MyGridProgram program;
-        readonly Logger g;
-        readonly Dictionary<long, IMyCubeBlock> mBlocks = new Dictionary<long, IMyCubeBlock>();
-        readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
-        readonly Dictionary<long, Dictionary<string, List<string>>> mArguments = new Dictionary<long, Dictionary<string, List<string>>>();
+        
+        readonly Dictionary<long, IMyEntity> mBlocks = new Dictionary<long, IMyEntity>();
+        //readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
+        //readonly Dictionary<long, Dictionary<string, List<string>>> mArguments = new Dictionary<long, Dictionary<string, List<string>>>();
         readonly List<IMyEntity> mWork = new List<IMyEntity>();
         readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
         
@@ -20,11 +19,11 @@ namespace IngameScript
             g = aLogger;
             init();
         }
-        public string[] getTags(IMyTerminalBlock aBlock) {
+        /*public string[] getTags(IMyTerminalBlock aBlock) {
             var tags = aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < tags.Length; i++) {
                 var tag = tags[i] = tags[i].Trim();
-                var args = tag.Split(".".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                var args = tag.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
                 if (args.Length > 0) {
                     var argList = getTagArgs(aBlock.EntityId, tag, true);
                     foreach (var sarg in args) {
@@ -36,7 +35,7 @@ namespace IngameScript
                 }
             }
             return tags;
-        }
+        }*/
         public List<string> getTagArgs(long aBlock, string aTag, bool aGenerate = false) {
             Dictionary<string, List<string>> top;
             if (!mArguments.TryGetValue(aBlock, out top)) {
@@ -50,14 +49,11 @@ namespace IngameScript
             }
             return result;
         }
-        void initTags(IMyTerminalBlock aBlock) {
+        /*void initTags(IMyTerminalBlock aBlock) {
             if (null != aBlock && null != aBlock.CustomData) {
                 var tags = getTags(aBlock);
-                //g.log("tags found ", tags.Length);
                 for (int i = 0; i < tags.Length; i++) {
                     var tag = tags[i].Trim().ToLower();
-                    
-                    //g.log("#", tag);
                     List<IMyTerminalBlock> list;
                     if (mTags.ContainsKey(tag)) {
                         list = mTags[tag];
@@ -65,12 +61,11 @@ namespace IngameScript
                         mTags[tag] = list = new List<IMyTerminalBlock>();
                     }
                     if (!list.Contains(aBlock)) {
-                        //g.log("adding block with tag #", tag);
                         list.Add(aBlock);
                     }
                 }
             }
-        }
+        }*/
         public bool get<T>(ref T aBlock) {
             foreach (var b in mBlocks.Values) 
                 if (b is T) {
@@ -96,7 +91,6 @@ namespace IngameScript
                 aList.Clear();
             }
             if (mTags.TryGetValue(aTag, out list)) {
-                //g.log("found list for #", aTag, " with count ", list.Count);
                 for (int i = 0; i < list.Count; i++) {
                     var b = list[i];
                     if (b is T) {
@@ -120,14 +114,12 @@ namespace IngameScript
             for (int i = 0; i < tags.Length; i++) if (tags[i] == aTag) return true;
             return false;
         }
-
+        /*
         public void init() {
             mTags.Clear();
             mBlocks.Clear();
             mArguments.Clear();
-            program.GridTerminalSystem.GetBlocksOfType<IMyEntity>(mWork);
-            //program.GridTerminalSystem.GetBlocks(mWork);
-            //g.persist("GTS found " + mWork.Count + " blocks");
+            program.GridTerminalSystem.GetBlocksOfType(mWork);
             foreach (var b in mWork) { 
                 if (b is IMyTerminalBlock) {
                     var tb = b as IMyTerminalBlock;
@@ -140,9 +132,9 @@ namespace IngameScript
                     addByGrid(b as IMyCubeBlock);
             }
             mWork.Clear();
-        }
+        }*/
 
-        public void getByGrid<T>(long grid, ref T block) {
+        /*public void getByGrid<T>(long grid, ref T block) {
             List<IMyCubeBlock> list;
             if (mGridBlocks.TryGetValue(grid, out list)) {
                 foreach(var b in list) {
@@ -152,16 +144,16 @@ namespace IngameScript
                     }
                 }
             }
-        }
+        }*/
 
-        void addByGrid(IMyCubeBlock b) {
+        /*void addByGrid(IMyCubeBlock b) {
             List<IMyCubeBlock> list;
             if (!mGridBlocks.TryGetValue(b.CubeGrid.EntityId, out list)) {
                 list = new List<IMyCubeBlock>();
                 mGridBlocks.Add(b.CubeGrid.EntityId, list);
             }
             list.Add(b);
-        }
+        }*/
 
     }
 }

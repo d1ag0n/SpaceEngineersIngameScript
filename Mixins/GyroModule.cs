@@ -7,10 +7,7 @@ using VRageMath;
 namespace IngameScript
 {
     class GyroModule : Module<IMyGyro> {
-
-        readonly Logger g;
-
-        //*
+        /*
         const double updatesPerSecond = 6.0;
         double proportionalConstant = 2;
         double integralConstant = 0;
@@ -34,24 +31,11 @@ namespace IngameScript
             derivativeConstant = d;
             initPID();
         }
-        //*/
-        
-
-        ShipControllerModule _controller;
-        ShipControllerModule controller {
-            get {
-                if (_controller == null) {
-                    GetModule(out _controller);
-                }
-                return _controller;
-            }
-        }
-        
         public GyroModule() {
-            GetModule(out g);
             initPID();
         }
-        
+        //*/
+
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
             if (result) {
@@ -125,10 +109,10 @@ namespace IngameScript
                 pitchDif = 0;
             } else {
                 if (Math.Abs(pitch) < Math.Abs(av.X)) {
-                    g.log("pitch too fast");
+                    logger.log("pitch too fast");
                     pitchDif *= slowFact;
                 } else {
-                    g.log("pitch too slow");
+                    logger.log("pitch too slow");
                     pitchDif *= fastFact;
                 }
             }
@@ -142,15 +126,15 @@ namespace IngameScript
                 }
             }
 
-            g.log("desired pitch = ", pitch);
-            g.log("desired roll  = ", roll);
-            g.log();
-            g.log("velo pitch    = ", av.X);
-            g.log("velo roll     = ", -av.Z);
-            g.log();
-            g.log("diff pitch    = ", pitchDif);
-            g.log("diff roll     = ", rollDif);
-            g.log();
+            logger.log("desired pitch = ", pitch);
+            logger.log("desired roll  = ", roll);
+            logger.log();
+            logger.log("velo pitch    = ", av.X);
+            logger.log("velo roll     = ", -av.Z);
+            logger.log();
+            logger.log("diff pitch    = ", pitchDif);
+            logger.log("diff roll     = ", rollDif);
+            logger.log();
             // local angular velocity
             // +X = +pitch
             // -X = -pitch

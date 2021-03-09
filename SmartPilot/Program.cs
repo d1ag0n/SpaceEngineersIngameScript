@@ -5,22 +5,23 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
-        readonly Logger g;
+        readonly LoggerModule g;
         readonly ThrusterModule mThrust;
         readonly GyroModule mGyro;
         readonly ShipControllerModule mController;
         readonly SensorModule mSensor;
         readonly LCDModule mLCD;
-        
+        readonly PeriscopeModule mPeriscope;
         public Program() {
             ModuleManager.Initialize(this);
+            ModuleManager.GetModule(out g);
+            ModuleManager.GetModule(out mController);
 
-            g = new Logger();
             mSensor = new SensorModule();
-            mController = new ShipControllerModule();
             mThrust = new ThrusterModule();
             mGyro = new GyroModule();
             mLCD = new LCDModule();
+            mPeriscope = new PeriscopeModule();
 
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
@@ -59,6 +60,7 @@ namespace IngameScript {
                 }
                 mThrust.Update();
                 mGyro.Rotate(dir);
+                mPeriscope.Update();
             } catch(Exception ex) {
                 g.persist(ex.ToString());
             }

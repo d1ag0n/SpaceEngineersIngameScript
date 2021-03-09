@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace IngameScript {
     class ThrusterModule : Module<IMyThrust> {
         
-        readonly Logger g;
+        readonly LoggerModule g;
         readonly List<IMyThrust> mIon = new List<IMyThrust>();
         readonly List<IMyThrust> mAtmos = new List<IMyThrust>();
         readonly List<IMyThrust> mHydro = new List<IMyThrust>();

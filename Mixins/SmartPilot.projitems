@@ -15,7 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)IAccept.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LCDModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Logger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LoggerModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />

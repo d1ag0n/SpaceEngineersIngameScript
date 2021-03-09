@@ -6,14 +6,21 @@ using VRage.ObjectBuilders;
 using VRageMath;
 
 namespace IngameScript {
-    class ShipControllerModule : Module<IMyShipController> {
+    public class ShipControllerModule : Module<IMyShipController> {
         public readonly bool LargeGrid;
         public readonly float GyroSpeed;
-        readonly Logger g;
+        
         public ShipControllerModule() {
-            GetModule(out g);
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
+        }
+        public Vector2 RotationIndicator() {
+            foreach (var sc in Blocks) {
+                if (sc.IsFunctional && sc.IsUnderControl) {
+                    return sc.RotationIndicator;
+                }
+            }
+            return default(Vector2);
         }
         public MyShipVelocities GetShipVelocities() {
             foreach (var sc in Blocks) {
@@ -26,7 +33,9 @@ namespace IngameScript {
         public MatrixD WorldMatrix {
             get {
                 foreach (var sc in Blocks) {
-                    return sc.WorldMatrix;
+                    if (sc.IsMainCockpit) {
+                        return sc.WorldMatrix;
+                    }
                 }
                 return default(MatrixD);
             }
