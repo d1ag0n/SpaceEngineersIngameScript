@@ -1,7 +1,8 @@
 using Sandbox.ModAPI.Ingame;
 
 namespace IngameScript {
-    interface IAccept {
+    public interface IAccept {
+        
         bool Accept(IMyTerminalBlock b);
         bool Remove(IMyTerminalBlock b);
     }

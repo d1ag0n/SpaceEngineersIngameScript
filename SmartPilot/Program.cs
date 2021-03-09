@@ -9,34 +9,56 @@ namespace IngameScript {
         readonly ThrusterModule mThrust;
         readonly GyroModule mGyro;
         readonly ShipControllerModule mController;
+        readonly SensorModule mSensor;
         readonly LCDModule mLCD;
         
         public Program() {
-            Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            ModuleManager.Initialize(this);
+
             g = new Logger();
+            mSensor = new SensorModule();
             mController = new ShipControllerModule();
             mThrust = new ThrusterModule();
             mGyro = new GyroModule();
             mLCD = new LCDModule();
-            GridTerminalSystem.GetBlocksOfType<IMyTerminalBlock>(null, p => ModuleManager.Accept(p));
+
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
 
         public void Save() { }
-
+        Vector3D dir = Vector3D.Down;
         public void Main(string argument, UpdateType updateSource) {
-            if ("r" == argument) {
-                var t = mThrust.Get(0);
-                if (t != null) {
-                    if (mThrust.Remove(t)) {
-                        g.persist($"{t.CustomName} removed");
-                    } else {
-                        g.persist($"{t.CustomName} not removed");
-                    }
-                }
+            
+            switch (argument) {
+                case "r":
+                    dir = MAF.ranDir();
+                    break;
+                case "up":
+                    dir = Vector3D.Up;
+                    break;
+                case "down":
+                    dir = Vector3D.Down;
+                    break;
+                case "left":
+                    dir = Vector3D.Left;
+                    break;
+                case "right":
+                    dir = Vector3D.Right;
+                    break;
+                case "front":
+                    dir = Vector3D.Forward;
+                    break;
+                case "back":
+                    dir = Vector3D.Backward;
+                    break;
             }
             try {
+                MyDetectedEntityInfo e;
+                if (mSensor.Player(out e)) {
+                    dir = e.Position - mController.WorldMatrix.Translation;
+                }
                 mThrust.Update();
-                mGyro.Rotate(Vector3D.Down);
+                mGyro.Rotate(dir);
             } catch(Exception ex) {
                 g.persist(ex.ToString());
             }

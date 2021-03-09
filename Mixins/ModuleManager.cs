@@ -4,41 +4,58 @@ using System.Collections.Generic;
 
 namespace IngameScript {
     public static class ModuleManager {
-        static readonly List<IAccept> allModules = new List<IAccept>();
-        static readonly Dictionary<int, List<IAccept>> modules = new Dictionary<int, List<IAccept>>();
-        public static bool Accept(IMyTerminalBlock b) {
+        static readonly HashSet<long> mRegistry = new HashSet<long>();
+        static readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
+        static readonly List<IAccept> mModules = new List<IAccept>();
+        static readonly Dictionary<int, List<IAccept>> mModuleList = new Dictionary<int, List<IAccept>>();
+        public static MyGridProgram Program { get; private set; }
+        public static void Initialize(MyGridProgram aProgram = null) {
+            if (Program == null) {
+                if (aProgram == null) { 
+                    throw new ArgumentException("Program cannot be null.");
+                }
+                Program = aProgram; 
+            }
+            Program.GridTerminalSystem.GetBlocksOfType(mBlocks, block => mRegistry.Add(block.EntityId));
+            foreach (var module in mModules) {
+                foreach (var block in mBlocks) {
+                    module.Accept(block);
+                }
+            }
+        }
+        /*public static bool Accept(IMyTerminalBlock b) {
             foreach (var m in allModules) {
                 m.Accept(b);
             }
             return false;
-        }
-        public static void Add<T>(Module<T> m) {
+        }*/
+        public static void Add<T>(Module<T> aModule) {
             Logger g;
             List<IAccept> list;
 
-            var t = m.GetType();
-            var hash = t.GetHashCode();
+            var type = aModule.GetType();
+            var hash = type.GetHashCode();
 
-            if (GetModule(out g)) {
-                g.log(t);
-            }
-
-            if (!modules.TryGetValue(hash, out list)) {
+            if (!mModuleList.TryGetValue(hash, out list)) {
                 list = new List<IAccept>();
-                modules.Add(hash, list);
+                mModuleList.Add(hash, list);
             }
-            list.Add(m);
-            allModules.Add(m);
+            list.Add(aModule);
+            mModules.Add(aModule);
+            foreach(var block in mBlocks) {
+                aModule.Accept(block);
+            }
         }
         public static bool GetModule<S>(out S aComponent) {
             var hash = typeof(S).GetHashCode();
             List<IAccept> list;
-            if (modules.TryGetValue(hash, out list)) {
+            if (mModuleList.TryGetValue(hash, out list)) {
                 foreach (var m in list) {
                     if (m is S) {
                         aComponent = (S)m;
                         return true;
                     } else {
+                        // preposterous
                         throw new Exception($"m={m.GetType()}, S={typeof(S)}");
                     }
                 }
@@ -49,7 +66,7 @@ namespace IngameScript {
         public static bool GetModules<S>(List<S> aComponentList) {
             var hash = typeof(S).GetHashCode();
             List<IAccept> list;
-            if (modules.TryGetValue(hash, out list)) {
+            if (mModuleList.TryGetValue(hash, out list)) {
                 foreach (var m in list) {
                     aComponentList.Add((S)m);
                 }
@@ -58,5 +75,4 @@ namespace IngameScript {
             return false;
         }
     }
-
 }

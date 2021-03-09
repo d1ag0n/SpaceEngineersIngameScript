@@ -7,6 +7,14 @@ namespace IngameScript
 {
     static class MAF
     {
+        public static readonly Random random = new Random(9);
+        public static Vector3D ranDir() => Vector3D.Normalize(new Vector3D(random.NextDouble() - 0.5, random.NextDouble() - 0.5, random.NextDouble() - 0.5));
+        public static Vector3D ranBoxPos(BoundingBoxD aBox) =>
+            new Vector3D(
+                aBox.Min.X + random.NextDouble() * (aBox.Max.X - aBox.Min.X),
+                aBox.Min.Y + random.NextDouble() * (aBox.Max.Y - aBox.Min.Y),
+                aBox.Min.Z + random.NextDouble() * (aBox.Max.Z - aBox.Min.Z)
+            );
         static readonly DateTime epoch = new DateTime(2020, 1, 1);
         public static double time => (DateTime.Now - epoch).TotalSeconds;
         public static double angleBetween(Vector3D a, Vector3D b) {

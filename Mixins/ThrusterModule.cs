@@ -83,7 +83,7 @@ namespace IngameScript {
         public void Update() {
             g.log("Thruster count=", Blocks.Count);
             foreach (var t in Blocks) {
-                g.log(t.CustomName);
+                //g.log(t.CustomName);
             }
 
         }

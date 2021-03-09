@@ -8,27 +8,33 @@ namespace IngameScript
 {
     class GyroModule : Module<IMyGyro> {
 
+        readonly Logger g;
 
-        /*
+        //*
         const double updatesPerSecond = 6.0;
-        double proportionalConstant = 2.5;
-        double integralConstant = 0.1;
-        double derivativeConstant = 1.0;
+        double proportionalConstant = 2;
+        double integralConstant = 0;
+        double derivativeConstant = 0.6;
         double pidLimit = 10;
         const double timeLimit = 1.0 / updatesPerSecond;
         PID pidPitch;
         PID pidRoll;
-        void initPid() {
+        void initPIDID() {
+            
             pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
             pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
+        }
+        void initPID() {
+            pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, -10, 10, timeLimit);
+            pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, -10, 10, timeLimit);
         }
         public void setPid(double p, double i, double d) {
             proportionalConstant = p;
             integralConstant = i;
             derivativeConstant = d;
-            initPid();
+            initPID();
         }
-        */
+        //*/
         
 
         ShipControllerModule _controller;
@@ -42,8 +48,8 @@ namespace IngameScript
         }
         
         public GyroModule() {
-            //initPid();
-            
+            GetModule(out g);
+            initPID();
         }
         
         public override bool Accept(IMyTerminalBlock b) {
@@ -54,14 +60,11 @@ namespace IngameScript
             return result;
         }
         public void Rotate(Vector3D aDesiredDown) {
-
-            //var av = sv.AngularVelocity;
-
-
             if (aDesiredDown.IsZero() || controller == null) {
                 applyGyroOverride(0, 0, 0);
                 return;
             }
+
 
             //var roughDesiredDirection = Base6Directions.GetClosestDirection(aDesiredDown);
             //g.log("my down from ", roughDesiredDirection, "-ish");
@@ -73,13 +76,7 @@ namespace IngameScript
             //var rpm = rps * MathHelper.RadiansPerSecondToRPM;
             //g.log("angular rpm ", rpm);
 
-            // local angular velocity
-            // +X = +pitch
-            // -X = -pitch
-            // +Y = -yaw
-            // -Y = +yaw
-            // +Z = -roll
-            // -Z = +roll
+
 
             //g.log("dd", aDesiredDown);
 
@@ -100,28 +97,98 @@ namespace IngameScript
             // pitchDif = lastPitch - pitchCheck
             // 
 
-            double pitch, roll;
+            double pitch = 0, yaw = 0, roll = 0;
+            //getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
+            getRotationAngles(aDesiredDown, controller.WorldMatrix, out yaw, out pitch);
+            var smallMax = 0.4;
+            var smallFact = 1.9;
+            if (Math.Abs(pitch) < smallMax) {
+                pitch *= smallFact;
+            }
+
+            if (Math.Abs(roll) < smallMax) {
+                roll *= smallFact;
+            }
 
             var sv = controller.GetShipVelocities();
             var av = MAF.world2dir(sv.AngularVelocity, controller.WorldMatrix);
-
-            getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
-
-            var min = 0.1;
-            var pitchDif = pitch - av.X;
-
-            if (Math.Abs(pitchDif) < min) {
-                pitchDif = 0;
-            }
-
-            var rollDif = roll + av.Z;
             
-            if (Math.Abs(rollDif) < min) {
+
+
+            var pitchDif = (pitch - av.X);
+            var rollDif = (roll + av.Z);
+
+            var slowFact = 20.0;
+            var fastFact = 2.0;
+            var difMax = 0.09;
+            if (Math.Abs(pitchDif) < difMax) {
+                pitchDif = 0;
+            } else {
+                if (Math.Abs(pitch) < Math.Abs(av.X)) {
+                    g.log("pitch too fast");
+                    pitchDif *= slowFact;
+                } else {
+                    g.log("pitch too slow");
+                    pitchDif *= fastFact;
+                }
+            }
+            if (Math.Abs(rollDif) < difMax) {
                 rollDif = 0;
+            } else {
+                if (Math.Abs(roll) < Math.Abs(av.Z)) {
+                    rollDif *= slowFact;
+                } else {
+                    rollDif *= fastFact;
+                }
             }
 
-            var fact = 6.0;
-            applyGyroOverride(pitch + pitchDif * fact, av.Y, roll + rollDif * fact);
+            g.log("desired pitch = ", pitch);
+            g.log("desired roll  = ", roll);
+            g.log();
+            g.log("velo pitch    = ", av.X);
+            g.log("velo roll     = ", -av.Z);
+            g.log();
+            g.log("diff pitch    = ", pitchDif);
+            g.log("diff roll     = ", rollDif);
+            g.log();
+            // local angular velocity
+            // +X = +pitch
+            // -X = -pitch
+            // +Y = -yaw
+            // -Y = +yaw
+            // +Z = -roll
+            // -Z = +roll
+
+
+            // want - at
+            // at 1 want 2
+            // 1 = 2 - 1
+
+            // want - at
+            // at 2 want 1
+            // -1 = 1 - 2
+
+            // want - at
+            // at -1 want -2
+            // -1 = -2 - -1
+
+
+
+
+
+            //pitch += pitchDif * fact;
+            //roll += rollDif * fact;
+
+            // yaw = av.Y
+
+            //pitch = (pitchDif / MathHelper.TwoPi) * controller.GyroSpeed;
+
+
+
+            pitch += pitchDif;
+            roll += rollDif;            
+            
+            applyGyroOverride(pitch , yaw, roll);
             
             //g.log("pitchDif ", pitchDif);
             //g.log("rollDif  ", rollDif);
@@ -136,8 +203,6 @@ namespace IngameScript
                 gy.Enabled = aValue;
             }
         }
-
-
         static void init(IMyGyro aGyro) {
 
             if (!aGyro.Enabled) {
@@ -193,6 +258,40 @@ namespace IngameScript
             roll = MAF.angleBetween(localTargetVector, flattenedTargetVector);
             if (localTargetVector.X > 0)
                 roll = -roll;
+        }
+
+        /// <summary>
+        /// by Whiplash141
+        /// Computes angle between 2 vectors
+        /// </summary>
+        public static double AngleBetween(Vector3D a, Vector3D b) //returns radians
+        {
+            if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
+                return 0;
+            else
+                return Math.Acos(MathHelper.Clamp(a.Dot(b) / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1, 1));
+        }
+        /*
+        /// Whip's Get Rotation Angles Method v14 - 9/25/18 ///
+        Dependencies: VectorMath
+        * Fix to solve for zero cases when a vertical target vector is input
+        * Fixed straight up case
+        * Fixed sign on straight up case
+        * Converted math to local space
+        */
+        void getRotationAngles(Vector3D targetVector, MatrixD worldMatrix, out double yaw, out double pitch) {
+            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
+            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
+
+            pitch = AngleBetween(Vector3D.Forward, flattenedTargetVector) * Math.Sign(localTargetVector.Y); //up is positive
+
+            if (Math.Abs(pitch) < 1E-6 && localTargetVector.Z > 0) //check for straight back case
+                pitch = Math.PI;
+
+            if (Vector3D.IsZero(flattenedTargetVector)) //check for straight up case
+                yaw = MathHelper.PiOver2 * Math.Sign(localTargetVector.X);
+            else
+                yaw = AngleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.X); //right is positive
         }
     }
 }

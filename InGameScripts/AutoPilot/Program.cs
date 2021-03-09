@@ -452,14 +452,9 @@ namespace IngameScript
         }
         
         const double mdScanInflate = 20;
-        readonly Random random = new Random(9);
-        Vector3D ranDir() => Vector3D.Normalize(new Vector3D(random.NextDouble() - 0.5, random.NextDouble() - 0.5, random.NextDouble() - 0.5));
-        Vector3D ranBoxPos(BoundingBoxD aBox) => 
-            new Vector3D(
-                aBox.Min.X + random.NextDouble() * (aBox.Max.X - aBox.Min.X), 
-                aBox.Min.Y + random.NextDouble() * (aBox.Max.Y - aBox.Min.Y), 
-                aBox.Min.Z + random.NextDouble() * (aBox.Max.Z - aBox.Min.Z)
-            );
+        
+        
+        
         
         BoundingBoxD mbScanGood;
         //bool stepOkay = false;
@@ -557,7 +552,7 @@ namespace IngameScript
                     }
                 } else {
                     bYawAround = true;
-                    setScan(BOX.moveTowardsDir(mbScanGood, ranDir()));
+                    setScan(BOX.moveTowardsDir(mbScanGood, MAF.ranDir()));
                 }
             }
             g.log("mMission.Step    ", mMission.Step);
@@ -975,7 +970,7 @@ namespace IngameScript
                         break;
                     case 8:
                         // scan random position
-                        _doBoxScan(ranBoxPos(mbScan));
+                        _doBoxScan(MAF.ranBoxPos(mbScan));
                         break;
                     default:
                         // scan corners
@@ -1041,7 +1036,7 @@ namespace IngameScript
             Runtime.UpdateFrequency = UpdateFrequency.Update10 | UpdateFrequency.Update100;
             g = new Logger();
             mGTS = new GTS(this, g);
-            mGyro = new Gyro(mGTS, g);
+            mGyro = new GyroModule();
 
             init();
 
@@ -1601,7 +1596,7 @@ namespace IngameScript
             var e = new MyDetectedEntityInfo();
             if (scanner.Scan(target, ref e)) {
                 if (!processPlanet(e)) {
-                    target = mRC.CenterOfMass + ranDir() * 1000.0;
+                    target = mRC.CenterOfMass + MAF.ranDir() * 1000.0;
                     if (scanner.Scan(target, ref e)) {
                         processPlanet(e);
                     }
@@ -2113,7 +2108,7 @@ namespace IngameScript
 
         readonly GTS mGTS;
         readonly Logger g;
-        readonly Gyro mGyro;
+        readonly GyroModule mGyro;
 
         readonly List<IMyThrust> mThrusters = new List<IMyThrust>();
         //readonly List<IMyGyro> mGyros = new List<IMyGyro>();

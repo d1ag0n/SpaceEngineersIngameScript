@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace IngameScript {
     public class Module<T> : IAccept {
+
+        public static IAccept Factory() { throw new Exception("Please implement this method on the inheritiing class."); }
+
         readonly HashSet<long> mRegistry = new HashSet<long>();
 
         private List<T> _blocks;
