@@ -8,28 +8,13 @@ namespace IngameScript {
 
         public readonly List<T> Blocks = new List<T>();
 
-        ShipControllerModule _controller;
-        protected ShipControllerModule controller {
-            get {
-                if (_controller == null) {
-                    GetModule(out _controller);
-                }
-                return _controller;
-            }
-        }
-
-        LoggerModule _logger;
-        protected LoggerModule logger {
-            get {
-                if (_logger == null) {
-                    GetModule(out _logger);
-                }
-                return _logger;
-            }
-        }
+        public readonly LoggerModule logger;
+        public readonly ShipControllerModule controller;
 
         public Module() {
             ModuleManager.Add(this);
+            GetModule(out logger);
+            GetModule(out controller);
         }
         public bool GetModule<S>(out S aComponent) => ModuleManager.GetModule(out aComponent);
         public bool GetModules<S>(List<S> aComponentList) => ModuleManager.GetModules(aComponentList);
