@@ -5,13 +5,15 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
-        readonly LoggerModule g;
+        readonly LogModule g;
         readonly ThrusterModule mThrust;
         readonly GyroModule mGyro;
         readonly ShipControllerModule mController;
         readonly SensorModule mSensor;
-        readonly LCDModule mLCD;
+        readonly Lag mLag = new Lag(90);
+        
         readonly PeriscopeModule mPeriscope;
+        readonly MenuModule mMenu;
         public Program() {
             ModuleManager.Initialize(this);
             ModuleManager.GetModule(out g);
@@ -20,16 +22,21 @@ namespace IngameScript {
             mSensor = new SensorModule();
             mThrust = new ThrusterModule();
             mGyro = new GyroModule();
-            mLCD = new LCDModule();
+        
             mPeriscope = new PeriscopeModule();
-
+            mMenu = new MenuModule();
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-
+        double runtimes = 0;
+        int timesrun = 0;
         public void Save() { }
         Vector3D dir = Vector3D.Down;
         public void Main(string argument, UpdateType updateSource) {
-            
+            var lag = mLag.update(Runtime.LastRunTimeMs);
+            timesrun++;
+            if (argument.Length > 0) {
+                mMenu.Input(argument);
+            }
             switch (argument) {
                 case "r":
                     dir = MAF.ranDir();
@@ -54,19 +61,16 @@ namespace IngameScript {
                     break;
             }
             try {
+                ModuleManager.logger.log("main ", lag);
                 MyDetectedEntityInfo e;
                 if (mSensor.Player(out e)) {
-                    dir = e.Position - mController.WorldMatrix.Translation;
+                    //dir = e.Position - mController.WorldMatrix.Translation;
                 }
-                mThrust.Update();
-                mGyro.Rotate(dir);
-                mPeriscope.Update();
+                ModuleManager.Update();
             } catch(Exception ex) {
                 g.persist(ex.ToString());
             }
-            var str = g.clear();
-            Echo(str);
-            mLCD.WriteAll(str);
+            
         }
     }
 }

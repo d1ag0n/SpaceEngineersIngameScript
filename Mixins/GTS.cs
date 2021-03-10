@@ -109,11 +109,11 @@ namespace IngameScript
             foreach (var b in mBlocks.Values) if (b is T) aList.Add((T)b);
         }
         
-        public bool hasTag(IMyTerminalBlock aBlock, string aTag) {
+        /*public bool hasTag(IMyTerminalBlock aBlock, string aTag) {
             var tags = getTags(aBlock);
             for (int i = 0; i < tags.Length; i++) if (tags[i] == aTag) return true;
             return false;
-        }
+        }*/
         /*
         public void init() {
             mTags.Clear();

@@ -1074,7 +1074,7 @@ namespace IngameScript
             mGTS.initList(mFuelTanks);
 
             
-            scanner = new Scanner(this, mGTS, g);
+            scanner = new CameraModule(this, mGTS, g);
 
             
 
@@ -2134,7 +2134,7 @@ namespace IngameScript
         const int miInterval = 10;
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;
-        Scanner scanner;        
+        CameraModule scanner;        
         
         Vector3D mvLinearVelocity = Vector3D.Zero;
         Vector3D mvAngularVelocity = Vector3D.Zero;

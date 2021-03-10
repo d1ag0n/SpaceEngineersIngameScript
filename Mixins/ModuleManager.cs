@@ -6,15 +6,28 @@ using VRage.Game.ModAPI.Ingame;
 namespace IngameScript {
     public static class ModuleManager {
         static readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
-        
-        
+
+        public static LogModule logger { get; private set; }
+        public static ShipControllerModule controller { get; private set; }
         static readonly HashSet<long> mRegistry = new HashSet<long>();
         static readonly List<IMyEntity> mBlocks = new List<IMyEntity>();
-        static readonly List<IAccept> mModules = new List<IAccept>();
+        public static readonly List<IAccept> mModules = new List<IAccept>();
         
         static readonly Dictionary<int, List<IAccept>> mModuleList = new Dictionary<int, List<IAccept>>();
         static readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
         public static MyGridProgram Program { get; private set; }
+
+        public static void Update() {
+            try {
+                controller.Update();
+                for (int i = 2; i < mModules.Count; i++) {
+                    mModules[i].Update();
+                }
+            } catch (Exception ex) {
+                logger.persist(ex.ToString());
+            }
+            logger.Update();
+        }
         public static void Initialize(MyGridProgram aProgram = null) {
             if (Program == null) {
                 if (aProgram == null) {
@@ -22,8 +35,8 @@ namespace IngameScript {
                 }
                 Program = aProgram;
 
-                new LoggerModule();
-                new ShipControllerModule();
+                logger = new LogModule();
+                controller = new ShipControllerModule();
                 
             } else {
                 foreach (var list in mTags.Values) {
@@ -81,13 +94,11 @@ namespace IngameScript {
         static string[] getTags(IMyTerminalBlock aBlock) =>
             aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
 
-        /*public static bool Accept(IMyTerminalBlock b) {
-            foreach (var m in allModules) {
-                m.Accept(b);
-            }
+        public static bool HasTag(IMyTerminalBlock aBlock, string aTag) {
+            var tags = getTags(aBlock);
+            for (int i = 0; i < tags.Length; i++) if (tags[i] == aTag) return true;
             return false;
-        }*/
-
+        }
         public static bool GetByGrid<T>(long grid, ref T block) {
             List<IMyCubeBlock> list;
             if (mGridBlocks.TryGetValue(grid, out list)) {
@@ -101,7 +112,7 @@ namespace IngameScript {
             return false;
         }
         public static void Add<T>(Module<T> aModule) {
-            LoggerModule g;
+            
             List<IAccept> list;
 
             var type = aModule.GetType();

@@ -1,9 +1,13 @@
 using Sandbox.ModAPI.Ingame;
+using System.Collections.Generic;
 
 namespace IngameScript {
     public interface IAccept {
-        
-        bool Accept(IMyTerminalBlock b);
-        bool Remove(IMyTerminalBlock b);
+
+        bool Accept(IMyTerminalBlock aBlock);
+        bool Remove(IMyTerminalBlock aBlock);
+
+        void Update();
+
     }
 }

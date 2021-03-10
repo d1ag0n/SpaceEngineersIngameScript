@@ -6,15 +6,7 @@ namespace IngameScript {
     class LCDModule : Module<IMyTextPanel> {
         readonly List<IMyTextPanel> mLCDs = new List<IMyTextPanel>();
         
-        public override bool Accept(IMyTerminalBlock b) {
-            var result = base.Accept(b);
-            if (result) {
-                var p = b as IMyTextPanel;
-                mLCDs.Add(p);
-                p.ContentType = ContentType.TEXT_AND_IMAGE;
-            }
-            return result;
-        }
+
 
         public override bool Remove(IMyTerminalBlock b) {
             var result = base.Remove(b);

@@ -11,13 +11,18 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IAccept.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LCDModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)LoggerModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MenuMethod.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MenuModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />

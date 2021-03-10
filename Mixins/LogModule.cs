@@ -2,17 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using VRage.Game.GUI.TextPanel;
 using VRageMath;
 
-namespace IngameScript
-{
-    public class LoggerModule : Module<string>
-    {
+namespace IngameScript {
+    public class LogModule : Module<IMyTextPanel> {
         string nl => Environment.NewLine;
         readonly StringBuilder mWork = new StringBuilder();
         readonly StringBuilder mLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>();
-        
+
         public void log(MyDetectedEntityInfo e) => log(string4(e));
         string string4(BoundingBoxD b) {
             mWork.Clear();
@@ -22,12 +21,12 @@ namespace IngameScript
             return mWork.ToString();
         }
         string string4(MyDetectedEntityInfo e) {
-            
+
             mWork.Clear();
             mWork.AppendLine($"{e.Name} {e.Type} {e.EntityId}");
             //mWork.AppendLine(e.EntityId.ToString());
-            
-            
+
+
             //mWork.AppendLine(gps("BoxMin", e.BoundingBox.Min));
             //mWork.AppendLine(gps("BoxCenter", e.BoundingBox.Center));
             //mWork.AppendLine(gps("BoxMax", e.BoundingBox.Max));
@@ -47,7 +46,17 @@ namespace IngameScript
             return mWork.ToString();
         }
 
-        public override bool Accept(IMyTerminalBlock b) => false;
+        public override bool Accept(IMyTerminalBlock b) {
+            var result = false;
+            if (b.CustomData.Contains("#logconsole")) {
+                result = base.Accept(b);
+                if (result) {
+                    var p = b as IMyTextPanel;
+                    p.ContentType = ContentType.TEXT_AND_IMAGE;
+                }
+            }
+            return result;
+        }
 
         public void log(Vector3D v) => log(string4(v));
         string string4(Vector3D v) => $"X {v.X}{nl}Y {v.Y}{nl}Z {v.Z}";
@@ -82,7 +91,7 @@ namespace IngameScript
             }
             mLog.AppendLine();
         }
-        public string clear() {
+        string clear() {
             string result = get();
             mLog.Clear();
             return result;
@@ -109,6 +118,14 @@ namespace IngameScript
                 mLog.Insert(0, $"#{i} ");
             }
             return mLog.ToString();
+        }
+        public override void Update() {
+            ModuleManager.Program.Echo("logmodupdate");
+            var str = clear();
+            ModuleManager.Program.Echo(str);
+            foreach (var tp in Blocks) {
+                tp.WriteText(str);
+            }
         }
     }
 }

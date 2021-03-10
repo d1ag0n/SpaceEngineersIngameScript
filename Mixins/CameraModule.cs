@@ -1,41 +1,36 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using VRageMath;
 
 namespace IngameScript
 {
-    class Scanner
+    class CameraModule : Module<IMyCameraBlock>
     {
-        readonly List<IMyCameraBlock> cameras = new List<IMyCameraBlock>();
+        readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
 
-        
-        readonly Logger g;
-        readonly MyGridProgram program;
+        public bool hasCamera => Blocks.Count > 0;
 
-        public bool hasCamera => cameras.Count > 0;
-
-        public Scanner(MyGridProgram aProgram, GTS aGTS, Logger aG) {
-            program = aProgram;            
-            g = aG;
-
-            aGTS.initList(cameras, false);
-            var rotors = new List<IMyMotorStator>();
-            aGTS.initListByTag("camera", rotors, false);
-
-            foreach (var r in rotors) {
-                r.Enabled = true;
-                r.RotorLock = false;
-                r.BrakingTorque = 0;
-                r.Torque = 1000.0f;
-                r.TargetVelocityRad = 1.0f;
+        public override bool Accept(IMyTerminalBlock aBlock) {
+            if (aBlock is IMyMotorStator) {
+                if (ModuleManager.HasTag(aBlock, "camera")) {
+                    var rotor = aBlock as IMyMotorStator;
+                    rotor.Enabled = true;
+                    rotor.RotorLock = false;
+                    rotor.BrakingTorque = 0;
+                    rotor.Torque = 1000.0f;
+                    rotor.TargetVelocityRad = 1.0f;
+                    
+                }
+                return false;
             }
-
-            foreach (var c in cameras) {
-                c.EnableRaycast = true;
+            var result = base.Accept(aBlock);
+            if (result) {
+                var camera = aBlock as IMyCameraBlock;
+                camera.Enabled = true;
+                camera.EnableRaycast = true;
             }
-            //g.persist("id " + program.Me.CubeGrid.EntityId);
+            return result;
         }
         /// <summary>
         /// returns true if we found a camera that will scan the target location and scanned it
@@ -44,41 +39,37 @@ namespace IngameScript
         /// <param name="aAddDistance"></param>
         /// <param name="e"></param>
         /// <returns></returns>
-        public bool Scan(Vector3D aTarget, ref MyDetectedEntityInfo aEntity, double aAddDist = 0) {
+        public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo aEntity, double aAddDist = 0) {
 
-            for (int i = 0; i < cameras.Count; i++) {
-                var c = cameras[i];
-                var dir = aTarget - c.WorldMatrix.Translation;
+            foreach (var camera in Blocks) { 
+                var dir = aTarget - camera.WorldMatrix.Translation;
                 var dist = dir.Normalize() + aAddDist;
 
                 double azimuth = 0, elevation = 0;
 
-                if (c.AvailableScanRange > dist) {
+                if (camera.AvailableScanRange > dist) {
                     /*if (testCameraAngles(c, dir, ref yaw, ref pitch)) {
                         e = c.Raycast(dist, (float)pitch, (float)yaw);
                         return true;
                     }*/
 
-                    if (testCameraAngles(c, ref dir)) {
+                    if (testCameraAngles(camera, ref dir)) {
                         Vector3D.GetAzimuthAndElevation(dir, out azimuth, out elevation);
                         azimuth = -(azimuth * (180.0 / Math.PI));
                         elevation = (elevation * (180.0 / Math.PI));
-                        var e = c.Raycast(dist, (float)elevation, (float)azimuth);
-                        
-                        if (e.EntityId != program.Me.CubeGrid.EntityId) {
-                            if (e.Type != MyDetectedEntityType.None) {
-                                //g.persist(e);
-                                aEntity = e;
-                            }
-                        } else {
-                            if (i < cameras.Count - 1) {
+                        aEntity = camera.Raycast(dist, (float)elevation, (float)azimuth);
+
+                        if (aEntity.Type != MyDetectedEntityType.None) {
+                            if (aEntity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
                                 continue;
                             }
+                            mDetected.Add(aEntity);
+                            return true;
                         }
-                        return true;
                     }
                 }
             }
+            aEntity = default(MyDetectedEntityInfo);
             return false;
         }
 

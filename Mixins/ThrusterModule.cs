@@ -76,7 +76,7 @@ namespace IngameScript {
             }
             return result;
         }
-        public void Update() {
+        public override void Update() {
             logger.log("Thruster count=", Blocks.Count);
             foreach (var t in Blocks) {
                 //g.log(t.CustomName);

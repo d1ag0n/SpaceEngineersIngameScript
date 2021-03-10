@@ -1,8 +1,4 @@
-﻿using Sandbox.ModAPI.Ingame;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using VRageMath;
+﻿using VRageMath;
 
 namespace IngameScript
 {

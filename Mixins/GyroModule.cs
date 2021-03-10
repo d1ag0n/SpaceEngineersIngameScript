@@ -7,34 +7,7 @@ using VRageMath;
 namespace IngameScript
 {
     class GyroModule : Module<IMyGyro> {
-        /*
-        const double updatesPerSecond = 6.0;
-        double proportionalConstant = 2;
-        double integralConstant = 0;
-        double derivativeConstant = 0.6;
-        double pidLimit = 10;
-        const double timeLimit = 1.0 / updatesPerSecond;
-        PID pidPitch;
-        PID pidRoll;
-        void initPIDID() {
-            
-            pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
-            pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, 0.25, timeLimit);
-        }
-        void initPID() {
-            pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, -10, 10, timeLimit);
-            pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, -10, 10, timeLimit);
-        }
-        public void setPid(double p, double i, double d) {
-            proportionalConstant = p;
-            integralConstant = i;
-            derivativeConstant = d;
-            initPID();
-        }
-        public GyroModule() {
-            initPID();
-        }
-        //*/
+        Vector3D Target;
 
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
@@ -43,12 +16,12 @@ namespace IngameScript
             }
             return result;
         }
-        public void Rotate(Vector3D aDesiredDown) {
-            if (aDesiredDown.IsZero() || controller == null) {
+        
+        public override void Update() {
+            if (Target.IsZero()) {
                 applyGyroOverride(0, 0, 0);
                 return;
             }
-
 
             //var roughDesiredDirection = Base6Directions.GetClosestDirection(aDesiredDown);
             //g.log("my down from ", roughDesiredDirection, "-ish");
@@ -59,8 +32,6 @@ namespace IngameScript
             //g.log("angular rps ", rps);
             //var rpm = rps * MathHelper.RadiansPerSecondToRPM;
             //g.log("angular rpm ", rpm);
-
-
 
             //g.log("dd", aDesiredDown);
 
@@ -83,7 +54,7 @@ namespace IngameScript
 
             double pitch = 0, yaw = 0, roll = 0;
             //getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
-            getRotationAngles(aDesiredDown, controller.WorldMatrix, out yaw, out pitch);
+            getRotationAngles(Target, controller.WorldMatrix, out yaw, out pitch);
             var smallMax = 0.4;
             var smallFact = 1.9;
             if (Math.Abs(pitch) < smallMax) {
@@ -94,7 +65,7 @@ namespace IngameScript
                 roll *= smallFact;
             }
 
-            var sv = controller.GetShipVelocities();
+            var sv = controller.ShipVelocities;
             var av = MAF.world2dir(sv.AngularVelocity, controller.WorldMatrix);
             
 
@@ -172,7 +143,7 @@ namespace IngameScript
             pitch += pitchDif;
             roll += rollDif;            
             
-            applyGyroOverride(pitch , yaw, roll);
+            applyGyroOverride(pitch , yaw, controller.RollIndicator);
             
             //g.log("pitchDif ", pitchDif);
             //g.log("rollDif  ", rollDif);
@@ -247,6 +218,7 @@ namespace IngameScript
         /// <summary>
         /// by Whiplash141
         /// Computes angle between 2 vectors
+        /// todo move to maf
         /// </summary>
         public static double AngleBetween(Vector3D a, Vector3D b) //returns radians
         {
@@ -255,6 +227,7 @@ namespace IngameScript
             else
                 return Math.Acos(MathHelper.Clamp(a.Dot(b) / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1, 1));
         }
+        
         /*
         /// Whip's Get Rotation Angles Method v14 - 9/25/18 ///
         Dependencies: VectorMath

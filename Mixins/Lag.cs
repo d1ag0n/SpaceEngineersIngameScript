@@ -7,6 +7,7 @@ namespace IngameScript
 {
     class Lag
     {
+        bool accurate;
         double[] times;
         double sum = 0;
         int pos = 0;
@@ -20,13 +21,14 @@ namespace IngameScript
             pos++;
             if (pos == times.Length) {
                 pos = 0;
+                accurate = true;
             }
-            return sum / times.Length;
+            return accurate ? sum / times.Length : sum / pos;
         }
     }
     class V3DLag
     {
-        bool accurate = false;
+        bool accurate;
         Vector3D[] values;
         Vector3D sum;
         int pos = 0;
@@ -42,7 +44,7 @@ namespace IngameScript
                 pos = 0;
                 accurate = true;
             }
-            return accurate ? sum / values.Length : value;
+            return accurate ? sum / values.Length : sum / pos;
         }
     }
 }
