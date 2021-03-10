@@ -12,16 +12,17 @@ namespace IngameScript
         public bool hasCamera => Blocks.Count > 0;
 
         public override List<object> MenuMethods(int aPage) {
-            var index = aPage * 6 + 6;
+            var index = aPage * 6;
             var result = new List<object>();
             logger.persist($"CameraModule.MenuMethods({aPage});");
             logger.persist($"index={index}");
             logger.persist($"mDetected.Count={mDetected.Count}");
-            for (int i = 0; i < 6; i++) {
-                index--;
-                if (mDetected.Count > index) {
-                    var e = mDetected[index];
+            for (int i = index; i < index + 6; i++) {
+                if (mDetected.Count > i) {
+                    var e = mDetected[i];
                     result.Add(new MenuMethod(e.Name, e, EntityMenu));
+                } else {
+                    break;
                 }
             }
             return result;
@@ -31,7 +32,7 @@ namespace IngameScript
             var list = new List<object>();
             var e = (MyDetectedEntityInfo)aState;
             list.Add(new MenuMethod(logger.gps(e.Name, e.HitPosition.Value), aState, null));
-            return new Menu(aMain, $"Camera Record for {e.Name}", list);
+            return new Menu(aMain, $"Camera Record for {e.Name}", p => list);
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {
             var e = (MyDetectedEntityInfo)aState;

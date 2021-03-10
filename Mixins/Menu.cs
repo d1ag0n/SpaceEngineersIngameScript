@@ -1,38 +1,54 @@
 using System.Text;
 using System.Collections.Generic;
+using System;
 
 namespace IngameScript {
     public class Menu {
         readonly StringBuilder mWork = new StringBuilder();
-        public readonly List<object> MenuItems = new List<object>();
+        readonly Func<int, List<object>> MenuItems;
         public int Page;
         string Title;
         public Menu Previous;
         readonly MenuModule Main;
+        List<object> Items;
         public Menu(MenuModule aMain, ModuleBase aModule) {
-            Title = $"{aModule} Menu";
+            Title = $"{aModule.MenuName}";
             Main = aMain;
-            MenuItems = aModule.MenuMethods(0);
-            
+            MenuItems = aModule.MenuMethods;
+            Items = MenuItems(0);
         }
         public Menu(MenuModule aMain, List<IAccept> aList) {
             Title = "Main Menu";
             Main = aMain;
-            
-            foreach (var acceptor in aList) {
-                if (!(acceptor is MenuModule)) {
-                    var mb = acceptor as ModuleBase;
-                    if (mb.MenuName != null) {
-                        MenuItems.Add(mb);
+
+            MenuItems = p => {
+                int index = p * 6;
+                int count = 0;
+                List<object> result = new List<object>();
+                for (int i = index; i < aList.Count; i++) {
+                    if (count == 6) {
+                        break;
+                    }
+                    if (aList.Count > i) {
+                        var acceptor = aList[i];
+                        if (!(acceptor is MenuModule)) {
+                            count++;
+                            var mb = acceptor as ModuleBase;
+                            if (mb.MenuName != null) {
+                                result.Add(mb);
+                            }
+                        }
                     }
                 }
-            }
+                return result;
+            };
         }
 
-        public Menu(MenuModule aMain, string aTitle, List<object> aMenuItems) {
+        public Menu(MenuModule aMain, string aTitle, Func<int, List<object>> aPaginator) {
             Main = aMain;
             Title = aTitle;
-            MenuItems = aMenuItems;
+            MenuItems = aPaginator;
+            Items = MenuItems(0);
         }
 
 
@@ -47,16 +63,23 @@ namespace IngameScript {
                     // previous page
                     if (Page > 0) {
                         Page--;
+                        Items = MenuItems(Page);
                         Main.UpdateRequired = true;
                     }
                 } else if (selection == 8) {
-                    Page++;
-                    Main.UpdateRequired = true;
+
+                    var items = MenuItems(Page + 1);
+                    if (items.Count > 0) {
+                        Page++;
+                        Main.UpdateRequired = true;
+                        Items = items;
+                    }
+                    
                 } else {
                     int index = selection + (Page * 6);
                     ModuleManager.logger.persist($"Menu index: '{index}'");
-                    if (MenuItems.Count > index) {
-                        HandleInput(MenuItems[index]);
+                    if (Items.Count > index) {
+                        HandleInput(Items[index]);
                     }
                 }
             }
@@ -88,27 +111,24 @@ namespace IngameScript {
 
         public string Update() {
             var index = Page * 6;
-            if (MenuItems.Count < index) {
-                Page = 0;
-                index = 0;
-            }
-            Main.logger.log($"mMenuItems.Count={MenuItems.Count}");
+            
+            var items = MenuItems(Page);
             mWork.AppendLine(Title);
             int count = 0;
-            for (int i = index; i < MenuItems.Count && count < 7; i++) {
+            foreach (var item in Items) { 
                 count++;
-                mWork.Append(index + i + 1);
+                mWork.Append(count + 1);
                 mWork.Append(' ');
-                var mi = MenuItems[i];
                 
-                if (mi is MenuMethod) {
-                    var mm = mi as MenuMethod;
+                
+                if (item is MenuMethod) {
+                    var mm = item as MenuMethod;
                     mWork.AppendLine(mm.Name);
-                } else if (mi is ModuleBase) {
-                    var mb = mi as ModuleBase;
+                } else if (item is ModuleBase) {
+                    var mb = item as ModuleBase;
                     mWork.AppendLine(mb.MenuName);
                 } else {
-                    mWork.AppendLine(mi.ToString());
+                    mWork.AppendLine(item.ToString());
                 }
             }
             while (count < 7) {
