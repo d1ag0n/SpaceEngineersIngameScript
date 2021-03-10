@@ -10,6 +10,7 @@ namespace IngameScript {
         readonly GyroModule mGyro;
         readonly ShipControllerModule mController;
         readonly SensorModule mSensor;
+        readonly CameraModule mCamera;
         readonly Lag mLag = new Lag(90);
         
         readonly PeriscopeModule mPeriscope;
@@ -22,7 +23,7 @@ namespace IngameScript {
             mSensor = new SensorModule();
             mThrust = new ThrusterModule();
             mGyro = new GyroModule();
-        
+            mCamera = new CameraModule();
             mPeriscope = new PeriscopeModule();
             mMenu = new MenuModule();
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
@@ -34,34 +35,12 @@ namespace IngameScript {
         public void Main(string argument, UpdateType updateSource) {
             var lag = mLag.update(Runtime.LastRunTimeMs);
             timesrun++;
-            if (argument.Length > 0) {
-                mMenu.Input(argument);
-            }
-            switch (argument) {
-                case "r":
-                    dir = MAF.ranDir();
-                    break;
-                case "up":
-                    dir = Vector3D.Up;
-                    break;
-                case "down":
-                    dir = Vector3D.Down;
-                    break;
-                case "left":
-                    dir = Vector3D.Left;
-                    break;
-                case "right":
-                    dir = Vector3D.Right;
-                    break;
-                case "front":
-                    dir = Vector3D.Forward;
-                    break;
-                case "back":
-                    dir = Vector3D.Backward;
-                    break;
-            }
+
             try {
                 ModuleManager.logger.log("main ", lag);
+                if (argument.Length > 0) {
+                    mMenu.Input(argument);
+                }
                 MyDetectedEntityInfo e;
                 if (mSensor.Player(out e)) {
                     //dir = e.Position - mController.WorldMatrix.Translation;

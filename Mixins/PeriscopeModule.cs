@@ -10,7 +10,8 @@ namespace IngameScript {
         
         IMyMotorStator first, second;
         IMyCameraBlock camera;
-
+        List<object> menuMethods;
+        public override List<object> MenuMethods(int aPage) => menuMethods;
 
         public override bool Accept(IMyTerminalBlock aBlock) {
             bool result = false;
@@ -23,10 +24,15 @@ namespace IngameScript {
                         if (first != null && first.TopGrid != null) {
                             ModuleManager.GetByGrid(first.TopGrid.EntityId, ref second);
                             if (second != null && second.TopGrid != null) {
+                                ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
+                                if (camera != null) {
+                                    camera.CustomName = $"!Periscope {first.CustomName} - Camera";
+                                }
                                 Okay = true;
                                 MenuName = "Periscope " + first.CustomName;
-                                MenuMethods.Add(new MenuMethod("Activate", Nactivate));
-                                MenuMethods.Add(new MenuMethod("Scan", Scan));
+                                menuMethods = new List<object>();
+                                menuMethods.Add(new MenuMethod("Activate", null, Nactivate));
+                                menuMethods.Add(new MenuMethod("Scan", null, Scan));
                                 Active = true;
                                 Nactivate();
                             }
@@ -38,15 +44,22 @@ namespace IngameScript {
             }
             return result;
         }
-        public void Nactivate(object argument = null) {
+        public Menu Nactivate(MenuModule aMain = null, object argument = null) {
             if (Okay) {
                 first.TargetVelocityRad = 0;
                 second.TargetVelocityRad = 0;
                 Active = !Active;
-                MenuMethods[0].Name = Active ? "Deactivate" : "Activate";
+                ((MenuMethod)menuMethods[0]).Name = Active ? "Deactivate" : "Activate";
+                if (Active) {
+                    camera.CustomName = "!" + camera.CustomName;
+                    logger.persist($"View {camera.CustomName}");
+                } else {
+                    camera.CustomName = camera.CustomName.Substring(1);
+                }
             }
+            return null;
         }
-        public void Scan(object argument = null) {
+        Menu Scan(MenuModule aMain = null, object argument = null) {
             CameraModule cam;
             if (GetModule(out cam)) {
                 var target = camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * 20000;
@@ -60,8 +73,10 @@ namespace IngameScript {
                 } else {
                     logger.persist("Periscope scan failed.");
                 }
+            } else {
+                logger.persist("Periscope scan requires CameraModule");
             }
-            
+            return null;
         }
 
         public override void Update() {

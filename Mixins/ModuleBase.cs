@@ -5,7 +5,12 @@ using System.Collections.Generic;
 namespace IngameScript {
     public abstract class ModuleBase {
         public string MenuName;
-        public readonly List<MenuMethod> MenuMethods = new List<MenuMethod>();
+        /// <summary>
+        /// MenuMethod list
+        /// </summary>
+        /// <param name="aPage"></param>
+        /// <returns></returns>
+        public virtual List<object> MenuMethods(int aPage) => null;
         public readonly LogModule logger;
         public readonly ShipControllerModule controller;
         public bool Active { get; protected set; }

@@ -11,6 +11,39 @@ namespace IngameScript
 
         public bool hasCamera => Blocks.Count > 0;
 
+        public override List<object> MenuMethods(int aPage) {
+            var index = aPage * 6 + 6;
+            var result = new List<object>();
+            logger.persist($"CameraModule.MenuMethods({aPage});");
+            logger.persist($"index={index}");
+            logger.persist($"mDetected.Count={mDetected.Count}");
+            for (int i = 0; i < 6; i++) {
+                index--;
+                if (mDetected.Count > index) {
+                    var e = mDetected[index];
+                    result.Add(new MenuMethod(e.Name, e, EntityMenu));
+                }
+            }
+            return result;
+        }
+
+        Menu EntityMenu(MenuModule aMain, object aState) {
+            var list = new List<object>();
+            var e = (MyDetectedEntityInfo)aState;
+            list.Add(new MenuMethod(logger.gps(e.Name, e.HitPosition.Value), aState, null));
+            return new Menu(aMain, $"Camera Record for {e.Name}", list);
+        }
+        /*Menu EntityGPS(MenuModule aMain, object aState) {
+            var e = (MyDetectedEntityInfo)aState;
+            logger.persist(logger.gps(e.Name, e.HitPosition.Value));
+            return null;
+        }*/
+        
+
+        public CameraModule() {
+            MenuName = "Camera Records";
+        }
+
         public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is IMyMotorStator) {
                 if (ModuleManager.HasTag(aBlock, "camera")) {

@@ -10,7 +10,7 @@ namespace IngameScript {
         string nl => Environment.NewLine;
         readonly StringBuilder mWork = new StringBuilder();
         readonly StringBuilder mLog = new StringBuilder();
-        readonly List<string> mPersistent = new List<string>();
+        readonly List<string> mPersistent = new List<string>(25);
 
         public void log(MyDetectedEntityInfo e) => log(string4(e));
         string string4(BoundingBoxD b) {
@@ -106,16 +106,15 @@ namespace IngameScript {
         public void persist(BoundingBoxD b) => persist(string4(b));
         public void persist(MyDetectedEntityInfo e) => persist(string4(e));
         public void persist(string aMessage) {
-            if (mPersistent.Count > 9) {
+            if (mPersistent.Count > 24) {
                 mPersistent.RemoveAt(0);
             }
             mPersistent.Add(aMessage);
         }
         public string get() {
-            for (int i = mPersistent.Count - 1; i >= 0; i--) {
+            for (int i = 0; i < mPersistent.Count; i++) {
                 mLog.Insert(0, Environment.NewLine);
                 mLog.Insert(0, mPersistent[i]);
-                mLog.Insert(0, $"#{i} ");
             }
             return mLog.ToString();
         }

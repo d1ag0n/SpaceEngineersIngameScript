@@ -25,7 +25,10 @@ namespace IngameScript {
             return result;
         }
         
-        public void SetMenu(Menu aMenu) {
+        public void SetMenu(Menu aMenu, bool aAssignPrevious = true) {
+            if (aAssignPrevious) {
+                aMenu.Previous = CurrentMenu;
+            }
             CurrentMenu = aMenu;
             UpdateRequired = true;
         }
@@ -35,7 +38,7 @@ namespace IngameScript {
         public override void Update() {
             if (UpdateRequired) {
                 if (CurrentMenu == null) {
-                    CurrentMenu = new Menu(this, null, ModuleManager.mModules);
+                    CurrentMenu = new Menu(this, ModuleManager.mModules);
                 }
                 var str = CurrentMenu.Update();
                 foreach (var tp in Blocks) {
