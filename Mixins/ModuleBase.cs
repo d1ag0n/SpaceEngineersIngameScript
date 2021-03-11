@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace IngameScript {
     public abstract class ModuleBase {
+        protected readonly Action Void = () => { };
         public string MenuName;
         /// <summary>
         /// MenuMethod list

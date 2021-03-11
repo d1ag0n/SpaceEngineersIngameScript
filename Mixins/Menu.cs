@@ -58,7 +58,7 @@ namespace IngameScript {
             if (argument.Length == 2) {
                 // menu number selection from !0 to !9
                 int selection = argument[1] - 48;
-                ModuleManager.logger.persist($"Menu input: '{selection}'");
+                //ModuleManager.logger.persist($"Menu input: '{selection}'");
                 if (selection == 6) {
                     Main.SetMenu(Previous, false);
                 } else if (selection == 7) {
@@ -83,7 +83,7 @@ namespace IngameScript {
             }
         }
         void HandleInput(object aMenuItem) {
-            Main.logger.persist($"Menu.HandleInput({aMenuItem});");
+            //Main.logger.persist($"Menu.HandleInput({aMenuItem});");
             if (aMenuItem is ModuleBase) {
                 Main.SetMenu(new Menu(Main, aMenuItem as ModuleBase));
             } else {

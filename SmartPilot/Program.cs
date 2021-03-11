@@ -5,13 +5,13 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
-        double runtimes = 0;
-        int timesrun = 0;
-        readonly LogModule g;
-        readonly ThrusterModule mThrust;
-        readonly GyroModule mGyro;
-        readonly ShipControllerModule mController;
-        readonly SensorModule mSensor;
+        //double runtimes = 0;
+        //int timesrun = 0;
+        //readonly LogModule g;
+        //readonly ThrusterModule mThrust;
+        //readonly GyroModule mGyro;
+        
+        //readonly SensorModule mSensor;
         readonly CameraModule mCamera;
         readonly Lag mLag = new Lag(90);
         
@@ -19,12 +19,12 @@ namespace IngameScript {
         readonly MenuModule mMenu;
         public Program() {
             ModuleManager.Initialize(this);
-            ModuleManager.GetModule(out g);
-            ModuleManager.GetModule(out mController);
+            //ModuleManager.GetModule(out g);
+            
 
-            mSensor = new SensorModule();
-            mThrust = new ThrusterModule();
-            mGyro = new GyroModule();
+            //mSensor = new SensorModule();
+            //mThrust = new ThrusterModule();
+            //mGyro = new GyroModule();
             mCamera = new CameraModule();
             mPeriscope = new PeriscopeModule();
             mMenu = new MenuModule();
@@ -35,7 +35,6 @@ namespace IngameScript {
         Vector3D dir = Vector3D.Down;
         public void Main(string argument, UpdateType updateSource) {
             var lag = mLag.update(Runtime.LastRunTimeMs);
-            timesrun++;
 
             try {
                 ModuleManager.logger.log("main ", lag);
@@ -43,12 +42,12 @@ namespace IngameScript {
                     mMenu.Input(argument);
                 }
                 MyDetectedEntityInfo e;
-                if (mSensor.Player(out e)) {
+                /*if (mSensor.Player(out e)) {
                     //dir = e.Position - mController.WorldMatrix.Translation;
-                }
+                }*/
                 ModuleManager.Update();
             } catch(Exception ex) {
-                g.persist(ex.ToString());
+                ModuleManager.logger.persist(ex.ToString());
             }
             
         }

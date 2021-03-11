@@ -40,7 +40,6 @@ namespace IngameScript {
             CurrentMenu.Input(argument);
 
         void UpdateAction() {
-            logger.log("MenuModule.UpdateAction");
             if (UpdateRequired) {
                 if (CurrentMenu == null) {
                     CurrentMenu = ModuleManager.MainMenu(this);

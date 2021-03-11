@@ -14,13 +14,13 @@ namespace IngameScript
         public override List<object> MenuMethods(int aPage) {
             var index = aPage * 6;
             var result = new List<object>();
-            logger.persist($"CameraModule.MenuMethods({aPage});");
-            logger.persist($"index={index}");
-            logger.persist($"mDetected.Count={mDetected.Count}");
+            //logger.persist($"CameraModule.MenuMethods({aPage});");
+            //logger.persist($"index={index}");
+            //logger.persist($"mDetected.Count={mDetected.Count}");
             for (int i = index; i < index + 6; i++) {
                 if (mDetected.Count > i) {
                     var e = mDetected[i];
-                    result.Add(new MenuMethod(e.Name, e, EntityMenu));
+                    result.Add(new MenuMethod($"{e.Name} {e.EntityId}", e, EntityMenu));
                 } else {
                     break;
                 }
@@ -31,13 +31,20 @@ namespace IngameScript
         public void Add(MyDetectedEntityInfo aEntity) => mDetected.Add(aEntity);
 
         Menu EntityMenu(MenuModule aMain, object aState) {
+            
             var list = new List<object>();
             var e = (MyDetectedEntityInfo)aState;
+            
+            list.Add($"Time: {e.TimeStamp}"); 
+            list.Add($"Relationship: {e.Relationship}");
+            
             if (e.HitPosition.HasValue) {
-                list.Add(new MenuMethod(logger.gps(e.Name + " Hit", e.HitPosition.Value), aState, null));
+                list.Add(logger.gps(e.Name + " Hit", e.HitPosition.Value));
             }
-            list.Add(new MenuMethod(logger.gps(e.Name + " Position", e.Position), aState, null));
-            return new Menu(aMain, $"Camera Record for {e.Name}", p => list);
+            //list.Add(new MenuMethod(logger.gps(e.Name + " Position", e.Position), aState, null));
+            list.Add(logger.gps(e.Name + " Position", e.Position));
+            
+            return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => list);
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {
             var e = (MyDetectedEntityInfo)aState;
