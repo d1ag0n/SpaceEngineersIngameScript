@@ -5,6 +5,8 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
+        double runtimes = 0;
+        int timesrun = 0;
         readonly LogModule g;
         readonly ThrusterModule mThrust;
         readonly GyroModule mGyro;
@@ -28,8 +30,7 @@ namespace IngameScript {
             mMenu = new MenuModule();
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-        double runtimes = 0;
-        int timesrun = 0;
+
         public void Save() { }
         Vector3D dir = Vector3D.Down;
         public void Main(string argument, UpdateType updateSource) {

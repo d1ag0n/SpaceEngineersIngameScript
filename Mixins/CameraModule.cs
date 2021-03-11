@@ -28,10 +28,15 @@ namespace IngameScript
             return result;
         }
 
+        public void Add(MyDetectedEntityInfo aEntity) => mDetected.Add(aEntity);
+
         Menu EntityMenu(MenuModule aMain, object aState) {
             var list = new List<object>();
             var e = (MyDetectedEntityInfo)aState;
-            list.Add(new MenuMethod(logger.gps(e.Name, e.HitPosition.Value), aState, null));
+            if (e.HitPosition.HasValue) {
+                list.Add(new MenuMethod(logger.gps(e.Name + " Hit", e.HitPosition.Value), aState, null));
+            }
+            list.Add(new MenuMethod(logger.gps(e.Name + " Position", e.Position), aState, null));
             return new Menu(aMain, $"Camera Record for {e.Name}", p => list);
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {

@@ -11,6 +11,7 @@ namespace IngameScript {
         /// <param name="aPage"></param>
         /// <returns></returns>
         public virtual List<object> MenuMethods(int aPage) => null;
+        public Action Update { get; protected set; }
         public readonly LogModule logger;
         public readonly ShipControllerModule controller;
         public bool Active { get; protected set; }
@@ -19,9 +20,9 @@ namespace IngameScript {
             ModuleManager.GetModule(out logger);
             ModuleManager.GetModule(out controller);
         }
-        public void MenuData(List<object> aList) {
+        /*public void MenuData(List<object> aList) {
              
-        }
+        }*/
        
     }
 }

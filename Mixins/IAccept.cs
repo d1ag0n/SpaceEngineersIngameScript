@@ -7,7 +7,5 @@ namespace IngameScript {
         bool Accept(IMyTerminalBlock aBlock);
         bool Remove(IMyTerminalBlock aBlock);
 
-        void Update();
-
     }
 }

@@ -20,28 +20,30 @@ namespace IngameScript {
         public Menu(MenuModule aMain, List<IAccept> aList) {
             Title = "Main Menu";
             Main = aMain;
-
+            
             MenuItems = p => {
                 int index = p * 6;
                 int count = 0;
+                
                 List<object> result = new List<object>();
                 for (int i = index; i < aList.Count; i++) {
                     if (count == 6) {
                         break;
                     }
-                    if (aList.Count > i) {
-                        var acceptor = aList[i];
-                        if (!(acceptor is MenuModule)) {
+                    var acceptor = aList[i];
+                    ModuleManager.logger.persist(acceptor.ToString());
+                    if (!(acceptor is MenuModule)) {
+                        
+                        var mb = acceptor as ModuleBase;
+                        if (mb.MenuName != null) {
+                            result.Add(mb);
                             count++;
-                            var mb = acceptor as ModuleBase;
-                            if (mb.MenuName != null) {
-                                result.Add(mb);
-                            }
                         }
                     }
                 }
                 return result;
             };
+            Items = MenuItems(0);
         }
 
         public Menu(MenuModule aMain, string aTitle, Func<int, List<object>> aPaginator) {
@@ -67,19 +69,15 @@ namespace IngameScript {
                         Main.UpdateRequired = true;
                     }
                 } else if (selection == 8) {
-
                     var items = MenuItems(Page + 1);
                     if (items.Count > 0) {
                         Page++;
                         Main.UpdateRequired = true;
                         Items = items;
                     }
-                    
                 } else {
-                    int index = selection + (Page * 6);
-                    ModuleManager.logger.persist($"Menu index: '{index}'");
-                    if (Items.Count > index) {
-                        HandleInput(Items[index]);
+                    if (Items.Count > selection) {
+                        HandleInput(Items[selection]);
                     }
                 }
             }
@@ -112,15 +110,14 @@ namespace IngameScript {
         public string Update() {
             var index = Page * 6;
             
-            var items = MenuItems(Page);
             mWork.AppendLine(Title);
             int count = 0;
-            foreach (var item in Items) { 
+            foreach (var item in Items) {
                 count++;
-                mWork.Append(count + 1);
+                mWork.Append(count);
                 mWork.Append(' ');
-                
-                
+
+
                 if (item is MenuMethod) {
                     var mm = item as MenuMethod;
                     mWork.AppendLine(mm.Name);
@@ -131,13 +128,13 @@ namespace IngameScript {
                     mWork.AppendLine(item.ToString());
                 }
             }
+            
             while (count < 7) {
                 count++;
                 mWork.AppendLine();
             }
-            mWork.AppendLine("7 Back");
-            mWork.AppendLine("8 < Page");
-            mWork.AppendLine("9 Page >");
+            mWork.AppendLine("7 Previous Menu");
+            mWork.AppendLine("8 - 9 < Page >");
             var result = mWork.ToString();
             mWork.Clear();
             return result;

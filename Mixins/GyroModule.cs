@@ -1,14 +1,15 @@
-﻿using Sandbox.ModAPI.Ingame;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
 using VRageMath;
+using Sandbox.ModAPI.Ingame;
 
 namespace IngameScript
 {
     class GyroModule : Module<IMyGyro> {
         Vector3D Target;
 
+        public GyroModule() {
+            Update = UpdateAction;
+        }
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
             if (result) {
@@ -17,11 +18,25 @@ namespace IngameScript
             return result;
         }
         
-        public override void Update() {
+        void UpdateAction() {
             if (Target.IsZero()) {
-                applyGyroOverride(0, 0, 0);
+                foreach(var gy in Blocks) {
+                    init(gy);
+                }
                 return;
             }
+
+            var sc = controller.Remote;
+            if (sc == null) {
+                sc = controller.Cockpit;
+                if (sc == null) {
+                    foreach (var gy in Blocks) {
+                        init(gy);
+                    }
+                    return;
+                }
+            }
+            
 
             //var roughDesiredDirection = Base6Directions.GetClosestDirection(aDesiredDown);
             //g.log("my down from ", roughDesiredDirection, "-ish");
@@ -54,7 +69,7 @@ namespace IngameScript
 
             double pitch = 0, yaw = 0, roll = 0;
             //getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
-            getRotationAngles(Target, controller.WorldMatrix, out yaw, out pitch);
+            getRotationAngles(Target, sc.WorldMatrix, out yaw, out pitch);
             var smallMax = 0.4;
             var smallFact = 1.9;
             if (Math.Abs(pitch) < smallMax) {
@@ -66,7 +81,7 @@ namespace IngameScript
             }
 
             var sv = controller.ShipVelocities;
-            var av = MAF.world2dir(sv.AngularVelocity, controller.WorldMatrix);
+            var av = MAF.world2dir(sv.AngularVelocity, sc.WorldMatrix);
             
 
 
@@ -143,7 +158,7 @@ namespace IngameScript
             pitch += pitchDif;
             roll += rollDif;            
             
-            applyGyroOverride(pitch , yaw, controller.RollIndicator);
+            applyGyroOverride(sc.WorldMatrix, pitch , yaw, 0);
             
             //g.log("pitchDif ", pitchDif);
             //g.log("rollDif  ", rollDif);
@@ -172,7 +187,7 @@ namespace IngameScript
         }
 
         //Whip's ApplyGyroOverride Method v10 - 8/19/17
-        void applyGyroOverride(double pitch_speed, double yaw_speed, double roll_speed) {
+        void applyGyroOverride(MatrixD worldMatrix, double pitch, double yaw, double roll) {
 
             //pitch_speed = pidPitch.Control(pitch_speed);
             //roll_speed = pidRoll.Control(roll_speed);
@@ -180,9 +195,9 @@ namespace IngameScript
 
             // Large gyro 3.36E+07
             // Small gyro 448000
-            var rotationVec = new Vector3D(-pitch_speed, yaw_speed, roll_speed); //because keen does some weird stuff with signs             
+            var rotationVec = new Vector3D(-pitch, yaw, roll); //because keen does some weird stuff with signs             
 
-            var relativeRotationVec = Vector3D.TransformNormal(rotationVec, controller.WorldMatrix);
+            var relativeRotationVec = Vector3D.TransformNormal(rotationVec, worldMatrix);
 
             foreach (var gy in Blocks) {
                 var transformedRotationVec = Vector3D.TransformNormal(relativeRotationVec, Matrix.Transpose(gy.WorldMatrix));
@@ -202,8 +217,8 @@ namespace IngameScript
         Dependencies: AngleBetween
         modified by d1ag0n for pitch and roll
         */
-        void getRotationAnglesFromDown(Vector3D targetVector, out double pitch, out double roll) {
-            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(controller.WorldMatrix));
+        void getRotationAnglesFromDown(Vector3D targetVector, MatrixD worldMatrix, out double pitch, out double roll) {
+            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
             var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
 
             pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);

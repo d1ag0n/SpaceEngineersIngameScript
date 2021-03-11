@@ -11,17 +11,20 @@ namespace IngameScript {
         public static ShipControllerModule controller { get; private set; }
         static readonly HashSet<long> mRegistry = new HashSet<long>();
         static readonly List<IMyEntity> mBlocks = new List<IMyEntity>();
-        public static readonly List<IAccept> mModules = new List<IAccept>();
+        static readonly List<IAccept> mModules = new List<IAccept>();
         
         static readonly Dictionary<int, List<IAccept>> mModuleList = new Dictionary<int, List<IAccept>>();
         static readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
         public static MyGridProgram Program { get; private set; }
-
+        public static Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
         public static void Update() {
             try {
                 controller.Update();
                 for (int i = 2; i < mModules.Count; i++) {
-                    mModules[i].Update();
+                    var mb = mModules[i] as ModuleBase;
+                    if (mb.Active) {
+                        mb.Update();
+                    }
                 }
             } catch (Exception ex) {
                 logger.persist(ex.ToString());
@@ -34,10 +37,8 @@ namespace IngameScript {
                     throw new ArgumentException("Program cannot be null.");
                 }
                 Program = aProgram;
-
                 logger = new LogModule();
                 controller = new ShipControllerModule();
-                
             } else {
                 foreach (var list in mTags.Values) {
                     list.Clear();

@@ -12,18 +12,24 @@ namespace IngameScript {
         readonly StringBuilder mLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>(25);
 
+        public LogModule() {
+            Update = UpdateAction;
+        }
+
+
         public void log(MyDetectedEntityInfo e) => log(string4(e));
-        string string4(BoundingBoxD b) {
+        public string string4(BoundingBoxD b) {
             mWork.Clear();
             mWork.AppendLine(b.Min.ToString());
             mWork.AppendLine(b.Center.ToString());
             mWork.AppendLine(b.Max.ToString());
             return mWork.ToString();
         }
-        string string4(MyDetectedEntityInfo e) {
+        public string string4(MyDetectedEntityInfo e) {
 
             mWork.Clear();
             mWork.AppendLine($"{e.Name} {e.Type} {e.EntityId}");
+
             //mWork.AppendLine(e.EntityId.ToString());
 
 
@@ -53,13 +59,18 @@ namespace IngameScript {
                 if (result) {
                     var p = b as IMyTextPanel;
                     p.ContentType = ContentType.TEXT_AND_IMAGE;
+                    p.Font = "Monospace";
+                    p.CustomName = "Log Console - " + Blocks.Count;
+                    if (p.FontColor == Color.White) {
+                        p.FontColor = new Color(255, 176, 0);
+                    }
                 }
             }
             return result;
         }
 
         public void log(Vector3D v) => log(string4(v));
-        string string4(Vector3D v) => $"X {v.X}{nl}Y {v.Y}{nl}Z {v.Z}";
+        public string string4(Vector3D v) => $"X {v.X}{nl}Y {v.Y}{nl}Z {v.Z}";
         public string gps(string aName, Vector3D aPos) {
             // GPS:ARC_ABOVE:19680.65:144051.53:-109067.96:#FF75C9F1:
             var sb = new StringBuilder("GPS:");
@@ -118,7 +129,7 @@ namespace IngameScript {
             }
             return mLog.ToString();
         }
-        public override void Update() {
+        void UpdateAction() {
             ModuleManager.Program.Echo("logmodupdate");
             var str = clear();
             ModuleManager.Program.Echo(str);

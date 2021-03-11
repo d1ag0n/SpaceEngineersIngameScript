@@ -1,22 +1,21 @@
-using Sandbox.ModAPI.Ingame;
-using System;
+﻿using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
-using System.Text;
-using VRage.ObjectBuilders;
 using VRageMath;
 
 namespace IngameScript {
     class PeriscopeModule : Module<IMyMotorStator> {
-        
         IMyMotorStator first, second;
         IMyCameraBlock camera;
         List<object> menuMethods;
+        double range = 20000;
+        bool xneg = false;
+        public PeriscopeModule() {
+            Update = UpdateAction;
+        }
         public override List<object> MenuMethods(int aPage) => menuMethods;
-
         public override bool Accept(IMyTerminalBlock aBlock) {
             bool result = false;
             if (first == null) {
-                
                 if (aBlock.CustomData.Contains("#periscope")) {
                     result = base.Accept(aBlock);
                     if (result) {
@@ -27,20 +26,29 @@ namespace IngameScript {
                                 ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
                                 if (camera != null) {
                                     camera.CustomName = $"!Periscope {first.CustomName} - Camera";
+                                    MenuName = "Periscope " + first.CustomName;
+                                    if (camera.Orientation.Left == second.Top.Orientation.Up) {
+                                        xneg = true;
+                                    }
+
+
+                                    Okay = true;
+                                    
+                                    menuMethods = new List<object>();
+                                    menuMethods.Add(new MenuMethod("Activate", null, Nactivate));
+                                    menuMethods.Add(new MenuMethod("Periscope Scan", null, Scan));
+                                    menuMethods.Add(new MenuMethod("Camera Module Scan", null, ModuleScan));
+                                    menuMethods.Add(new MenuMethod("Planetary Scan", null, PlanetScan));
+                                    Active = true;
+                                    Nactivate();
                                 }
-                                Okay = true;
-                                MenuName = "Periscope " + first.CustomName;
-                                menuMethods = new List<object>();
-                                menuMethods.Add(new MenuMethod("Activate", null, Nactivate));
-                                menuMethods.Add(new MenuMethod("Scan", null, Scan));
-                                Active = true;
-                                Nactivate();
                             }
                         }
                     }
                 }
             } else {
-
+                // multiple periscopes
+                // new module need some way to make sure new module does not grab control of existing periscope
             }
             return result;
         }
@@ -59,39 +67,88 @@ namespace IngameScript {
             }
             return null;
         }
-        Menu Scan(MenuModule aMain = null, object argument = null) {
-            CameraModule cam;
-            if (GetModule(out cam)) {
-                var target = camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * 20000;
+        Menu ModuleScan(MenuModule aMain = null, object argument = null) {
+            CameraModule mod;
+            GetModule(out mod);
+            if (mod != null) {
                 MyDetectedEntityInfo entity;
-                if (cam.Scan(target, out entity)) {
+                if (mod.Scan(camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * range, out entity)) {
                     if (entity.Type == MyDetectedEntityType.None) {
-                        logger.persist("Periscope scanned nothing.");
+                        logger.persist("Module scan empty.");
                     } else {
-                        logger.persist("Periscope scan recorded " + entity.Type);
+                        logger.persist(logger.gps(entity.Name, entity.Position));
+                        logger.persist("Module scan success.");
                     }
                 } else {
-                    logger.persist("Periscope scan failed.");
+                    logger.persist("Module scan failed.");
                 }
-            } else {
-                logger.persist("Periscope scan requires CameraModule");
             }
             return null;
         }
-
-        public override void Update() {
-            if (Active) {
-                var rot = controller.RotationIndicator;
-                logger.log(rot);
-                if (first == null) {
-                    logger.log("first null");
+        Menu PlanetScan(MenuModule aMain = null, object argument = null) {
+            var orange = range;
+            try {
+                range = 6000000;
+                Scan(aMain, argument);
+            } finally {
+                range = orange;
+            }
+            return null;
+        }
+        Menu Scan(MenuModule aMain = null, object argument = null) {
+            if (camera.AvailableScanRange <= range) {
+                logger.persist("Camera charging " + camera.TimeUntilScan(range) / 1000 + " seconds remaining.");
+            } else {
+                MyDetectedEntityInfo entity = camera.Raycast(range);
+                if (entity.Type == MyDetectedEntityType.None) {
+                    logger.persist("Periscope scanned nothing.");
                 } else {
-                    first.TargetVelocityRad = rot.Y * 0.01f;
+                    if (entity.Type == MyDetectedEntityType.None) {
+                        logger.persist("Periscope scan empty.");
+                    } else if (entity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
+                        logger.persist("Periscope scan obstructed by grid.");
+                    } else {
+                        logger.persist(logger.gps(entity.Name, entity.Position));
+                        logger.persist("Periscope scan success.");
+                        CameraModule mod;
+                        GetModule(out mod);
+                        if (mod != null) {
+                            mod.Add(entity);
+                        }
+                    }
                 }
-                if (second == null) {
-                    logger.log("second null");
-                } else {
-                    second.TargetVelocityRad = rot.X * 0.01f;
+            }
+            return null;
+        }
+        void UpdateAction() {
+            if (Active) {
+                var sc = controller.Cockpit;
+                
+                if (sc != null) {
+                    var rot = sc.RotationIndicator;
+                    logger.log(rot);
+                    if (first == null) {
+                        logger.log("first null");
+                    } else {
+                        /*
+                         * If v is the vector that points 'up' and p0 is some point on your plane, and finally p is the point that might be below the plane, 
+                         * compute the dot product v * (p−p0). This projects the vector to p on the up-direction. This product is {−,0,+} if p is below, on, above the plane, respectively.
+                         */
+                        var rad = rot.Y * 0.01f;
+                        if (first.WorldMatrix.Up.Dot(camera.WorldMatrix.Up) < 0) {
+                            rad = -rad;
+                        }
+                        first.TargetVelocityRad = rad;
+                    }
+                    if (second == null) {
+                        logger.log("second null");
+                    } else {
+                        var rad = rot.X * 0.01f;
+                        if (xneg) {
+                            rad = -rad;
+                        }
+                        second.TargetVelocityRad = rad;
+                    }
                 }
             }
         }
