@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using VRageMath;
 using VRage.Game;
+using System;
 
 namespace IngameScript {
     public class Serialize {
@@ -14,29 +15,30 @@ namespace IngameScript {
         /// ASCII 28 (0x1C) File Separator - Used to indicate separation between files on a data input stream.
         /// use at end of mod data
         /// </summary>
-        const char MODSEP = (char)28;
+        public const char MODSEP = (char)28;
 
         /// <summary>
         /// Use is reserved only for ModuleManager
         /// ASCII 29 (0x1D) Group Separator - Used to indicate separation between tables on a data input stream(called groups back then).
         /// use between mod name and data
         /// </summary>
-        const char GRPSEP = (char)29;
+        public const char GRPSEP = (char)29;
 
+        public readonly string[] NL = new string[] { Environment.NewLine };
 
         /// <summary>
         /// Maybe used by modules
         /// ASCII 30 (0x1E) Record Separator - Used to indicate separation between records within a table(within a group). 
         /// </summary>
-        const char RECSEP = (char)30;
+        public const char RECSEP = (char)30;
 
         /// <summary>
         /// Maybe used by modules
         /// ASCII 31 (0x1F) Unit Separator - Used to indicate separation between units within a record.
         /// </summary>
-        const char UNTSEP = (char)31;
+        public const char UNTSEP = (char)31;
 
-        public readonly StringBuilder sb = new StringBuilder();
+        readonly StringBuilder sb = new StringBuilder();
         /*
          * # example view of stored data I'm using # to indicate a comment
          * # [] and {} will not be used, they're only for visualization
@@ -59,7 +61,12 @@ namespace IngameScript {
 
         // todo check existing tostring mothods for newlines and replace as necessary
 
+        public void mod() => sb.Append(MODSEP);
         public void rec() => sb.Append(RECSEP);
+        public void grp(string s) {
+            sb.Append(s);
+            sb.Append(GRPSEP);
+        }
         public void unt(string s) {
             sb.Append(s); 
             sb.Append(UNTSEP);
@@ -76,25 +83,22 @@ namespace IngameScript {
             str(e.EntityId);
             str(e.Name);
             str(e.Type);
-            str(e.BoundingBox);
-
-
             if (e.HitPosition.HasValue) {
                 str(e.HitPosition.Value);
             } else {
                 str();
             }
-
             str(e.Orientation);
-            str(e.TimeStamp);
-
             str(e.Velocity);
+            str(e.Relationship);
+            str(e.BoundingBox);
+            str(e.TimeStamp);
         }
         public MyDetectedEntityInfo objMyDetectedEntityInfo(IEnumerator<string> e) => new MyDetectedEntityInfo(
             objlong(e), objstring(e), objMyDetectedEntityType(e), objVector3D_(e), objMatrixD(e),
             objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objBoundingBoxD(e), objlong(e)
         );
-        public void str(MyRelationsBetweenPlayerAndBlock r) => r.ToString();
+        public void str(MyRelationsBetweenPlayerAndBlock r) => sb.AppendLine(r.ToString());
         public MyRelationsBetweenPlayerAndBlock objMyRelationsBetweenPlayerAndBlock(IEnumerator<string> e) {
             var s = e.Current;
             e.MoveNext();

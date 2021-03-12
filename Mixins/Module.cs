@@ -8,7 +8,6 @@ namespace IngameScript {
         public readonly List<T> Blocks = new List<T>();
         public Module() {
             ModuleManager.Add(this);
-            Save = sVoid;
             Update = Void;
         }
         

@@ -8,7 +8,6 @@ namespace IngameScript
     class CameraModule : Module<IMyCameraBlock>
     {
         readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
-
         public bool hasCamera => Blocks.Count > 0;
 
         public CameraModule() {
@@ -17,9 +16,10 @@ namespace IngameScript
             Load = LoadDel;
         }
 
-        string SaveDel(Serialize s) {
+        void SaveDel(Serialize s) {
+            logger.persist("CameraModule.SaveDel");
             var one = false;
-            foreach(var e in mDetected) {
+            foreach (var e in mDetected) {
                 if (one) {
                     s.rec();
                 }
@@ -27,12 +27,19 @@ namespace IngameScript
                 s.str(e);
                 one = true;
             }
-            return s.Clear();
+
         }
 
-        void LoadDel(Serialize s, string aDataName, IEnumerator<string> e) {
-            if (aDataName == "Record") {
-                mDetected.Add(s.objMyDetectedEntityInfo(e));
+        void LoadDel(Serialize s, string aData) {
+            var ar = aData.Split(Serialize.RECSEP);
+            foreach (var record in ar) {
+                var entry = record.Split(Serialize.UNTSEP);
+                if (entry[0] == "Record") {
+                    var entries = entry[1].Split(s.NL, StringSplitOptions.None);
+                    if (entries.Length > 0) {
+                        mDetected.Add(s.objMyDetectedEntityInfo(new Stringerator(entries)));
+                    }
+                }
             }
         }
 

@@ -30,6 +30,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)SensorModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Stringerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Thrust.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrusterModule.cs" />
   </ItemGroup>

@@ -31,18 +31,45 @@ namespace IngameScript {
             }
             logger.Update();
         }
-        public static void Save() {
+        public static string Save() {
+            var s = new Serialize();
+            var one = false;
+            foreach (var m in mModules) {
+
+                var mb = m as ModuleBase;
+                if (mb.Save != null) {
+                    if (one) {
+                        s.mod();
+                    }
+                    s.grp(mb.GetType().ToString());
+                    mb.Save(s);
+                    one = true;
+                }
+
+            }
+            return s.Clear();
+        }
+        public static void Load(string aStorage) {
+            var s = new Serialize();
+            var moduleEntries = new Dictionary<string, List<string>>();
+            List<string> work;
+            var mods = aStorage.Split(Serialize.MODSEP);
+            foreach (var mod in mods) {
+                var grps = mod.Split(Serialize.GRPSEP);
+                if (!moduleEntries.TryGetValue(grps[0], out work)) {
+                    work = new List<string>();
+                    moduleEntries.Add(grps[0], work);
+                }
+                work.Add(grps[1]);
+            }
             foreach(var m in mModules) {
-                if (m is ModuleBase) {
-                    var mb = m as ModuleBase;
-                    if (mb.Save != null) {
-                        mb.Save()
+                var mb = m as ModuleBase;
+                if (moduleEntries.TryGetValue(mb.GetType().ToString(), out work)) {
+                    foreach(var data in work) {
+                        mb.Load(s, data);
                     }
                 }
             }
-        }
-        public static void Load(string aStorage) {
-
         }
         public static void Initialize(MyGridProgram aProgram = null) {
             if (Program == null) {

@@ -29,20 +29,14 @@ namespace IngameScript {
             mCamera = new CameraModule();
             mPeriscope = new PeriscopeModule();
             mMenu = new MenuModule();
+            ModuleManager.Load(Storage);
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-        List<IMyCubeBlock> cubes = new List<IMyCubeBlock>();
-        void updateFunc() {
-            GridTerminalSystem.GetBlocksOfType<IMyCubeBlock>(cubes);
-        }
-        bool allFunc() {
-            foreach(var c in cubes){
-                if (!c.IsFunctional) return false;
-            }
-            return true;
-        }
+      
         public void Save() {
-            Storage = ModuleManager.Save();
+            var s = ModuleManager.Save();
+            Me.CustomData = s;
+            Storage = s;
         }
         Vector3D dir = Vector3D.Down;
         public void Main(string argument, UpdateType updateSource) {
@@ -51,7 +45,11 @@ namespace IngameScript {
             try {
                 ModuleManager.logger.log("main ", lag);
                 if (argument.Length > 0) {
-                    mMenu.Input(argument);
+                    if (argument == "save") {
+                        Save();
+                    } else {
+                        mMenu.Input(argument);
+                    }
                 }
                 MyDetectedEntityInfo e;
                 /*if (mSensor.Player(out e)) {

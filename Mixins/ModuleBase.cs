@@ -5,8 +5,8 @@ using System.Collections.Generic;
 namespace IngameScript {
     public abstract class ModuleBase {
         protected readonly Action Void = () => { };
-        public delegate string delSave(Serialize s);
-        public delegate void delLoad(Serialize s, string aDataName, IEnumerator<string> e);
+        public delegate void delSave(Serialize s);
+        public delegate void delLoad(Serialize s, string aData);
         public string MenuName;
         /// <summary>
         /// MenuMethod list
