@@ -31,6 +31,19 @@ namespace IngameScript {
             }
             logger.Update();
         }
+        public static void Save() {
+            foreach(var m in mModules) {
+                if (m is ModuleBase) {
+                    var mb = m as ModuleBase;
+                    if (mb.Save != null) {
+                        mb.Save()
+                    }
+                }
+            }
+        }
+        public static void Load(string aStorage) {
+
+        }
         public static void Initialize(MyGridProgram aProgram = null) {
             if (Program == null) {
                 if (aProgram == null) {

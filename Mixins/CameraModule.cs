@@ -11,6 +11,31 @@ namespace IngameScript
 
         public bool hasCamera => Blocks.Count > 0;
 
+        public CameraModule() {
+            MenuName = "Camera Records";
+            Save = SaveDel;
+            Load = LoadDel;
+        }
+
+        string SaveDel(Serialize s) {
+            var one = false;
+            foreach(var e in mDetected) {
+                if (one) {
+                    s.rec();
+                }
+                s.unt("Record");
+                s.str(e);
+                one = true;
+            }
+            return s.Clear();
+        }
+
+        void LoadDel(Serialize s, string aDataName, IEnumerator<string> e) {
+            if (aDataName == "Record") {
+                mDetected.Add(s.objMyDetectedEntityInfo(e));
+            }
+        }
+
         public override List<object> MenuMethods(int aPage) {
             var index = aPage * 6;
             var result = new List<object>();
@@ -27,6 +52,8 @@ namespace IngameScript
             }
             return result;
         }
+
+
 
         public void Add(MyDetectedEntityInfo aEntity) => mDetected.Add(aEntity);
 
@@ -53,9 +80,7 @@ namespace IngameScript
         }*/
         
 
-        public CameraModule() {
-            MenuName = "Camera Records";
-        }
+
 
         public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is IMyMotorStator) {

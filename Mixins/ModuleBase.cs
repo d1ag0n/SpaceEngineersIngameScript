@@ -5,6 +5,8 @@ using System.Collections.Generic;
 namespace IngameScript {
     public abstract class ModuleBase {
         protected readonly Action Void = () => { };
+        public delegate string delSave(Serialize s);
+        public delegate void delLoad(Serialize s, string aDataName, IEnumerator<string> e);
         public string MenuName;
         /// <summary>
         /// MenuMethod list
@@ -13,6 +15,9 @@ namespace IngameScript {
         /// <returns></returns>
         public virtual List<object> MenuMethods(int aPage) => null;
         public Action Update { get; protected set; }
+        public delSave Save { get; protected set; }
+        public delLoad Load { get; protected set; }
+        
         public readonly LogModule logger;
         public readonly ShipControllerModule controller;
         public bool Active { get; protected set; }

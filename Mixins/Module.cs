@@ -1,5 +1,5 @@
+
 using Sandbox.ModAPI.Ingame;
-using System;
 using System.Collections.Generic;
 
 namespace IngameScript {
@@ -8,7 +8,8 @@ namespace IngameScript {
         public readonly List<T> Blocks = new List<T>();
         public Module() {
             ModuleManager.Add(this);
-            Update = () => { };
+            Save = sVoid;
+            Update = Void;
         }
         
         public bool GetModule<S>(out S aComponent) => ModuleManager.GetModule(out aComponent);

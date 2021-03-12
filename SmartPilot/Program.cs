@@ -1,6 +1,7 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
+using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
 namespace IngameScript {
@@ -30,8 +31,19 @@ namespace IngameScript {
             mMenu = new MenuModule();
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-
-        public void Save() { }
+        List<IMyCubeBlock> cubes = new List<IMyCubeBlock>();
+        void updateFunc() {
+            GridTerminalSystem.GetBlocksOfType<IMyCubeBlock>(cubes);
+        }
+        bool allFunc() {
+            foreach(var c in cubes){
+                if (!c.IsFunctional) return false;
+            }
+            return true;
+        }
+        public void Save() {
+            Storage = ModuleManager.Save();
+        }
         Vector3D dir = Vector3D.Down;
         public void Main(string argument, UpdateType updateSource) {
             var lag = mLag.update(Runtime.LastRunTimeMs);
