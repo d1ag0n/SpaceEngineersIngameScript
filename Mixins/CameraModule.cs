@@ -39,13 +39,10 @@ namespace IngameScript
                     if (entries.Length > 0) {
                         IEnumerable<string> elements = entries;
                         using (var en = elements.GetEnumerator()) {
-                            //en.MoveNext(); // is throwing this exception "Enumerator has not started."
+                            en.MoveNext();
                             mDetected.Add(s.objMyDetectedEntityInfo(en));
                         }
                     }
-                    /*if (entries.Length > 0) {
-                        mDetected.Add(s.objMyDetectedEntityInfo(new Stringerator(entries)));
-                    }*/
                 }
             }
         }
