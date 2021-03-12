@@ -21,27 +21,24 @@ namespace IngameScript {
         public Program() {
             ModuleManager.Initialize(this);
             //ModuleManager.GetModule(out g);
-            
-
             //mSensor = new SensorModule();
             //mThrust = new ThrusterModule();
             //mGyro = new GyroModule();
+            new GyroModule();
             mCamera = new CameraModule();
             mPeriscope = new PeriscopeModule();
             mMenu = new MenuModule();
-            ModuleManager.Load(Storage);
+            try {
+                ModuleManager.Load(Storage);
+            } catch (Exception ex) {
+                ModuleManager.logger.persist(ex.ToString());
+            }
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
       
-        public void Save() {
-            var s = ModuleManager.Save();
-            Me.CustomData = s;
-            Storage = s;
-        }
-        Vector3D dir = Vector3D.Down;
+        public void Save() => Storage = ModuleManager.Save();
         public void Main(string argument, UpdateType updateSource) {
             var lag = mLag.update(Runtime.LastRunTimeMs);
-
             try {
                 ModuleManager.logger.log("main ", lag);
                 if (argument.Length > 0) {
@@ -51,10 +48,6 @@ namespace IngameScript {
                         mMenu.Input(argument);
                     }
                 }
-                MyDetectedEntityInfo e;
-                /*if (mSensor.Player(out e)) {
-                    //dir = e.Position - mController.WorldMatrix.Translation;
-                }*/
                 ModuleManager.Update();
             } catch(Exception ex) {
                 ModuleManager.logger.persist(ex.ToString());

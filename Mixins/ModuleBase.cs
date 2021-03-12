@@ -1,4 +1,3 @@
-using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 
@@ -8,6 +7,7 @@ namespace IngameScript {
         public delegate void delSave(Serialize s);
         public delegate void delLoad(Serialize s, string aData);
         public string MenuName;
+        
         /// <summary>
         /// MenuMethod list
         /// </summary>

@@ -1,14 +1,22 @@
 ﻿using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
+using System.Collections.Generic;
 
 namespace IngameScript
 {
     class GyroModule : Module<IMyGyro> {
-        Vector3D Target;
-
+        public Vector3D Target;
+        readonly List<object> menuMethods = new List<object>();
         public GyroModule() {
+            MenuName = "Gyroscope";
             Update = UpdateAction;
+            menuMethods.Add(new MenuMethod("Activate", null, Nactivate));
+        }
+        public Menu Nactivate(MenuModule aMain = null, object argument = null) {
+            Active = !Active;
+            ((MenuMethod)menuMethods[0]).Name = Active ? "Deactivate" : "Activate";
+            return null;
         }
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
@@ -19,6 +27,7 @@ namespace IngameScript
         }
         
         void UpdateAction() {
+            if (!Active) return;
             if (Target.IsZero()) {
                 foreach(var gy in Blocks) {
                     init(gy);
@@ -82,8 +91,6 @@ namespace IngameScript
 
             var sv = controller.ShipVelocities;
             var av = MAF.world2dir(sv.AngularVelocity, sc.WorldMatrix);
-            
-
 
             var pitchDif = (pitch - av.X);
             var rollDif = (roll + av.Z);

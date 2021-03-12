@@ -9,7 +9,7 @@ namespace IngameScript
     {
         readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
         public bool hasCamera => Blocks.Count > 0;
-
+        
         public CameraModule() {
             MenuName = "Camera Records";
             Save = SaveDel;
@@ -37,8 +37,15 @@ namespace IngameScript
                 if (entry[0] == "Record") {
                     var entries = entry[1].Split(s.NL, StringSplitOptions.None);
                     if (entries.Length > 0) {
-                        mDetected.Add(s.objMyDetectedEntityInfo(new Stringerator(entries)));
+                        IEnumerable<string> elements = entries;
+                        using (var en = elements.GetEnumerator()) {
+                            //en.MoveNext(); // is throwing this exception "Enumerator has not started."
+                            mDetected.Add(s.objMyDetectedEntityInfo(en));
+                        }
                     }
+                    /*if (entries.Length > 0) {
+                        mDetected.Add(s.objMyDetectedEntityInfo(new Stringerator(entries)));
+                    }*/
                 }
             }
         }
@@ -71,12 +78,9 @@ namespace IngameScript
             
             list.Add($"Time: {e.TimeStamp}"); 
             list.Add($"Relationship: {e.Relationship}");
-            
-            if (e.HitPosition.HasValue) {
-                list.Add(logger.gps(e.Name + " Hit", e.HitPosition.Value));
-            }
-            //list.Add(new MenuMethod(logger.gps(e.Name + " Position", e.Position), aState, null));
-            list.Add(logger.gps(e.Name + " Position", e.Position));
+            list.Add(logger.gps($"{e.Name} {e.EntityId}", e.Position));
+            list.Add($"Distance: " + (e.Position - Grid.WorldMatrix.Translation).Length());
+            list.Add(new MenuMethod("Send to Gyro Module", e.Position, AimGyro));
             
             return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => list);
         }
@@ -86,7 +90,13 @@ namespace IngameScript
             return null;
         }*/
         
-
+        Menu AimGyro(MenuModule aMain, object aState) {
+            GyroModule mod;
+            if (GetModule(out mod)) {
+                mod.Target = (Vector3D)aState;
+            }
+            return null;
+        }
 
 
         public override bool Accept(IMyTerminalBlock aBlock) {

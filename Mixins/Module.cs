@@ -1,12 +1,14 @@
-
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public class Module<T> : ModuleBase, IAccept {
         readonly HashSet<long> mRegistry = new HashSet<long>();
         public readonly List<T> Blocks = new List<T>();
+        protected readonly IMyCubeGrid Grid;
         public Module() {
+            Grid = ModuleManager.Program.Me.CubeGrid;
             ModuleManager.Add(this);
             Update = Void;
         }
