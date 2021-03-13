@@ -6,20 +6,21 @@ namespace IngameScript {
         protected readonly Action Void = () => { };
         public delegate void delSave(Serialize s);
         public delegate void delLoad(Serialize s, string aData);
+        public delegate List<object> delMenu(int page);
         public string MenuName;
-        
+        public readonly LogModule logger;
+        public readonly ShipControllerModule controller;
         /// <summary>
         /// MenuMethod list
         /// </summary>
         /// <param name="aPage"></param>
         /// <returns></returns>
-        public virtual List<object> MenuMethods(int aPage) => null;
+        public delMenu Menu { get; protected set; }
         public Action Update { get; protected set; }
         public delSave Save { get; protected set; }
         public delLoad Load { get; protected set; }
         
-        public readonly LogModule logger;
-        public readonly ShipControllerModule controller;
+
         public bool Active { get; protected set; }
         protected bool Okay = false;
         public ModuleBase() {

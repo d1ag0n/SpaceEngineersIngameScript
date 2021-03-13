@@ -35,8 +35,10 @@ namespace IngameScript {
             }
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-      
-        public void Save() => Storage = ModuleManager.Save();
+
+        public void Save() {
+            Me.CustomData = Storage = ModuleManager.Save();
+        }
         public void Main(string argument, UpdateType updateSource) {
             var lag = mLag.update(Runtime.LastRunTimeMs);
             try {

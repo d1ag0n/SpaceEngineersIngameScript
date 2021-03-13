@@ -14,10 +14,10 @@ namespace IngameScript
             MenuName = "Camera Records";
             Save = SaveDel;
             Load = LoadDel;
+            Menu = MenuDel;
         }
 
         void SaveDel(Serialize s) {
-            logger.persist("CameraModule.SaveDel");
             var one = false;
             foreach (var e in mDetected) {
                 if (one) {
@@ -47,7 +47,7 @@ namespace IngameScript
             }
         }
 
-        public override List<object> MenuMethods(int aPage) {
+        List<object> MenuDel(int aPage) {
             var index = aPage * 6;
             var result = new List<object>();
             //logger.persist($"CameraModule.MenuMethods({aPage});");
@@ -90,7 +90,7 @@ namespace IngameScript
         Menu AimGyro(MenuModule aMain, object aState) {
             GyroModule mod;
             if (GetModule(out mod)) {
-                mod.Target = (Vector3D)aState;
+                mod.SetTargetPosition((Vector3D)aState);
             }
             return null;
         }

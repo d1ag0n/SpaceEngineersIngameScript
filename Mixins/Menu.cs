@@ -5,7 +5,7 @@ using System;
 namespace IngameScript {
     public class Menu {
         readonly StringBuilder mWork = new StringBuilder();
-        readonly Func<int, List<object>> MenuItems;
+        readonly ModuleBase.delMenu MenuItems;
         public int Page;
         string Title;
         public Menu Previous;
@@ -14,7 +14,7 @@ namespace IngameScript {
         public Menu(MenuModule aMain, ModuleBase aModule) {
             Title = $"{aModule.MenuName}";
             Main = aMain;
-            MenuItems = aModule.MenuMethods;
+            MenuItems = aModule.Menu;
             Items = MenuItems(0);
         }
         public Menu(MenuModule aMain, List<IAccept> aList) {
@@ -46,7 +46,7 @@ namespace IngameScript {
             Items = MenuItems(0);
         }
 
-        public Menu(MenuModule aMain, string aTitle, Func<int, List<object>> aPaginator) {
+        public Menu(MenuModule aMain, string aTitle, ModuleBase.delMenu aPaginator) {
             Main = aMain;
             Title = aTitle;
             MenuItems = aPaginator;

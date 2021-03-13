@@ -66,6 +66,5 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <Import Project="..\..\Mixins\SmartPilot.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

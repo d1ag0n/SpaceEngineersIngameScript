@@ -141,6 +141,14 @@ namespace IngameScript {
             return result;
         }
 
+        public void str(double d) => sb.AppendLine(d.ToString());
+        public double objdouble(IEnumerator<string> e) {
+            double result;
+            double.TryParse(e.Current, out result);
+            e.MoveNext();
+            return result;
+        }
+
         public void str() => sb.AppendLine();
         public void str(string s) => sb.AppendLine(s);
         public string objstring(IEnumerator<string> e) {

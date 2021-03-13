@@ -11,8 +11,8 @@ namespace IngameScript {
         bool xneg = false;
         public PeriscopeModule() {
             Update = UpdateAction;
+            Menu = p => menuMethods;
         }
-        public override List<object> MenuMethods(int aPage) => menuMethods;
         public override bool Accept(IMyTerminalBlock aBlock) {
             bool result = false;
             if (first == null) {

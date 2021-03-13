@@ -45,6 +45,7 @@ namespace IngameScript {
         
         readonly Vector3D[] arCorners = new Vector3D[8];
         void UpdateAction() {
+            ShipVelocities = Remote.GetShipVelocities();
             var grid = ModuleManager.Program.Me.CubeGrid;
             // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
             // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
@@ -119,7 +120,7 @@ namespace IngameScript {
             if (sc == null) {
                 return;
             }
-            ShipVelocities = sc.GetShipVelocities();
+            
         }
 
 

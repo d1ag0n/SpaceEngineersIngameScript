@@ -6,16 +6,206 @@ using System.Collections.Generic;
 namespace IngameScript
 {
     class GyroModule : Module<IMyGyro> {
-        public Vector3D Target;
-        readonly List<object> menuMethods = new List<object>();
+        const double min = 0.001;
+        double difMax = 0.09;   // angular velocity difference threshold
+        double slowFact = 20.0; // slow down factor how quickly the ship tries to slow down toward the end of a turn
+        double fastFact = 2.0;  // speed up factor
+        double smallMax = 0.4;  // angle remaining in turn when smallFactor is applied
+        double smallFact = 1.9; // factor applied when within smallMax
+
+
+        public Vector3D TargetDirection;
+        readonly List<object> mainMenuMethods = new List<object>();
         public GyroModule() {
             MenuName = "Gyroscope";
             Update = UpdateAction;
-            menuMethods.Add(new MenuMethod("Activate", null, Nactivate));
+            Save = SaveDel;
+            Load = LoadDel;
+            mainMenu();
+            Menu = p => mainMenuMethods;
         }
-        public Menu Nactivate(MenuModule aMain = null, object argument = null) {
+
+        void SaveDel(Serialize s) {
+
+            s.unt("difMax");
+            s.str(difMax);
+            s.rec();
+
+            s.unt("slowFact");
+            s.str(slowFact);
+            s.rec();
+
+            s.unt("fastFact");
+            s.str(fastFact);
+            s.rec();
+
+            s.unt("smallMax");
+            s.str(smallMax);
+            s.rec();
+
+            s.unt("smallFact");
+            s.str(smallFact);
+            s.rec();
+
+        }
+
+        void LoadDel(Serialize s, string aData) {
+            var ar = aData.Split(Serialize.RECSEP);
+            foreach (var record in ar) {
+                var entry = record.Split(Serialize.UNTSEP);
+                switch (entry[0]) {
+                    case "difMax":
+                        double.TryParse(entry[1], out difMax);
+                        break;
+                    case "slowFact":
+                        double.TryParse(entry[1], out slowFact);
+                        break;
+                    case "fastFact":
+                        double.TryParse(entry[1], out fastFact);
+                        break;
+                    case "smallMax":
+                        double.TryParse(entry[1], out smallMax);
+                        break;
+                    case "smallFact":
+                        double.TryParse(entry[1], out smallFact);
+                        break;
+                }
+            }
+        }
+
+        public void SetTargetPosition(Vector3D aWorld) {
+            TargetDirection = Vector3D.Normalize(aWorld - controller.Remote.WorldMatrix.Translation);
+        }
+        
+        void mainMenu() {
+            mainMenuMethods.Clear();
+            mainMenuMethods.Add(new MenuMethod("Activate", null, Nactivate));
+            mainMenuMethods.Add(new MenuMethod("Configurator", null, ConfigAction));
+        }
+
+        string strRaiseDifMax => $"Increase max difference for AV correction: {difMax}";
+        Menu raiseDifMax(MenuModule aMain, object argument) {
+            difMax *= 1.1;
+            return null;
+        }
+        string strLowerDifMax => $"Decrease max difference for AV correction: {difMax}";
+        Menu lowerDifMax(MenuModule aMain, object argument) {
+            difMax *= 0.9;
+            if (difMax < min) {
+                difMax = min;
+            }
+            return null;
+        }
+
+        string strRaiseFastFact => $"Increase AV acceleration factor: {fastFact}";
+        Menu raiseFastFact(MenuModule aMain, object argument) {
+            fastFact*= 1.1;
+            return null;
+        }
+        string strLowerFastFact => $"Decrease AV acceleration factor: {fastFact}";
+        Menu lowerFastFact(MenuModule aMain, object argument) {
+            fastFact *= 0.9;
+            if (fastFact < min) {
+                fastFact = min;
+            }
+            return null;
+        }
+
+        string strRaiseSlowFact => $"Increase AV deceleration factor: {slowFact}";
+        Menu raiseSlowFact(MenuModule aMain, object argument) {
+            slowFact*= 1.1;
+            return null;
+        }
+        string strLowerSlowFact => $"Decrease AV deceleration factor: {slowFact}";
+        Menu lowerSlowFact(MenuModule aMain, object argument) {
+            slowFact *= 0.9;
+            if (slowFact < min) {
+                slowFact = min;
+            }
+            return null;
+        }
+
+        string strRaiseSmallMax => $"Increase small turn size: {smallMax}";
+        Menu raiseSmallMax(MenuModule aMain, object argument) {
+            smallMax *= 1.1;
+            return null;
+        }
+        string strLowerSmallMax => $"Decrease small turn size: {smallMax}";
+        Menu lowerSmallMax(MenuModule aMain, object argument) {
+            smallMax *= 0.9;
+            if (smallMax < min) {
+                smallMax = min;
+            }
+            return null;
+        }
+        string strRaiseSmallFact => $"Increase factor applied to small turns: {smallFact}";
+        Menu raiseSmallFact(MenuModule aMain, object argument) {
+            smallFact *= 1.1;
+            return null;
+        }
+        string strLowerSmallFact => $"Decrease factor applied to small turns: {smallFact}";
+        Menu lowerSmallFact(MenuModule aMain, object argument) {
+            smallFact *= 0.9;
+            if (smallFact < min) {
+                smallFact = min;
+            }
+            return null;
+        }
+
+        List<object> configMenu(int page) {
+            var result = new List<object>();
+            if (page % 2 == 0) {
+                result.Add(new MenuMethod(strRaiseDifMax, null, raiseDifMax));
+                result.Add(new MenuMethod(strLowerDifMax, null, lowerDifMax));
+                result.Add(new MenuMethod(strRaiseFastFact, null, raiseFastFact));
+                result.Add(new MenuMethod(strLowerFastFact, null, lowerFastFact));
+                result.Add(new MenuMethod(strRaiseSlowFact, null, raiseSlowFact));
+                result.Add(new MenuMethod(strLowerSlowFact, null, lowerSlowFact));
+            } else {
+                result.Add(new MenuMethod(strRaiseSmallMax, null, raiseSmallMax));
+                result.Add(new MenuMethod(strLowerSmallMax, null, lowerSmallMax));
+                result.Add(new MenuMethod(strRaiseSmallFact, null, raiseSmallFact));
+                result.Add(new MenuMethod(strLowerSmallFact, null, lowerSmallFact));
+            }
+            return result;
+
+        }
+        Vector3D configDir;
+        int configCount = 0;
+
+        Menu ConfigAction(MenuModule aMain, object argument) {
+            configDir = Vector3D.Up;
+            Active = true;
+            Update = () => {
+                logger.log("config update");
+                if (controller.ShipVelocities.AngularVelocity.LengthSquared() < 1 && MAF.angleBetween(controller.Remote.WorldMatrix.Forward, configDir) < 0.01) {
+                    logger.log("config waiting");
+                    init();
+                    configCount++;
+                    if (configCount == 18) {
+                        configDir = -configDir;
+                    }
+                } else {
+                    logger.log("config turning");
+                    configCount = 0;
+                    TargetDirection = configDir;
+                    UpdateAction();
+                }
+            };
+            return new Menu(aMain, "Angular Velocity Configurator", configMenu);
+        }
+
+
+
+
+
+        void ConfigAction() {
+
+        }
+        
+        Menu Nactivate(MenuModule aMain, object argument) {
             Active = !Active;
-            ((MenuMethod)menuMethods[0]).Name = Active ? "Deactivate" : "Activate";
+            ((MenuMethod)mainMenuMethods[0]).Name = Active ? "Deactivate" : "Activate";
             return null;
         }
         public override bool Accept(IMyTerminalBlock b) {
@@ -25,25 +215,20 @@ namespace IngameScript
             }
             return result;
         }
+
+
         
         void UpdateAction() {
             if (!Active) return;
-            if (Target.IsZero()) {
-                foreach(var gy in Blocks) {
-                    init(gy);
-                }
+            if (TargetDirection.IsZero()) {
+                init();
                 return;
             }
 
             var sc = controller.Remote;
             if (sc == null) {
-                sc = controller.Cockpit;
-                if (sc == null) {
-                    foreach (var gy in Blocks) {
-                        init(gy);
-                    }
-                    return;
-                }
+                init();
+                return;
             }
             
 
@@ -76,58 +261,93 @@ namespace IngameScript
             // pitchDif = lastPitch - pitchCheck
             // 
 
-            double pitch = 0, yaw = 0, roll = 0;
-            //getRotationAnglesFromDown(aDesiredDown, out pitch, out roll);
-            getRotationAngles(Target, sc.WorldMatrix, out yaw, out pitch);
-            var smallMax = 0.4;
-            var smallFact = 1.9;
-            if (Math.Abs(pitch) < smallMax) {
-                pitch *= smallFact;
-            }
-
-            if (Math.Abs(roll) < smallMax) {
-                roll *= smallFact;
-            }
+            double pitch, yaw;
 
             var sv = controller.ShipVelocities;
             var av = MAF.world2dir(sv.AngularVelocity, sc.WorldMatrix);
 
-            var pitchDif = (pitch - av.X);
-            var rollDif = (roll + av.Z);
+            
+            //getRotationAnglesFromDown(direction, sc.WorldMatrix, out pitch, out roll);
+            getRotationAngles(TargetDirection, sc.WorldMatrix, out yaw, out pitch);
+            //getRotationAnglesFromForward(direction, sc.WorldMatrix, out pitch, out roll);
+            //applyGyroOverride(sc.WorldMatrix, pitch, yaw, roll);
+            logger.log($"pitch = {pitch}");
+            logger.log($"velo  = {av.X}");
 
-            var slowFact = 20.0;
-            var fastFact = 2.0;
-            var difMax = 0.09;
+            logger.log($"yaw  = {yaw}");
+            logger.log($"velo  = {-av.Y}");
+
+            //return;
+            
+
+            if (Math.Abs(pitch) < smallMax) {
+                logger.log("pitch smallfact");
+                pitch *= smallFact;
+            } else {
+                logger.log("pitch normal fact");
+            }
+
+            if (Math.Abs(yaw) < smallMax) {
+                logger.log("yaw smallfact");
+                yaw *= smallFact;
+            } else {
+                logger.log("yaw normal fact");
+            }
+
+            var pitchDif = (pitch - av.X);
+            var yawDif = (yaw + av.Y);
+            logger.log($"yawDIf = {yawDif}");
+
+            
+            
+
             if (Math.Abs(pitchDif) < difMax) {
                 pitchDif = 0;
+                logger.log("pitch okay");
             } else {
-                if (Math.Abs(pitch) < Math.Abs(av.X)) {
-                    logger.log("pitch too fast");
-                    pitchDif *= slowFact;
+                if (pitch < 0) {
+                    if (av.X > pitch) {
+                        logger.log("pitch too slow");
+                        pitchDif *= fastFact;
+                    } else {
+                        logger.log("pitch too fast");
+                        pitchDif *= slowFact;
+                    }
                 } else {
-                    logger.log("pitch too slow");
-                    pitchDif *= fastFact;
-                }
-            }
-            if (Math.Abs(rollDif) < difMax) {
-                rollDif = 0;
-            } else {
-                if (Math.Abs(roll) < Math.Abs(av.Z)) {
-                    rollDif *= slowFact;
-                } else {
-                    rollDif *= fastFact;
+                    if (av.X < pitch) {
+                        logger.log("pitch too slow");
+                        pitchDif *= fastFact;
+                    } else {
+                        logger.log("pitch too fast");
+                        pitchDif *= slowFact;
+                    }
                 }
             }
 
-            logger.log("desired pitch = ", pitch);
-            logger.log("desired roll  = ", roll);
-            logger.log();
-            logger.log("velo pitch    = ", av.X);
-            logger.log("velo roll     = ", -av.Z);
-            logger.log();
-            logger.log("diff pitch    = ", pitchDif);
-            logger.log("diff roll     = ", rollDif);
-            logger.log();
+            if (Math.Abs(yawDif) < difMax) {
+                yawDif = 0;
+                logger.log("yaw okay");
+            } else {
+                if (yaw < 0) {
+                    if (-av.Y > yaw) {
+                        logger.log("yaw too slow");
+                        yawDif *= fastFact;
+                    } else {
+                        logger.log("yaw too fast");
+                        yawDif *= slowFact;
+                    }
+                } else {
+                    if (av.Y < yaw) {
+                        logger.log("yaw too slow");
+                        yawDif *= fastFact;
+                    } else {
+                        logger.log("yaw too fast");
+                        yawDif *= slowFact;
+                    }
+                }
+            }
+
+
             // local angular velocity
             // +X = +pitch
             // -X = -pitch
@@ -161,11 +381,10 @@ namespace IngameScript
             //pitch = (pitchDif / MathHelper.TwoPi) * controller.GyroSpeed;
 
 
-
             pitch += pitchDif;
-            roll += rollDif;            
+            yaw += yawDif;            
             
-            applyGyroOverride(sc.WorldMatrix, pitch , yaw, 0);
+            applyGyroOverride(sc.WorldMatrix, pitch, yaw, 0);
             
             //g.log("pitchDif ", pitchDif);
             //g.log("rollDif  ", rollDif);
@@ -180,13 +399,16 @@ namespace IngameScript
                 gy.Enabled = aValue;
             }
         }
+        void init() {
+            foreach (var gy in Blocks) init(gy);
+        }
         static void init(IMyGyro aGyro) {
 
             if (!aGyro.Enabled) {
                 aGyro.Enabled = true;
             }
             if (!aGyro.GyroOverride) {
-                aGyro.GyroOverride = true; ;
+                aGyro.GyroOverride = true;
             }
             aGyro.Yaw = 0;
             aGyro.Pitch = 0;
@@ -219,13 +441,14 @@ namespace IngameScript
             }
         }
         /*
+        getRotationAnglesFromDown - modified by d1ag0n for pitch and roll
         Whip's Get Rotation Angles Method v14 - 9/25/18 ///
         MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
         Dependencies: AngleBetween
-        modified by d1ag0n for pitch and roll
         */
-        void getRotationAnglesFromDown(Vector3D targetVector, MatrixD worldMatrix, out double pitch, out double roll) {
+        static void getRotationAnglesFromDown(Vector3D targetVector, MatrixD worldMatrix, out double pitch, out double roll) {
             var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
+            //var localTargetVector = MAF.world2pos(targetVector, worldMatrix);
             var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
 
             pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);
@@ -242,14 +465,8 @@ namespace IngameScript
         /// Computes angle between 2 vectors
         /// todo move to maf
         /// </summary>
-        public static double AngleBetween(Vector3D a, Vector3D b) //returns radians
-        {
-            if (Vector3D.IsZero(a) || Vector3D.IsZero(b))
-                return 0;
-            else
-                return Math.Acos(MathHelper.Clamp(a.Dot(b) / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1, 1));
-        }
-        
+
+
         /*
         /// Whip's Get Rotation Angles Method v14 - 9/25/18 ///
         Dependencies: VectorMath
@@ -257,12 +474,12 @@ namespace IngameScript
         * Fixed straight up case
         * Fixed sign on straight up case
         * Converted math to local space
-        */
-        void getRotationAngles(Vector3D targetVector, MatrixD worldMatrix, out double yaw, out double pitch) {
+        *//**
+        static void getRotationAngles(Vector3D targetVector, MatrixD worldMatrix, out double yaw, out double pitch) {
             var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
             var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
 
-            pitch = AngleBetween(Vector3D.Forward, flattenedTargetVector) * Math.Sign(localTargetVector.Y); //up is positive
+            pitch = MAF.angleBetween(Vector3D.Forward, flattenedTargetVector) * Math.Sign(localTargetVector.Y); //up is positive
 
             if (Math.Abs(pitch) < 1E-6 && localTargetVector.Z > 0) //check for straight back case
                 pitch = Math.PI;
@@ -270,7 +487,26 @@ namespace IngameScript
             if (Vector3D.IsZero(flattenedTargetVector)) //check for straight up case
                 yaw = MathHelper.PiOver2 * Math.Sign(localTargetVector.X);
             else
-                yaw = AngleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.X); //right is positive
+                yaw = MAF.angleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.X); //right is positive
+        }//*/
+        /*
+        getRotationAnglesFromForward - modified by d1ag0n
+        Whip's Get Rotation Angles Method v14 - 9/25/18 ///
+        MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
+        Dependencies: AngleBetween
+        */
+        void getRotationAngles(Vector3D direction, MatrixD worldMatrix, out double yaw, out double pitch) {
+            logger.log("From Forward");
+            var localTargetVector = MAF.world2dir(direction, worldMatrix);
+            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
+
+            pitch = MAF.angleBetween(Vector3D.Forward, flattenedTargetVector);
+            if (localTargetVector.Y < 0)
+                pitch = -pitch;
+
+            yaw = MAF.angleBetween(localTargetVector, flattenedTargetVector);
+            if (localTargetVector.X < 0)
+                yaw = -yaw;
         }
     }
 }
