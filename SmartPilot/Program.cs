@@ -6,6 +6,8 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
+        main update;
+        delegate void main(string a, UpdateType u);
         //double runtimes = 0;
         //int timesrun = 0;
         //readonly LogModule g;
@@ -13,48 +15,83 @@ namespace IngameScript {
         //readonly GyroModule mGyro;
         
         //readonly SensorModule mSensor;
-        readonly CameraModule mCamera;
+        CameraModule mCamera;
         readonly Lag mLag = new Lag(90);
         
-        readonly PeriscopeModule mPeriscope;
-        readonly MenuModule mMenu;
+        PeriscopeModule mPeriscope;
+        MenuModule mMenu;
+        string slast = "nothing";
         public Program() {
             ModuleManager.Initialize(this);
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            if (max < Runtime.LastRunTimeMs) {
+                max = Runtime.LastRunTimeMs;
+                ModuleManager.logger.persist("in constructor " + slast + max);
+            }
             //ModuleManager.GetModule(out g);
             //mSensor = new SensorModule();
             //mThrust = new ThrusterModule();
             //mGyro = new GyroModule();
-            new GyroModule();
-            mCamera = new CameraModule();
-            mPeriscope = new PeriscopeModule();
-            mMenu = new MenuModule();
+            update = (a, u) => {
+                if (max < Runtime.LastRunTimeMs) {
+                    max = Runtime.LastRunTimeMs;
+                    ModuleManager.logger.persist("in initializer " + slast + max);
+                }
+                new GyroModule();
+                mCamera = new CameraModule();
+                mPeriscope = new PeriscopeModule();
+                mMenu = new MenuModule();
+                update = load;
+                slast = "initializer";
+            };
+            slast = "constructor";
+        }
+
+        void load(string a, UpdateType u) {
+            if (max < Runtime.LastRunTimeMs) {
+                max = Runtime.LastRunTimeMs;
+                ModuleManager.logger.persist("in loader " + slast + max);
+            }
             try {
                 ModuleManager.Load(Storage);
             } catch (Exception ex) {
                 ModuleManager.logger.persist(ex.ToString());
             }
-            Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            update = loop;
+            slast = "loader";
+        }
+        int loopcount = 0;
+
+        void loop(string arg, UpdateType type) {
+            
+            if (max < Runtime.LastRunTimeMs) {
+                max = Runtime.LastRunTimeMs;
+                ModuleManager.logger.persist(loopcount + " loop " + slast + max);
+            }
+            loopcount++;
+            var lag = mLag.update(Runtime.LastRunTimeMs);
+            try {
+                ModuleManager.logger.log("cur ", Runtime.LastRunTimeMs);
+                ModuleManager.logger.log("lag ", lag);
+                ModuleManager.logger.log("max  ", max);
+                if (arg.Length > 0) {
+                    if (arg == "save") {
+                        Save();
+                    } else {
+                        mMenu.Input(arg);
+                    }
+                }
+                ModuleManager.Update();
+            } catch (Exception ex) {
+                ModuleManager.logger.persist(ex.ToString());
+            }
+            slast = "loop";
         }
 
         public void Save() {
             Me.CustomData = Storage = ModuleManager.Save();
         }
-        public void Main(string argument, UpdateType updateSource) {
-            var lag = mLag.update(Runtime.LastRunTimeMs);
-            try {
-                ModuleManager.logger.log("main ", lag);
-                if (argument.Length > 0) {
-                    if (argument == "save") {
-                        Save();
-                    } else {
-                        mMenu.Input(argument);
-                    }
-                }
-                ModuleManager.Update();
-            } catch(Exception ex) {
-                ModuleManager.logger.persist(ex.ToString());
-            }
-            
-        }
+        double max = 0;
+        public void Main(string a, UpdateType u) => update(a, u);
     }
 }

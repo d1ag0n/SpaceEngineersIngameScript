@@ -47,39 +47,53 @@ namespace IngameScript
             }
         }
 
+        MyDetectedEntityInfo initEntity(MyDetectedEntityInfo e) => new MyDetectedEntityInfo(
+            e.EntityId, e.Name, e.Type,e.HitPosition, e.Orientation, e.Velocity, e.Relationship, e.BoundingBox, (long)MAF.time
+        );
+
         List<object> MenuDel(int aPage) {
-            var index = aPage * 6;
+            //var index = aPage * 6;
+            int index = (mDetected.Count - 1) - (aPage * 6);
+            int count = 0;
             var result = new List<object>();
             //logger.persist($"CameraModule.MenuMethods({aPage});");
             //logger.persist($"index={index}");
             //logger.persist($"mDetected.Count={mDetected.Count}");
-            for (int i = index; i < index + 6; i++) {
-                if (mDetected.Count > i) {
-                    var e = mDetected[i];
-                    result.Add(new MenuMethod($"{e.Name} {e.EntityId}", e, EntityMenu));
-                } else {
-                    break;
-                }
+            while (index >= 0 && count < 6) {
+                
+                var e = mDetected[index];
+                result.Add(new MenuMethod($"{e.Name} {e.EntityId}", e, EntityMenu));
+                index--;
+                count++;
             }
             return result;
         }
 
 
 
-        public void Add(MyDetectedEntityInfo aEntity) => mDetected.Add(aEntity);
-
+        public void AddNew(MyDetectedEntityInfo aEntity) => mDetected.Add(initEntity(aEntity));
+        const double HR = 3600000;
         Menu EntityMenu(MenuModule aMain, object aState) {
             
             var list = new List<object>();
             var e = (MyDetectedEntityInfo)aState;
+
             
-            list.Add($"Time: {e.TimeStamp}"); 
+            var ts = (MAF.time - e.TimeStamp) / HR;
+            
+            list.Add($"Time: {ts:f2} hours ago");
             list.Add($"Relationship: {e.Relationship}");
-            list.Add(logger.gps($"{e.Name} {e.EntityId}", e.Position));
+            list.Add(logger.gps($"{e.Name}", e.Position));
             list.Add($"Distance: " + (e.Position - Grid.WorldMatrix.Translation).Length());
             list.Add(new MenuMethod("Send to Gyro Module", e.Position, AimGyro));
+            list.Add(new MenuMethod("Delete Record", aState, deleteRecord));
             
             return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => list);
+        }
+
+        Menu deleteRecord(MenuModule aMain, object aState) {
+            mDetected.Remove((MyDetectedEntityInfo)aState);
+            return null;
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {
             var e = (MyDetectedEntityInfo)aState;
@@ -148,7 +162,7 @@ namespace IngameScript
                             if (aEntity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
                                 continue;
                             }
-                            mDetected.Add(aEntity);
+                            mDetected.Add(initEntity(aEntity));
                             return true;
                         }
                     }

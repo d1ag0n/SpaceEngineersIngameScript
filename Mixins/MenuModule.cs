@@ -36,8 +36,10 @@ namespace IngameScript {
             CurrentMenu = aMenu;
             UpdateRequired = true;
         }
-        public void Input(string argument) =>
+        public void Input(string argument) {
             CurrentMenu.Input(argument);
+            UpdateRequired = true;
+        }
 
         void UpdateAction() {
             if (UpdateRequired) {

@@ -1,3 +1,4 @@
+using System.Text;
 using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
@@ -37,46 +38,36 @@ namespace IngameScript {
                 return _Cockpit;
             }
         }
+        readonly List<object> mMenuMethods = new List<object>();
         public ShipControllerModule() {
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
             Update = UpdateAction;
+            MenuName = "Ship Controller";
+            Menu = p => mMenuMethods;
+            mMenuMethods.Add(new MenuMethod("Flat Scan", null, (a, b) => {
+                if (Update == UpdateAction) {
+                    flatScan();
+                }
+                return null;
+            }));
         }
         
         readonly Vector3D[] arCorners = new Vector3D[8];
         void UpdateAction() {
             ShipVelocities = Remote.GetShipVelocities();
-            var grid = ModuleManager.Program.Me.CubeGrid;
+            
             // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
             // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
-            
-            //var start = Vector3I.One;
-            
 
-            switch (Remote.Orientation.Forward) {
-                case Base6Directions.Direction.Forward:
-                    Update = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
-                    break;
-                case Base6Directions.Direction.Backward:
-                    Update = flatScan(grid.WorldMatrix.Left, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), 3, 3);
-                    break;
-                case Base6Directions.Direction.Left:
-                    Update = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
-                    break;
-                case Base6Directions.Direction.Right:
-                    Update = flatScan(grid.WorldMatrix.Forward, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), 3, 3);
-                    break;
-                case Base6Directions.Direction.Up:
-                    Update = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Left, grid.GridIntegerToWorld(grid.Max), 3, 3);
-                    break;
-                case Base6Directions.Direction.Down:
-                    Update = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Backward, grid.GridIntegerToWorld(grid.Min), 3, 3);
-                    break;
-            }
+            //var start = Vector3I.One;
+
+
+
 
 //            Update = flatScan(remote.WorldMatrix.Right, remote.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
             return;
-
+            var grid = ModuleManager.Program.Me.CubeGrid;
             var min = grid.Min;
             var max = grid.Max;
 
@@ -123,22 +114,67 @@ namespace IngameScript {
             
         }
 
+        void flatScan() {
+            var grid = ModuleManager.Program.Me.CubeGrid;
+
+
+
+            switch (Remote.Orientation.Forward) {
+                case Base6Directions.Direction.Forward:
+                    logger.persist("FORWARD");
+                    Update = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), grid.Max.X - grid.Min.X, grid.Max.Y - grid.Min.Y);
+                    break;
+                case Base6Directions.Direction.Backward:
+                    logger.persist("BACKWARD");
+                    Update = flatScan(grid.WorldMatrix.Left, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), 3, 3);
+                    break;
+                case Base6Directions.Direction.Left:
+                    logger.persist("LEFT");
+                    Update = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
+                    break;
+                case Base6Directions.Direction.Right:
+                    logger.persist("RIGHT");
+                    
+                    Update = flatScan(grid.WorldMatrix.Forward, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), grid.Max.Z - grid.Min.Z, grid.Max.Y - grid.Min.Y);
+                    break;
+                case Base6Directions.Direction.Up:
+                    logger.persist("UP");
+                    Update = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Left, grid.GridIntegerToWorld(grid.Max), 3, 3);
+                    break;
+                case Base6Directions.Direction.Down:
+                    logger.persist("DOWN");
+                    Update = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Backward, grid.GridIntegerToWorld(grid.Min), 3, 3);
+                    break;
+            }
+        }
+
 
         Action flatScan(Vector3D right, Vector3D up, Vector3D start, int width, int height) {
+            var gsz = ModuleManager.Program.Me.CubeGrid.GridSize;
+            int extra = 4;
+            start -= right * (gsz * extra);
+            start -= up * (gsz * extra);
+            width += extra * 2;
+            height += extra * 2; ;
             int x = 0;
             int y = 0;
-
+            var sb = new StringBuilder();
             return () => {
-                var t = start + (right * x) + (up * y);
-                //logger.log($"x={x},y={y}");
-                //logger.persist(logger.gps($"x={x},y={y}", t));
+                logger.log("flat scanning");
+                var t = start + (right * (x * gsz)) + (up * (y * gsz));
+                if (x == 0 && y == 0) {
+                    sb.AppendLine(logger.gps($"x{x} y{y}", t));
+                }
                 x++;
                 if (x == width) {
                     x = 0;
                     y++;
-                    if (y == height) {
+                    if (y > height) {
+                        sb.AppendLine(logger.gps($"x{x} y{y}", t));
+                        Remote.CustomData = sb.ToString();
+                        logger.persist("Flat Scan Complete");
                         //Update = () => logger.log("flat scan complete");
-                        Update = Void;
+                        Update = UpdateAction;
                     }
                 }
             };

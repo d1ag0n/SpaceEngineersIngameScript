@@ -15,7 +15,7 @@ namespace IngameScript {
             Title = $"{aModule.MenuName}";
             Main = aMain;
             MenuItems = aModule.Menu;
-            Items = MenuItems(0);
+            //Items = MenuItems(0);
         }
         public Menu(MenuModule aMain, List<IAccept> aList) {
             Title = "Main Menu";
@@ -31,7 +31,7 @@ namespace IngameScript {
                         break;
                     }
                     var acceptor = aList[i];
-                    ModuleManager.logger.persist(acceptor.ToString());
+                    
                     if (!(acceptor is MenuModule)) {
                         
                         var mb = acceptor as ModuleBase;
@@ -43,29 +43,30 @@ namespace IngameScript {
                 }
                 return result;
             };
-            Items = MenuItems(0);
+            //Items = MenuItems(0);
         }
 
         public Menu(MenuModule aMain, string aTitle, ModuleBase.delMenu aPaginator) {
             Main = aMain;
             Title = aTitle;
             MenuItems = aPaginator;
-            Items = MenuItems(0);
+            //Items = MenuItems(0);
         }
 
 
         public void Input(string argument) {
-            if (argument.Length == 2) {
+            if (argument.Length == 1) {
                 // menu number selection from !0 to !9
-                int selection = argument[1] - 48;
+                int selection = argument[0] - 48;
                 //ModuleManager.logger.persist($"Menu input: '{selection}'");
                 if (selection == 6) {
                     Main.SetMenu(Previous, false);
+                    Main.UpdateRequired = true;
                 } else if (selection == 7) {
                     // previous page
                     if (Page > 0) {
                         Page--;
-                        Items = MenuItems(Page);
+                        //Items = MenuItems(Page);
                         Main.UpdateRequired = true;
                     }
                 } else if (selection == 8) {
@@ -73,7 +74,7 @@ namespace IngameScript {
                     if (items.Count > 0) {
                         Page++;
                         Main.UpdateRequired = true;
-                        Items = items;
+                        //Items = items;
                     }
                 } else {
                     if (Items.Count > selection) {
@@ -112,9 +113,9 @@ namespace IngameScript {
             
             mWork.AppendLine(Title);
             int count = 0;
+            Items = MenuItems(Page);
             foreach (var item in Items) {
-                count++;
-                mWork.Append(count);
+                mWork.Append(++count);
                 mWork.Append(' ');
 
 

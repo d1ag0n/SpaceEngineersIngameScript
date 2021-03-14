@@ -113,7 +113,7 @@ namespace IngameScript {
                         CameraModule mod;
                         GetModule(out mod);
                         if (mod != null) {
-                            mod.Add(entity);
+                            mod.AddNew(entity);
                         }
                     }
                 }

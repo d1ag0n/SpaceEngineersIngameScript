@@ -19,12 +19,8 @@ namespace IngameScript {
         public static Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
         public static void Update() {
             try {
-                controller.Update();
-                for (int i = 2; i < mModules.Count; i++) {
-                    var mb = mModules[i] as ModuleBase;
-                    if (mb.Active) {
-                        mb.Update();
-                    }
+                for (int i = 1; i < mModules.Count; i++) {
+                    (mModules[i] as ModuleBase).Update();
                 }
             } catch (Exception ex) {
                 logger.persist(ex.ToString());
@@ -105,6 +101,7 @@ namespace IngameScript {
                 }
             }
         }
+        
         static void addByGrid(IMyCubeBlock aBlock) {
             List<IMyCubeBlock> list;
             if (aBlock != null) {
@@ -153,7 +150,6 @@ namespace IngameScript {
             return false;
         }
         public static void Add<T>(Module<T> aModule) {
-            
             List<IAccept> list;
 
             var type = aModule.GetType();

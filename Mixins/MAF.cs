@@ -16,7 +16,7 @@ namespace IngameScript
                 aBox.Min.Z + random.NextDouble() * (aBox.Max.Z - aBox.Min.Z)
             );
         static readonly DateTime epoch = new DateTime(2020, 1, 1);
-        public static ulong time => (ulong)(DateTime.Now - epoch).TotalMilliseconds;
+        public static double time => (DateTime.Now - epoch).TotalMilliseconds;
         public static double angleBetween(Vector3D a, Vector3D b) {
             double result = 0;
             if (!Vector3D.IsZero(a) && !Vector3D.IsZero(b))
