@@ -1,8 +1,8 @@
 using System;
 
 namespace IngameScript {
-    public class MenuMethod {
-        public string Name;
+    public struct MenuMethod {
+        public readonly string Name;
         public readonly object State;
         public readonly Func<MenuModule, object, Menu> Method;
         
@@ -10,6 +10,12 @@ namespace IngameScript {
             Name = aName;
             State = state;
             Method = aMethod;
+        }
+
+        public MenuMethod(string aName, Action aAction) {
+            Name = aName;
+            State = null;
+            Method = (a, b) => { aAction(); return null; };
         }
     }
 }

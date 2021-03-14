@@ -92,7 +92,7 @@ namespace IngameScript {
 
                 switch (type) {
                     case "MenuMethod":
-                        var mm = aMenuItem as MenuMethod;
+                        var mm = (MenuMethod)aMenuItem;
                         if (mm.Method != null) {
                             var menu = mm.Method(Main, mm.State);
                             if (menu != null) {
@@ -120,7 +120,7 @@ namespace IngameScript {
 
 
                 if (item is MenuMethod) {
-                    var mm = item as MenuMethod;
+                    var mm = (MenuMethod)item;
                     mWork.AppendLine(mm.Name);
                 } else if (item is ModuleBase) {
                     var mb = item as ModuleBase;

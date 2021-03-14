@@ -10,36 +10,10 @@ namespace IngameScript {
         public readonly bool LargeGrid;
         public readonly float GyroSpeed;
         public MyShipVelocities ShipVelocities { get; private set; }
-        public IMyShipController _Remote;
-        public IMyShipController Remote {
-            get {
-                if (_Remote == null || !_Remote.IsFunctional || !(_Remote is IMyRemoteControl)) {
-                    foreach (var sc in Blocks) {
-                        _Remote = sc;
-                        if (sc is IMyRemoteControl) {
-                            logger.persist("GOT REMOTE");
-                            break;
-                        }
-                    }
-                }
-                return _Remote;
-            }
-        }
-        IMyShipController _Cockpit;
-        public IMyShipController Cockpit {
-            get {
-                if (_Cockpit == null || !_Cockpit.IsUnderControl) {
-                    foreach (var sc in Blocks) {
-                        _Cockpit = sc;
-                        if (sc.IsUnderControl) {
-                            break;
-                        }
-                    }
-                }
-                return _Cockpit;
-            }
-        }
+        public IMyShipController Remote { get; private set; }
+        public IMyShipController Cockpit { get; private set; }
         readonly List<object> mMenuMethods = new List<object>();
+        public double Mass { get; private set; }
         public ShipControllerModule() {
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
@@ -56,6 +30,25 @@ namespace IngameScript {
         
         readonly Vector3D[] arCorners = new Vector3D[8];
         void UpdateAction() {
+            
+            if (Remote == null || !Remote.IsFunctional || !(Remote is IMyRemoteControl)) {
+                foreach (var sc in Blocks) {
+                    Remote = sc;
+                    if (sc is IMyRemoteControl) {
+                        break;
+                    }
+                }
+            }
+            if (Cockpit == null || !Cockpit.IsFunctional || !Cockpit.IsUnderControl) {
+                foreach (var sc in Blocks) {
+                    Cockpit = sc;
+                    if (sc.IsUnderControl && sc.IsFunctional) {
+                        break;
+                    }
+                }
+            }
+            var sm = Remote.CalculateShipMass();
+            Mass = sm.PhysicalMass;
             ShipVelocities = Remote.GetShipVelocities();
             
             // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
@@ -63,10 +56,7 @@ namespace IngameScript {
 
             //var start = Vector3I.One;
 
-
-
-
-//            Update = flatScan(remote.WorldMatrix.Right, remote.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
+            // Update = flatScan(remote.WorldMatrix.Right, remote.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
             return;
             var grid = ModuleManager.Program.Me.CubeGrid;
             var min = grid.Min;
@@ -108,10 +98,7 @@ namespace IngameScript {
             }
             
 
-            var sc = Remote;
-            if (sc == null) {
-                return;
-            }
+            
             
         }
 

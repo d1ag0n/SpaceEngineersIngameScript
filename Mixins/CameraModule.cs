@@ -124,7 +124,7 @@ namespace IngameScript
                     rotor.TargetVelocityRad = 1.0f;
                     
                 }
-                return false;
+                return true;
             }
             var result = base.Accept(aBlock);
             if (result) {

@@ -225,7 +225,8 @@ namespace IngameScript
         Menu Nactivate(MenuModule aMain, object argument) {
             Active = !Active;
             init();
-            ((MenuMethod)mainMenuMethods[0]).Name = Active ? "Deactivate" : "Activate";
+            var emm = (MenuMethod)mainMenuMethods[0];
+            mainMenuMethods[0] = new MenuMethod(Active ? "Deactivate" : "Activate", emm.State, emm.Method);
             return null;
         }
         public override bool Accept(IMyTerminalBlock b) {

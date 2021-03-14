@@ -6,85 +6,104 @@ using VRageMath;
 
 namespace IngameScript {
     class ThrusterModule : Module<IMyThrust> {
-        readonly List<Thrust> mThrust = new List<Thrust>();
+        readonly ThrustList mThrust = new ThrustList();
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
         readonly List<object> mMenuItems = new List<object>();
+        readonly ThrustList mHydro = new ThrustList();
+
         public ThrusterModule() {
-            Update = Organize;
+            Update = OrganizeAction;
+            MenuName = "Thrust Controller";
+            Menu = (p) => {
+                mMenuItems.Clear();
+
+                mMenuItems.Add(new MenuMethod($"Add Forward Acceleration {-Acceleration.Z}", () => {
+                    Acceleration.Z -= 0.1;
+                    if (MAF.nearEqual(Acceleration.Z, 0)) {
+                        Acceleration.Z = 0;
+                    }
+                }));
+                mMenuItems.Add(new MenuMethod($"Add Backward Acceleration {-Acceleration.Z}", () => {
+                    Acceleration.Z += 0.1;
+                    if (MAF.nearEqual(Acceleration.Z, 0)) {
+                        Acceleration.Z = 0;
+                    }
+                }));
+
+                mMenuItems.Add(new MenuMethod($"Add Left Acceleration {Acceleration.X}", () => {
+                    Acceleration.X += 0.1;
+                    if (MAF.nearEqual(Acceleration.X, 0)) {
+                        Acceleration.X = 0;
+                    }
+                }));
+                mMenuItems.Add(new MenuMethod($"Add Right Acceleration {Acceleration.X}", () => {
+                    Acceleration.X -= 0.1;
+                    if (MAF.nearEqual(Acceleration.X, 0)) {
+                        Acceleration.X = 0;
+                    }
+                }));
+
+                mMenuItems.Add(new MenuMethod($"Add Up Acceleration {Acceleration.Y}", () => {
+                    Acceleration.Y += 0.1;
+                    if (MAF.nearEqual(Acceleration.Y, 0)) {
+                        Acceleration.Y = 0;
+                    }
+                }));
+                mMenuItems.Add(new MenuMethod($"Add Down Acceleration {Acceleration.Y}", () => {
+                    Acceleration.Y -= 0.1;
+                    if (MAF.nearEqual(Acceleration.Y, 0)) {
+                        Acceleration.Y = 0;
+                    }
+                }));
+                return mMenuItems;
+            };
             //mMenuItems.Add(new MenuMethod())
         }
-
+        void OrganizeAction() {
+            foreach(var t in Blocks) {
+                if (GetGroup(t) == enGroup.Hydro) {
+                    mHydro.Add(controller.Remote, t);
+                } else {
+                    mThrust.Add(controller.Remote, t);
+                }
+            }
+            Update = UpdateAction;
+        }
+        enum enGroup { Hydro, Ion, Atmos, Not }
+        enGroup GetGroup(IMyThrust aThrust) {
+            switch (aThrust.BlockDefinition.SubtypeName) {
+                case "LargeBlockLargeHydrogenThrust":
+                case "LargeBlockSmallHydrogenThrust":
+                case "SmallBlockLargeHydrogenThrust":
+                case "SmallBlockSmallHydrogenThrust":
+                    return enGroup.Hydro;
+                case "LargeBlockLargeThrust":
+                case "LargeBlockSmallThrust":
+                case "SmallBlockLargeThrust":
+                case "SmallBlockSmallThrust":
+                    return enGroup.Ion;
+                case "LargeBlockLargeAtmosphericThrust":
+                case "LargeBlockSmallAtmosphericThrust":
+                case "SmallBlockSmallAtmosphericThrust":
+                case "SmallBlockLargeAtmosphericThrust":
+                    return enGroup.Atmos;
+                default:
+                    return enGroup.Not;
+            }
+        }
         public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is IMyParachute) {
                 mParachutes.Add(aBlock as IMyParachute);
                 return true;
             }
-            
-            if (aBlock is IMyThrust) {
-                mThrust.Add(new Thrust(aBlock as IMyThrust));
-                return true;
-            }
-            return false;
+            return base.Accept(aBlock);
         }
-
-        void Organize() {
-            var ctr = ModuleManager.controller;
-            if (ctr != null) {
-                var rc = ctr.Remote;
-                if (rc != null) {
-                    foreach (var t in mThrust) {
-                        Organize(rc, t);
-                    }
-                    Update = UpdateAction;
-                }
-            }
-        }
-
-        void Organize(IMyShipController aController, Thrust aThrust) {
-            var o = aController.Orientation;
-            var f = aThrust.Engine.Orientation.Forward;
-            
-            if (f == o.Forward) {
-                aThrust.Direction = Base6Directions.Direction.Forward;
-            } else if (f == o.Up) {
-                aThrust.Direction = Base6Directions.Direction.Up;
-            } else if (f == o.Left) {
-                aThrust.Direction = Base6Directions.Direction.Left;
-            } else if (f == Base6Directions.GetOppositeDirection(o.Forward)) {
-                aThrust.Direction = Base6Directions.Direction.Backward;
-            } else if (f == Base6Directions.GetOppositeDirection(o.Up)) {
-                aThrust.Direction = Base6Directions.Direction.Down;
-            } else if (f == Base6Directions.GetOppositeDirection(o.Left)) {
-                aThrust.Direction = Base6Directions.Direction.Right;
-            }
-
-        }
-
-        public override bool Remove(IMyTerminalBlock aBlock) {
-            if (aBlock is IMyParachute) {
-                var index = mParachutes.IndexOf(aBlock as IMyParachute);
-                if (index > -1) {
-                    mParachutes.RemoveAt(index);
-                    return true;
-                }
-            } else if (aBlock is IMyThrust) {
-                for (int i = mThrust.Count - 1; i >=0; i--) {
-                    var t = mThrust[i];
-                    if (t.Engine.EntityId == aBlock.EntityId) {
-                        mThrust.RemoveAt(i);
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
+ 
+        public Vector3D Acceleration;
         void UpdateAction() {
-            
-            
-            foreach (var t in Blocks) {
-                //g.log(t.CustomName);
-            }
-
+            var a = Acceleration;
+            var m = controller.Mass;
+            mThrust.Update(ref a, m, false);
         }
     }
 }
