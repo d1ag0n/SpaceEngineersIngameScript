@@ -17,6 +17,7 @@ namespace IngameScript {
                     foreach (var sc in Blocks) {
                         _Remote = sc;
                         if (sc is IMyRemoteControl) {
+                            logger.persist("GOT REMOTE");
                             break;
                         }
                     }

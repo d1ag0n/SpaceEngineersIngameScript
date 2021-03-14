@@ -54,7 +54,6 @@ namespace IngameScript
 
             s.unt("smallFact");
             s.str(smallFact);
-            s.rec();
 
         }
 
@@ -206,7 +205,7 @@ namespace IngameScript
                     logger.log("config waiting");
                     init();
                     configCount++;
-                    if (configCount == 4) {
+                    if (configCount == 18) {
                         configDir = -configDir;
                     }
                 } else {
@@ -299,6 +298,12 @@ namespace IngameScript
             //getRotationAnglesFromDown(direction, sc.WorldMatrix, out pitch, out roll);
             getRotationAngles(mTargetDirection, sc.WorldMatrix, out yaw, out pitch);
 
+            logger.log($"pitch = {pitch}");
+            logger.log($"velo  = {av.X}");
+
+            logger.log($"yaw  = {yaw}");
+            logger.log($"velo  = {-av.Y}");
+
             if (Math.Abs(pitch) < smallMax) {
                 logger.log("pitch smallfact");
                 pitch *= smallFact;
@@ -313,15 +318,11 @@ namespace IngameScript
                 logger.log("yaw normal fact");
             }
 
-            yaw *= 10.0;
-            pitch *= 10.0;
+            //yaw *= 10.0;
+            //pitch *= 10.0;
             //getRotationAnglesFromForward(direction, sc.WorldMatrix, out pitch, out roll);
             //applyGyroOverride(sc.WorldMatrix, pitch, yaw, roll);
-            logger.log($"pitch = {pitch}");
-            logger.log($"velo  = {av.X}");
 
-            logger.log($"yaw  = {yaw}");
-            logger.log($"velo  = {-av.Y}");
 
             var pv = av.X;
             var yv = -av.Y;

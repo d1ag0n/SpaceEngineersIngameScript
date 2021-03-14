@@ -7,6 +7,7 @@ using VRageMath;
 
 namespace IngameScript {
     public class LogModule : Module<IMyTextPanel> {
+        int pcount = 0;
         string nl => Environment.NewLine;
         readonly StringBuilder mWork = new StringBuilder();
         readonly StringBuilder mLog = new StringBuilder();
@@ -117,9 +118,9 @@ namespace IngameScript {
         public void persist(BoundingBoxD b) => persist(string4(b));
         public void persist(MyDetectedEntityInfo e) => persist(string4(e));
         public void persist(string aMessage) {
-            if (mPersistent.Count > 24) {
+            if (mPersistent.Count > 15) {
                 mPersistent.RemoveAt(0);
-            }
+            }            
             mPersistent.Add(aMessage);
         }
         public string get() {
@@ -130,6 +131,13 @@ namespace IngameScript {
             return mLog.ToString();
         }
         void UpdateAction() {
+            pcount++;
+            if (pcount == 360) {
+                pcount = 0;
+                if (mPersistent.Count > 0) {
+                    mPersistent.RemoveAt(0);
+                }
+            }
             ModuleManager.Program.Echo("logmodupdate");
             var str = clear();
             ModuleManager.Program.Echo(str);

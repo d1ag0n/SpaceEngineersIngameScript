@@ -6,14 +6,14 @@ using VRageMath;
 
 namespace IngameScript {
     class ThrusterModule : Module<IMyThrust> {
-
-        
         readonly List<Thrust> mThrust = new List<Thrust>();
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
-        
+        readonly List<object> mMenuItems = new List<object>();
         public ThrusterModule() {
             Update = Organize;
+            //mMenuItems.Add(new MenuMethod())
         }
+
         public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is IMyParachute) {
                 mParachutes.Add(aBlock as IMyParachute);
@@ -26,6 +26,7 @@ namespace IngameScript {
             }
             return false;
         }
+
         void Organize() {
             var ctr = ModuleManager.controller;
             if (ctr != null) {
@@ -38,6 +39,7 @@ namespace IngameScript {
                 }
             }
         }
+
         void Organize(IMyShipController aController, Thrust aThrust) {
             var o = aController.Orientation;
             var f = aThrust.Engine.Orientation.Forward;
@@ -83,13 +85,6 @@ namespace IngameScript {
                 //g.log(t.CustomName);
             }
 
-        }
-        public IMyThrust Get(int aIndex) {
-            IMyThrust result = null;
-            if (-1 < aIndex && Blocks.Count > aIndex) {
-                result = Blocks[aIndex];
-            }
-            return result;
         }
     }
 }

@@ -73,26 +73,29 @@ namespace IngameScript
 
         public void AddNew(MyDetectedEntityInfo aEntity) => mDetected.Add(initEntity(aEntity));
         const double HR = 3600000;
+        bool deleted;
         Menu EntityMenu(MenuModule aMain, object aState) {
-            
             var list = new List<object>();
             var e = (MyDetectedEntityInfo)aState;
-
-            
-            var ts = (MAF.time - e.TimeStamp) / HR;
-            
-            list.Add($"Time: {ts:f2} hours ago");
-            list.Add($"Relationship: {e.Relationship}");
-            list.Add(logger.gps($"{e.Name}", e.Position));
-            list.Add($"Distance: " + (e.Position - Grid.WorldMatrix.Translation).Length());
-            list.Add(new MenuMethod("Send to Gyro Module", e.Position, AimGyro));
-            list.Add(new MenuMethod("Delete Record", aState, deleteRecord));
-            
-            return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => list);
+            deleted = false;
+            return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => {
+                list.Clear();
+                var ts = (MAF.time - e.TimeStamp) / HR;
+                list.Add($"Time: {ts:f2} hours ago");
+                list.Add($"Relationship: {e.Relationship}");
+                list.Add(logger.gps($"{e.Name}", e.Position));
+                list.Add($"Distance: " + (e.Position - Grid.WorldMatrix.Translation).Length());
+                list.Add(new MenuMethod("Send to Gyro Module", e.Position, AimGyro));
+                if (!deleted) {
+                    list.Add(new MenuMethod("Delete Record", aState, deleteRecord));
+                }
+                return list;
+            });
         }
 
         Menu deleteRecord(MenuModule aMain, object aState) {
             mDetected.Remove((MyDetectedEntityInfo)aState);
+            deleted = true;
             return null;
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {
@@ -125,6 +128,7 @@ namespace IngameScript
             }
             var result = base.Accept(aBlock);
             if (result) {
+                logger.persist(aBlock.CustomName);
                 var camera = aBlock as IMyCameraBlock;
                 camera.Enabled = true;
                 camera.EnableRaycast = true;
@@ -139,7 +143,8 @@ namespace IngameScript
         /// <param name="e"></param>
         /// <returns></returns>
         public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo aEntity, double aAddDist = 0) {
-
+            bool rangeOkay = false;
+            int t = int.MaxValue;
             foreach (var camera in Blocks) { 
                 var dir = aTarget - camera.WorldMatrix.Translation;
                 var dist = dir.Normalize() + aAddDist;
@@ -147,6 +152,7 @@ namespace IngameScript
                 double azimuth = 0, elevation = 0;
 
                 if (camera.AvailableScanRange > dist) {
+                    rangeOkay = true;
                     /*if (testCameraAngles(c, dir, ref yaw, ref pitch)) {
                         e = c.Raycast(dist, (float)pitch, (float)yaw);
                         return true;
@@ -166,9 +172,15 @@ namespace IngameScript
                             return true;
                         }
                     }
+                } else {
+                    var i = camera.TimeUntilScan(dist);
+                    if (i < t) t = i;
                 }
             }
             aEntity = default(MyDetectedEntityInfo);
+            if (!rangeOkay) {
+                logger.persist($"Camera charging {t / 1000} seconds remaining.");
+            }
             return false;
         }
 

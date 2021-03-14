@@ -1,18 +1,52 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
-using VRageMath;
 
 namespace IngameScript {
     class PeriscopeModule : Module<IMyMotorStator> {
         IMyMotorStator first, second;
         IMyCameraBlock camera;
-        List<object> menuMethods;
+        readonly List<object> menuMethods = new List<object>();
         double range = 20000;
         bool xneg = false;
         public PeriscopeModule() {
             Update = UpdateAction;
-            Menu = p => menuMethods;
+            Menu = p => {
+                if (Okay) {
+                    menuMethods.Clear();
+                    menuMethods.Add(new MenuMethod(Active ? "Deactivate" : "Activate", null, Nactivate));
+                    menuMethods.Add(new MenuMethod($"Periscope Scan {camera.AvailableScanRange:f0}m Available", null, Scan));
+                    menuMethods.Add(new MenuMethod("Camera Module Scan", null, ModuleScan));
+                    menuMethods.Add(new MenuMethod("Planetary Scan", null, PlanetScan));
+                    menuMethods.Add(new MenuMethod($"Increase Range {range:f0}", null, (a, b) => {
+                        range += 10000;
+                        return null;
+                    }));
+                    menuMethods.Add(new MenuMethod($"Decrease Range {range:f0}", null, (a, b) => {
+                        if (range > 10000) range -= 10000;
+                        return null;
+                    }));
+                }
+                return menuMethods;
+            };
+            Save = SaveDel;
+            Load = LoadDel;
         }
+        void LoadDel(Serialize s, string aData) {
+            var ar = aData.Split(Serialize.RECSEP);
+            foreach (var record in ar) {
+                var entry = record.Split(Serialize.UNTSEP);
+                switch (entry[0]) {
+                    case "range":
+                        double.TryParse(entry[1], out range);
+                        break;
+                }
+            }
+        }
+        void SaveDel(Serialize s) {
+            s.unt("range");
+            s.str(range);
+        }
+
         public override bool Accept(IMyTerminalBlock aBlock) {
             bool result = false;
             if (first == null) {
@@ -26,19 +60,14 @@ namespace IngameScript {
                                 ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
                                 if (camera != null) {
                                     camera.CustomName = $"!Periscope {first.CustomName} - Camera";
+                                    camera.Enabled =
+                                    camera.EnableRaycast = true;
                                     MenuName = "Periscope " + first.CustomName;
                                     if (camera.Orientation.Left == second.Top.Orientation.Up) {
                                         xneg = true;
                                     }
-
-
                                     Okay = true;
                                     
-                                    menuMethods = new List<object>();
-                                    menuMethods.Add(new MenuMethod("Activate", null, Nactivate));
-                                    menuMethods.Add(new MenuMethod("Periscope Scan", null, Scan));
-                                    menuMethods.Add(new MenuMethod("Camera Module Scan", null, ModuleScan));
-                                    menuMethods.Add(new MenuMethod("Planetary Scan", null, PlanetScan));
                                     Active = true;
                                     Nactivate();
                                 }
@@ -57,7 +86,6 @@ namespace IngameScript {
                 first.TargetVelocityRad = 0;
                 second.TargetVelocityRad = 0;
                 Active = !Active;
-                ((MenuMethod)menuMethods[0]).Name = Active ? "Deactivate" : "Activate";
                 if (Active) {
                     camera.CustomName = "!" + camera.CustomName;
                     logger.persist($"View {camera.CustomName}");
