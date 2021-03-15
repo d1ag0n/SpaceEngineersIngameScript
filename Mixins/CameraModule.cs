@@ -99,11 +99,7 @@ namespace IngameScript
             });
         }
         Menu renameRecord(MenuModule aMain, object aState) {
-            //var e = (ThyDetectedEntityInfo)aState;
-            //e.GetHashCode();
-            //var io = mDetected.IndexOf(e);
-            //logger.persist($"{io} {aState.GetType()}");
-            mDetected[mDetected.IndexOf((ThyDetectedEntityInfo)aState)].SetName(ModuleManager.UserInput);
+            ((ThyDetectedEntityInfo)aState).SetName(ModuleManager.UserInput);
             return null;
         }
         Menu deleteRecord(MenuModule aMain, object aState) {
