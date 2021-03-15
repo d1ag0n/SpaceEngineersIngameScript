@@ -32,5 +32,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrusterModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThyDetectedEntityInfo.cs" />
   </ItemGroup>
 </Project>

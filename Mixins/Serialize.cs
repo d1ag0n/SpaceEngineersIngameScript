@@ -79,7 +79,7 @@ namespace IngameScript {
 
         
 
-        public void str(MyDetectedEntityInfo e) {
+        public void str(ThyDetectedEntityInfo e) {
             str(e.EntityId);
             str(e.Name);
             str(e.Type);
@@ -94,7 +94,7 @@ namespace IngameScript {
             str(e.BoundingBox);
             str(e.TimeStamp);
         }
-        public MyDetectedEntityInfo objMyDetectedEntityInfo(IEnumerator<string> e) => new MyDetectedEntityInfo(
+        public ThyDetectedEntityInfo objThyDetectedEntityInfo(IEnumerator<string> e) => new ThyDetectedEntityInfo(
             objlong(e), objstring(e), objMyDetectedEntityType(e), objVector3D_(e), objMatrixD(e),
             objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objBoundingBoxD(e), objlong(e)
         );

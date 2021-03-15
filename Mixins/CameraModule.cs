@@ -7,7 +7,7 @@ namespace IngameScript
 {
     class CameraModule : Module<IMyCameraBlock>
     {
-        readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
+        readonly List<ThyDetectedEntityInfo> mDetected = new List<ThyDetectedEntityInfo>();
         public bool hasCamera => Blocks.Count > 0;
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         public CameraModule() {
@@ -40,14 +40,13 @@ namespace IngameScript
                         IEnumerable<string> elements = entries;
                         using (var en = elements.GetEnumerator()) {
                             en.MoveNext();
-                            mDetected.Add(s.objMyDetectedEntityInfo(en));
+                            mDetected.Add(s.objThyDetectedEntityInfo(en));
                         }
                     }
                 }
             }
         }
 
-        MyDetectedEntityInfo initEntity(MyDetectedEntityInfo e, string aName = null) => new MyDetectedEntityInfo(e.EntityId, aName ?? e.Name, e.Type, e.HitPosition, e.Orientation, e.Velocity, e.Relationship, e.BoundingBox, (long)MAF.time);
 
         List<MenuItem> MenuDel(int aPage) {
             //var index = aPage * 6;
@@ -69,12 +68,12 @@ namespace IngameScript
 
 
 
-        public void AddNew(MyDetectedEntityInfo aEntity) => mDetected.Add(initEntity(aEntity));
+        public void AddNew(MyDetectedEntityInfo aEntity) => mDetected.Add(new ThyDetectedEntityInfo(aEntity));
         const double HR = 3600000;
         bool deleted;
         Menu EntityMenu(MenuModule aMain, object aState) {
             
-            var e = (MyDetectedEntityInfo)aState;
+            var e = (ThyDetectedEntityInfo)aState;
             deleted = false;
 
             return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => {
@@ -100,14 +99,16 @@ namespace IngameScript
             });
         }
         Menu renameRecord(MenuModule aMain, object aState) {
-            var e = (MyDetectedEntityInfo)aState;
-            var io = mDetected.IndexOf(e);
-            logger.persist($"{io} {aState.GetType()}");
-            //mDetected[mDetected.IndexOf((MyDetectedEntityInfo)aState)] = initEntity((MyDetectedEntityInfo)aState, ModuleManager.UserInput);
+            //var e = (ThyDetectedEntityInfo)aState;
+            //e.GetHashCode();
+            //var io = mDetected.IndexOf(e);
+            //logger.persist($"{io} {aState.GetType()}");
+            mDetected[mDetected.IndexOf((ThyDetectedEntityInfo)aState)].SetName(ModuleManager.UserInput);
             return null;
         }
         Menu deleteRecord(MenuModule aMain, object aState) {
-            deleted = mDetected.Remove((MyDetectedEntityInfo)aState);
+
+            deleted = mDetected.Remove((ThyDetectedEntityInfo)aState);
             logger.persist($"Deleted: {deleted}");
             return null;
         }
@@ -181,7 +182,7 @@ namespace IngameScript
                             if (aEntity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
                                 continue;
                             }
-                            mDetected.Add(initEntity(aEntity));
+                            mDetected.Add(new ThyDetectedEntityInfo(aEntity));
                             return true;
                         }
                     }
