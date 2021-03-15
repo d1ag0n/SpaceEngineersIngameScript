@@ -5,22 +5,23 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public static class ModuleManager {
+        public static string UserInput = "DEFAULT";
         static readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
 
         public static LogModule logger { get; private set; }
         public static ShipControllerModule controller { get; private set; }
         static readonly HashSet<long> mRegistry = new HashSet<long>();
         static readonly List<IMyEntity> mBlocks = new List<IMyEntity>();
-        static readonly List<IAccept> mModules = new List<IAccept>();
+        static readonly List<ModuleBase> mModules = new List<ModuleBase>();
         
-        static readonly Dictionary<int, List<IAccept>> mModuleList = new Dictionary<int, List<IAccept>>();
+        static readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         static readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
         public static MyGridProgram Program { get; private set; }
         public static Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
         public static void Update() {
             try {
                 for (int i = 1; i < mModules.Count; i++) {
-                    (mModules[i] as ModuleBase).Update();
+                    mModules[i].Update?.Invoke();
                 }
             } catch (Exception ex) {
                 logger.persist(ex.ToString());
@@ -150,13 +151,13 @@ namespace IngameScript {
             return false;
         }
         public static void Add<T>(Module<T> aModule) {
-            List<IAccept> list;
+            List<ModuleBase> list;
 
             var type = aModule.GetType();
             var hash = type.GetHashCode();
 
             if (!mModuleList.TryGetValue(hash, out list)) {
-                list = new List<IAccept>();
+                list = new List<ModuleBase>();
                 mModuleList.Add(hash, list);
             }
             list.Add(aModule);
@@ -165,13 +166,13 @@ namespace IngameScript {
                 aModule.Accept(block as IMyTerminalBlock);
             }
         }
-        public static bool GetModule<S>(out S aComponent) {
+        public static bool GetModule<S>(out S aComponent) where S : class {
             var hash = typeof(S).GetHashCode();
-            List<IAccept> list;
+            List<ModuleBase> list;
             if (mModuleList.TryGetValue(hash, out list)) {
                 foreach (var m in list) {
                     if (m is S) {
-                        aComponent = (S)m;
+                        aComponent = m as S;
                         return true;
                     } else {
                         // preposterous
@@ -182,12 +183,12 @@ namespace IngameScript {
             aComponent = default(S);
             return false;
         }
-        public static bool GetModules<S>(List<S> aComponentList) {
+        public static bool GetModules<S>(List<S> aComponentList) where S : class {
             var hash = typeof(S).GetHashCode();
-            List<IAccept> list;
+            List<ModuleBase> list;
             if (mModuleList.TryGetValue(hash, out list)) {
                 foreach (var m in list) {
-                    aComponentList.Add((S)m);
+                    aComponentList.Add(m as S);
                 }
                 return true;
             }

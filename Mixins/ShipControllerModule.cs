@@ -12,7 +12,7 @@ namespace IngameScript {
         public MyShipVelocities ShipVelocities { get; private set; }
         public IMyShipController Remote { get; private set; }
         public IMyShipController Cockpit { get; private set; }
-        readonly List<object> mMenuMethods = new List<object>();
+        readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         public double Mass { get; private set; }
         public ShipControllerModule() {
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
@@ -20,12 +20,13 @@ namespace IngameScript {
             Update = UpdateAction;
             MenuName = "Ship Controller";
             Menu = p => mMenuMethods;
-            mMenuMethods.Add(new MenuMethod("Flat Scan", null, (a, b) => {
+            mMenuMethods.Add(new MenuItem("Flat Scan", () => {
                 if (Update == UpdateAction) {
                     flatScan();
                 }
-                return null;
             }));
+
+            mMenuMethods.Add(new MenuItem("Foo"));
         }
         
         readonly Vector3D[] arCorners = new Vector3D[8];

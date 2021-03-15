@@ -3,19 +3,18 @@ using System.Collections.Generic;
 using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
-    public class Module<T> : ModuleBase, IAccept {
+    public class Module<T> : ModuleBase {
         readonly HashSet<long> mRegistry = new HashSet<long>();
         public readonly List<T> Blocks = new List<T>();
         protected readonly IMyCubeGrid Grid;
         public Module() {
             Grid = ModuleManager.Program.Me.CubeGrid;
             ModuleManager.Add(this);
-            Update = Void;
         }
         
-        public bool GetModule<S>(out S aComponent) => ModuleManager.GetModule(out aComponent);
-        public bool GetModules<S>(List<S> aComponentList) => ModuleManager.GetModules(aComponentList);
-        public virtual bool Accept(IMyTerminalBlock aBlock) {
+        public bool GetModule<S>(out S aComponent) where S : class => ModuleManager.GetModule(out aComponent);
+        public bool GetModules<S>(List<S> aComponentList) where S : class => ModuleManager.GetModules(aComponentList);
+        public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is T) {
                 if (mRegistry.Add(aBlock.EntityId)) {
                     Blocks.Add((T)aBlock);
@@ -24,7 +23,7 @@ namespace IngameScript {
             }
             return false;
         }
-        public virtual bool Remove(IMyTerminalBlock b) {
+        public override bool Remove(IMyTerminalBlock b) {
             if (b is T) {
                 Blocks.Remove((T)b);
                 mRegistry.Remove(b.EntityId);

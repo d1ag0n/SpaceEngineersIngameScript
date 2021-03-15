@@ -8,7 +8,7 @@ namespace IngameScript {
     class ThrusterModule : Module<IMyThrust> {
         readonly ThrustList mThrust = new ThrustList();
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
-        readonly List<object> mMenuItems = new List<object>();
+        readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         readonly ThrustList mHydro = new ThrustList();
 
         public ThrusterModule() {
@@ -17,39 +17,39 @@ namespace IngameScript {
             Menu = (p) => {
                 mMenuItems.Clear();
 
-                mMenuItems.Add(new MenuMethod($"Add Forward Acceleration {-Acceleration.Z}", () => {
+                mMenuItems.Add(new MenuItem($"Add Forward Acceleration {-Acceleration.Z}", () => {
                     Acceleration.Z -= 0.1;
                     if (MAF.nearEqual(Acceleration.Z, 0)) {
                         Acceleration.Z = 0;
                     }
                 }));
-                mMenuItems.Add(new MenuMethod($"Add Backward Acceleration {-Acceleration.Z}", () => {
+                mMenuItems.Add(new MenuItem($"Add Backward Acceleration {-Acceleration.Z}", () => {
                     Acceleration.Z += 0.1;
                     if (MAF.nearEqual(Acceleration.Z, 0)) {
                         Acceleration.Z = 0;
                     }
                 }));
 
-                mMenuItems.Add(new MenuMethod($"Add Left Acceleration {Acceleration.X}", () => {
+                mMenuItems.Add(new MenuItem($"Add Left Acceleration {Acceleration.X}", () => {
                     Acceleration.X += 0.1;
                     if (MAF.nearEqual(Acceleration.X, 0)) {
                         Acceleration.X = 0;
                     }
                 }));
-                mMenuItems.Add(new MenuMethod($"Add Right Acceleration {Acceleration.X}", () => {
+                mMenuItems.Add(new MenuItem($"Add Right Acceleration {Acceleration.X}", () => {
                     Acceleration.X -= 0.1;
                     if (MAF.nearEqual(Acceleration.X, 0)) {
                         Acceleration.X = 0;
                     }
                 }));
 
-                mMenuItems.Add(new MenuMethod($"Add Up Acceleration {Acceleration.Y}", () => {
+                mMenuItems.Add(new MenuItem($"Add Up Acceleration {Acceleration.Y}", () => {
                     Acceleration.Y += 0.1;
                     if (MAF.nearEqual(Acceleration.Y, 0)) {
                         Acceleration.Y = 0;
                     }
                 }));
-                mMenuItems.Add(new MenuMethod($"Add Down Acceleration {Acceleration.Y}", () => {
+                mMenuItems.Add(new MenuItem($"Add Down Acceleration {Acceleration.Y}", () => {
                     Acceleration.Y -= 0.1;
                     if (MAF.nearEqual(Acceleration.Y, 0)) {
                         Acceleration.Y = 0;

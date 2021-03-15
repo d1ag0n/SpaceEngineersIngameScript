@@ -17,20 +17,20 @@ namespace IngameScript
         Vector3D mTargetDirection;
         bool calcDirection = false;
 
-        readonly List<object> mainMenuMethods = new List<object>();
+        readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         public GyroModule() {
             MenuName = "Gyroscope";
             Update = UpdateAction;
             Save = SaveDel;
             Load = LoadDel;
             mainMenu();
-            Nactivate(null, null);
+            Nactivate();
             Menu = p => {
                 if (Update != UpdateAction) {
                     Update = UpdateAction;
                     init();
                 }
-                return mainMenuMethods;
+                return mMenuItems;
             };
         }
 
@@ -91,104 +91,83 @@ namespace IngameScript
             mTargetDirection = aWorld;
         }
         void mainMenu() {
-            mainMenuMethods.Clear();
-            mainMenuMethods.Add(new MenuMethod("Activate", null, Nactivate));
-            mainMenuMethods.Add(new MenuMethod("Configurator", null, ConfigAction));
+            mMenuItems.Clear();
+            mMenuItems.Add(new MenuItem("Activate", Nactivate));
+            mMenuItems.Add(new MenuItem("Configurator", null, ConfigAction));
         }
 
         string strRaiseDifMax => $"Increase max difference for AV correction: {difMax.ToString("f4")}";
-        Menu raiseDifMax(MenuModule aMain, object argument) {
-            difMax *= 1.1;
-            return null;
-        }
+        void  raiseDifMax() => difMax *= 1.1;
         string strLowerDifMax => $"Decrease max difference for AV correction: {difMax.ToString("f4")}";
-        Menu lowerDifMax(MenuModule aMain, object argument) {
+        void lowerDifMax() {
             difMax *= 0.9;
             if (difMax < min) {
                 difMax = min;
             }
-            return null;
         }
 
         string strRaiseFastFact => $"Increase AV acceleration factor:           {fastFact.ToString("f4")}";
-        Menu raiseFastFact(MenuModule aMain, object argument) {
-            fastFact*= 1.1;
-            return null;
-        }
+        void raiseFastFact() => fastFact*= 1.1;
         string strLowerFastFact => $"Decrease AV acceleration factor:           {fastFact.ToString("f4")}";
-        Menu lowerFastFact(MenuModule aMain, object argument) {
+        void lowerFastFact() {
             fastFact *= 0.9;
             if (fastFact < min) {
                 fastFact = min;
             }
-            return null;
         }
 
         string strRaiseSlowFact => $"Increase AV deceleration factor:           {slowFact.ToString("f4")}";
-        Menu raiseSlowFact(MenuModule aMain, object argument) {
-            slowFact*= 1.1;
-            return null;
-        }
+        void raiseSlowFact() => slowFact*= 1.1;
         string strLowerSlowFact => $"Decrease AV deceleration factor:           {slowFact.ToString("f4")}";
-        Menu lowerSlowFact(MenuModule aMain, object argument) {
+        void  lowerSlowFact() {
             slowFact *= 0.9;
             if (slowFact < min) {
                 slowFact = min;
             }
-            return null;
         }
 
         string strRaiseSmallMax => $"Increase small turn size:                {smallMax.ToString("f4")}";
-        Menu raiseSmallMax(MenuModule aMain, object argument) {
-            smallMax *= 1.1;
-            return null;
-        }
+        void raiseSmallMax() => smallMax *= 1.1;
         string strLowerSmallMax => $"Decrease small turn size:                {smallMax.ToString("f4")}";
-        Menu lowerSmallMax(MenuModule aMain, object argument) {
+        void lowerSmallMax() {
             smallMax *= 0.9;
             if (smallMax < min) {
                 smallMax = min;
             }
-            return null;
         }
         string strRaiseSmallFact => $"Increase factor applied to small turns:  {smallFact.ToString("f4")}";
-        Menu raiseSmallFact(MenuModule aMain, object argument) {
-            smallFact *= 1.1;
-            return null;
-        }
+        void raiseSmallFact() => smallFact *= 1.1;
         string strLowerSmallFact => $"Decrease factor applied to small turns:  {smallFact.ToString("f4")}";
-        Menu lowerSmallFact(MenuModule aMain, object argument) {
+        void lowerSmallFact() {
             smallFact *= 0.9;
             if (smallFact < min) {
                 smallFact = min;
             }
-            return null;
         }
 
-        List<object> configMenu(int page) {
-            var result = new List<object>();
+        List<MenuItem> configMenu(int page) {
+            mMenuItems.Clear();
             if (page == 0) {
-                result.Add(new MenuMethod(strRaiseDifMax, null, raiseDifMax));
-                result.Add(new MenuMethod(strLowerDifMax, null, lowerDifMax));
-                result.Add(new MenuMethod(strRaiseFastFact, null, raiseFastFact));
-                result.Add(new MenuMethod(strLowerFastFact, null, lowerFastFact));
-                result.Add(new MenuMethod(strRaiseSlowFact, null, raiseSlowFact));
-                result.Add(new MenuMethod(strLowerSlowFact, null, lowerSlowFact));
+                mMenuItems.Add(new MenuItem(strRaiseDifMax, raiseDifMax));
+                mMenuItems.Add(new MenuItem(strLowerDifMax, lowerDifMax));
+                mMenuItems.Add(new MenuItem(strRaiseFastFact, raiseFastFact));
+                mMenuItems.Add(new MenuItem(strLowerFastFact, lowerFastFact));
+                mMenuItems.Add(new MenuItem(strRaiseSlowFact, raiseSlowFact));
+                mMenuItems.Add(new MenuItem(strLowerSlowFact, lowerSlowFact));
             } else if (page == 1) {
-                result.Add(new MenuMethod(strRaiseSmallMax, null, raiseSmallMax));
-                result.Add(new MenuMethod(strLowerSmallMax, null, lowerSmallMax));
-                result.Add(new MenuMethod(strRaiseSmallFact, null, raiseSmallFact));
-                result.Add(new MenuMethod(strLowerSmallFact, null, lowerSmallFact));
-                result.Add(new MenuMethod("Set Default Values", null, (m, a) => {
+                mMenuItems.Add(new MenuItem(strRaiseSmallMax, raiseSmallMax));
+                mMenuItems.Add(new MenuItem(strLowerSmallMax, lowerSmallMax));
+                mMenuItems.Add(new MenuItem(strRaiseSmallFact, raiseSmallFact));
+                mMenuItems.Add(new MenuItem(strLowerSmallFact, lowerSmallFact));
+                mMenuItems.Add(new MenuItem("Set Default Values", () => {
                     difMax = 0.09;
                     slowFact = 20.0;
                     fastFact = 2.0;
                     smallMax = 0.4;
                     smallFact = 1.9;
-                    return null;
                 }));
             }
-            return result;
+            return mMenuItems;
 
         }
         Vector3D configDir;
@@ -222,12 +201,12 @@ namespace IngameScript
 
 
         
-        Menu Nactivate(MenuModule aMain, object argument) {
+        void Nactivate() {
             Active = !Active;
             init();
-            var emm = (MenuMethod)mainMenuMethods[0];
-            mainMenuMethods[0] = new MenuMethod(Active ? "Deactivate" : "Activate", emm.State, emm.Method);
-            return null;
+            var emm = mMenuItems[0];
+            mMenuItems[0] = new MenuItem(Active ? "Deactivate" : "Activate", emm.State, emm.Method);
+            
         }
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
@@ -299,24 +278,24 @@ namespace IngameScript
             //getRotationAnglesFromDown(direction, sc.WorldMatrix, out pitch, out roll);
             getRotationAngles(mTargetDirection, sc.WorldMatrix, out yaw, out pitch);
 
-            logger.log($"pitch = {pitch}");
-            logger.log($"velo  = {av.X}");
+            //logger.log($"pitch = {pitch}");
+            //logger.log($"velo  = {av.X}");
 
-            logger.log($"yaw  = {yaw}");
-            logger.log($"velo  = {-av.Y}");
+            //logger.log($"yaw  = {yaw}");
+            //logger.log($"velo  = {-av.Y}");
 
             if (Math.Abs(pitch) < smallMax) {
-                logger.log("pitch smallfact");
+                //logger.log("pitch smallfact");
                 pitch *= smallFact;
             } else {
-                logger.log("pitch normal fact");
+                //logger.log("pitch normal fact");
             }
 
             if (Math.Abs(yaw) < smallMax) {
-                logger.log("yaw smallfact");
+                //logger.log("yaw smallfact");
                 yaw *= smallFact;
             } else {
-                logger.log("yaw normal fact");
+                //logger.log("yaw normal fact");
             }
 
             //yaw *= 10.0;
@@ -340,51 +319,51 @@ namespace IngameScript
 
             if (Math.Abs(pitchDif) < difMax) {
                 pitchDif = 0;
-                logger.log("pitch okay");
+                //logger.log("pitch okay");
             } else {
                 if (pitch < 0) {
                     if (pv > pitch) {
-                        logger.log("pitch too slow");
+                        //logger.log("pitch too slow");
                         pitchDif *= fastFact;
                     } else {
-                        logger.log("pitch too fast");
+                        //logger.log("pitch too fast");
                         pitchDif *= slowFact;
                     }
                 } else {
                     if (pv < pitch) {
-                        logger.log("pitch too slow");
+                        //logger.log("pitch too slow");
                         pitchDif *= fastFact;
                     } else {
-                        logger.log("pitch too fast");
+                        //logger.log("pitch too fast");
                         pitchDif *= slowFact;
                     }
                 }
             }
-            logger.log($"pitchDIf = {pitchDif}");
+            //logger.log($"pitchDIf = {pitchDif}");
 
             if (Math.Abs(yawDif) < difMax) {
                 yawDif = 0;
-                logger.log("yaw okay");
+                //logger.log("yaw okay");
             } else {
                 if (yaw < 0) {
                     if (yv > yaw) {
-                        logger.log("yaw too slow");
+                        //logger.log("yaw too slow");
                         yawDif *= fastFact;
                     } else {
-                        logger.log("yaw too fast");
+                        //logger.log("yaw too fast");
                         yawDif *= slowFact;
                     }
                 } else {
                     if (yv < yaw) {
-                        logger.log("yaw too slow");
+                        //logger.log("yaw too slow");
                         yawDif *= fastFact;
                     } else {
-                        logger.log("yaw too fast");
+                        //logger.log("yaw too fast");
                         yawDif *= slowFact;
                     }
                 }
             }
-            logger.log($"yawDIf = {yawDif}");
+            //logger.log($"yawDIf = {yawDif}");
 
             // local angular velocity
             // +X = +pitch

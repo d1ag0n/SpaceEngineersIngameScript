@@ -9,7 +9,7 @@ namespace IngameScript
     {
         readonly List<MyDetectedEntityInfo> mDetected = new List<MyDetectedEntityInfo>();
         public bool hasCamera => Blocks.Count > 0;
-        
+        readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         public CameraModule() {
             MenuName = "Camera Records";
             Save = SaveDel;
@@ -47,26 +47,24 @@ namespace IngameScript
             }
         }
 
-        MyDetectedEntityInfo initEntity(MyDetectedEntityInfo e) => new MyDetectedEntityInfo(
-            e.EntityId, e.Name, e.Type,e.HitPosition, e.Orientation, e.Velocity, e.Relationship, e.BoundingBox, (long)MAF.time
-        );
+        MyDetectedEntityInfo initEntity(MyDetectedEntityInfo e, string aName = null) => new MyDetectedEntityInfo(e.EntityId, aName ?? e.Name, e.Type, e.HitPosition, e.Orientation, e.Velocity, e.Relationship, e.BoundingBox, (long)MAF.time);
 
-        List<object> MenuDel(int aPage) {
+        List<MenuItem> MenuDel(int aPage) {
             //var index = aPage * 6;
             int index = (mDetected.Count - 1) - (aPage * 6);
             int count = 0;
-            var result = new List<object>();
+            mMenuItems.Clear();
             //logger.persist($"CameraModule.MenuMethods({aPage});");
             //logger.persist($"index={index}");
             //logger.persist($"mDetected.Count={mDetected.Count}");
             while (index >= 0 && count < 6) {
                 
                 var e = mDetected[index];
-                result.Add(new MenuMethod($"{e.Name} {e.EntityId}", e, EntityMenu));
+                mMenuItems.Add(new MenuItem($"{e.Name} {e.EntityId}", e, EntityMenu));
                 index--;
                 count++;
             }
-            return result;
+            return mMenuItems;
         }
 
 
@@ -75,27 +73,42 @@ namespace IngameScript
         const double HR = 3600000;
         bool deleted;
         Menu EntityMenu(MenuModule aMain, object aState) {
-            var list = new List<object>();
+            
             var e = (MyDetectedEntityInfo)aState;
             deleted = false;
+
             return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => {
-                list.Clear();
-                var ts = (MAF.time - e.TimeStamp) / HR;
-                list.Add($"Time: {ts:f2} hours ago");
-                list.Add($"Relationship: {e.Relationship}");
-                list.Add(logger.gps($"{e.Name}", e.Position));
-                list.Add($"Distance: " + (e.Position - Grid.WorldMatrix.Translation).Length());
-                list.Add(new MenuMethod("Send to Gyro Module", e.Position, AimGyro));
-                if (!deleted) {
-                    list.Add(new MenuMethod("Delete Record", aState, deleteRecord));
+                p = p % 2;
+                mMenuItems.Clear();
+                if (deleted || p == 0) {
+                    var ts = (MAF.time - e.TimeStamp) / HR;
+                    mMenuItems.Add(new MenuItem($"Time: {ts:f2} hours ago"));
+                    mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship}"));
+                    mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
+                    mMenuItems.Add(new MenuItem($"Distance: {(e.Position - Grid.WorldMatrix.Translation).Length():f0}"));
+                    mMenuItems.Add(new MenuItem("Send to Gyro Module", e.Position, AimGyro));
+                    if (!deleted) {
+                        mMenuItems.Add(new MenuItem($"Rename to '{ModuleManager.UserInput}'", aState, renameRecord));
+                    }
+                } else {
+                    if (!deleted) {
+                        mMenuItems.Add(new MenuItem("Delete Record", aState, deleteRecord));
+                    }
                 }
-                return list;
+                
+                return mMenuItems;
             });
         }
-
+        Menu renameRecord(MenuModule aMain, object aState) {
+            var e = (MyDetectedEntityInfo)aState;
+            var io = mDetected.IndexOf(e);
+            logger.persist($"{io} {aState.GetType()}");
+            //mDetected[mDetected.IndexOf((MyDetectedEntityInfo)aState)] = initEntity((MyDetectedEntityInfo)aState, ModuleManager.UserInput);
+            return null;
+        }
         Menu deleteRecord(MenuModule aMain, object aState) {
-            mDetected.Remove((MyDetectedEntityInfo)aState);
-            deleted = true;
+            deleted = mDetected.Remove((MyDetectedEntityInfo)aState);
+            logger.persist($"Deleted: {deleted}");
             return null;
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {

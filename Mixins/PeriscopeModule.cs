@@ -5,28 +5,26 @@ namespace IngameScript {
     class PeriscopeModule : Module<IMyMotorStator> {
         IMyMotorStator first, second;
         IMyCameraBlock camera;
-        readonly List<object> menuMethods = new List<object>();
+        readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         double range = 20000;
         bool xneg = false;
         public PeriscopeModule() {
             Update = UpdateAction;
             Menu = p => {
                 if (Okay) {
-                    menuMethods.Clear();
-                    menuMethods.Add(new MenuMethod(Active ? "Deactivate" : "Activate", null, Nactivate));
-                    menuMethods.Add(new MenuMethod($"Periscope Scan {camera.AvailableScanRange:f0}m Available", null, Scan));
-                    menuMethods.Add(new MenuMethod("Camera Module Scan", null, ModuleScan));
-                    menuMethods.Add(new MenuMethod("Planetary Scan", null, PlanetScan));
-                    menuMethods.Add(new MenuMethod($"Increase Range {range:f0}", null, (a, b) => {
+                    mMenuMethods.Clear();
+                    mMenuMethods.Add(new MenuItem(Active ? "Deactivate" : "Activate", Nactivate));
+                    mMenuMethods.Add(new MenuItem($"Periscope Scan {camera.AvailableScanRange:f0}m Available", null, Scan));
+                    mMenuMethods.Add(new MenuItem("Camera Module Scan", null, ModuleScan));
+                    mMenuMethods.Add(new MenuItem("Planetary Scan", null, PlanetScan));
+                    mMenuMethods.Add(new MenuItem($"Increase Range {range:f0}", () => {
                         range += 10000;
-                        return null;
                     }));
-                    menuMethods.Add(new MenuMethod($"Decrease Range {range:f0}", null, (a, b) => {
+                    mMenuMethods.Add(new MenuItem($"Decrease Range {range:f0}", () => {
                         if (range > 10000) range -= 10000;
-                        return null;
                     }));
                 }
-                return menuMethods;
+                return mMenuMethods;
             };
             Save = SaveDel;
             Load = LoadDel;
@@ -81,7 +79,7 @@ namespace IngameScript {
             }
             return result;
         }
-        public Menu Nactivate(MenuModule aMain = null, object argument = null) {
+        void Nactivate() {
             if (Okay) {
                 first.TargetVelocityRad = 0;
                 second.TargetVelocityRad = 0;
@@ -93,7 +91,6 @@ namespace IngameScript {
                     camera.CustomName = camera.CustomName.Substring(1);
                 }
             }
-            return null;
         }
         Menu ModuleScan(MenuModule aMain = null, object argument = null) {
             CameraModule mod;

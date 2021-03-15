@@ -19,7 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Menu.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)MenuMethod.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MenuItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MenuModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />

@@ -4,28 +4,31 @@ using System;
 
 namespace IngameScript {
     public class Menu {
+        
+        public delegate List<MenuItem> Paginator(int page);
         readonly StringBuilder mWork = new StringBuilder();
-        readonly ModuleBase.delMenu MenuItems;
+        readonly Paginator MenuItems;
         public int Page;
         string Title;
         public Menu Previous;
         readonly MenuModule Main;
-        List<object> Items;
+        List<MenuItem> Items;
+        readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         public Menu(MenuModule aMain, ModuleBase aModule) {
             Title = $"{aModule.MenuName}";
             Main = aMain;
             MenuItems = aModule.Menu;
             //Items = MenuItems(0);
         }
-        public Menu(MenuModule aMain, List<IAccept> aList) {
+        public Menu(MenuModule aMain, List<ModuleBase> aList) {
             Title = "Main Menu";
             Main = aMain;
             
             MenuItems = p => {
                 int index = p * 6;
                 int count = 0;
-                
-                List<object> result = new List<object>();
+
+                mMenuItems.Clear();
                 for (int i = index; i < aList.Count; i++) {
                     if (count == 6) {
                         break;
@@ -34,19 +37,19 @@ namespace IngameScript {
                     
                     if (!(acceptor is MenuModule)) {
                         
-                        var mb = acceptor as ModuleBase;
-                        if (mb.MenuName != null) {
-                            result.Add(mb);
+                        
+                        if (acceptor.MenuName != null) {
+                            mMenuItems.Add(new MenuItem(acceptor));
                             count++;
                         }
                     }
                 }
-                return result;
+                return mMenuItems;
             };
             //Items = MenuItems(0);
         }
 
-        public Menu(MenuModule aMain, string aTitle, ModuleBase.delMenu aPaginator) {
+        public Menu(MenuModule aMain, string aTitle, Paginator aPaginator) {
             Main = aMain;
             Title = aTitle;
             MenuItems = aPaginator;
@@ -63,48 +66,33 @@ namespace IngameScript {
                     Main.SetMenu(Previous, false);
                     Main.UpdateRequired = true;
                 } else if (selection == 7) {
-                    // previous page
-                    if (Page > 0) {
-                        Page--;
-                        //Items = MenuItems(Page);
-                        Main.UpdateRequired = true;
-                    }
+                    Page--;
+                    Main.UpdateRequired = true;
                 } else if (selection == 8) {
-                    var items = MenuItems(Page + 1);
-                    if (items.Count > 0) {
-                        Page++;
-                        Main.UpdateRequired = true;
-                        //Items = items;
-                    }
+                    Page++;
+                    Main.UpdateRequired = true;
                 } else {
                     if (Items.Count > selection) {
                         HandleInput(Items[selection]);
                     }
                 }
+            } else if (argument.Length > 1) {
+                ModuleManager.UserInput = argument;
+                Main.UpdateRequired = true;
             }
         }
-        void HandleInput(object aMenuItem) {
+        
+        void HandleInput(MenuItem aMenuItem) {
             //Main.logger.persist($"Menu.HandleInput({aMenuItem});");
-            if (aMenuItem is ModuleBase) {
-                Main.SetMenu(new Menu(Main, aMenuItem as ModuleBase));
+            if (aMenuItem.State is ModuleBase) {
+                Main.SetMenu(new Menu(Main, aMenuItem.State as ModuleBase));
             } else {
-                var type = aMenuItem.GetType().Name;
-
-                switch (type) {
-                    case "MenuMethod":
-                        var mm = (MenuMethod)aMenuItem;
-                        if (mm.Method != null) {
-                            var menu = mm.Method(Main, mm.State);
-                            if (menu != null) {
-                                Main.SetMenu(menu);
-                            }
-                        }
-                        break;
-                    default:
-                        Main.logger.persist($"Menu can't handle '{type}'");
-                        break;
+                var menu = aMenuItem.Method?.Invoke(Main, aMenuItem.State);
+                if (menu != null) {
+                    Main.SetMenu(menu);
+                } else {
+                    Main.UpdateRequired = true;
                 }
-                Main.UpdateRequired = true;
             }
         }
 
@@ -118,16 +106,17 @@ namespace IngameScript {
                 mWork.Append(++count);
                 mWork.Append(' ');
 
-
-                if (item is MenuMethod) {
-                    var mm = (MenuMethod)item;
-                    mWork.AppendLine(mm.Name);
-                } else if (item is ModuleBase) {
-                    var mb = item as ModuleBase;
-                    mWork.AppendLine(mb.MenuName);
+                if (item.Name == null) {
+                    if (item.State is ModuleBase) {
+                        var mb = (ModuleBase)item.State;
+                        mWork.AppendLine(mb.MenuName);
+                    } else {
+                        mWork.AppendLine("Unknown Item in menu");
+                    }
                 } else {
-                    mWork.AppendLine(item.ToString());
+                    mWork.AppendLine(item.Name);
                 }
+                
             }
             
             while (count < 7) {

@@ -57,9 +57,9 @@ namespace IngameScript {
         void runList(double aMass, ref double aAccel, List<IMyThrust> aList, bool emergency) {
             var A = Math.Abs(aAccel);
             var F = aMass * A;
-            ModuleManager.logger.log($"F = {F}");
-            ModuleManager.logger.log($"M = {aMass}");
-            ModuleManager.logger.log($"A = {A}");
+            //ModuleManager.logger.log($"F = {F}");
+            //ModuleManager.logger.log($"M = {aMass}");
+            //ModuleManager.logger.log($"A = {A}");
             
             foreach (var t in aList) {
                 double met = t.MaxEffectiveThrust;

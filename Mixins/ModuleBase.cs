@@ -1,12 +1,15 @@
+using Sandbox.ModAPI.Ingame;
 using System;
-using System.Collections.Generic;
 
 namespace IngameScript {
     public abstract class ModuleBase {
-        protected readonly Action Void = () => { };
+
+        abstract public bool Accept(IMyTerminalBlock aBlock);
+        abstract public bool Remove(IMyTerminalBlock aBlock);
+
         public delegate void delSave(Serialize s);
         public delegate void delLoad(Serialize s, string aData);
-        public delegate List<object> delMenu(int page);
+        
         public string MenuName;
         public readonly LogModule logger;
         public readonly ShipControllerModule controller;
@@ -15,7 +18,7 @@ namespace IngameScript {
         /// </summary>
         /// <param name="aPage"></param>
         /// <returns></returns>
-        public delMenu Menu { get; protected set; }
+        public Menu.Paginator Menu { get; protected set; }
         public Action Update { get; protected set; }
         public delSave Save { get; protected set; }
         public delLoad Load { get; protected set; }
