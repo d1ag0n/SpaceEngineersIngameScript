@@ -18,7 +18,7 @@ namespace IngameScript {
             ModuleManager.Initialize(this);
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             new GyroModule();
-            new ThrusterModule();
+            new ThrustModule();
             new CameraModule();
             new PeriscopeModule();
             mMenu = new MenuModule();
@@ -33,7 +33,6 @@ namespace IngameScript {
             }
             Update = loop;
         }
-
         void loop(string arg, UpdateType type) {
             try {
                 if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {

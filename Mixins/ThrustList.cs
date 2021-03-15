@@ -1,68 +1,60 @@
 using Sandbox.ModAPI.Ingame;
-using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using VRageMath;
 
 namespace IngameScript {
     
-    class ThrustList {
+    class ThrustList : BlockDirList<IMyThrust> {
         //public Vector3D Acceleration;
         // these provide acceleration in the respective direction
-        readonly List<IMyThrust> mLeft = new List<IMyThrust>();
-        readonly List<IMyThrust> mRight = new List<IMyThrust>();
-        readonly List<IMyThrust> mUp = new List<IMyThrust>();
-        readonly List<IMyThrust> mDown = new List<IMyThrust>();
-        readonly List<IMyThrust> mFront = new List<IMyThrust>();
-        readonly List<IMyThrust> mBack = new List<IMyThrust>();
-        
-        public void Add(IMyShipController aController, IMyThrust aThrust) {
-            var o = aController.Orientation;
-            var f = aThrust.Orientation.Forward;
+        public double LeftForce;
+        public double RightForce;
+        public double UpForce;
+        public double DownForce;
+        public double FrontForce;
+        public double BackForce;
 
-            if (f == o.Forward) {
-                mBack.Add(aThrust);
-            } else if (f == o.Up) {
-                mDown.Add(aThrust);
-            } else if (f == o.Left) {
-                mRight.Add(aThrust);
-            } else if (f == Base6Directions.GetOppositeDirection(o.Forward)) {
-                mFront.Add(aThrust);
-            } else if (f == Base6Directions.GetOppositeDirection(o.Up)) {
-                mUp.Add(aThrust);
-            } else if (f == Base6Directions.GetOppositeDirection(o.Left)) {
-                mLeft.Add(aThrust);
-            } else {
-                throw new Exception($"WTF Direction {f}");
-            }
-        }
         public void Update(ref Vector3D aAccel, double aMass, bool emergency = false) {
-            pickList(aMass, ref aAccel.X, mRight, mLeft, emergency);
-            pickList(aMass, ref aAccel.Y, mDown, mUp, emergency);
-            pickList(aMass, ref aAccel.Z, mFront, mBack, emergency);
+            pickList(aMass, ref aAccel.X, mLeft, mRight, ref LeftForce, ref RightForce, emergency);
+            pickList(aMass, ref aAccel.Y, mDown, mUp, ref DownForce, ref UpForce, emergency);
+            pickList(aMass, ref aAccel.Z, mFront, mBack, ref FrontForce, ref BackForce, emergency);
+            
         }
 
-        void pickList(double aMass, ref double aAccel, List<IMyThrust> aNeg, List<IMyThrust> aPos, bool emergency) {
+        void pickList(double aMass, ref double aAccel, List<IMyThrust> aNeg, List<IMyThrust> aPos, ref double aFNeg, ref double aFPos, bool emergency) {
             var o = aNeg;
+            var swap = false;
             if (aAccel > 0) {
+                swap = true;
                 aNeg = aPos;
                 aPos = o;
             }
-            runList(aMass, ref aAccel, aNeg, emergency);
-            foreach(var t in aPos) {
+            var F1 = runList(aMass, ref aAccel, aNeg, emergency);
+            var F2 = 0.0;
+            foreach (var t in aPos) {
                 if (t.Enabled) t.Enabled = false;
+                F2 += t.MaxEffectiveThrust;
+            }
+            if (swap) {
+                aFPos = F1;
+                aFNeg = F2;
+            } else {
+                aFNeg = F1;
+                aFPos = F2;
             }
         }
 
-        void runList(double aMass, ref double aAccel, List<IMyThrust> aList, bool emergency) {
+        double runList(double aMass, ref double aAccel, List<IMyThrust> aList, bool emergency) {
             var A = Math.Abs(aAccel);
             var F = aMass * A;
             //ModuleManager.logger.log($"F = {F}");
             //ModuleManager.logger.log($"M = {aMass}");
             //ModuleManager.logger.log($"A = {A}");
-            
+            var result = 0.0;
             foreach (var t in aList) {
                 double met = t.MaxEffectiveThrust;
+                result += met;
                 if (A > 0 && (met / t.MaxThrust > 0.75 || (emergency && t.MaxEffectiveThrust > 0))) {
                     if (t.IsFunctional) {
                         if (!t.Enabled) t.Enabled = true;
@@ -86,6 +78,7 @@ namespace IngameScript {
                     t.ThrustOverride = 0;
                 }
             }
+            return result;
         }
     }
 }

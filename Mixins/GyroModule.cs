@@ -83,12 +83,18 @@ namespace IngameScript
 
         public void SetTargetPosition(Vector3D aWorld) {
             calcDirection = true;
-            mTargetPosition = aWorld;
+            if (mTargetPosition != aWorld) {
+                Active = true;
+                mTargetPosition = aWorld;
+            }
         }
         
         public void SetTargetDirection(Vector3D aWorld) {
             calcDirection = false;
-            mTargetDirection = aWorld;
+            if (mTargetDirection != aWorld) {
+                Active = true;
+                mTargetDirection = aWorld;
+            }
         }
         void mainMenu() {
             mMenuItems.Clear();
@@ -234,6 +240,7 @@ namespace IngameScript
             }
             if (mTargetDirection.IsZero()) {
                 init();
+                Active = false;
                 return;
             }
 
@@ -416,7 +423,7 @@ namespace IngameScript
                 gy.Enabled = aValue;
             }
         }
-        void init() {
+        public void init() {
             foreach (var gy in Blocks) init(gy);
         }
         void init(IMyGyro aGyro) {

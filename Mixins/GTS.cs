@@ -74,7 +74,7 @@ namespace IngameScript
                 }           
             return false;
         }
-        public void getByTag<T>(string aTag, ref T aBlock) {
+        /*public void getByTag<T>(string aTag, ref T aBlock) {
             List<IMyTerminalBlock> list;
             if (mTags.TryGetValue(aTag.ToLower(), out list)) {
                 foreach (var b in list) {
@@ -84,7 +84,7 @@ namespace IngameScript
                     }
                 }
             }
-        }
+        }*/
         public void initListByTag<T>(string aTag, List<T> aList, bool aClearList = true) {
             List<IMyTerminalBlock> list;
             if (aClearList) {

@@ -10,6 +10,8 @@ namespace IngameScript
         readonly List<ThyDetectedEntityInfo> mDetected = new List<ThyDetectedEntityInfo>();
         public bool hasCamera => Blocks.Count > 0;
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
+
+        // todo organize camera by direction
         public CameraModule() {
             MenuName = "Camera Records";
             onSave = SaveAction;
@@ -64,8 +66,6 @@ namespace IngameScript
             }
             return mMenuItems;
         }
-
-
 
         public void AddNew(MyDetectedEntityInfo aEntity) => mDetected.Add(new ThyDetectedEntityInfo(aEntity));
         const double HR = 3600000;
@@ -131,7 +131,6 @@ namespace IngameScript
                     rotor.BrakingTorque = 0;
                     rotor.Torque = 1000.0f;
                     rotor.TargetVelocityRad = 1.0f;
-                    
                 }
                 return true;
             }

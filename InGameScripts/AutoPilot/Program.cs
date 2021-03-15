@@ -1699,6 +1699,9 @@ namespace IngameScript
             // v10 / 1
             // 100 / 2
             mdStopDistance = ((mdLinearVelocity * mdLinearVelocity) / (mdMaxAccel * 2)) + (mdLinearVelocity * 25.0);
+
+            // v^2*m/(2F)
+
             //mdStopDistance = (10000) / (mdMaxAccel * 2);
 
             

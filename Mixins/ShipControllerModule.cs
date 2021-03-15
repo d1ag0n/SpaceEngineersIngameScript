@@ -14,11 +14,19 @@ namespace IngameScript {
         public IMyShipController Cockpit { get; private set; }
         readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         public double Mass { get; private set; }
+        public Vector3D LocalLinearVelo { get; private set; }
+
+        Vector3D stopStart;
+
         bool mDampeners = true;
         public ShipControllerModule() {
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
+
+            // if this is changed, UpdateAction needs to work when called before whatever
+            // somthing needs to handle call to UpdateAction in ModuleManager.Initialize
             onUpdate = UpdateAction;
+            ////////////////////////
             MenuName = "Ship Controller";
             onPage = p => {
                 mMenuMethods.Clear();
@@ -31,10 +39,12 @@ namespace IngameScript {
                 mMenuMethods.Add(new MenuItem($"Dampeners {mDampeners}", () => { 
                     mDampeners = !mDampeners;
                     if (!mDampeners) {
-                        ThrusterModule thrust;
+                        ThrustModule thrust;
                         if (GetModule(out thrust)) {
                             thrust.Acceleration = Vector3D.Zero;
                         }
+                    } else {
+                        stopStart = Remote.CenterOfMass;
                     }
                 }));
                 return mMenuMethods;
@@ -42,8 +52,10 @@ namespace IngameScript {
         }
         
         readonly Vector3D[] arCorners = new Vector3D[8];
-        void UpdateAction() {
-            
+        public void UpdateAction() {
+            // maxAcceleration = thrusterThrust / shipMass;
+            // boosterFireDuration = Speed / maxAcceleration / 2;
+            // minAltitude = Speed * boosterFireDuration;
             if (Remote == null || !Remote.IsFunctional || !(Remote is IMyRemoteControl)) {
                 foreach (var sc in Blocks) {
                     Remote = sc;
@@ -63,15 +75,34 @@ namespace IngameScript {
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
             ShipVelocities = Remote.GetShipVelocities();
+            
+            LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, Remote.WorldMatrix);
             if (mDampeners) {
-                ThrusterModule thrust;
+                ThrustModule thrust;
+                GyroModule gyro;
+                var localVelo = LocalLinearVelo;
+                var localVeloSq = localVelo.LengthSquared();
                 if (GetModule(out thrust)) {
-                    var localVelo = MAF.world2dir(ShipVelocities.LinearVelocity, Remote.WorldMatrix);
-                    logger.log(localVelo);
-                    localVelo.X = -localVelo.X;
-                    thrust.Acceleration = -(localVelo * 2.0);
                     
+                    if (localVeloSq <= 0.000001) {
+                        localVelo = Vector3D.Zero;
+                        mDampeners = false;
+                        logger.persist($"Stop Distance {(Remote.CenterOfMass - stopStart).Length()}");
+                    } else {
+                        localVelo = localVelo * -2.0;
+                    }
+                    logger.log(localVelo);
+                    //localVelo.X = -localVelo.X;
+                    thrust.Acceleration = localVelo;
                 }
+                /*
+                if (GetModule(out gyro)) {
+                    if (localVeloSq > 25) {
+                        gyro.SetTargetDirection(ShipVelocities.LinearVelocity);
+                    } else {
+                        gyro.SetTargetDirection(Vector3D.Zero);
+                    }
+                }*/
             }
             // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
             // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);

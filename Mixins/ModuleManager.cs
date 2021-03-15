@@ -86,14 +86,23 @@ namespace IngameScript {
                 mBlocks.Clear();
             }
             
-            Program.GridTerminalSystem.GetBlocksOfType(mBlocks, block => mRegistry.Add(block.EntityId));
-            
-            foreach (var block in mBlocks) {
-                initTags(block as IMyTerminalBlock);                
-                addByGrid(block as IMyCubeBlock);
-            }
-            
+            Program.GridTerminalSystem.GetBlocksOfType(mBlocks, block => {
+                if (mRegistry.Add(block.EntityId)) {
+                    mBlocks.Add(block);
+                    initTags(block as IMyTerminalBlock);
+                    addByGrid(block as IMyCubeBlock);
+                    controller.Accept(block as IMyTerminalBlock);
+                }
+                return false;
+            });
+            controller.UpdateAction();
+            // todo move up into GTS loop, need to change module initialization behavior first,
+            // because modules may look for additionals that mey not yet be loaded
+            // when reinitialization is implemented this should be addressed
             foreach (var module in mModules) {
+                if (module == controller) {
+                    continue;
+                }
                 foreach (var block in mBlocks) {
                     if (block is IMyTerminalBlock) {
                         module.Accept(block as IMyTerminalBlock);
@@ -101,7 +110,18 @@ namespace IngameScript {
                 }
             }
         }
-        
+        public static void getByTag<T>(string aTag, ref T aBlock) {
+            List<IMyTerminalBlock> list;
+            if (mTags.TryGetValue(aTag.ToLower(), out list)) {
+                foreach (var b in list) {
+                    if (b is T) {
+                        aBlock = (T)b;
+                        return;
+                    }
+                }
+            }
+        }
+
         static void addByGrid(IMyCubeBlock aBlock) {
             List<IMyCubeBlock> list;
             if (aBlock != null) {

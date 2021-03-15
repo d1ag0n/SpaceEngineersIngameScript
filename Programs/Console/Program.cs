@@ -20,8 +20,9 @@ namespace commandline
             int page = 6;
             int pages = count / page;
 
-
-
+            var l = Vector3D.Left;
+            var u = Vector3D.Up;
+            var f = Vector3D.Forward;
             return;
 
  
