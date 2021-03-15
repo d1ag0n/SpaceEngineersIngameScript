@@ -14,19 +14,31 @@ namespace IngameScript {
         public IMyShipController Cockpit { get; private set; }
         readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         public double Mass { get; private set; }
+        bool mDampeners = true;
         public ShipControllerModule() {
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
             onUpdate = UpdateAction;
             MenuName = "Ship Controller";
-            onPage = p => mMenuMethods;
-            mMenuMethods.Add(new MenuItem("Flat Scan", () => {
-                if (onUpdate == UpdateAction) {
-                    flatScan();
-                }
-            }));
+            onPage = p => {
+                mMenuMethods.Clear();
+                mMenuMethods.Add(new MenuItem("Flat Scan", () => {
+                    if (onUpdate == UpdateAction) {
+                        flatScan();
+                    }
+                }));
 
-            mMenuMethods.Add(new MenuItem("Foo"));
+                mMenuMethods.Add(new MenuItem($"Dampeners {mDampeners}", () => { 
+                    mDampeners = !mDampeners;
+                    if (!mDampeners) {
+                        ThrusterModule thrust;
+                        if (GetModule(out thrust)) {
+                            thrust.Acceleration = Vector3D.Zero;
+                        }
+                    }
+                }));
+                return mMenuMethods;
+            };
         }
         
         readonly Vector3D[] arCorners = new Vector3D[8];
@@ -51,7 +63,16 @@ namespace IngameScript {
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
             ShipVelocities = Remote.GetShipVelocities();
-            
+            if (mDampeners) {
+                ThrusterModule thrust;
+                if (GetModule(out thrust)) {
+                    var localVelo = MAF.world2dir(ShipVelocities.LinearVelocity, Remote.WorldMatrix);
+                    logger.log(localVelo);
+                    localVelo.X = -localVelo.X;
+                    thrust.Acceleration = -(localVelo * 2.0);
+                    
+                }
+            }
             // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
             // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
 

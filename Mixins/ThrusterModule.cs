@@ -17,13 +17,13 @@ namespace IngameScript {
             onPage = (p) => {
                 mMenuItems.Clear();
 
-                mMenuItems.Add(new MenuItem($"Add Forward Acceleration {-Acceleration.Z}", () => {
+                mMenuItems.Add(new MenuItem($"Add Forward Acceleration {Acceleration.Z}", () => {
                     Acceleration.Z -= 0.1;
                     if (MAF.nearEqual(Acceleration.Z, 0)) {
                         Acceleration.Z = 0;
                     }
                 }));
-                mMenuItems.Add(new MenuItem($"Add Backward Acceleration {-Acceleration.Z}", () => {
+                mMenuItems.Add(new MenuItem($"Add Backward Acceleration {Acceleration.Z}", () => {
                     Acceleration.Z += 0.1;
                     if (MAF.nearEqual(Acceleration.Z, 0)) {
                         Acceleration.Z = 0;

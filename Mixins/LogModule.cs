@@ -71,7 +71,7 @@ namespace IngameScript {
         }
 
         public void log(Vector3D v) => log(string4(v));
-        public string string4(Vector3D v) => $"X {v.X}{nl}Y {v.Y}{nl}Z {v.Z}";
+        public string string4(Vector3D v) => $"X {v.X:f2}{nl}Y {v.Y:f2}{nl}Z {v.Z:f2}";
         public string gps(string aName, Vector3D aPos) {
             // GPS:ARC_ABOVE:19680.65:144051.53:-109067.96:#FF75C9F1:
             var sb = new StringBuilder("GPS:");
