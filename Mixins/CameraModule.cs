@@ -12,12 +12,12 @@ namespace IngameScript
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         public CameraModule() {
             MenuName = "Camera Records";
-            Save = SaveDel;
-            Load = LoadDel;
-            Menu = MenuDel;
+            onSave = SaveAction;
+            onLoad = LoadAction;
+            onPage = PageAction;
         }
 
-        void SaveDel(Serialize s) {
+        void SaveAction(Serialize s) {
             var one = false;
             foreach (var e in mDetected) {
                 if (one) {
@@ -27,10 +27,9 @@ namespace IngameScript
                 s.str(e);
                 one = true;
             }
-
         }
 
-        void LoadDel(Serialize s, string aData) {
+        void LoadAction(Serialize s, string aData) {
             var ar = aData.Split(Serialize.RECSEP);
             foreach (var record in ar) {
                 var entry = record.Split(Serialize.UNTSEP);
@@ -48,8 +47,8 @@ namespace IngameScript
         }
 
 
-        List<MenuItem> MenuDel(int aPage) {
-            //var index = aPage * 6;
+        List<MenuItem> PageAction(int aPage) {
+            aPage = Menu.PageNumber(aPage, mDetected.Count);
             int index = (mDetected.Count - 1) - (aPage * 6);
             int count = 0;
             mMenuItems.Clear();

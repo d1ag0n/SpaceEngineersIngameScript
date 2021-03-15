@@ -20,21 +20,21 @@ namespace IngameScript
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         public GyroModule() {
             MenuName = "Gyroscope";
-            Update = UpdateAction;
-            Save = SaveDel;
-            Load = LoadDel;
+            onUpdate = UpdateAction;
+            onSave = SaveAction;
+            onLoad = LoadAction;
             mainMenu();
             Nactivate();
-            Menu = p => {
-                if (Update != UpdateAction) {
-                    Update = UpdateAction;
+            onPage = p => {
+                if (onUpdate != UpdateAction) {
+                    onUpdate = UpdateAction;
                     init();
                 }
                 return mMenuItems;
             };
         }
 
-        void SaveDel(Serialize s) {
+        void SaveAction(Serialize s) {
 
             s.unt("difMax");
             s.str(difMax);
@@ -57,7 +57,7 @@ namespace IngameScript
 
         }
 
-        void LoadDel(Serialize s, string aData) {
+        void LoadAction(Serialize s, string aData) {
             var ar = aData.Split(Serialize.RECSEP);
             foreach (var record in ar) {
                 var entry = record.Split(Serialize.UNTSEP);
@@ -178,7 +178,7 @@ namespace IngameScript
             configDir = Vector3D.Up;
             Active = true;
             init();
-            Update = () => {
+            onUpdate = () => {
                 logger.log("config update");
                 if (controller.ShipVelocities.AngularVelocity.LengthSquared() < 1 && MAF.angleBetween(controller.Remote.WorldMatrix.Forward, configDir) < 0.01) {
                     logger.log("config waiting");

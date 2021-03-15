@@ -14,7 +14,7 @@ namespace IngameScript {
         readonly List<string> mPersistent = new List<string>(25);
 
         public LogModule() {
-            Update = UpdateAction;
+            onUpdate = UpdateAction;
         }
 
 
@@ -38,7 +38,7 @@ namespace IngameScript {
             //mWork.AppendLine(gps("BoxCenter", e.BoundingBox.Center));
             //mWork.AppendLine(gps("BoxMax", e.BoundingBox.Max));
             var bb = e.BoundingBox;
-            int i = 1;
+            
             foreach (var c in bb.GetCorners()) {
                 //mWork.AppendLine(gps("corner" + i++, c));
             }

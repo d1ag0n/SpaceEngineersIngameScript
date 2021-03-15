@@ -12,9 +12,9 @@ namespace IngameScript {
         readonly ThrustList mHydro = new ThrustList();
 
         public ThrusterModule() {
-            Update = OrganizeAction;
+            onUpdate = OrganizeAction;
             MenuName = "Thrust Controller";
-            Menu = (p) => {
+            onPage = (p) => {
                 mMenuItems.Clear();
 
                 mMenuItems.Add(new MenuItem($"Add Forward Acceleration {-Acceleration.Z}", () => {
@@ -67,7 +67,7 @@ namespace IngameScript {
                     mThrust.Add(controller.Remote, t);
                 }
             }
-            Update = UpdateAction;
+            onUpdate = UpdateAction;
         }
         enum enGroup { Hydro, Ion, Atmos, Not }
         enGroup GetGroup(IMyThrust aThrust) {

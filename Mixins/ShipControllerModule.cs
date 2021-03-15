@@ -17,11 +17,11 @@ namespace IngameScript {
         public ShipControllerModule() {
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
-            Update = UpdateAction;
+            onUpdate = UpdateAction;
             MenuName = "Ship Controller";
-            Menu = p => mMenuMethods;
+            onPage = p => mMenuMethods;
             mMenuMethods.Add(new MenuItem("Flat Scan", () => {
-                if (Update == UpdateAction) {
+                if (onUpdate == UpdateAction) {
                     flatScan();
                 }
             }));
@@ -105,34 +105,30 @@ namespace IngameScript {
 
         void flatScan() {
             var grid = ModuleManager.Program.Me.CubeGrid;
-
-
-
             switch (Remote.Orientation.Forward) {
                 case Base6Directions.Direction.Forward:
                     logger.persist("FORWARD");
-                    Update = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), grid.Max.X - grid.Min.X, grid.Max.Y - grid.Min.Y);
+                    onUpdate = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), grid.Max.X - grid.Min.X, grid.Max.Y - grid.Min.Y);
                     break;
                 case Base6Directions.Direction.Backward:
                     logger.persist("BACKWARD");
-                    Update = flatScan(grid.WorldMatrix.Left, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), 3, 3);
+                    onUpdate = flatScan(grid.WorldMatrix.Left, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), 3, 3);
                     break;
                 case Base6Directions.Direction.Left:
                     logger.persist("LEFT");
-                    Update = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
+                    onUpdate = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
                     break;
                 case Base6Directions.Direction.Right:
                     logger.persist("RIGHT");
-                    
-                    Update = flatScan(grid.WorldMatrix.Forward, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), grid.Max.Z - grid.Min.Z, grid.Max.Y - grid.Min.Y);
+                    onUpdate = flatScan(grid.WorldMatrix.Forward, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), grid.Max.Z - grid.Min.Z, grid.Max.Y - grid.Min.Y);
                     break;
                 case Base6Directions.Direction.Up:
                     logger.persist("UP");
-                    Update = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Left, grid.GridIntegerToWorld(grid.Max), 3, 3);
+                    onUpdate = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Left, grid.GridIntegerToWorld(grid.Max), 3, 3);
                     break;
                 case Base6Directions.Direction.Down:
                     logger.persist("DOWN");
-                    Update = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Backward, grid.GridIntegerToWorld(grid.Min), 3, 3);
+                    onUpdate = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Backward, grid.GridIntegerToWorld(grid.Min), 3, 3);
                     break;
             }
         }
@@ -163,7 +159,7 @@ namespace IngameScript {
                         Remote.CustomData = sb.ToString();
                         logger.persist("Flat Scan Complete");
                         //Update = () => logger.log("flat scan complete");
-                        Update = UpdateAction;
+                        onUpdate = UpdateAction;
                     }
                 }
             };

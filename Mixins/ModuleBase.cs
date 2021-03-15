@@ -7,8 +7,7 @@ namespace IngameScript {
         abstract public bool Accept(IMyTerminalBlock aBlock);
         abstract public bool Remove(IMyTerminalBlock aBlock);
 
-        public delegate void delSave(Serialize s);
-        public delegate void delLoad(Serialize s, string aData);
+        
         
         public string MenuName;
         public readonly LogModule logger;
@@ -18,10 +17,10 @@ namespace IngameScript {
         /// </summary>
         /// <param name="aPage"></param>
         /// <returns></returns>
-        public Menu.Paginator Menu { get; protected set; }
-        public Action Update { get; protected set; }
-        public delSave Save { get; protected set; }
-        public delLoad Load { get; protected set; }
+        public PaginationHandler onPage { get; protected set; }
+        public Action onUpdate { get; protected set; }
+        public SaveHandler onSave { get; protected set; }
+        public LoadHandler onLoad{ get; protected set; }
         
 
         public bool Active { get; protected set; }

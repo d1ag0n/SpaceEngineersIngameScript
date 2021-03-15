@@ -8,8 +8,7 @@ namespace IngameScript {
         public bool UpdateRequired = true;
 
         public MenuModule() {
-            
-            Update = UpdateAction;
+            onUpdate = UpdateAction;
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
             var result = false;

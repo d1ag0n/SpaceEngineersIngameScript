@@ -1,50 +1,32 @@
-﻿using IngameScript;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using VRage;
+using VRage.Game;
 using VRageMath;
 
 namespace commandline
 {
     class Program
     {
+        
+        static MyDetectedEntityInfo entity(MyDetectedEntityType t, long l) {
+            return new MyDetectedEntityInfo(5555, "Foo", t, null, MatrixD.Identity, Vector3D.Zero, MyRelationsBetweenPlayerAndBlock.Neutral, new BoundingBoxD(), l);
+        }
         static void chord() {
-            var val = 1 % 2;
-            long a = 0;
-            long b = 220;
-            long r = 0;
-
-            r = a / b;
-            return;
-
-            float f = -4;
-            MathHelper.LimitRadians(ref f);
-            //var a = 5.0f; // chord
-            var s = 10.0f; // arc length
-
-            // h height of arc
-            // r height of triangle below arc
-            // R radius = h+r
-            // s=  rθ
-            // r =  R cos(1/2 θ)
-            // r = 1/2 a cot(1/2 θ)
-            // r = 1/2 sqrt(4 r^2 - a^2)
+            int count = 5;
+            int page = 6;
+            int pages = count / page;
 
 
-            var count = 6;
-
-            var d1 = (count * (count + 1)) / 2;
-            var d2 = count * (count + 1) / 2;
-
-            int c1 = 6 / 2;
-            int c2 = 5 / 2;
 
             return;
+
+ 
+
+
         }
         static void dicTest() {
             var d = new Dictionary<int, string>();
@@ -71,6 +53,7 @@ namespace commandline
             var z = (r.NextDouble() - 0.5) * 1000000.0;
             return new Vector3D(x, y, z);
         }
+        /*
         static void cindex() {
             for (int i = 0; i < 100000; i++) {
                 var v = BOX.CIndexToVector(i);
@@ -128,6 +111,7 @@ namespace commandline
             Console.WriteLine("kwork complete");
 
         }
+        */
         const int miInterval = 10;
         const double mdTickTime = 1.0 / 60.0;
         const double mdTimeFactor = mdTickTime * miInterval;
@@ -397,21 +381,7 @@ namespace commandline
         }
 
         static Vector3D project(Vector3D a, Vector3D b) => a.Dot(b) / b.LengthSquared() * b;
-        static void getRotationAnglesFromDown(Vector3D targetVector, out double pitch, out double roll) {
-            targetVector = Vector3D.Up;
-            var m = MatrixD.CreateWorld(Vector3D.Zero, Vector3.Forward, Vector3.Up);
 
-            var localTargetVector = MAF.world2dir(targetVector, m);
-            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
-
-            pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);
-            if (localTargetVector.Z > 0)
-                pitch = -pitch;
-
-            roll = MAF.angleBetween(localTargetVector, flattenedTargetVector);
-            if (localTargetVector.X > 0)
-                roll = -roll;
-        }
         const double updatesPerSecond = 6.0;
         const double proportionalConstant = 5.0;
         const double integralConstant = 0.1;
@@ -422,12 +392,7 @@ namespace commandline
         static void Main(string[] args) {
             chord();
             return;
-            float ab = (float)MAF.angleBetween(Vector3D.Right, Vector3D.Forward);
-            bool val = ab == MathHelper.PiOver2;
             
-            var po2 = MathHelper.Pi / 2.0f;
-
-            var s1 = ab.ToString("f12");
             var s2 = MathHelper.PiOver2.ToString("f12");
 
             Nullable<int> x;
@@ -447,13 +412,6 @@ namespace commandline
             var angle = (1.5 + MathHelperD.TwoPi) % MathHelperD.TwoPi;
             var epsilon = 0.2f * (MathHelper.Pi / 180.0f);
 
-            var pidPitch = new PID(proportionalConstant, integralConstant, derivativeConstant, -pidLimit, pidLimit, timeLimit);
-            var pidRoll = new PID(proportionalConstant, integralConstant, derivativeConstant, -pidLimit, pidLimit, timeLimit);
-            double pitch, roll;
-            getRotationAnglesFromDown(Vector3D.Up, out pitch, out roll);
-
-            pitch = pidPitch.Control(pitch);
-            roll = pidRoll.Control(roll);
 
             var roughAxis = Base6Directions.GetClosestDirection(Vector3D.Zero);
             var b = Vector3D.Backward;
@@ -463,17 +421,12 @@ namespace commandline
             var pos = new Vector3D(12696.62, 140308.05, -105223.81);
             //var pos = new Vector3D(12696.62, 140308.05, 105223.81);
 
-            var cbox = BOX.GetCBox(pos);
-            var dest = BOX.GetCBox(BOX.MoveC(cbox.Center, Vector3D.Up));
 
-            var result = cbox.Contains(cbox.Center);
             
             //GPS:above:12696.62:140308.05:-105223.81:#FF75C9F1:
             
 
             var dir = Vector3D.Normalize(pos - Vector3D.Zero);
-            var kbox = BOX.GetKBox(pos);
-            cbox = BOX.GetCBox(pos);
         /*
             var res = 
                 this.Min.X > point.X ||
@@ -487,47 +440,13 @@ namespace commandline
                 ) ? ContainmentType.Disjoint : ContainmentType.Contains;
         */
 
-        var klocal = BOX.WorldToK(pos);
 
-            var cmove = BOX.MoveC(cbox.Center, dir);
-            var kmove = BOX.MoveK(kbox.Center, dir);
-
-            var map = new BoxMap();
-
-            var info = map.getInfo(pos);
-            
-            info = map.getInfo(pos);
-            info = map.getInfo(pos);
-            info = map.getInfo(pos);
             int d = (int)Base6Directions.GetClosestDirection((Vector3)dir);
             Vector3D cd = Base6Directions.Directions[d];
             //Console.ReadKey();
             return;
         }
-        static void zzMain(string[] args) {
 
-            var lag = new Lag(10);
-            double azimuth, elevation;
-            var v = new Vector3D(0.0122403541067893, -0.99984900692911, 0.012334385846631);
-            //v.Normalize();
-            v = Vector3D.Up;
-            v = Vector3D.Down;
-            Vector3D.GetAzimuthAndElevation(v, out azimuth, out elevation);
-
-            //-0.79
-            //X 0.0122403541067893
-            //Y -0.99984900692911
-            //Z 0.012334385846631
-            var planet = new Vector3D(16384.5, 136384.5, -113615.5);
-            var com = new Vector3D(21259, 143276.07, -108741.04);
-            var sea = 9497.57;
-            var pps1 = new PPS(planet, sea, com);
-
-
-
-            Console.ReadKey();
-            return;
-        }
         static void zMain() {
             
             sort();
@@ -689,9 +608,7 @@ namespace commandline
             
             Console.ReadKey();
             return;
-            cindex();
-            cwork();
-            kwork();
+
             Console.ReadKey();
             return;
             var e = new MyDetectedEntityInfo();
@@ -701,8 +618,7 @@ namespace commandline
             Console.WriteLine("KDIST");
             Console.WriteLine((new Vector3D(1000)).Length());
             Console.ReadKey();
-            return;
-            kwork();
+
             Console.ReadKey();
             return;
             

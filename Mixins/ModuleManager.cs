@@ -21,12 +21,12 @@ namespace IngameScript {
         public static void Update() {
             try {
                 for (int i = 1; i < mModules.Count; i++) {
-                    mModules[i].Update?.Invoke();
+                    mModules[i].onUpdate?.Invoke();
                 }
             } catch (Exception ex) {
                 logger.persist(ex.ToString());
             }
-            logger.Update();
+            logger.onUpdate();
         }
         public static string Save() {
             var s = new Serialize();
@@ -34,12 +34,12 @@ namespace IngameScript {
             foreach (var m in mModules) {
 
                 var mb = m as ModuleBase;
-                if (mb.Save != null) {
+                if (mb.onSave != null) {
                     if (one) {
                         s.mod();
                     }
                     s.grp(mb.GetType().ToString());
-                    mb.Save(s);
+                    mb.onSave(s);
                     one = true;
                 }
 
@@ -59,11 +59,10 @@ namespace IngameScript {
                 }
                 work.Add(grps[1]);
             }
-            foreach(var m in mModules) {
-                var mb = m as ModuleBase;
-                if (moduleEntries.TryGetValue(mb.GetType().ToString(), out work)) {
+            foreach(var m in mModules) {                
+                if (moduleEntries.TryGetValue(m.GetType().ToString(), out work)) {
                     foreach(var data in work) {
-                        mb.Load(s, data);
+                        m.onLoad(s, data);
                     }
                 }
             }

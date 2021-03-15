@@ -9,8 +9,8 @@ namespace IngameScript {
         double range = 20000;
         bool xneg = false;
         public PeriscopeModule() {
-            Update = UpdateAction;
-            Menu = p => {
+            onUpdate = UpdateAction;
+            onPage = p => {
                 if (Okay) {
                     mMenuMethods.Clear();
                     mMenuMethods.Add(new MenuItem(Active ? "Deactivate" : "Activate", Nactivate));
@@ -26,8 +26,8 @@ namespace IngameScript {
                 }
                 return mMenuMethods;
             };
-            Save = SaveDel;
-            Load = LoadDel;
+            onSave = SaveDel;
+            onLoad = LoadDel;
         }
         void LoadDel(Serialize s, string aData) {
             var ar = aData.Split(Serialize.RECSEP);

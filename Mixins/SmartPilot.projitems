@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Delegates.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IAccept.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />

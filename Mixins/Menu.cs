@@ -5,9 +5,9 @@ using System;
 namespace IngameScript {
     public class Menu {
         
-        public delegate List<MenuItem> Paginator(int page);
+        
         readonly StringBuilder mWork = new StringBuilder();
-        readonly Paginator MenuItems;
+        readonly PaginationHandler onPage;
         public int Page;
         string Title;
         public Menu Previous;
@@ -17,15 +17,24 @@ namespace IngameScript {
         public Menu(MenuModule aMain, ModuleBase aModule) {
             Title = $"{aModule.MenuName}";
             Main = aMain;
-            MenuItems = aModule.Menu;
+            onPage = aModule.onPage;
             //Items = MenuItems(0);
         }
+        public static int PageCount(int itemCount) => (itemCount / 6) + 1;
+        public static int PageNumber(int pageNumber, int itemCount) => Math.Abs(pageNumber % PageCount(itemCount));
         public Menu(MenuModule aMain, List<ModuleBase> aList) {
             Title = "Main Menu";
             Main = aMain;
             
-            MenuItems = p => {
-                int index = p * 6;
+            onPage = aPage => {
+
+                int items = 0;
+                foreach(var m in aList) {
+                    if (m is MenuModule) continue;
+                    if (m.MenuName == null) continue;
+                    items++;
+                }
+                int index = PageNumber(aPage, items) * 6;
                 int count = 0;
 
                 mMenuItems.Clear();
@@ -33,13 +42,11 @@ namespace IngameScript {
                     if (count == 6) {
                         break;
                     }
-                    var acceptor = aList[i];
+                    var m = aList[i];
                     
-                    if (!(acceptor is MenuModule)) {
-                        
-                        
-                        if (acceptor.MenuName != null) {
-                            mMenuItems.Add(new MenuItem(acceptor));
+                    if (!(m is MenuModule)) {
+                        if (m.MenuName != null) {
+                            mMenuItems.Add(new MenuItem(m));
                             count++;
                         }
                     }
@@ -49,10 +56,10 @@ namespace IngameScript {
             //Items = MenuItems(0);
         }
 
-        public Menu(MenuModule aMain, string aTitle, Paginator aPaginator) {
+        public Menu(MenuModule aMain, string aTitle, PaginationHandler aPaginator) {
             Main = aMain;
             Title = aTitle;
-            MenuItems = aPaginator;
+            onPage = aPaginator;
             //Items = MenuItems(0);
         }
 
@@ -101,7 +108,7 @@ namespace IngameScript {
             
             mWork.AppendLine(Title);
             int count = 0;
-            Items = MenuItems(Page);
+            Items = onPage(Page);
             foreach (var item in Items) {
                 mWork.Append(++count);
                 mWork.Append(' ');
