@@ -7,8 +7,6 @@ using VRageMath;
 namespace IngameScript {
 
     class BlockDirList<T> where T: IMyCubeBlock {
-        //public Vector3D Acceleration;
-        // these provide acceleration in the respective direction
         protected readonly List<T> mLeft = new List<T>();
         protected readonly List<T> mRight = new List<T>();
         protected readonly List<T> mUp = new List<T>();

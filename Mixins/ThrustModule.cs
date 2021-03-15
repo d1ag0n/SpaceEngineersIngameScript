@@ -18,39 +18,43 @@ namespace IngameScript {
             onPage = (p) => {
                 mMenuItems.Clear();
 
-                mMenuItems.Add(new MenuItem($"Add Forward Acceleration {Acceleration.Z}", () => {
+                var af = Acceleration.Z < 0 ? (-Acceleration.Z).ToString("f1") : "";
+                mMenuItems.Add(new MenuItem($"Add Forward Acceleration {af}", () => {
                     Acceleration.Z -= 0.1;
                     if (MAF.nearEqual(Acceleration.Z, 0)) {
                         Acceleration.Z = 0;
                     }
                 }));
-                mMenuItems.Add(new MenuItem($"Add Backward Acceleration {Acceleration.Z}", () => {
+                var ab = Acceleration.Z > 0 ?  Acceleration.Z.ToString("f1") : "";
+                mMenuItems.Add(new MenuItem($"Add Backward Acceleration {ab}", () => {
                     Acceleration.Z += 0.1;
                     if (MAF.nearEqual(Acceleration.Z, 0)) {
                         Acceleration.Z = 0;
                     }
                 }));
-
-                mMenuItems.Add(new MenuItem($"Add Left Acceleration {Acceleration.X}", () => {
+                var al = Acceleration.X < 0 ? (-Acceleration.X).ToString("f1") : "";
+                mMenuItems.Add(new MenuItem($"Add Left Acceleration {al}", () => {
                     Acceleration.X -= 0.1;
                     if (MAF.nearEqual(Acceleration.X, 0)) {
                         Acceleration.X = 0;
                     }
                 }));
-                mMenuItems.Add(new MenuItem($"Add Right Acceleration {Acceleration.X}", () => {
+                var ar = Acceleration.X > 0 ? Acceleration.X.ToString("f1") : "";
+                mMenuItems.Add(new MenuItem($"Add Right Acceleration {ar}", () => {
                     Acceleration.X += 0.1;
                     if (MAF.nearEqual(Acceleration.X, 0)) {
                         Acceleration.X = 0;
                     }
                 }));
-
-                mMenuItems.Add(new MenuItem($"Add Up Acceleration {Acceleration.Y}", () => {
+                var au = Acceleration.Y > 0 ? Acceleration.Y.ToString("f1") : "";
+                mMenuItems.Add(new MenuItem($"Add Up Acceleration {au}", () => {
                     Acceleration.Y += 0.1;
                     if (MAF.nearEqual(Acceleration.Y, 0)) {
                         Acceleration.Y = 0;
                     }
                 }));
-                mMenuItems.Add(new MenuItem($"Add Down Acceleration {Acceleration.Y}", () => {
+                var ad = Acceleration.Y < 0 ? (-Acceleration.Y).ToString("f1") : "";
+                mMenuItems.Add(new MenuItem($"Add Down Acceleration {ad}", () => {
                     Acceleration.Y -= 0.1;
                     if (MAF.nearEqual(Acceleration.Y, 0)) {
                         Acceleration.Y = 0;
@@ -106,6 +110,7 @@ namespace IngameScript {
         void UpdateAction() {
             var a = Acceleration;
             var m = controller.Mass;
+            
             mThrust.Update(ref a, m, false);
             logger.log($"FrontForce {mThrust.FrontForce:F0}");
             logger.log($"BackForce  {mThrust.BackForce:F0}");
@@ -125,33 +130,31 @@ namespace IngameScript {
             );
             var vstop = stop(llv, m, vF);
 
-            llv.X = stop(llv.X, m, llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce);
-            llv.Y = stop(llv.Y, m, llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce);
-            llv.Z = stop(llv.Z, m, llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce);
+            //llv.X = stop(llv.X, m, llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce);
+            //llv.Y = stop(llv.Y, m, llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce);
+            //llv.Z = stop(llv.Z, m, llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce);
             
             // a = F / m
             
             // a = F / m
 
-            var vA = new Vector3D(
+            /*var vA = new Vector3D(
                 (llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce) / m,
                 (llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce) / m,
                 (llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce) / m
-            );
-            var wStop = stop(controller.LocalLinearVelo, vA);
+            );*/
+            //var wStop = stop(controller.LocalLinearVelo, vA);
 
-            logger.log($"Stop       {llv.Length()}");
+            //logger.log($"Stop       {llv.Length()}");
             logger.log($"vStop      {vstop.Length()}");
-            logger.log($"wStop      {wStop.Length()}");
+            //logger.log($"wStop      {wStop.Length()}");
             //logger.log($"yStop      {yStop}");
             //logger.log($"zStop      {zStop}");
 
         }
         //whiplash says
         //d = V^2/(2*a)
-        Vector3D stop(Vector3D V, Vector3D a) {
-            return (V * V) / (2.0 * a);
-        }
+        Vector3D stop(Vector3D V, Vector3D a) => (V * V) / (2.0 * a);
         // 10 = 2 * 5
         // F = m * a
 
@@ -161,16 +164,7 @@ namespace IngameScript {
         // 5 = 10 / 2
         // a = F / m
 
-
-
-
-
-
-
-
-
-
-        double stop(double v, double m, double F) => (v * v) * m / (2 * F);
+        //double stop(double v, double m, double F) => (v * v) * m / (2 * F);
         Vector3D stop(Vector3D v, double m, Vector3D F) => (v * v) * m / (2 * F);
 
     }

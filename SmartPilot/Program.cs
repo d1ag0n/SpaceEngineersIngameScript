@@ -42,12 +42,14 @@ namespace IngameScript {
 
                 }
                 if ((type & UpdateType.Update10) != 0) {
+
+                    ModuleManager.logger.log(ModuleManager.logger.gps("spherecenter", Me.CubeGrid.WorldVolume.Center));
+                    ModuleManager.logger.log(ModuleManager.logger.gps("sphereedge", Me.CubeGrid.WorldVolume.Center + Vector3D.Up * Me.CubeGrid.WorldVolume.Radius));
+
                     ModuleManager.logger.log("lag ", mLag.update(Runtime.LastRunTimeMs));
                     if (arg.Length > 0) {
                         if (arg == "save") {
                             Save();
-                        } else {
-
                         }
                     }
                     ModuleManager.Update();

@@ -155,10 +155,8 @@ namespace IngameScript {
                     if (first == null) {
                         logger.log("first null");
                     } else {
-                        /*
-                         * If v is the vector that points 'up' and p0 is some point on your plane, and finally p is the point that might be below the plane, 
-                         * compute the dot product v * (p−p0). This projects the vector to p on the up-direction. This product is {−,0,+} if p is below, on, above the plane, respectively.
-                         */
+                        /* If v is the vector that points 'up' and p0 is some point on your plane, and finally p is the point that might be below the plane, 
+                         * compute the dot product v * (p−p0). This projects the vector to p on the up-direction. This product is {−,0,+} if p is below, on, above the plane, respectively. */
                         var rad = rot.Y * 0.01f;
                         if (first.WorldMatrix.Up.Dot(camera.WorldMatrix.Up) < 0) {
                             rad = -rad;

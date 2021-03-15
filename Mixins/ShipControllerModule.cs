@@ -15,6 +15,7 @@ namespace IngameScript {
         readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         public double Mass { get; private set; }
         public Vector3D LocalLinearVelo { get; private set; }
+        
 
         Vector3D stopStart;
 

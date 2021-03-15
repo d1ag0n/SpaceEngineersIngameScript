@@ -7,6 +7,7 @@ namespace IngameScript
 {
     class CameraModule : Module<IMyCameraBlock>
     {
+        readonly Dictionary<long, ThyDetectedEntityInfo> mLookup = new Dictionary<long, ThyDetectedEntityInfo>();
         readonly List<ThyDetectedEntityInfo> mDetected = new List<ThyDetectedEntityInfo>();
         public bool hasCamera => Blocks.Count > 0;
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
@@ -58,7 +59,6 @@ namespace IngameScript
             //logger.persist($"index={index}");
             //logger.persist($"mDetected.Count={mDetected.Count}");
             while (index >= 0 && count < 6) {
-                
                 var e = mDetected[index];
                 mMenuItems.Add(new MenuItem($"{e.Name} {e.EntityId}", e, EntityMenu));
                 index--;
@@ -73,17 +73,26 @@ namespace IngameScript
         Menu EntityMenu(MenuModule aMain, object aState) {
             
             var e = (ThyDetectedEntityInfo)aState;
+            
             deleted = false;
 
             return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => {
                 p = p % 2;
                 mMenuItems.Clear();
+                logger.persist(logger.gps("bb min", e.BoundingBox.Min));
+                logger.persist(logger.gps("bb cen", e.BoundingBox.Center));
+                logger.persist(logger.gps("bb max", e.BoundingBox.Max));
+                logger.persist((e.BoundingBox.Min - e.BoundingBox.Center).Length().ToString());
+                logger.persist((e.BoundingBox.Max - e.BoundingBox.Center).Length().ToString());
                 if (deleted || p == 0) {
                     var ts = (MAF.time - e.TimeStamp) / HR;
                     mMenuItems.Add(new MenuItem($"Time: {ts:f2} hours ago"));
                     mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship}"));
                     mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
-                    mMenuItems.Add(new MenuItem($"Distance: {(e.Position - Grid.WorldMatrix.Translation).Length():f0}"));
+                    //var vn = 
+                    var dot = controller.ShipVelocities.LinearVelocity.Dot(e.Velocity - controller.ShipVelocities.LinearVelocity);
+                    
+                    mMenuItems.Add(new MenuItem($"Distance: {(e.Position - Grid.WorldMatrix.Translation).Length():f0} dot: {dot} - velo:{e.Velocity.Length()}"));
                     mMenuItems.Add(new MenuItem("Send to Gyro Module", e.Position, AimGyro));
                     if (!deleted) {
                         mMenuItems.Add(new MenuItem($"Rename to '{ModuleManager.UserInput}'", aState, renameRecord));
