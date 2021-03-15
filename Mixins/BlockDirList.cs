@@ -14,28 +14,22 @@ namespace IngameScript {
         protected readonly List<T> mFront = new List<T>();
         protected readonly List<T> mBack = new List<T>();
 
-        public void Add(IMyShipController aController, T aThrust) {
-            if (aController == null) {
-                throw new Exception("Controller null!");
-            }
-            if (aThrust == null) {
-                throw new Exception("Thrust null!");
-            }
+        public void Add(IMyShipController aController, T aBlock) {
             var o = aController.Orientation;
-            var f = aThrust.Orientation.Forward;
+            var f = aBlock.Orientation.Forward;
 
             if (f == o.Forward) {
-                mBack.Add(aThrust);
+                mBack.Add(aBlock);
             } else if (f == o.Up) {
-                mDown.Add(aThrust);
+                mDown.Add(aBlock);
             } else if (f == o.Left) {
-                mRight.Add(aThrust);
+                mRight.Add(aBlock);
             } else if (f == Base6Directions.GetOppositeDirection(o.Forward)) {
-                mFront.Add(aThrust);
+                mFront.Add(aBlock);
             } else if (f == Base6Directions.GetOppositeDirection(o.Up)) {
-                mUp.Add(aThrust);
+                mUp.Add(aBlock);
             } else if (f == Base6Directions.GetOppositeDirection(o.Left)) {
-                mLeft.Add(aThrust);
+                mLeft.Add(aBlock);
             }
         }
         
