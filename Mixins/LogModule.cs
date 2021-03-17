@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
 namespace IngameScript {
@@ -53,17 +54,21 @@ namespace IngameScript {
             return mWork.ToString();
         }
 
-        public override bool Accept(IMyTerminalBlock b) {
+        public override bool Accept(IMyCubeBlock b) {
             var result = false;
-            if (b.CustomData.Contains("#logconsole")) {
-                result = base.Accept(b);
-                if (result) {
-                    var p = b as IMyTextPanel;
-                    p.ContentType = ContentType.TEXT_AND_IMAGE;
-                    p.Font = "Monospace";
-                    p.CustomName = "Log Console - " + Blocks.Count;
-                    if (p.FontColor == Color.White) {
-                        p.FontColor = new Color(255, 176, 0);
+
+            if (b is IMyTerminalBlock) {
+                var tb = b as IMyTerminalBlock;
+                if (tb.CustomData.Contains("#logconsole")) {
+                    result = base.Accept(b);
+                    if (result) {
+                        var p = b as IMyTextPanel;
+                        p.ContentType = ContentType.TEXT_AND_IMAGE;
+                        p.Font = "Monospace";
+                        p.CustomName = "Log Console - " + Blocks.Count;
+                        if (p.FontColor == Color.White) {
+                            p.FontColor = new Color(255, 176, 0);
+                        }
                     }
                 }
             }

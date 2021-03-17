@@ -7,6 +7,7 @@ namespace IngameScript
 {
     class Lag
     {
+        public double Last { get; private set; }
         bool accurate;
         double[] times;
         double sum = 0;
@@ -23,7 +24,7 @@ namespace IngameScript
                 pos = 0;
                 accurate = true;
             }
-            return accurate ? sum / times.Length : sum / pos;
+            return Last = accurate ? sum / times.Length : sum / pos;
         }
     }
     class V3DLag

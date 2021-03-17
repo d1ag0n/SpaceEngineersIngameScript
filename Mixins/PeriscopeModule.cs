@@ -1,5 +1,6 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     class PeriscopeModule : Module<IMyMotorStator> {
@@ -45,29 +46,33 @@ namespace IngameScript {
             s.str(range);
         }
 
-        public override bool Accept(IMyTerminalBlock aBlock) {
+        public override bool Accept(IMyCubeBlock aBlock) {
             bool result = false;
+
             if (first == null) {
-                if (aBlock.CustomData.Contains("#periscope")) {
-                    result = base.Accept(aBlock);
-                    if (result) {
-                        first = aBlock as IMyMotorStator;
-                        if (first != null && first.TopGrid != null) {
-                            ModuleManager.GetByGrid(first.TopGrid.EntityId, ref second);
-                            if (second != null && second.TopGrid != null) {
-                                ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
-                                if (camera != null) {
-                                    camera.CustomName = $"!Periscope {first.CustomName} - Camera";
-                                    camera.Enabled =
-                                    camera.EnableRaycast = true;
-                                    MenuName = "Periscope " + first.CustomName;
-                                    if (camera.Orientation.Left == second.Top.Orientation.Up) {
-                                        xneg = true;
+                if (aBlock is IMyTerminalBlock) {
+                    var tb = aBlock as IMyTerminalBlock;
+                    if (tb.CustomData.Contains("#periscope")) {
+                        result = base.Accept(aBlock);
+                        if (result) {
+                            first = aBlock as IMyMotorStator;
+                            if (first != null && first.TopGrid != null) {
+                                ModuleManager.GetByGrid(first.TopGrid.EntityId, ref second);
+                                if (second != null && second.TopGrid != null) {
+                                    ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
+                                    if (camera != null) {
+                                        camera.CustomName = $"!Periscope {first.CustomName} - Camera";
+                                        camera.Enabled =
+                                        camera.EnableRaycast = true;
+                                        MenuName = "Periscope " + first.CustomName;
+                                        if (camera.Orientation.Left == second.Top.Orientation.Up) {
+                                            xneg = true;
+                                        }
+                                        Okay = true;
+
+                                        Active = true;
+                                        Nactivate();
                                     }
-                                    Okay = true;
-                                    
-                                    Active = true;
-                                    Nactivate();
                                 }
                             }
                         }
@@ -93,6 +98,7 @@ namespace IngameScript {
             }
         }
         Menu ModuleScan(MenuModule aMain = null, object argument = null) {
+            
             CameraModule mod;
             GetModule(out mod);
             if (mod != null) {

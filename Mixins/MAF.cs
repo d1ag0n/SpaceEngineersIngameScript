@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
 namespace IngameScript
 {
     static class MAF
     {
-        public static readonly Random random = new Random(9);
+        public static readonly Random random = new Random();
         public static Vector3D ranDir() => Vector3D.Normalize(new Vector3D(random.NextDouble() - 0.5, random.NextDouble() - 0.5, random.NextDouble() - 0.5));
         public static Vector3D ranBoxPos(BoundingBoxD aBox) =>
             new Vector3D(
@@ -105,5 +106,45 @@ namespace IngameScript
             else
                 pitch = AngleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.Y); //up is positive
         }//*/
+        /*
+        getRotationAnglesFromForward - modified by d1ag0n
+        Whip's Get Rotation Angles Method v14 - 9/25/18 ///
+        MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
+        Dependencies: AngleBetween
+        */
+        public static void getRotationAngles(Vector3D direction, MatrixD worldMatrix, out double yaw, out double pitch) {
+            var localTargetVector = world2dir(direction, worldMatrix);
+            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
+
+            pitch = angleBetween(Vector3D.Forward, flattenedTargetVector);
+            if (localTargetVector.Y < 0)
+                pitch = -pitch;
+
+            yaw = angleBetween(localTargetVector, flattenedTargetVector);
+            if (localTargetVector.X < 0)
+                yaw = -yaw;
+        }
+
+        public static MyOrientedBoundingBoxD obb(IMyCubeGrid aGrid, double aInflate = 0) {
+
+
+
+            /*var bb = new BoundingBoxD(
+                ((Vector3D)aGrid.Min - Vector3D.Half) * aGrid.GridSize,
+                ((Vector3D)aGrid.Max + Vector3D.Half) * aGrid.GridSize
+            );*/
+
+            var bb = aGrid.WorldAABB;
+            if (aInflate > 0) {
+                bb = aGrid.WorldAABB.Inflate(aInflate);
+            }
+
+            return new MyOrientedBoundingBoxD(bb, aGrid.WorldMatrix);
+            /*obb.GetCorners(arCorners, 0);
+            
+            for (int i = 0; i < arCorners.Length; i++) {
+                logger.log(logger.gps("obb" + i, arCorners[i]));
+            }*/
+        }
     }
 }

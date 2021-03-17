@@ -2,10 +2,11 @@
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript
 {
-    class GyroModule : Module<IMyGyro> {
+    public class GyroModule : Module<IMyGyro> {
         const double min = 0.001;
         double difMax = 0.09;   // angular velocity difference threshold
         double slowFact = 20.0; // slow down factor how quickly the ship tries to slow down toward the end of a turn
@@ -214,7 +215,7 @@ namespace IngameScript
             mMenuItems[0] = new MenuItem(Active ? "Deactivate" : "Activate", emm.State, emm.Method);
             
         }
-        public override bool Accept(IMyTerminalBlock b) {
+        public override bool Accept(IMyCubeBlock b) {
             var result = base.Accept(b);
             if (result) {
                 init(b as IMyGyro);
@@ -283,7 +284,7 @@ namespace IngameScript
 
             
             //getRotationAnglesFromDown(direction, sc.WorldMatrix, out pitch, out roll);
-            getRotationAngles(mTargetDirection, sc.WorldMatrix, out yaw, out pitch);
+            MAF.getRotationAngles(mTargetDirection, sc.WorldMatrix, out yaw, out pitch);
 
             //logger.log($"pitch = {pitch}");
             //logger.log($"velo  = {av.X}");
@@ -516,24 +517,6 @@ namespace IngameScript
             else
                 yaw = MAF.angleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.X); //right is positive
         }//*/
-        /*
-        getRotationAnglesFromForward - modified by d1ag0n
-        Whip's Get Rotation Angles Method v14 - 9/25/18 ///
-        MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
-        Dependencies: AngleBetween
-        */
-        void getRotationAngles(Vector3D direction, MatrixD worldMatrix, out double yaw, out double pitch) {
-            logger.log("From Forward");
-            var localTargetVector = MAF.world2dir(direction, worldMatrix);
-            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
-
-            pitch = MAF.angleBetween(Vector3D.Forward, flattenedTargetVector);
-            if (localTargetVector.Y < 0)
-                pitch = -pitch;
-
-            yaw = MAF.angleBetween(localTargetVector, flattenedTargetVector);
-            if (localTargetVector.X < 0)
-                yaw = -yaw;
-        }
+        
     }
 }

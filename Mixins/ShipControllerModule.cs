@@ -3,60 +3,112 @@ using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
-
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public class ShipControllerModule : Module<IMyShipController> {
         public readonly bool LargeGrid;
         public readonly float GyroSpeed;
-        public MyShipVelocities ShipVelocities { get; private set; }
+        public readonly IMyCubeGrid Grid;
+
+        public ThyDetectedEntityInfo Target;
+    public MyShipVelocities ShipVelocities { get; private set; }
+        public Vector3D LinearVelocityDirection { get; private set; }
+        public double LinearVelocity { get; private set; }
         public IMyShipController Remote { get; private set; }
         public IMyShipController Cockpit { get; private set; }
         readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         public double Mass { get; private set; }
         public Vector3D LocalLinearVelo { get; private set; }
-        
 
-        Vector3D stopStart;
+        public ThrustModule Thrust { get; private set; }
+        public GyroModule Gyro { get; private set; }
+        public CameraModule Camera { get; private set; }
 
-        bool mDampeners = true;
+        public bool Damp = true;
         public ShipControllerModule() {
+
+            
+            Grid = ModuleManager.Program.Me.CubeGrid;
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
 
             // if this is changed, UpdateAction needs to work when called before whatever
             // somthing needs to handle call to UpdateAction in ModuleManager.Initialize
-            onUpdate = UpdateAction;
+            onUpdate = InitializeAction;
             ////////////////////////
             MenuName = "Ship Controller";
             onPage = p => {
                 mMenuMethods.Clear();
-                mMenuMethods.Add(new MenuItem("Flat Scan", () => {
-                    if (onUpdate == UpdateAction) {
-                        flatScan();
+                CameraModule cam;
+                if (GetModule(out cam)) {
+                    if (Target == null) {
+                        new MenuItem("Flat Scan - No Target Designated");
+                    } else {
+                        mMenuMethods.Add(new MenuItem($"Flat Scan {Target.Name}", () => {
+                            double yaw, pitch;
+                            
+                            MAF.getRotationAngles(Vector3D.Normalize(Target.Position - Remote.WorldMatrix.Translation), Remote.WorldMatrix, out yaw, out pitch);
+                            
+                            var act = flatScan(MatrixD.Transform(Remote.WorldMatrix, Quaternion.CreateFromYawPitchRoll((float)yaw, (float)pitch, 0)));
+                            //var act = flatScan(Remote.WorldMatrix);
+                            StringBuilder sb = new StringBuilder();
+                            int i = 0;
+                            while (true) {
+                                var f = act();
+                                if (f == Vector3D.Zero) {
+                                    break;
+                                }
+                                sb.AppendLine(logger.gps($"v{i++}", f));
+                            }
+                            Remote.CustomData = sb.ToString();
+                        }));
                     }
-                }));
+                }
 
-                mMenuMethods.Add(new MenuItem($"Dampeners {mDampeners}", () => { 
-                    mDampeners = !mDampeners;
-                    if (!mDampeners) {
+                mMenuMethods.Add(new MenuItem($"Dampeners {Damp}", () => { 
+                    Damp = !Damp;
+                    if (!Damp) {
                         ThrustModule thrust;
                         if (GetModule(out thrust)) {
                             thrust.Acceleration = Vector3D.Zero;
                         }
-                    } else {
-                        stopStart = Remote.CenterOfMass;
                     }
                 }));
                 return mMenuMethods;
             };
         }
-        
-        readonly Vector3D[] arCorners = new Vector3D[8];
-        public void UpdateAction() {
-            // maxAcceleration = thrusterThrust / shipMass;
-            // boosterFireDuration = Speed / maxAcceleration / 2;
-            // minAltitude = Speed * boosterFireDuration;
+        void InitializeAction() {
+            var result = true;
+            if (Gyro == null) {
+                GyroModule gy;
+                if (!GetModule(out gy)) {
+                    result = false;
+                }
+                Gyro = gy;
+            }
+            if (Thrust == null) {
+                ThrustModule th;
+                if (!GetModule(out th)) {
+                    result = false;
+                }
+                Thrust = th;
+            }
+            if (Camera == null) {
+                CameraModule cam;
+                if (!GetModule(out cam)) {
+                    result = false;
+                }
+                Camera = cam;
+            }
+            if (result) {
+                onUpdate = UpdateGlobal;
+                UpdateGlobal();
+            } else {
+                UpdateLocal();
+            }
+        }
+        void UpdateLocal() {
             if (Remote == null || !Remote.IsFunctional || !(Remote is IMyRemoteControl)) {
                 foreach (var sc in Blocks) {
                     Remote = sc;
@@ -76,26 +128,43 @@ namespace IngameScript {
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
             ShipVelocities = Remote.GetShipVelocities();
-            
+            LinearVelocityDirection = ShipVelocities.LinearVelocity;
+            LinearVelocity = LinearVelocityDirection.Normalize();
             LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, Remote.WorldMatrix);
-            if (mDampeners) {
-                ThrustModule thrust;
-                GyroModule gyro;
+        }
+        Mission m;
+        void UpdateGlobal() {
+            UpdateLocal();
+
+            if (Target != null) {
+                m = new Mission(this, Target);
+                logger.persist($"SET NEW MISSION TO {Target.Name}");
+                Target = null;
+                
+            } else if (m != null) {
+
+                if (m.Complete) {
+                    logger.persist("MISSION COMPLETE");
+                    m = null;
+                } else {
+                    logger.log("MISSION UNDERWAY");
+                    m.Update();
+                }
+            }
+            if (Damp) {
                 var localVelo = LocalLinearVelo;
                 var localVeloSq = localVelo.LengthSquared();
-                if (GetModule(out thrust)) {
-                    
-                    if (localVeloSq <= 0.000001) {
-                        localVelo = Vector3D.Zero;
-                        mDampeners = false;
-                        logger.persist($"Stop Distance {(Remote.CenterOfMass - stopStart).Length()}");
-                    } else {
-                        localVelo = localVelo * -2.0;
-                    }
-                    logger.log(localVelo);
-                    //localVelo.X = -localVelo.X;
-                    thrust.Acceleration = localVelo;
+                
+
+                if (localVeloSq <= 0.000025) {
+                    localVelo = Vector3D.Zero;
+                } else {
+                    localVelo = localVelo * -2.0;
                 }
+                logger.log(localVelo);
+                //localVelo.X = -localVelo.X;
+                Thrust.Acceleration = localVelo;
+                
                 /*
                 if (GetModule(out gyro)) {
                     if (localVeloSq > 25) {
@@ -105,116 +174,86 @@ namespace IngameScript {
                     }
                 }*/
             }
-            // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
-            // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
+        }
+        void zzzzUpdateAction() {
+            // maxAcceleration = thrusterThrust / shipMass;
+            // boosterFireDuration = Speed / maxAcceleration / 2;
+            // minAltitude = Speed * boosterFireDuration;
 
+            
+            
             //var start = Vector3I.One;
 
             // Update = flatScan(remote.WorldMatrix.Right, remote.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
-            return;
-            var grid = ModuleManager.Program.Me.CubeGrid;
-            var min = grid.Min;
-            var max = grid.Max;
-
-            switch (Remote.Orientation.Forward) {
-                case Base6Directions.Direction.Forward:
-                case Base6Directions.Direction.Backward:
-                    min.Z = 0;
-                    max.Z = 0;
-                    break;
-                case Base6Directions.Direction.Left:
-                case Base6Directions.Direction.Right:
-                    min.X = 0;
-                    max.X = 0;
-                    break;
-                case Base6Directions.Direction.Up:
-                case Base6Directions.Direction.Down:
-                    min.Y = 0;
-                    max.Y = 0;
-                    break;
-            }
-
-            logger.log(logger.gps("min", grid.GridIntegerToWorld(min)));
-            logger.log(logger.gps("max", grid.GridIntegerToWorld(max)));
-
-            var bb = new BoundingBoxD(
-                ((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize,
-                ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize
-            );
-            var m = grid.WorldMatrix;
-            var obb = new MyOrientedBoundingBoxD(bb, m);
-
-
-            obb.GetCorners(arCorners, 0);
-            
-            for (int i = 0; i < arCorners.Length; i++) {
-                logger.log(logger.gps("obb" + i, arCorners[i]));
-            }
-            
-
-            
-            
         }
+        // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
+        // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
+        // var obb = new MyOrientedBoundingBoxD(bb, grid.WorldMatrix);
 
-        void flatScan() {
+
+        VectorHandler flatScan(MatrixD aMatrix) {
+            
             var grid = ModuleManager.Program.Me.CubeGrid;
+            Vector3D start = Vector3D.Transform(grid.Min * grid.GridSize, aMatrix);
+            int width = 0, height = 0;
             switch (Remote.Orientation.Forward) {
                 case Base6Directions.Direction.Forward:
-                    logger.persist("FORWARD");
-                    onUpdate = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), grid.Max.X - grid.Min.X, grid.Max.Y - grid.Min.Y);
+                    logger.persist("FRONT");
+                    width = grid.Max.X - grid.Min.X;
+                    height = grid.Max.Y - grid.Min.Y;
                     break;
                 case Base6Directions.Direction.Backward:
-                    logger.persist("BACKWARD");
-                    onUpdate = flatScan(grid.WorldMatrix.Left, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), 3, 3);
+                    logger.persist("BACK");
+                    width = grid.Max.X - grid.Min.X;
+                    height = grid.Max.Y - grid.Min.Y;
                     break;
                 case Base6Directions.Direction.Left:
                     logger.persist("LEFT");
-                    onUpdate = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
+                    width = grid.Max.Z - grid.Min.Z;
+                    height = grid.Max.Y - grid.Min.Y;
                     break;
                 case Base6Directions.Direction.Right:
                     logger.persist("RIGHT");
-                    onUpdate = flatScan(grid.WorldMatrix.Forward, grid.WorldMatrix.Down, grid.GridIntegerToWorld(grid.Max), grid.Max.Z - grid.Min.Z, grid.Max.Y - grid.Min.Y);
+                    width = grid.Max.Z - grid.Min.Z;
+                    height = grid.Max.Y - grid.Min.Y;
                     break;
                 case Base6Directions.Direction.Up:
                     logger.persist("UP");
-                    onUpdate = flatScan(grid.WorldMatrix.Backward, grid.WorldMatrix.Left, grid.GridIntegerToWorld(grid.Max), 3, 3);
+                    width = grid.Max.Z - grid.Min.Z;
+                    height = grid.Max.X - grid.Min.X;
                     break;
                 case Base6Directions.Direction.Down:
                     logger.persist("DOWN");
-                    onUpdate = flatScan(grid.WorldMatrix.Right, grid.WorldMatrix.Backward, grid.GridIntegerToWorld(grid.Min), 3, 3);
+                    width = grid.Max.X - grid.Min.X;
+                    height = grid.Max.Z - grid.Min.Z;
                     break;
             }
+            width = 3;
+            height = 3;
+            return flatScan(aMatrix.Right, aMatrix.Up, start, width, height);
         }
 
 
-        Action flatScan(Vector3D right, Vector3D up, Vector3D start, int width, int height) {
+        VectorHandler flatScan(Vector3D right, Vector3D up, Vector3D start, int width, int height) {
             var gsz = ModuleManager.Program.Me.CubeGrid.GridSize;
-            int extra = 4;
+            int extra = 0;
             start -= right * (gsz * extra);
             start -= up * (gsz * extra);
             width += extra * 2;
             height += extra * 2; ;
-            int x = 0;
-            int y = 0;
-            var sb = new StringBuilder();
+            int x = width - 1;
+            int y = -1;
+            
             return () => {
-                logger.log("flat scanning");
-                var t = start + (right * (x * gsz)) + (up * (y * gsz));
-                if (x == 0 && y == 0) {
-                    sb.AppendLine(logger.gps($"x{x} y{y}", t));
-                }
                 x++;
                 if (x == width) {
                     x = 0;
                     y++;
                     if (y > height) {
-                        sb.AppendLine(logger.gps($"x{x} y{y}", t));
-                        Remote.CustomData = sb.ToString();
-                        logger.persist("Flat Scan Complete");
-                        //Update = () => logger.log("flat scan complete");
-                        onUpdate = UpdateAction;
+                        return Vector3D.Zero;
                     }
                 }
+                return start + (right * (x * gsz)) + (up * (y * gsz));
             };
         }
     }

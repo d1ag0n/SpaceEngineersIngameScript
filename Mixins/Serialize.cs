@@ -91,12 +91,12 @@ namespace IngameScript {
             str(e.Orientation);
             str(e.Velocity);
             str(e.Relationship);
-            str(e.BoundingBox);
+            str(e.WorldVolume);
             str(e.TimeStamp);
         }
         public ThyDetectedEntityInfo objThyDetectedEntityInfo(IEnumerator<string> e) => new ThyDetectedEntityInfo(
-            objlong(e), objstring(e), objMyDetectedEntityType(e), objVector3D_(e), objMatrixD(e),
-            objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objBoundingBoxD(e), objlong(e)
+            objlong(e), objstring(e), objThyDetectedEntityType(e), objVector3D_(e), objMatrixD(e),
+            objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objBoundingBoxD(e), objlong(e), objBoundingSphereD(e)
         );
         public void str(MyRelationsBetweenPlayerAndBlock r) => sb.AppendLine(r.ToString());
         public MyRelationsBetweenPlayerAndBlock objMyRelationsBetweenPlayerAndBlock(IEnumerator<string> e) {
@@ -133,11 +133,22 @@ namespace IngameScript {
         public BoundingBoxD objBoundingBoxD(IEnumerator<string> e) {
             return new BoundingBoxD(objVector3D(e), objVector3D(e));
         }
+        public void str(BoundingSphereD b) {
+            str(b.Center);
+            str(b.Radius);
+        }
+        public BoundingSphereD objBoundingSphereD(IEnumerator<string> e) {
+            return new BoundingSphereD(objVector3D(e), objdouble(e));
+        }
         public void str(long l) => sb.AppendLine(l.ToString());
         public long objlong(IEnumerator<string> e) {
-            long result;
-            long.TryParse(e.Current, out result);
+            long result = objlong(e.Current);
             e.MoveNext();
+            return result;
+        }
+        public long objlong(string s) {
+            long result;
+            long.TryParse(s, out result);
             return result;
         }
 
@@ -164,23 +175,23 @@ namespace IngameScript {
         public MatrixD objMatrixD(IEnumerator<string> e) {
             return MatrixD.CreateWorld(objVector3D(e), objVector3D(e), objVector3D(e));
         }
-        public void str(MyDetectedEntityType t) => sb.AppendLine(t.ToString());
-        public MyDetectedEntityType objMyDetectedEntityType(IEnumerator<string> e) {
+        public void str(ThyDetectedEntityType t) => sb.AppendLine(t.ToString());
+        public ThyDetectedEntityType objThyDetectedEntityType(IEnumerator<string> e) {
             var s = e.Current;
             e.MoveNext();
             switch (s) {
-                case "Asteroid": return MyDetectedEntityType.Asteroid;
-                case "CharacterHuman": return MyDetectedEntityType.CharacterHuman;
-                case "CharacterOther": return MyDetectedEntityType.CharacterOther;
-                case "FloatingObject": return MyDetectedEntityType.FloatingObject;
-                case "LargeGrid": return MyDetectedEntityType.LargeGrid;
-                case "Meteor": return MyDetectedEntityType.Meteor;
-                case "Missile": return MyDetectedEntityType.Missile;
-                case "Planet": return MyDetectedEntityType.Planet;
-                case "SmallGrid": return MyDetectedEntityType.SmallGrid;
-                case "Unknown": return MyDetectedEntityType.Unknown;
+                case "Asteroid": return ThyDetectedEntityType.Asteroid;
+                case "CharacterHuman": return ThyDetectedEntityType.CharacterHuman;
+                case "CharacterOther": return ThyDetectedEntityType.CharacterOther;
+                case "FloatingObject": return ThyDetectedEntityType.FloatingObject;
+                case "LargeGrid": return ThyDetectedEntityType.LargeGrid;
+                case "Meteor": return ThyDetectedEntityType.Meteor;
+                case "Missile": return ThyDetectedEntityType.Missile;
+                case "Planet": return ThyDetectedEntityType.Planet;
+                case "SmallGrid": return ThyDetectedEntityType.SmallGrid;
+                case "Unknown": return ThyDetectedEntityType.Unknown;
             }
-            return MyDetectedEntityType.None;
+            return ThyDetectedEntityType.None;
         }
     }
 }

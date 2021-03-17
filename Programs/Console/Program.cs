@@ -11,18 +11,31 @@ namespace commandline
 {
     class Program
     {
-        
+        public enum ThyDetectedEntityType {
+            None = 0,
+            Unknown = 1,
+            SmallGrid = 2,
+            LargeGrid = 3,
+            CharacterHuman = 4,
+            CharacterOther = 5,
+            FloatingObject = 6,
+            Asteroid = 7,
+            Planet = 8,
+            Meteor = 9,
+            Missile = 10,
+            AsteroidCluster = 11
+        }
+        static bool clusterable(ThyDetectedEntityType t) => (t & (ThyDetectedEntityType.Asteroid | ThyDetectedEntityType.AsteroidCluster)) > 0;
         static MyDetectedEntityInfo entity(MyDetectedEntityType t, long l) {
             return new MyDetectedEntityInfo(5555, "Foo", t, null, MatrixD.Identity, Vector3D.Zero, MyRelationsBetweenPlayerAndBlock.Neutral, new BoundingBoxD(), l);
         }
         static void chord() {
-            int count = 5;
-            int page = 6;
-            int pages = count / page;
+            List<bool> dots = new List<bool>();
 
-            var l = Vector3D.Left;
-            var u = Vector3D.Up;
-            var f = Vector3D.Forward;
+            for (int i = 0; i < 15; i++) {
+                dots.Add(clusterable((ThyDetectedEntityType)i));
+            }
+
             return;
 
  

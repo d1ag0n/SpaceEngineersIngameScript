@@ -1,22 +1,26 @@
 using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
-using System;
 using System.Collections.Generic;
+using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
 namespace IngameScript {
-    class ThrustModule : Module<IMyThrust> {
+    public class ThrustModule : Module<IMyThrust> {
         readonly ThrustList mThrust = new ThrustList();
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         readonly ThrustList mHydro = new ThrustList();
-        
-
+        public Vector3 Stop { get; private set; }
+        public double StopDistance { get; private set; }
+        enum enGroup { Hydro, Ion, Atmos, Not }
         public ThrustModule() {
             onUpdate = OrganizeAction;
-            MenuName = "Thrust Controller";
+            // MenuName = "Thrust Controller";
+            /*
             onPage = (p) => {
                 mMenuItems.Clear();
+
+                
 
                 var af = Acceleration.Z < 0 ? (-Acceleration.Z).ToString("f1") : "";
                 mMenuItems.Add(new MenuItem($"Add Forward Acceleration {af}", () => {
@@ -61,13 +65,13 @@ namespace IngameScript {
                     }
                 }));
                 return mMenuItems;
-            };
+            };*/
             //mMenuItems.Add(new MenuMethod())
         }
         void OrganizeAction() {
-            onUpdate = UpdateAction;
+            onUpdate = InitAction;
         }
-        enum enGroup { Hydro, Ion, Atmos, Not }
+       
         enGroup GetGroup(IMyThrust aThrust) {
             switch (aThrust.BlockDefinition.SubtypeName) {
                 case "LargeBlockLargeHydrogenThrust":
@@ -89,68 +93,76 @@ namespace IngameScript {
                     return enGroup.Not;
             }
         }
-        public override bool Accept(IMyTerminalBlock aBlock) {
+        public override bool Accept(IMyCubeBlock aBlock) {
             if (aBlock is IMyParachute) {
                 mParachutes.Add(aBlock as IMyParachute);
                 return true;
             }
-            if (aBlock is IMyThrust) {
-                var t = aBlock as IMyThrust;
-                if (GetGroup(t) == enGroup.Hydro) {
-                    mHydro.Add(controller.Remote, t);
-                } else {
-                    mThrust.Add(controller.Remote, t);
-                }
-                return true;
-            }
-            return false;
+            return base.Accept(aBlock);
+            
         }
-
-        public Vector3D Acceleration;
+        void InitAction() {
+            foreach (var b in Blocks) {
+                var g = GetGroup(b);
+                if (g == enGroup.Hydro) {
+                    mHydro.Add(controller.Remote, b, $"{g} Thruster ");
+                } else {
+                    mThrust.Add(controller.Remote, b);
+                }
+            }
+            onUpdate = UpdateAction;
+        }
+        bool updateRequired = false;
+        Vector3D _Acceleration;
+        public Vector3D Acceleration { get { return _Acceleration; } set { _Acceleration = value; updateRequired = true; } }
         void UpdateAction() {
-            var a = Acceleration;
-            var m = controller.Mass;
-            
-            mThrust.Update(ref a, m, false);
-            logger.log($"FrontForce {mThrust.FrontForce:F0}");
-            logger.log($"BackForce  {mThrust.BackForce:F0}");
+            if (updateRequired) {
+                var a = Acceleration;
+                var m = controller.Mass;
 
-            logger.log($"LeftForce  {mThrust.LeftForce:F0}");
-            logger.log($"RightForce {mThrust.RightForce:F0}");
+                mThrust.Update(ref a, m, false);
+                /*logger.log($"FrontForce {mThrust.FrontForce:F0}");
+                logger.log($"BackForce  {mThrust.BackForce:F0}");
 
-            logger.log($"UpForce    {mThrust.UpForce:F0}");
-            logger.log($"DownForce  {mThrust.DownForce:F0}");
+                logger.log($"LeftForce  {mThrust.LeftForce:F0}");
+                logger.log($"RightForce {mThrust.RightForce:F0}");
 
-            // v^2*m/(2F)
-            var llv = controller.LocalLinearVelo;
-            var vF = new Vector3D(
-                llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce, 
-                llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce, 
-                llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce
-            );
-            var vstop = stop(llv, m, vF);
+                logger.log($"UpForce    {mThrust.UpForce:F0}");
+                logger.log($"DownForce  {mThrust.DownForce:F0}");*/
 
-            //llv.X = stop(llv.X, m, llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce);
-            //llv.Y = stop(llv.Y, m, llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce);
-            //llv.Z = stop(llv.Z, m, llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce);
-            
-            // a = F / m
-            
-            // a = F / m
+                // v^2*m/(2F)
+                var llv = controller.LocalLinearVelo;
+                var vF = new Vector3D(
+                    llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce,
+                    llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce,
+                    llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce
+                );
+                Stop = stop(llv, m, vF);
+                StopDistance = Stop.Length();
+                //llv.X = stop(llv.X, m, llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce);
+                //llv.Y = stop(llv.Y, m, llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce);
+                //llv.Z = stop(llv.Z, m, llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce);
 
-            /*var vA = new Vector3D(
-                (llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce) / m,
-                (llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce) / m,
-                (llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce) / m
-            );*/
-            //var wStop = stop(controller.LocalLinearVelo, vA);
+                // a = F / m
 
-            //logger.log($"Stop       {llv.Length()}");
-            logger.log($"vStop      {vstop.Length()}");
-            //logger.log($"wStop      {wStop.Length()}");
-            //logger.log($"yStop      {yStop}");
-            //logger.log($"zStop      {zStop}");
+                // a = F / m
 
+                /*var vA = new Vector3D(
+                    (llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce) / m,
+                    (llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce) / m,
+                    (llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce) / m
+                );*/
+                //var wStop = stop(controller.LocalLinearVelo, vA);
+
+                //logger.log($"Stop       {llv.Length()}");
+                logger.log($"StopDistance {StopDistance:f0}");
+                //logger.log($"wStop      {wStop.Length()}");
+                //logger.log($"yStop      {yStop}");
+                //logger.log($"zStop      {zStop}");
+                if (_Acceleration.IsZero()) {
+                    updateRequired = false;
+                }
+            }
         }
         //whiplash says
         //d = V^2/(2*a)

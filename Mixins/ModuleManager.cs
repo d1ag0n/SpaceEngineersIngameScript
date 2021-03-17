@@ -5,21 +5,27 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public static class ModuleManager {
+        static readonly Lag mLag = new Lag(90);
+        public static double Lag => mLag.Last;
         public static string UserInput = "DEFAULT";
         static readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
 
         public static LogModule logger { get; private set; }
         public static ShipControllerModule controller { get; private set; }
+
         static readonly HashSet<long> mRegistry = new HashSet<long>();
-        static readonly List<IMyEntity> mBlocks = new List<IMyEntity>();
+        static readonly List<IMyCubeBlock> mBlocks = new List<IMyCubeBlock>();
         static readonly List<ModuleBase> mModules = new List<ModuleBase>();
         
         static readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         static readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
         public static MyGridProgram Program { get; private set; }
         public static Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
+        
         public static void Update() {
+            mLag.update(Program.Runtime.LastRunTimeMs);
             try {
+                logger.log(DateTime.Now.ToString());
                 for (int i = 1; i < mModules.Count; i++) {
                     mModules[i].onUpdate?.Invoke();
                 }
@@ -85,17 +91,16 @@ namespace IngameScript {
                 mRegistry.Clear();
                 mBlocks.Clear();
             }
-            
             Program.GridTerminalSystem.GetBlocksOfType(mBlocks, block => {
-                if (mRegistry.Add(block.EntityId)) {
+                if (block.CubeGrid == Program.Me.CubeGrid && mRegistry.Add(block.EntityId)) {
                     mBlocks.Add(block);
                     initTags(block as IMyTerminalBlock);
-                    addByGrid(block as IMyCubeBlock);
                     controller.Accept(block as IMyTerminalBlock);
                 }
+                addByGrid(block);
                 return false;
             });
-            controller.UpdateAction();
+            
             // todo move up into GTS loop, need to change module initialization behavior first,
             // because modules may look for additionals that mey not yet be loaded
             // when reinitialization is implemented this should be addressed

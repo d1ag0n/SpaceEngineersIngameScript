@@ -1,6 +1,7 @@
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public class MenuModule : Module<IMyTextPanel> {
@@ -10,19 +11,22 @@ namespace IngameScript {
         public MenuModule() {
             onUpdate = UpdateAction;
         }
-        public override bool Accept(IMyTerminalBlock aBlock) {
+        public override bool Accept(IMyCubeBlock aBlock) {
             var result = false;
-            if (aBlock.CustomData.Contains("#menuconsole")) {
-                result = base.Accept(aBlock);
-                if (result) {
-                    var tp = aBlock as IMyTextPanel;
-                    tp.CustomName = "Menu Console - " + Blocks.Count;
-                    tp.ContentType = ContentType.TEXT_AND_IMAGE;
-                    tp.Font = "Monospace";
-                    if (tp.FontColor == Color.White) {
-                        tp.FontColor = new Color(51, 255, 0);
+            if (aBlock is IMyTerminalBlock) {
+                var tb = aBlock as IMyTerminalBlock;
+                if (tb.CustomData.Contains("#menuconsole")) {
+                    result = base.Accept(aBlock);
+                    if (result) {
+                        var tp = aBlock as IMyTextPanel;
+                        tp.CustomName = "Menu Console - " + Blocks.Count;
+                        tp.ContentType = ContentType.TEXT_AND_IMAGE;
+                        tp.Font = "Monospace";
+                        if (tp.FontColor == Color.White) {
+                            tp.FontColor = new Color(51, 255, 0);
+                        }
+                        Active = true;
                     }
-                    Active = true;
                 }
             }
             return result;

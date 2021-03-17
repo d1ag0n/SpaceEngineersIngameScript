@@ -24,9 +24,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)Menu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MenuItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MenuModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PPS.cs" />
@@ -36,5 +38,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ThrustModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThyDetectedEntityInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThyDetectedEntityType.cs" />
   </ItemGroup>
 </Project>

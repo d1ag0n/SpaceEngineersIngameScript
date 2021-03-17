@@ -1,6 +1,6 @@
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
-using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     class LCDModule : Module<IMyTextPanel> {
@@ -8,7 +8,7 @@ namespace IngameScript {
         
 
 
-        public override bool Remove(IMyTerminalBlock b) {
+        public override bool Remove(IMyCubeBlock b) {
             var result = base.Remove(b);
             if (result) {
                 mLCDs.Remove(b as IMyTextPanel);
