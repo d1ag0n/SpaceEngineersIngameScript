@@ -10,15 +10,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)BlockDirList.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Delegates.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IAccept.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)LCDModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Menu.cs" />
@@ -30,7 +26,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PID.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PPS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SensorModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />

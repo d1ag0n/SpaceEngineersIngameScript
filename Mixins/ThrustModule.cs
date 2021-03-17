@@ -93,12 +93,12 @@ namespace IngameScript {
                     return enGroup.Not;
             }
         }
-        public override bool Accept(IMyCubeBlock aBlock) {
-            if (aBlock is IMyParachute) {
-                mParachutes.Add(aBlock as IMyParachute);
+        public override bool Accept(IMyTerminalBlock b) {
+            if (b is IMyParachute) {
+                mParachutes.Add(b as IMyParachute);
                 return true;
             }
-            return base.Accept(aBlock);
+            return base.Accept(b);
             
         }
         void InitAction() {

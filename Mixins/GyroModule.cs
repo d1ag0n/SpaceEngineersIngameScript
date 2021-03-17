@@ -215,7 +215,7 @@ namespace IngameScript
             mMenuItems[0] = new MenuItem(Active ? "Deactivate" : "Activate", emm.State, emm.Method);
             
         }
-        public override bool Accept(IMyCubeBlock b) {
+        public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
             if (result) {
                 init(b as IMyGyro);

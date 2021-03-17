@@ -69,8 +69,7 @@ namespace IngameScript
             var velocity = ctr.LinearVelocity;
             var preferredVelocity = 0.2;
             var veloReq = (dir * 99.99) - velocityVec;
-
-            ctr.logger.log("veloReq ", veloReq);
+            
             ctr.logger.log("DIST ", dist);
             if (dist < 100 || dist < ctr.Thrust.StopDistance) {
                 Complete = ctr.Damp = true;
@@ -105,8 +104,13 @@ namespace IngameScript
                     lvd = MAF.ranDir();
                 }
                 // create a point for scan sphere based on our velocity
-                var scanPoint = ctr.Grid.WorldVolume.Center + velocity + (lvd * 100);
-
+                var scanPoint = ctr.Grid.WorldVolume.Center;
+                ctr.logger.log("Scan base point ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
+                scanPoint += velocity;
+                ctr.logger.log("Scan point + velo ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
+                ctr.logger.log("Direction length ", lvd.Length());
+                scanPoint += (lvd * 100);
+                ctr.logger.log("Scan point + padding ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
                 // random dir around point to scan
                 var rd = MAF.ranDir();
 
@@ -119,10 +123,13 @@ namespace IngameScript
                 var scandist = ctr.Grid.WorldVolume.Radius * MAF.random.NextDouble();
 
                 scanPoint += rd * scandist;
+                ctr.logger.log("Scan point ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
                 MyDetectedEntityInfo entity;
-                if (ctr.Camera.Scan(scanPoint, out entity)) {
+                ThyDetectedEntityInfo thy;
+                if (ctr.Camera.Scan(scanPoint, out entity, out thy)) {
                     if (entity.Type != MyDetectedEntityType.None && entity.EntityId != Target.EntityId) {
-                        ctr.logger.persist($"OH MY GOD A {entity.Type} we're gonna CRASH!");
+
+                        //ctr.logger.persist($"OH MY GOD A {entity.Type} we're gonna CRASH!");
                     }
                 }
             }
@@ -134,9 +141,7 @@ namespace IngameScript
             obb.GetCorners(arCorners, 0);
             MyDetectedEntityInfo e;
             for(int i = 0; i < 8; i++) {
-                if (ctr.Camera.Scan(arCorners[i], out e)) {
-
-                }
+                //if (ctr.Camera.Scan(arCorners[i], out e)) {}
             }
 
 

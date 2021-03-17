@@ -8,7 +8,8 @@ namespace IngameScript
 {
     public class CameraModule : Module<IMyCameraBlock>
     {
-        int clusterI = 0;
+        int mClusterI = 0;
+        MyDetectedEntityInfo? mCurrentIncoming;
         
         readonly Dictionary<long, long> mClusterLookup = new Dictionary<long, long>();
         readonly Dictionary<long, ThyDetectedEntityInfo> mLookup = new Dictionary<long, ThyDetectedEntityInfo>();
@@ -22,56 +23,69 @@ namespace IngameScript
             onSave = SaveAction;
             onLoad = LoadAction;
             onPage = PageAction;
+            onUpdate = ClusterAction;
+        }
+        public ThyDetectedEntityInfo Find(long entityId) {
+            ThyDetectedEntityInfo result;
+            long fkey;
+            while (mClusterLookup.TryGetValue(entityId, out fkey)) {
+                entityId = fkey;
+            }
+            mLookup.TryGetValue(entityId, out result);
+            return result;
         }
         void ClusterAction() {
-            if (mIncoming.Count > 0) {
-                var thy = mIncoming.Peek();
-                if (thy.IsClusterable) {
-
+            logger.persist("ClusterAction");
+            if (mCurrentIncoming == null) {
+                if (mIncoming.Count > 0) {
+                    mClusterI = mDetected.Count - 1;
+                    mCurrentIncoming = mIncoming.Dequeue();
+                    var thy = Find(mCurrentIncoming.Value.EntityId);
+                    if (thy == null) {
+                        cluster();
+                    } else {
+                        thy.Seen();
+                        mCurrentIncoming = null;
+                    }
                 } else {
-
+                    logger.persist("ClusterAction nulling onUpdate");
+                    onUpdate = null;
+                }
+            } else {
+                mClusterI--;
+                if (mClusterI < 0) {
+                    var thy = new ThyDetectedEntityInfo(mCurrentIncoming.Value);
+                    mDetected.Add(thy);
+                    mLookup.Add(mCurrentIncoming.Value.EntityId, thy);
+                    mCurrentIncoming = null;
+                } else {
+                    cluster();
                 }
             }
         }
         
         void cluster() {
-            clusterY++;
-            if (clusterY == mDetected.Count) {
-                clusterY = 0;
-                clusterX++;
-                if (clusterX == mDetected.Count) {
-                    clusteringComplete = true;
-                    return;
-                }
-            }
-            
-            var thyx = mDetected[clusterX];
-            if (thyx.IsClusterable) {
-                var thy = mDetected[clusterY];
-                if (thy.IsClusterable) {
-                    var sqdist = (thyx.WorldVolume.Center - thy.WorldVolume.Center).LengthSquared();
-                    var cluster = sqdist < 4000000;
-
-                    if (!cluster) {
-                        if (thyx.WorldVolume.Intersects(thyx.WorldVolume)) {
-                            cluster = true;
-                        }
-                    }
-
-                    if (cluster) {
-                        if (thyx.WorldVolume.Radius > thy.WorldVolume.Radius) {
-                            thyx.Cluster(thy);
-                            mDetected.Remove(thy);
-                            mClusterLookup[thy.EntityId] = thyx.EntityId;
-                        } else {
-                            thy.Cluster(thyx);
-                            mDetected.Remove(thyx);
-                            mClusterLookup[thyx.EntityId] = thy.EntityId;
-                        }
-                        clusterX = 0;
-                        clusterY = -1;
+            var incomingIsClusterable = mCurrentIncoming.Value.Type == MyDetectedEntityType.Asteroid;
+            logger.persist($"incoming is clusterable {incomingIsClusterable}");
+            if (incomingIsClusterable && mDetected.Count > 0) {
+                var target = mDetected[mClusterI];
+                logger.persist($"target is clusterable {target.IsClusterable}");
+                if (target.IsClusterable) {
+                    var incomingWV = BoundingSphereD.CreateFromBoundingBox(mCurrentIncoming.Value.BoundingBox);
+                    var sqdist = (target.WorldVolume.Center - incomingWV.Center).LengthSquared();
+                    logger.persist($"sqdist {sqdist}");
+                    if (sqdist < 1048576) {
+                        logger.persist($"adding to cluster");
+                        target.Cluster(incomingWV);
+                        mClusterLookup[mCurrentIncoming.Value.EntityId] = target.EntityId;
+                        mCurrentIncoming = null;
                     }
                 }
+            } else {
+                var thy = new ThyDetectedEntityInfo(mCurrentIncoming.Value);
+                mDetected.Add(thy);
+                mLookup.Add(thy.EntityId, thy);
+                mCurrentIncoming = null;
             }
         }
 
@@ -94,15 +108,6 @@ namespace IngameScript
                 s.str(p.Value);
                 one = true;
             }
-            ThyDetectedEntityInfo thy;
-            while(mIncoming.TryDequeue(out thy)) {
-                if (one) {
-                    s.rec();
-                }
-                s.unt("Incoming");
-                s.str(thy);
-                one = true;
-            }
         }
 
         void LoadAction(Serialize s, string aData) {
@@ -118,6 +123,7 @@ namespace IngameScript
                             en.MoveNext();
                             var thy = s.objThyDetectedEntityInfo(en);
                             mDetected.Add(thy);
+                            mLookup.Add(thy.EntityId, thy);
                         }
                     }
                 } else if (entry[0] == "Cluster") {
@@ -125,18 +131,12 @@ namespace IngameScript
                     if (entries.Length > 0) {
                         mClusterLookup[s.objlong(entries[0])] = s.objlong(entries[1]);
                     }
-                } else if (entry[0] == "Incoming") {
-                    var entries = entry[1].Split(s.NL, StringSplitOptions.None);
-                    if (entries.Length > 0) {
-                        IEnumerable<string> elements = entries;
-                        using (var en = elements.GetEnumerator()) {
-                            en.MoveNext();
-                            mIncoming.Enqueue(s.objThyDetectedEntityInfo(en));
-                        }
-                    }
                 }
             }
-            onUpdate = ClusterAction;
+            if (mDetected.Count == 0) {
+                mLookup.Clear();
+                mClusterLookup.Clear();
+            }
         }
 
 
@@ -150,33 +150,36 @@ namespace IngameScript
             //logger.persist($"mDetected.Count={mDetected.Count}");
             while (index >= 0 && count < 6) {
                 var e = mDetected[index];
-                mMenuItems.Add(new MenuItem(e.Type == ThyDetectedEntityType.Asteroid ? $"Asteroid {e.Name}" : e.Name, e, EntityMenu));
+                var name = e.Name;
+                if (e.Type == ThyDetectedEntityType.Asteroid) {
+                    name = $"{e.Name} Asteroid";
+                } else if (e.Type == ThyDetectedEntityType.AsteroidCluster) {
+                    name = $"{e.Name} Cluster";
+                }
+                mMenuItems.Add(new MenuItem(name, e, EntityMenu));
                 index--;
                 count++;
             }
             return mMenuItems;
         }
 
-        readonly Queue<ThyDetectedEntityInfo> mIncoming = new Queue<ThyDetectedEntityInfo>();
+        readonly Queue<MyDetectedEntityInfo> mIncoming = new Queue<MyDetectedEntityInfo>();
 
-        public void AddNew(MyDetectedEntityInfo aEntity) {
-            ThyDetectedEntityInfo thy;
-
-            if (mLookup.TryGetValue(aEntity.EntityId, out thy)) {
-                thy.Seen();
-                mDetected.Remove(thy);
-                mDetected.Add(thy);
-            } else if (mClusterLookup.ContainsKey(aEntity.EntityId)) {
-                var key = aEntity.EntityId;
-                long fkey;
-                while (mClusterLookup.TryGetValue(key, out fkey)) {
-                    key = fkey;
+        public void AddNew(MyDetectedEntityInfo aEntity, out ThyDetectedEntityInfo thy) {
+            thy = Find(aEntity.EntityId);
+            if (thy == null) {
+                mIncoming.Enqueue(aEntity); 
+                logger.persist("CameraModule.AddNew - new unrecognized entity added to queue");
+                if (onUpdate == null) {
+                    logger.persist("assigning ClusterAction");
+                    onUpdate = ClusterAction;
                 }
-                mLookup[key].Seen();
             } else {
-                mIncoming.Enqueue(new ThyDetectedEntityInfo(aEntity));
+                thy.Seen();
+                //logger.persist($"CameraModule.AddNew - updating {thy.Name}");
             }
         }
+
         const double HR = 3600000;
         bool deleted;
         Menu EntityMenu(MenuModule aMain, object aState) {
@@ -212,11 +215,14 @@ namespace IngameScript
             return null;
         }
         Menu deleteRecord(MenuModule aMain, object aState) {
-            if (clusteringComplete) {
-                deleted = mDetected.Remove((ThyDetectedEntityInfo)aState);
-                logger.persist($"Deleted: {deleted}");
+            if (mIncoming.Count > 0) {
+                logger.persist($"Clustering in process please wait to delete."); 
             } else {
-                logger.persist($"Clustering in process please wait to delete.");
+                var thy = aState as ThyDetectedEntityInfo;
+                deleted = mDetected.Remove(thy);
+                mLookup.Remove(thy.EntityId);
+                mClusterLookup.Remove(thy.EntityId);
+                logger.persist($"Deleted: {deleted}");
             }
             return null;
 
@@ -236,7 +242,7 @@ namespace IngameScript
         }
 
 
-        public override bool Accept(IMyCubeBlock aBlock) {
+        public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is IMyMotorStator) {
                 var rotor = aBlock as IMyMotorStator;
                 if (ModuleManager.HasTag(rotor, "camera")) {
@@ -263,7 +269,7 @@ namespace IngameScript
         /// <param name="aAddDistance"></param>
         /// <param name="e"></param>
         /// <returns></returns>
-        public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo aEntity, double aAddDist = 0) {
+        public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo aEntity, out ThyDetectedEntityInfo thy, double aAddDist = 0) {
             bool rangeOkay = false;
             int t = int.MaxValue;
             foreach (var camera in Blocks) { 
@@ -289,7 +295,10 @@ namespace IngameScript
                             if (aEntity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
                                 continue;
                             }
-                            AddNew(aEntity);
+                            if (ModuleManager.ConnectedGrid(aEntity.EntityId)) {
+                                continue;
+                            }
+                            AddNew(aEntity, out thy);                            
                             return true;
                         }
                     }
@@ -302,6 +311,7 @@ namespace IngameScript
             if (!rangeOkay) {
                 logger.persist($"Camera charging {t / 1000} seconds remaining.");
             }
+            thy = null;
             return false;
         }
 

@@ -8,7 +8,7 @@ namespace IngameScript {
         
 
 
-        public override bool Remove(IMyCubeBlock b) {
+        public override bool Remove(IMyTerminalBlock b) {
             var result = base.Remove(b);
             if (result) {
                 mLCDs.Remove(b as IMyTextPanel);

@@ -14,11 +14,11 @@ namespace IngameScript {
         public static ShipControllerModule controller { get; private set; }
 
         static readonly HashSet<long> mRegistry = new HashSet<long>();
-        static readonly List<IMyCubeBlock> mBlocks = new List<IMyCubeBlock>();
+        static readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
         static readonly List<ModuleBase> mModules = new List<ModuleBase>();
         
         static readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
-        static readonly Dictionary<long, List<IMyCubeBlock>> mGridBlocks = new Dictionary<long, List<IMyCubeBlock>>();
+        static readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
         public static MyGridProgram Program { get; private set; }
         public static Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
         
@@ -92,7 +92,7 @@ namespace IngameScript {
                 mBlocks.Clear();
             }
             Program.GridTerminalSystem.GetBlocksOfType(mBlocks, block => {
-                if (block.CubeGrid == Program.Me.CubeGrid && mRegistry.Add(block.EntityId)) {
+                if (block.IsSameConstructAs(Program.Me) && mRegistry.Add(block.EntityId)) {
                     mBlocks.Add(block);
                     initTags(block as IMyTerminalBlock);
                     controller.Accept(block as IMyTerminalBlock);
@@ -127,11 +127,11 @@ namespace IngameScript {
             }
         }
 
-        static void addByGrid(IMyCubeBlock aBlock) {
-            List<IMyCubeBlock> list;
+        static void addByGrid(IMyTerminalBlock aBlock) {
+            List<IMyTerminalBlock> list;
             if (aBlock != null) {
                 if (!mGridBlocks.TryGetValue(aBlock.CubeGrid.EntityId, out list)) {
-                    list = new List<IMyCubeBlock>();
+                    list = new List<IMyTerminalBlock>();
                     mGridBlocks.Add(aBlock.CubeGrid.EntityId, list);
                 }
                 list.Add(aBlock);
@@ -162,8 +162,11 @@ namespace IngameScript {
             for (int i = 0; i < tags.Length; i++) if (tags[i] == aTag) return true;
             return false;
         }
+
+        public static bool ConnectedGrid(long entityId) => mGridBlocks.ContainsKey(entityId);
+
         public static bool GetByGrid<T>(long grid, ref T block) {
-            List<IMyCubeBlock> list;
+            List<IMyTerminalBlock> list;
             if (mGridBlocks.TryGetValue(grid, out list)) {
                 foreach (var b in list) {
                     if (b is T) {

@@ -54,24 +54,23 @@ namespace IngameScript {
             return mWork.ToString();
         }
 
-        public override bool Accept(IMyCubeBlock b) {
+        public override bool Accept(IMyTerminalBlock b) {
             var result = false;
 
-            if (b is IMyTerminalBlock) {
-                var tb = b as IMyTerminalBlock;
-                if (tb.CustomData.Contains("#logconsole")) {
-                    result = base.Accept(b);
-                    if (result) {
-                        var p = b as IMyTextPanel;
-                        p.ContentType = ContentType.TEXT_AND_IMAGE;
-                        p.Font = "Monospace";
-                        p.CustomName = "Log Console - " + Blocks.Count;
-                        if (p.FontColor == Color.White) {
-                            p.FontColor = new Color(255, 176, 0);
-                        }
+
+            if (b.CustomData.Contains("#logconsole")) {
+                result = base.Accept(b);
+                if (result) {
+                    var p = b as IMyTextPanel;
+                    p.ContentType = ContentType.TEXT_AND_IMAGE;
+                    p.Font = "Monospace";
+                    p.CustomName = "Log Console - " + Blocks.Count;
+                    if (p.FontColor == Color.White) {
+                        p.FontColor = new Color(255, 176, 0);
                     }
                 }
             }
+            
             return result;
         }
 
@@ -140,7 +139,7 @@ namespace IngameScript {
         }
         void UpdateAction() {
             pcount++;
-            if (pcount == 360) {
+            if (pcount == 90) {
                 pcount = 0;
                 if (mPersistent.Count > 0) {
                     mPersistent.RemoveAt(0);

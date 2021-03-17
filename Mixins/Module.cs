@@ -14,7 +14,7 @@ namespace IngameScript {
         
         public bool GetModule<S>(out S aComponent) where S : class => ModuleManager.GetModule(out aComponent);
         public bool GetModules<S>(List<S> aComponentList) where S : class => ModuleManager.GetModules(aComponentList);
-        public override bool Accept(IMyCubeBlock aBlock) {
+        public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is T) {
                 if (mRegistry.Add(aBlock.EntityId)) {
                     Blocks.Add((T)aBlock);
@@ -23,7 +23,7 @@ namespace IngameScript {
             }
             return false;
         }
-        public override bool Remove(IMyCubeBlock b) {
+        public override bool Remove(IMyTerminalBlock b) {
             if (b is T) {
                 Blocks.Remove((T)b);
                 mRegistry.Remove(b.EntityId);

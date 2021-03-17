@@ -91,12 +91,12 @@ namespace IngameScript {
             str(e.Orientation);
             str(e.Velocity);
             str(e.Relationship);
-            str(e.WorldVolume);
             str(e.TimeStamp);
+            str(e.WorldVolume);
         }
         public ThyDetectedEntityInfo objThyDetectedEntityInfo(IEnumerator<string> e) => new ThyDetectedEntityInfo(
             objlong(e), objstring(e), objThyDetectedEntityType(e), objVector3D_(e), objMatrixD(e),
-            objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objBoundingBoxD(e), objlong(e), objBoundingSphereD(e)
+            objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objlong(e), objBoundingSphereD(e)
         );
         public void str(MyRelationsBetweenPlayerAndBlock r) => sb.AppendLine(r.ToString());
         public MyRelationsBetweenPlayerAndBlock objMyRelationsBetweenPlayerAndBlock(IEnumerator<string> e) {
@@ -190,6 +190,7 @@ namespace IngameScript {
                 case "Planet": return ThyDetectedEntityType.Planet;
                 case "SmallGrid": return ThyDetectedEntityType.SmallGrid;
                 case "Unknown": return ThyDetectedEntityType.Unknown;
+                case "AsteroidCluster": return ThyDetectedEntityType.AsteroidCluster;
             }
             return ThyDetectedEntityType.None;
         }

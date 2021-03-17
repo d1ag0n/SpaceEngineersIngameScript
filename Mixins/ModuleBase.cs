@@ -1,11 +1,11 @@
+using Sandbox.ModAPI.Ingame;
 using System;
-using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public abstract class ModuleBase {
 
-        abstract public bool Accept(IMyCubeBlock aBlock);
-        abstract public bool Remove(IMyCubeBlock aBlock);
+        abstract public bool Accept(IMyTerminalBlock aBlock);
+        abstract public bool Remove(IMyTerminalBlock aBlock);
 
         
         

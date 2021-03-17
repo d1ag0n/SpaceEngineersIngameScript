@@ -46,38 +46,38 @@ namespace IngameScript {
             s.str(range);
         }
 
-        public override bool Accept(IMyCubeBlock aBlock) {
+        public override bool Accept(IMyTerminalBlock b) {
             bool result = false;
 
             if (first == null) {
-                if (aBlock is IMyTerminalBlock) {
-                    var tb = aBlock as IMyTerminalBlock;
-                    if (tb.CustomData.Contains("#periscope")) {
-                        result = base.Accept(aBlock);
-                        if (result) {
-                            first = aBlock as IMyMotorStator;
-                            if (first != null && first.TopGrid != null) {
-                                ModuleManager.GetByGrid(first.TopGrid.EntityId, ref second);
-                                if (second != null && second.TopGrid != null) {
-                                    ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
-                                    if (camera != null) {
-                                        camera.CustomName = $"!Periscope {first.CustomName} - Camera";
-                                        camera.Enabled =
-                                        camera.EnableRaycast = true;
-                                        MenuName = "Periscope " + first.CustomName;
-                                        if (camera.Orientation.Left == second.Top.Orientation.Up) {
-                                            xneg = true;
-                                        }
-                                        Okay = true;
 
-                                        Active = true;
-                                        Nactivate();
+                if (b.CustomData.Contains("#periscope")) {
+                    result = base.Accept(b);
+                    if (result) {
+                        first = b as IMyMotorStator;
+                        if (first != null && first.TopGrid != null) {
+                            ModuleManager.GetByGrid(first.TopGrid.EntityId, ref second);
+                            if (second != null && second.TopGrid != null) {
+                                ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
+                                if (camera != null) {
+                                    camera.CustomName = $"!Periscope {first.CustomName} - Camera";
+                                    camera.Enabled =
+                                    camera.EnableRaycast = true;
+                                    MenuName = "Periscope " + first.CustomName;
+                                    if (camera.Orientation.Left == second.Top.Orientation.Up) {
+                                        xneg = true;
                                     }
+                                    Okay = true;
+
+                                    Active = true;
+                                    Nactivate();
                                 }
                             }
                         }
                     }
                 }
+                    
+                
             } else {
                 // multiple periscopes
                 // new module need some way to make sure new module does not grab control of existing periscope
@@ -103,7 +103,8 @@ namespace IngameScript {
             GetModule(out mod);
             if (mod != null) {
                 MyDetectedEntityInfo entity;
-                if (mod.Scan(camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * range, out entity)) {
+                ThyDetectedEntityInfo thy;
+                if (mod.Scan(camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * range, out entity, out thy)) {
                     if (entity.Type == MyDetectedEntityType.None) {
                         logger.persist("Module scan empty.");
                     } else {
@@ -140,11 +141,13 @@ namespace IngameScript {
                         logger.persist("Periscope scan obstructed by grid.");
                     } else {
                         logger.persist(logger.gps(entity.Name, entity.Position));
-                        logger.persist("Periscope scan success.");
-                        CameraModule mod;
-                        GetModule(out mod);
-                        if (mod != null) {
-                            mod.AddNew(entity);
+                        var mod = controller.Camera;
+                        ThyDetectedEntityInfo thy;
+                        if (mod == null) {
+                            logger.persist("Camera module interface failure."); 
+                        } else {
+                            logger.persist("Periscope scan success.");
+                            mod.AddNew(entity, out thy);
                         }
                     }
                 }

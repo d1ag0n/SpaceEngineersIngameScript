@@ -128,8 +128,11 @@ namespace IngameScript {
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
             ShipVelocities = Remote.GetShipVelocities();
-            LinearVelocityDirection = ShipVelocities.LinearVelocity;
-            LinearVelocity = LinearVelocityDirection.Normalize();
+            var lvd = ShipVelocities.LinearVelocity;
+
+            
+            LinearVelocity = lvd.Normalize();
+            LinearVelocityDirection = lvd;
             LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, Remote.WorldMatrix);
         }
         Mission m;
@@ -158,6 +161,7 @@ namespace IngameScript {
 
                 if (localVeloSq <= 0.000025) {
                     localVelo = Vector3D.Zero;
+                    Damp = false;
                 } else {
                     localVelo = localVelo * -2.0;
                 }

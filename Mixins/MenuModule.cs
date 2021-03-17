@@ -11,23 +11,23 @@ namespace IngameScript {
         public MenuModule() {
             onUpdate = UpdateAction;
         }
-        public override bool Accept(IMyCubeBlock aBlock) {
+        public override bool Accept(IMyTerminalBlock b) {
             var result = false;
-            if (aBlock is IMyTerminalBlock) {
-                var tb = aBlock as IMyTerminalBlock;
-                if (tb.CustomData.Contains("#menuconsole")) {
-                    result = base.Accept(aBlock);
-                    if (result) {
-                        var tp = aBlock as IMyTextPanel;
-                        tp.CustomName = "Menu Console - " + Blocks.Count;
-                        tp.ContentType = ContentType.TEXT_AND_IMAGE;
-                        tp.Font = "Monospace";
-                        if (tp.FontColor == Color.White) {
-                            tp.FontColor = new Color(51, 255, 0);
-                        }
-                        Active = true;
+
+
+            if (b.CustomData.Contains("#menuconsole")) {
+                result = base.Accept(b);
+                if (result) {
+                    var tp = b as IMyTextPanel;
+                    tp.CustomName = "Menu Console - " + Blocks.Count;
+                    tp.ContentType = ContentType.TEXT_AND_IMAGE;
+                    tp.Font = "Monospace";
+                    if (tp.FontColor == Color.White) {
+                        tp.FontColor = new Color(51, 255, 0);
                     }
+                    Active = true;
                 }
+
             }
             return result;
         }
