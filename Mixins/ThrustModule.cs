@@ -6,7 +6,7 @@ using VRageMath;
 
 namespace IngameScript {
     public class ThrustModule : Module<IMyThrust> {
-        readonly ThrustList mThrust = new ThrustList();
+        public readonly ThrustList Thrust = new ThrustList();
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         readonly ThrustList mHydro = new ThrustList();
@@ -107,7 +107,7 @@ namespace IngameScript {
                 if (g == enGroup.Hydro) {
                     mHydro.Add(controller.Remote, b, $"{g} Thruster ");
                 } else {
-                    mThrust.Add(controller.Remote, b);
+                    Thrust.Add(controller.Remote, b);
                 }
             }
             onUpdate = UpdateAction;
@@ -115,12 +115,15 @@ namespace IngameScript {
         bool updateRequired = false;
         Vector3D _Acceleration;
         public Vector3D Acceleration { get { return _Acceleration; } set { _Acceleration = value; updateRequired = true; } }
+        /*public Vector3D MaxAcceleration(Vector3D aLocalDir) {
+
+        }*/
         void UpdateAction() {
             if (updateRequired) {
                 var a = Acceleration;
                 var m = controller.Mass;
 
-                mThrust.Update(ref a, m, false);
+                Thrust.Update(ref a, m, false);
                 /*logger.log($"FrontForce {mThrust.FrontForce:F0}");
                 logger.log($"BackForce  {mThrust.BackForce:F0}");
 
@@ -133,10 +136,11 @@ namespace IngameScript {
                 // v^2*m/(2F)
                 var llv = controller.LocalLinearVelo;
                 var vF = new Vector3D(
-                    llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce,
-                    llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce,
-                    llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce
+                    llv.X > 0 ? Thrust.LeftForce : Thrust.RightForce,
+                    llv.Y > 0 ? Thrust.DownForce : Thrust.UpForce,
+                    llv.Z > 0 ? Thrust.FrontForce : Thrust.BackForce
                 );
+                
                 Stop = stop(llv, m, vF);
                 StopDistance = Stop.Length();
                 //llv.X = stop(llv.X, m, llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce);

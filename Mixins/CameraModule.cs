@@ -10,7 +10,8 @@ namespace IngameScript
     {
         int mClusterI = 0;
         MyDetectedEntityInfo? mCurrentIncoming;
-        
+
+        CameraList mCameraList;
         readonly Dictionary<long, long> mClusterLookup = new Dictionary<long, long>();
         readonly Dictionary<long, ThyDetectedEntityInfo> mLookup = new Dictionary<long, ThyDetectedEntityInfo>();
         readonly List<ThyDetectedEntityInfo> mDetected = new List<ThyDetectedEntityInfo>();
@@ -25,6 +26,8 @@ namespace IngameScript
             onPage = PageAction;
             onUpdate = ClusterAction;
         }
+
+
         public ThyDetectedEntityInfo Find(long entityId) {
             ThyDetectedEntityInfo result;
             long fkey;
@@ -35,7 +38,7 @@ namespace IngameScript
             return result;
         }
         void ClusterAction() {
-            logger.persist("ClusterAction");
+            //logger.persist("ClusterAction");
             if (mCurrentIncoming == null) {
                 if (mIncoming.Count > 0) {
                     mClusterI = mDetected.Count - 1;
@@ -48,7 +51,7 @@ namespace IngameScript
                         mCurrentIncoming = null;
                     }
                 } else {
-                    logger.persist("ClusterAction nulling onUpdate");
+                    //logger.persist("ClusterAction nulling onUpdate");
                     onUpdate = null;
                 }
             } else {
@@ -66,16 +69,16 @@ namespace IngameScript
         
         void cluster() {
             var incomingIsClusterable = mCurrentIncoming.Value.Type == MyDetectedEntityType.Asteroid;
-            logger.persist($"incoming is clusterable {incomingIsClusterable}");
+            //logger.persist($"incoming is clusterable {incomingIsClusterable}");
             if (incomingIsClusterable && mDetected.Count > 0) {
                 var target = mDetected[mClusterI];
-                logger.persist($"target is clusterable {target.IsClusterable}");
+                //logger.persist($"target is clusterable {target.IsClusterable}");
                 if (target.IsClusterable) {
                     var incomingWV = BoundingSphereD.CreateFromBoundingBox(mCurrentIncoming.Value.BoundingBox);
                     var sqdist = (target.WorldVolume.Center - incomingWV.Center).LengthSquared();
-                    logger.persist($"sqdist {sqdist}");
+                    //logger.persist($"sqdist {sqdist}");
                     if (sqdist < 1048576) {
-                        logger.persist($"adding to cluster");
+                        //logger.persist($"adding to cluster");
                         target.Cluster(incomingWV);
                         mClusterLookup[mCurrentIncoming.Value.EntityId] = target.EntityId;
                         mCurrentIncoming = null;
@@ -169,7 +172,7 @@ namespace IngameScript
             thy = Find(aEntity.EntityId);
             if (thy == null) {
                 mIncoming.Enqueue(aEntity); 
-                logger.persist("CameraModule.AddNew - new unrecognized entity added to queue");
+                //logger.persist("CameraModule.AddNew - new unrecognized entity added to queue");
                 if (onUpdate == null) {
                     logger.persist("assigning ClusterAction");
                     onUpdate = ClusterAction;
@@ -254,11 +257,22 @@ namespace IngameScript
                 }
                 return true;
             }
-            var result = base.Accept(aBlock);
-            if (result) {
-                var camera = aBlock as IMyCameraBlock;
-                camera.Enabled = true;
-                camera.EnableRaycast = true;
+            bool result = false;
+            if (aBlock.CubeGrid == ModuleManager.Program.Me.CubeGrid) {
+                result = base.Accept(aBlock);
+                if (result) {
+
+                    if (mCameraList == null) {
+                        mCameraList = new CameraList(aBlock.CubeGrid);
+                    }
+                    var camera = aBlock as IMyCameraBlock;
+                    
+                    mCameraList.Add(camera, "Camera ");
+                    //logger.persist(camera.CustomName);
+                    camera.ShowInTerminal = false;
+                    camera.Enabled = true;
+                    camera.EnableRaycast = true;
+                }
             }
             return result;
         }
@@ -269,49 +283,14 @@ namespace IngameScript
         /// <param name="aAddDistance"></param>
         /// <param name="e"></param>
         /// <returns></returns>
-        public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo aEntity, out ThyDetectedEntityInfo thy, double aAddDist = 0) {
-            bool rangeOkay = false;
-            int t = int.MaxValue;
-            foreach (var camera in Blocks) { 
-                var dir = aTarget - camera.WorldMatrix.Translation;
-                var dist = dir.Normalize() + aAddDist;
-
-                double azimuth = 0, elevation = 0;
-
-                if (camera.AvailableScanRange > dist) {
-                    rangeOkay = true;
-                    /*if (testCameraAngles(c, dir, ref yaw, ref pitch)) {
-                        e = c.Raycast(dist, (float)pitch, (float)yaw);
-                        return true;
-                    }*/
-
-                    if (testCameraAngles(camera, ref dir)) {
-                        Vector3D.GetAzimuthAndElevation(dir, out azimuth, out elevation);
-                        azimuth = -(azimuth * (180.0 / Math.PI));
-                        elevation = (elevation * (180.0 / Math.PI));
-                        aEntity = camera.Raycast(dist, (float)elevation, (float)azimuth);
-
-                        if (aEntity.Type != MyDetectedEntityType.None) {
-                            if (aEntity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
-                                continue;
-                            }
-                            if (ModuleManager.ConnectedGrid(aEntity.EntityId)) {
-                                continue;
-                            }
-                            AddNew(aEntity, out thy);                            
-                            return true;
-                        }
-                    }
-                } else {
-                    var i = camera.TimeUntilScan(dist);
-                    if (i < t) t = i;
-                }
+        public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo entity, out ThyDetectedEntityInfo thy, double aAddDist = 0) {
+            if (mCameraList.Scan(aTarget, out entity, aAddDist)) {
+                AddNew(entity, out thy);
+            } else {
+                thy = null;
+                entity = default(MyDetectedEntityInfo);
             }
-            aEntity = default(MyDetectedEntityInfo);
-            if (!rangeOkay) {
-                logger.persist($"Camera charging {t / 1000} seconds remaining.");
-            }
-            thy = null;
+            
             return false;
         }
 
@@ -349,6 +328,7 @@ namespace IngameScript
             var pitchTanSq = aDirection.Y * aDirection.Y / (aDirection.X * aDirection.X + aDirection.Z * aDirection.Z);
 
             return yawTan <= 1 && pitchTanSq <= 1;
+            
         }
         bool zTestCameraAngles(IMyCameraBlock camera, Vector3D direction) {
             Vector3D localDirection = Vector3D.Rotate(direction, MatrixD.Transpose(camera.WorldMatrix));

@@ -12,7 +12,7 @@ namespace IngameScript {
         public readonly IMyCubeGrid Grid;
 
         public ThyDetectedEntityInfo Target;
-    public MyShipVelocities ShipVelocities { get; private set; }
+        public MyShipVelocities ShipVelocities { get; private set; }
         public Vector3D LinearVelocityDirection { get; private set; }
         public double LinearVelocity { get; private set; }
         public IMyShipController Remote { get; private set; }
@@ -109,6 +109,7 @@ namespace IngameScript {
             }
         }
         void UpdateLocal() {
+            
             if (Remote == null || !Remote.IsFunctional || !(Remote is IMyRemoteControl)) {
                 foreach (var sc in Blocks) {
                     Remote = sc;
@@ -127,7 +128,13 @@ namespace IngameScript {
             }
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
+            var lastVelo = ShipVelocities.LinearVelocity;
             ShipVelocities = Remote.GetShipVelocities();
+
+            var change = ShipVelocities.LinearVelocity - lastVelo;
+            var accel = change.Length() / ModuleManager.Program.Runtime.TimeSinceLastRun.TotalSeconds;
+
+            logger.log($"Acceleration ", accel);
             var lvd = ShipVelocities.LinearVelocity;
 
             
@@ -161,12 +168,10 @@ namespace IngameScript {
 
                 if (localVeloSq <= 0.000025) {
                     localVelo = Vector3D.Zero;
-                    Damp = false;
+                    //Damp = false;
                 } else {
                     localVelo = localVelo * -2.0;
                 }
-                logger.log(localVelo);
-                //localVelo.X = -localVelo.X;
                 Thrust.Acceleration = localVelo;
                 
                 /*

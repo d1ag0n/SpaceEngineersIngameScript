@@ -5,7 +5,7 @@ using VRageMath;
 
 namespace IngameScript {
 
-    class BlockDirList<T> where T: IMyTerminalBlock {
+    public class BlockDirList<T> where T: IMyTerminalBlock {
         protected readonly List<T> mLeft = new List<T>();
         protected readonly List<T> mRight = new List<T>();
         protected readonly List<T> mUp = new List<T>();
@@ -13,6 +13,29 @@ namespace IngameScript {
         protected readonly List<T> mFront = new List<T>();
         protected readonly List<T> mBack = new List<T>();
 
+        public void Add(T aBlock, string aPrefix = "") {
+            var f = aBlock.Orientation.Forward;
+
+            if (f == Base6Directions.Direction.Backward) {
+                mBack.Add(aBlock);
+                aBlock.CustomName = $"{aPrefix}Back";
+            } else if (f == Base6Directions.Direction.Down) {
+                mDown.Add(aBlock);
+                aBlock.CustomName = $"{aPrefix}Down";
+            } else if (f == Base6Directions.Direction.Right) {
+                mRight.Add(aBlock);
+                aBlock.CustomName = $"{aPrefix}Right";
+            } else if (f == Base6Directions.Direction.Forward) {
+                mFront.Add(aBlock);
+                aBlock.CustomName = $"{aPrefix}Front";
+            } else if (f == Base6Directions.Direction.Up) {
+                mUp.Add(aBlock);
+                aBlock.CustomName = $"{aPrefix}Up";
+            } else if (f == Base6Directions.Direction.Left) {
+                mLeft.Add(aBlock);
+                aBlock.CustomName = $"{aPrefix}Left";
+            }
+        }
         public void Add(IMyShipController aController, T aBlock, string aPrefix = "") {
             var o = aController.Orientation;
             var f = aBlock.Orientation.Forward;

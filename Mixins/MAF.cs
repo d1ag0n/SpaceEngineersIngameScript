@@ -146,5 +146,12 @@ namespace IngameScript
                 logger.log(logger.gps("obb" + i, arCorners[i]));
             }*/
         }
+
+        public static void absMax(double a, ref double b) {
+            a = Math.Abs(a);
+            if (a > b) {
+                b = a;
+            }
+        }
     }
 }

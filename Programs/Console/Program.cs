@@ -29,12 +29,39 @@ namespace commandline
         static MyDetectedEntityInfo entity(MyDetectedEntityType t, long l) {
             return new MyDetectedEntityInfo(5555, "Foo", t, null, MatrixD.Identity, Vector3D.Zero, MyRelationsBetweenPlayerAndBlock.Neutral, new BoundingBoxD(), l);
         }
-        static void chord() {
-            List<bool> dots = new List<bool>();
 
-            for (int i = 0; i < 15; i++) {
-                dots.Add(clusterable((ThyDetectedEntityType)i));
-            }
+        static void aaccel() {
+            // arbitrary direction
+            var dir = Vector3D.Normalize(new Vector3D(1, 1, 0));
+            // need to match forces from engines to axes from direction
+            var force = new Vector3D(100, 100, 100);
+            var forceMag = force.Length();
+            var accel = dir * force;
+            var accelMag = accel.Length();
+            // accelMag == forceMag
+
+            return;
+        }
+        static void chord() {
+
+            aaccel();
+
+            var rightThrusterForce = 100;
+            var upThrusterForce = 100;
+            var backThrusterForce = 100;
+            var rawForce = new Vector3D(rightThrusterForce, upThrusterForce, backThrusterForce);
+            var rawForceMag = rawForce.Length();
+            var dir = Vector3D.Normalize(new Vector3D(1, 1, 1));
+            var force = new Vector3D(dir.X * rightThrusterForce, dir.Y * upThrusterForce, dir.Z * backThrusterForce);
+            var forceMag = force.Length();
+            var accel = dir * forceMag;
+            var accelMag = accel.Length();
+            // accelMag == forceMag
+            
+
+            var a = force * dir;
+            var l = a.Length();
+
 
             return;
 

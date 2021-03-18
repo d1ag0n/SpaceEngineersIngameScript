@@ -204,10 +204,6 @@ namespace IngameScript
             return new Menu(aMain, "Angular Velocity Configurator", configMenu);
         }
 
-
-
-
-        
         void Nactivate() {
             Active = !Active;
             init();
@@ -245,178 +241,71 @@ namespace IngameScript
                 return;
             }
 
-            
-            
-
-            //var roughDesiredDirection = Base6Directions.GetClosestDirection(aDesiredDown);
-            //g.log("my down from ", roughDesiredDirection, "-ish");
-            //g.log(MAF.angleBetween(mRC.WorldMatrix.Down, aDesiredDown));
-
-            //g.log("angular velocity", av);
-            //var rps = av.Length();
-            //g.log("angular rps ", rps);
-            //var rpm = rps * MathHelper.RadiansPerSecondToRPM;
-            //g.log("angular rpm ", rpm);
-
-            //g.log("dd", aDesiredDown);
-
-            //g.log("pitch ", pitch);
-            //g.log("roll  ", roll);
-            //applyGyroOverride(pitch, 0.0, roll);
-            //return;
-            //g.log("pitch ", pitch);
-            //g.log("roll  ", roll);
-
-            // av = angular velocity
-            // if we ask for 10 lastPitch is 10
-            // av check pitch = 5
-            // pitchDif = 10 - 5 = 5
-            // if we ask for 1 lastPitch is 1
-            // av check pitch = 5
-            // pitchDif = 1 - 5 = -4
-            // pitchDif = lastPitch - pitchCheck
-            // 
-
             double pitch, yaw;
 
             var sv = controller.ShipVelocities;
             var av = MAF.world2dir(sv.AngularVelocity, sc.WorldMatrix);
 
             
-            //getRotationAnglesFromDown(direction, sc.WorldMatrix, out pitch, out roll);
             MAF.getRotationAngles(mTargetDirection, sc.WorldMatrix, out yaw, out pitch);
 
-            //logger.log($"pitch = {pitch}");
-            //logger.log($"velo  = {av.X}");
-
-            //logger.log($"yaw  = {yaw}");
-            //logger.log($"velo  = {-av.Y}");
 
             if (Math.Abs(pitch) < smallMax) {
-                //logger.log("pitch smallfact");
                 pitch *= smallFact;
-            } else {
-                //logger.log("pitch normal fact");
             }
 
             if (Math.Abs(yaw) < smallMax) {
-                //logger.log("yaw smallfact");
                 yaw *= smallFact;
-            } else {
-                //logger.log("yaw normal fact");
             }
 
-            //yaw *= 10.0;
-            //pitch *= 10.0;
-            //getRotationAnglesFromForward(direction, sc.WorldMatrix, out pitch, out roll);
-            //applyGyroOverride(sc.WorldMatrix, pitch, yaw, roll);
+
 
 
             var pv = av.X;
             var yv = -av.Y;
-            //return;
-            
-
-
-
-            //double pitchDif = (pitch - av.X);
-            //double yawDif = (yaw + av.Y);
 
             var pitchDif = (pitch - pv);
             var yawDif = (yaw - yv);
 
             if (Math.Abs(pitchDif) < difMax) {
                 pitchDif = 0;
-                //logger.log("pitch okay");
             } else {
                 if (pitch < 0) {
                     if (pv > pitch) {
-                        //logger.log("pitch too slow");
                         pitchDif *= fastFact;
                     } else {
-                        //logger.log("pitch too fast");
                         pitchDif *= slowFact;
                     }
                 } else {
                     if (pv < pitch) {
-                        //logger.log("pitch too slow");
                         pitchDif *= fastFact;
                     } else {
-                        //logger.log("pitch too fast");
                         pitchDif *= slowFact;
                     }
                 }
             }
-            //logger.log($"pitchDIf = {pitchDif}");
-
             if (Math.Abs(yawDif) < difMax) {
                 yawDif = 0;
-                //logger.log("yaw okay");
             } else {
                 if (yaw < 0) {
                     if (yv > yaw) {
-                        //logger.log("yaw too slow");
                         yawDif *= fastFact;
                     } else {
-                        //logger.log("yaw too fast");
                         yawDif *= slowFact;
                     }
                 } else {
                     if (yv < yaw) {
-                        //logger.log("yaw too slow");
                         yawDif *= fastFact;
                     } else {
-                        //logger.log("yaw too fast");
                         yawDif *= slowFact;
                     }
                 }
             }
-            //logger.log($"yawDIf = {yawDif}");
-
-            // local angular velocity
-            // +X = +pitch
-            // -X = -pitch
-            // +Y = -yaw
-            // -Y = +yaw
-            // +Z = -roll
-            // -Z = +roll
-
-
-            // want - at
-            // at 1 want 2
-            // 1 = 2 - 1
-
-            // want - at
-            // at 2 want 1
-            // -1 = 1 - 2
-
-            // want - at
-            // at -1 want -2
-            // -1 = -2 - -1
-
-
-
-
-
-            //pitch += pitchDif * fact;
-            //roll += rollDif * fact;
-
-            // yaw = av.Y
-
-            //pitch = (pitchDif / MathHelper.TwoPi) * controller.GyroSpeed;
 
 
             pitch += pitchDif;
             yaw += yawDif;            
-            
             applyGyroOverride(sc.WorldMatrix, pitch, yaw, 0);
-            
-            //g.log("pitchDif ", pitchDif);
-            //g.log("rollDif  ", rollDif);
-            //lastPitch = pitch;
-            //lastRoll = roll;
-            //applyGyroOverride(0.0, 0.0, 0.5);
-
         }
 
         public void setGyrosEnabled(bool aValue) {
@@ -468,55 +357,9 @@ namespace IngameScript
 
             }
         }
-        /*
-        getRotationAnglesFromDown - modified by d1ag0n for pitch and roll
-        Whip's Get Rotation Angles Method v14 - 9/25/18 ///
-        MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
-        Dependencies: AngleBetween
-        */
-        static void getRotationAnglesFromDown(Vector3D targetVector, MatrixD worldMatrix, out double pitch, out double roll) {
-            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
-            //var localTargetVector = MAF.world2pos(targetVector, worldMatrix);
-            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
+  
 
-            pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);
-            if (localTargetVector.Z > 0)
-                pitch = -pitch;
-
-            roll = MAF.angleBetween(localTargetVector, flattenedTargetVector);
-            if (localTargetVector.X > 0)
-                roll = -roll;
-        }
-
-        /// <summary>
-        /// by Whiplash141
-        /// Computes angle between 2 vectors
-        /// todo move to maf
-        /// </summary>
-
-
-        /*
-        /// Whip's Get Rotation Angles Method v14 - 9/25/18 ///
-        Dependencies: VectorMath
-        * Fix to solve for zero cases when a vertical target vector is input
-        * Fixed straight up case
-        * Fixed sign on straight up case
-        * Converted math to local space
-        *//**
-        static void getRotationAngles(Vector3D targetVector, MatrixD worldMatrix, out double yaw, out double pitch) {
-            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(worldMatrix));
-            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
-
-            pitch = MAF.angleBetween(Vector3D.Forward, flattenedTargetVector) * Math.Sign(localTargetVector.Y); //up is positive
-
-            if (Math.Abs(pitch) < 1E-6 && localTargetVector.Z > 0) //check for straight back case
-                pitch = Math.PI;
-
-            if (Vector3D.IsZero(flattenedTargetVector)) //check for straight up case
-                yaw = MathHelper.PiOver2 * Math.Sign(localTargetVector.X);
-            else
-                yaw = MAF.angleBetween(localTargetVector, flattenedTargetVector) * Math.Sign(localTargetVector.X); //right is positive
-        }//*/
+        
         
     }
 }

@@ -55,9 +55,11 @@ namespace IngameScript {
                     result = base.Accept(b);
                     if (result) {
                         first = b as IMyMotorStator;
+                        first.ShowInTerminal = false;
                         if (first != null && first.TopGrid != null) {
                             ModuleManager.GetByGrid(first.TopGrid.EntityId, ref second);
                             if (second != null && second.TopGrid != null) {
+                                second.ShowInTerminal = false;
                                 ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
                                 if (camera != null) {
                                     camera.CustomName = $"!Periscope {first.CustomName} - Camera";
@@ -98,7 +100,6 @@ namespace IngameScript {
             }
         }
         Menu ModuleScan(MenuModule aMain = null, object argument = null) {
-            
             CameraModule mod;
             GetModule(out mod);
             if (mod != null) {

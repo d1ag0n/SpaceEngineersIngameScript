@@ -1,4 +1,5 @@
-﻿using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.Definitions;
+using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -37,6 +38,8 @@ namespace IngameScript
         /// </summary>
         public Vector3D PendingPosition;
 
+        
+
         public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aTarget) {
             ctr = aController;
             Target = aTarget;
@@ -67,8 +70,8 @@ namespace IngameScript
             var dist = dir.Normalize();
             var velocityVec = ctr.ShipVelocities.LinearVelocity;
             var velocity = ctr.LinearVelocity;
-            var preferredVelocity = 0.2;
-            var veloReq = (dir * 99.99) - velocityVec;
+            var preferredVelocity = 99.99;
+            var veloReq = (dir * preferredVelocity) - velocityVec;
             
             ctr.logger.log("DIST ", dist);
             if (dist < 100 || dist < ctr.Thrust.StopDistance) {
@@ -85,7 +88,7 @@ namespace IngameScript
                         ctr.Gyro.SetTargetDirection(Vector3D.Zero);
                     } else {
                         veloOkay = false;
-                        ctr.Thrust.Acceleration = localVelo;
+                        ctr.Thrust.Acceleration = Vector3D.Normalize(localVelo);
                         ctr.Gyro.SetTargetPosition(target);
                     }
                 }
@@ -105,12 +108,12 @@ namespace IngameScript
                 }
                 // create a point for scan sphere based on our velocity
                 var scanPoint = ctr.Grid.WorldVolume.Center;
-                ctr.logger.log("Scan base point ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
-                scanPoint += velocity;
-                ctr.logger.log("Scan point + velo ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
-                ctr.logger.log("Direction length ", lvd.Length());
-                scanPoint += (lvd * 100);
-                ctr.logger.log("Scan point + padding ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
+                //ctr.logger.log("Scan base point ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
+                
+                //ctr.logger.log("Scan point + velo ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
+                //ctr.logger.log("Direction length ", lvd.Length());
+                scanPoint += (lvd * (ctr.Thrust.StopDistance + 500));
+                //ctr.logger.log("Scan point + padding ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
                 // random dir around point to scan
                 var rd = MAF.ranDir();
 
@@ -121,14 +124,13 @@ namespace IngameScript
 
                 // random distance from sphere center to scan
                 var scandist = ctr.Grid.WorldVolume.Radius * MAF.random.NextDouble();
-
+                
                 scanPoint += rd * scandist;
-                ctr.logger.log("Scan point ", Vector3D.Distance(ctr.Grid.WorldVolume.Center, scanPoint), "m away");
+                    
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
                 if (ctr.Camera.Scan(scanPoint, out entity, out thy)) {
                     if (entity.Type != MyDetectedEntityType.None && entity.EntityId != Target.EntityId) {
-
                         //ctr.logger.persist($"OH MY GOD A {entity.Type} we're gonna CRASH!");
                     }
                 }
@@ -146,6 +148,10 @@ namespace IngameScript
 
 
             currentJob();
+        }
+        void calculateWaypoint(BoundingSphereD sphere) {
+            var disp = sphere.Center - ctr.Grid.WorldVolume.Center;
+            
         }
 
         VectorHandler CamJob(Vector3D aTarget) {

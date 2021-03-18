@@ -2,7 +2,7 @@
 
 namespace IngameScript
 {
-    class PPS
+    struct PPS
     {
         public readonly Vector3D Planet;
         public readonly Vector3D Position;

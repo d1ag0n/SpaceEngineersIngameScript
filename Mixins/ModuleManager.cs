@@ -5,7 +5,7 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public static class ModuleManager {
-        static readonly Lag mLag = new Lag(90);
+        static readonly Lag mLag = new Lag(6);
         public static double Lag => mLag.Last;
         public static string UserInput = "DEFAULT";
         static readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
@@ -26,6 +26,7 @@ namespace IngameScript {
             mLag.update(Program.Runtime.LastRunTimeMs);
             try {
                 logger.log(DateTime.Now.ToString());
+                logger.log(logger.gps("WV", Program.Me.CubeGrid.WorldVolume.Center));
                 for (int i = 1; i < mModules.Count; i++) {
                     mModules[i].onUpdate?.Invoke();
                 }

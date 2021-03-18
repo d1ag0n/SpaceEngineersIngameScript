@@ -5,7 +5,7 @@ using VRageMath;
 
 namespace IngameScript {
     
-    class ThrustList : BlockDirList<IMyThrust> {
+    public class ThrustList : BlockDirList<IMyThrust> {
         //public Vector3D Acceleration;
         // these provide acceleration in the respective direction
         public double LeftForce;
