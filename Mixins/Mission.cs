@@ -5,8 +5,8 @@ using Sandbox.ModAPI.Ingame;
 namespace IngameScript
 {
     class Mission {
-        const int PADDING = 10;
-
+        const int PADDING = 20;
+        
         readonly ShipControllerModule ctr;
         readonly ThyDetectedEntityInfo mDestination;
 
@@ -95,18 +95,7 @@ namespace IngameScript
         /// </summary>
         /// <returns></returns>
         Vector3D collisionDetect() {
-            var lvd = ctr.LinearVelocityDirection;
-
-            if (lvd.LengthSquared() < 1.0) {
-                switch (MAF.random.Next(0, 6)) {
-                    case 0: lvd = ModuleManager.WorldMatrix.Forward; break;
-                    case 1: lvd = ModuleManager.WorldMatrix.Backward; break;
-                    case 2: lvd = ModuleManager.WorldMatrix.Left; break;
-                    case 3: lvd = ModuleManager.WorldMatrix.Right; break;
-                    case 4: lvd = ModuleManager.WorldMatrix.Up; break;
-                    case 5: lvd = ModuleManager.WorldMatrix.Down; break;
-                }
-            }
+            
 
             var wv = ctr.Grid.WorldVolume;
 
@@ -119,11 +108,26 @@ namespace IngameScript
             var dot = meToDest.Dot(meToObst);
             ctr.logger.log("dot ", dot);
 
-            var scanDist = ((wv.Radius * 2) + (ctr.Thrust.StopDistance * 2) + PADDING);
+            var scanDist = wv.Radius + (ctr.Thrust.StopDistance * 2) + PADDING;
 
             ctr.logger.log("base scan dist ", scanDist);
-            var scanPoint = wv.Center + lvd * scanDist;
-            for (int i = 0; i < 4; i++) {
+            
+            var detected = false;
+            for (int i = 0; i < 8; i++) {
+                var lvd = ctr.LinearVelocityDirection;
+
+                if (lvd.LengthSquared() < 25.0) {
+                    switch (MAF.random.Next(0, 6)) {
+                        case 0: lvd = ModuleManager.WorldMatrix.Forward; break;
+                        case 1: lvd = ModuleManager.WorldMatrix.Backward; break;
+                        case 2: lvd = ModuleManager.WorldMatrix.Left; break;
+                        case 3: lvd = ModuleManager.WorldMatrix.Right; break;
+                        case 4: lvd = ModuleManager.WorldMatrix.Up; break;
+                        case 5: lvd = ModuleManager.WorldMatrix.Down; break;
+                    }
+                }
+                var scanPoint = wv.Center + lvd * scanDist;
+
                 // create a point for scan sphere based on our velocity
 
                 // random dir around point to scan
@@ -133,7 +137,7 @@ namespace IngameScript
                     rd = -rd;
                 }
                 // random distance from sphere center to scan
-                var scanRadius = 1 + wv.Radius * MAF.random.NextDouble();
+                var scanRadius = 2.0 + ((wv.Radius * 2) * MAF.random.NextDouble());
                 //ctr.logger.log("base scan radius ", scanDist);
 
                 scanPoint += rd * scanRadius;
@@ -144,6 +148,7 @@ namespace IngameScript
                 ThyDetectedEntityInfo thy;
                 if (ctr.Camera.Scan(scanPoint, out entity, out thy)) {
                     if ((thy != null && thy != mDestination) || (thy == null && entity.EntityId != 0 && entity.Type != MyDetectedEntityType.CharacterHuman)) {
+                        detected = true;
                         BoundingSphereD sphere;
                         if (thy == null) {
                             sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
@@ -157,26 +162,39 @@ namespace IngameScript
                             //ctr.logger.persist("Setting new " + sphere.Radius);
                             break;
                         } else {
+                            mObstacle = mObstacle.Include(sphere);
                             switch (mObstacle.Contains(sphere)) {
                                 case ContainmentType.Disjoint:
-                                    mObstacle = sphere;
+                                    //mObstacle = sphere;
                                     //ctr.logger.persist("Replacing " + sphere.Radius);
                                     break;
                                 case ContainmentType.Intersects:
-                                    mObstacle = mObstacle.Include(sphere);
+                                    
                                     //ctr.logger.persist("Including " + mObstacle.Radius);
                                     break;
                             }
                         }
+
                     }
                 }
             }
+            if (detected) {
+                mPreferredVelocity *= 0.9;
+            } else {
+                mPreferredVelocity *= 1.1;
+                mObstacle.Radius *= 0.99;
+                if (mObstacle.Radius < 1) {
+                    mObstacle.Radius = 0;
+                }
+            }
+            mPreferredVelocity = MathHelperD.Clamp(mPreferredVelocity, 1.0, 100.0);
             var result = Vector3D.Zero;
             if (mObstacle.Radius > 0) {
                 result = orbitalManeuver(wv, mObstacle);
                 if (result.IsZero()) {
                     //result = calculateTarget(wv.Center, mDestination.Position);
                     //onDestination = true;
+                    //mObstacle.Radius = 0;
                     ModuleManager.logger.log("Direct in progress");
                 } else {
                     //onDestination = false;
@@ -189,8 +207,8 @@ namespace IngameScript
             }
             return result;
         }
-        
-        
+
+        double mPreferredVelocity = 1;
         public void Update() {
             var wv = ctr.Grid.WorldVolume;
             var m = ModuleManager.WorldMatrix;
@@ -208,10 +226,10 @@ namespace IngameScript
             }
             var localDir = MAF.world2dir(worldDir, m);
             var llv = ctr.LocalLinearVelo;
-            var preferredVelocity = 99.999;
+            
             ctr.logger.log("dist ", dist);
             //preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
-            preferredVelocity = MathHelperD.Clamp((dist / 2) / ctr.Thrust.StopDistance, 0, 1.0) * preferredVelocity;
+            var preferredVelocity = MathHelperD.Clamp((dist / 2) / ctr.Thrust.StopDistance, 0, 1.0) * mPreferredVelocity;
 
             ctr.logger.log("preferredVelocity ", preferredVelocity);
             var preferredVelocityVector = localDir * preferredVelocity;

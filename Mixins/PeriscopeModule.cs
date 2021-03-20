@@ -15,7 +15,11 @@ namespace IngameScript {
                 if (Okay) {
                     mMenuMethods.Clear();
                     mMenuMethods.Add(new MenuItem(Active ? "Deactivate" : "Activate", Nactivate));
-                    mMenuMethods.Add(new MenuItem($"Periscope Scan {camera.AvailableScanRange:f0}m Available", null, Scan));
+                    //mMenuMethods.Add(new MenuItem($"Periscope Scan {camera.AvailableScanRange:f0}m Available", null, Scan));
+                    mMenuMethods.Add(new MenuItem("Fly Out", () => {
+                        var pos = camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * range;
+                        controller.Target = new ThyDetectedEntityInfo(pos);
+                    }));
                     mMenuMethods.Add(new MenuItem("Camera Module Scan", null, ModuleScan));
                     mMenuMethods.Add(new MenuItem("Planetary Scan", null, PlanetScan));
                     mMenuMethods.Add(new MenuItem($"Increase Range {range:f0}", () => {

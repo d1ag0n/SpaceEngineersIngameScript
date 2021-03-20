@@ -18,6 +18,9 @@ namespace IngameScript {
         public DateTime TimeStamp { get; private set; }
         public Vector3D Position => WorldVolume.Center;
         public ThyDetectedEntityInfo() { }
+        public ThyDetectedEntityInfo(Vector3D aTarget) {
+            WorldVolume = new BoundingSphereD(aTarget, 100);
+        }
         public void Seen(MyDetectedEntityInfo entity) {
             switch (Type) {
                 case ThyDetectedEntityType.Asteroid:
