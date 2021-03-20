@@ -41,7 +41,6 @@ namespace IngameScript
             aDot = a.Dot(b);
             return aDot / b.LengthSquared() * b;
         }
-        // todo use reject?
         // orthogonal projection is vector rejection
         public static Vector3D orthoProject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
             aTarget - ((aTarget - aPlane).Dot(aNormal) * aNormal);
@@ -147,6 +146,24 @@ namespace IngameScript
             }*/
         }
 
+        /*
+        Whip's Get Rotation Angles Method v14 - 9/25/18 ///
+        MODIFIED FOR WHAM FIRE SCRIPT 2/17/19
+        Dependencies: AngleBetween
+        modified by d1ag0n for pitch and roll
+        */
+        static void getRotationAnglesFromDown(MatrixD world, Vector3D targetVector, out double pitch, out double roll) {
+            var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(world));
+            var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
+
+            pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);
+            if (localTargetVector.Z > 0)
+                pitch = -pitch;
+
+            roll = MAF.angleBetween(localTargetVector, flattenedTargetVector);
+            if (localTargetVector.X > 0)
+                roll = -roll;
+        }
         public static void absMax(double a, ref double b) {
             a = Math.Abs(a);
             if (a > b) {

@@ -269,7 +269,7 @@ namespace IngameScript
                     }
                     var camera = aBlock as IMyCameraBlock;
                     
-                    mCameraList.Add(camera);
+                    mCameraList.mList.Add(camera);
                     //logger.persist(camera.CustomName);
                     camera.ShowInTerminal = false;
                     camera.Enabled = true;

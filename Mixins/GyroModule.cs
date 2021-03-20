@@ -17,7 +17,6 @@ namespace IngameScript
         public bool Active {
             get { return base.Active; }
             private set {
-                ModuleManager.logger.persist("Gyro setting from " + base.Active + " to " + value);
                 if (base.Active != value) {
                     base.Active = value;
                     init();

@@ -7,11 +7,19 @@ using VRageMath;
 
 namespace commandline {
     class Info {
-        static double? ffoo1() => 0;
-        static double? ffoo2() => new double?(0.0);
+        static void Main() => pass();
+        static void pass() {
+            Vector3D destination = new Vector3D(2, 0, 10);
+            Vector3D ship = new Vector3D(1, 0, 5);
+            Vector3D obstacle = new Vector3D(-1, 0, 5);
+
+            Vector3D shipToDest = destination - ship;
+            Vector3D shipToObst = obstacle - ship;
+            double dot = shipToDest.Dot(shipToObst);
+            return;
+        }
         static void collide() {
-            var foo1 = ffoo1();
-            var foo2 = ffoo2();
+           
             bool value = 0 == new double?(0);
 
 
@@ -106,10 +114,6 @@ namespace commandline {
                 b = a;
             }
         }
-        static void Main(string[] args) {
-            //accel();
-            collide();
-            //Console.ReadKey();
-        }
+
     }
 }
