@@ -74,7 +74,7 @@ namespace IngameScript
                     var distFromObstToShip = dirFromObstToShip.Normalize();
                     var orbitalPlane = aObstacle.Center + dirFromObstToShip * (aObstacle.Radius + aShip.Radius + PADDING);
                     var exitProjection = MAF.orthoProject(exitOrbit, orbitalPlane, dirFromObstToShip);
-                    result = Vector3D.Normalize(exitProjection);
+                    result = Vector3D.Normalize(exitProjection - aShip.Center);
                 }
             }
             return result;
