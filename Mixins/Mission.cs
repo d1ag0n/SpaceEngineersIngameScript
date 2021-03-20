@@ -12,7 +12,7 @@ namespace IngameScript
 
         Vector3D mTargetDirection;
         BoundingSphereD mObstacle;
-        int scansPerTick = 6;
+        //int scansPerTick = 6;
 
         double veloFact = 0.1;
 
@@ -80,7 +80,7 @@ namespace IngameScript
             return result;
         }
 
-        Vector3D calculateTarget(BoundingSphereD aShip, BoundingSphereD aThing) => Vector3D.Normalize(aThing.Center - aShip.Center);
+        Vector3D calculateTarget(Vector3D aShip, Vector3D aThing) => Vector3D.Normalize(aThing - aShip);
 
         /// <summary>
         /// returns desired direction of travel
@@ -167,10 +167,14 @@ namespace IngameScript
             if (mObstacle.Radius > 0) {
                 result = orbitalManeuver(wv, mObstacle);
                 if (result.IsZero()) {
-                    result = calculateTarget(wv, mObstacle);
+                    result = calculateTarget(wv.Center, mDestination.Position);
+                    ModuleManager.logger.log("Direct in progress");
+                } else {
+                    ModuleManager.logger.log("Orbital in progress");
                 }
             } else {
-                result = calculateTarget(wv, mObstacle);
+                result = calculateTarget(wv.Center, mDestination.Position);
+                ModuleManager.logger.log("Direct in progress");
             }
             return result;
         }
@@ -187,7 +191,8 @@ namespace IngameScript
             preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
             ctr.logger.log("preferredVelocity ", preferredVelocity);
             var preferredVelocityVector = localDir * preferredVelocity;
-            var accelReq = 2 * (preferredVelocityVector - llv);
+            var accelReq = (preferredVelocityVector - llv);
+
             //var vrsq = veloReq.LengthSquared();
             
             if (!ctr.Damp) {
@@ -206,13 +211,6 @@ namespace IngameScript
             }
             
             
-            if (scansPerTick < 100 && ModuleManager.Lag < 1.0) {
-                scansPerTick++;
-            } else if (scansPerTick > 6 && ModuleManager.Lag > 1.5) {
-                scansPerTick--;
-            }
-            
-            ctr.logger.log($"Scans Per Tick {scansPerTick}");
 
         }
 
