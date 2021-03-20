@@ -9,25 +9,25 @@ namespace IngameScript
 
         readonly ShipControllerModule ctr;
         readonly ThyDetectedEntityInfo mDestination;
-        
-        Vector3D mTarget;
+
+        Vector3D mTargetDirection;
         BoundingSphereD mObstacle;
         int scansPerTick = 6;
 
         double veloFact = 0.1;
 
         public bool Complete { get; private set; }
-        bool onDestination = false;
-        double calcRadius = 0;
+        //bool onDestination = false;
+        //double calcRadius = 0;
         public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) {
             ctr = aController;
             mDestination = aDestination;
-            calcRadius = aDestination.WorldVolume.Radius;
-            calculateTarget(aDestination.WorldVolume, true);
-            
+            //calcRadius = aDestination.WorldVolume.Radius;
+            //calculateTarget(aDestination.WorldVolume, true);
         }
         
-        void calculateTarget(BoundingSphereD sphere, bool isDestination) {
+        /*
+        Vector3D calculateTarget(BoundingSphereD sphere, bool isDestination) {
             onDestination = isDestination;
             var wv = ctr.Grid.WorldVolume;
             var padding = sphere.Radius + wv.Radius + PADDING;
@@ -46,7 +46,7 @@ namespace IngameScript
                 mTarget = sphere.Center + (rejection * padding);
             }
             //ctr.logger.persist(ctr.logger.gps("Calc", mTarget));
-        }
+        }*/
 
         Vector3D orbitalManeuver(BoundingSphereD aShip, BoundingSphereD aObstacle) {
             var result = Vector3D.Zero;
@@ -80,13 +80,13 @@ namespace IngameScript
             return result;
         }
 
-        Vector3D calculateTarget(BoundingSphereD aShip, BoundingSphereD aThing) {
-            var disp = aThing.Center - aShip.Center;
-            var dir = Vector3D.Normalize(disp);
-            return aThing.Center + dir * (aThing.Radius + aShip.Radius + PADDING);
-        }
+        Vector3D calculateTarget(BoundingSphereD aShip, BoundingSphereD aThing) => Vector3D.Normalize(aThing.Center - aShip.Center);
 
-        void collisionDetect() {
+        /// <summary>
+        /// returns desired direction of travel
+        /// </summary>
+        /// <returns></returns>
+        Vector3D collisionDetect() {
             var lvd = ctr.LinearVelocityDirection;
 
             if (lvd.LengthSquared() < 1.0) {
@@ -101,8 +101,8 @@ namespace IngameScript
             }
 
             var wv = ctr.Grid.WorldVolume;
-            bool scanOkay = true;
-            bool needCalc = false;
+
+
             ctr.logger.log("mObstacle.Radius ", mObstacle.Radius);
             //var meToDest = Vector3D.Normalize(mDestination.Position - wv.Center);
             //var meToObst = Vector3D.Normalize(mObstacle.Center - wv.Center);
@@ -110,13 +110,6 @@ namespace IngameScript
             var meToObst = mObstacle.Center - wv.Center;
             var dot = meToDest.Dot(meToObst);
             ctr.logger.log("dot ", dot);
-            if (mObstacle.Radius > 0) {
-                if (dot < 0) {
-                    ctr.logger.persist("CLEARED");
-                    mObstacle.Radius = 0;
-                    needCalc = true;
-                }
-            }
 
             var scanDist = ((wv.Radius * 2) + (ctr.Thrust.StopDistance * 2) + PADDING);
 
@@ -124,7 +117,7 @@ namespace IngameScript
             var scanPoint = wv.Center + lvd * scanDist;
             for (int i = 0; i < 4; i++) {
                 // create a point for scan sphere based on our velocity
-                
+
                 // random dir around point to scan
                 var rd = MAF.ranDir();
                 // keep scans on the far side of the sphere
@@ -134,7 +127,7 @@ namespace IngameScript
                 // random distance from sphere center to scan
                 var scanRadius = 1 + wv.Radius * MAF.random.NextDouble();
                 //ctr.logger.log("base scan radius ", scanDist);
-                
+
                 scanPoint += rd * scanRadius;
                 //ctr.logger.log(ctr.logger.gps("scanPoint", scanPoint));
 
@@ -154,77 +147,60 @@ namespace IngameScript
                         if (mObstacle.Radius == 0) {
                             mObstacle = sphere;
                             //ctr.logger.persist("Setting new " + sphere.Radius);
-                            needCalc = true;
                             break;
                         } else {
-                            switch(mObstacle.Contains(sphere)) {
+                            switch (mObstacle.Contains(sphere)) {
                                 case ContainmentType.Disjoint:
                                     mObstacle = sphere;
                                     //ctr.logger.persist("Replacing " + sphere.Radius);
-                                    needCalc = true;
                                     break;
                                 case ContainmentType.Intersects:
                                     mObstacle = mObstacle.Include(sphere);
                                     //ctr.logger.persist("Including " + mObstacle.Radius);
-                                    needCalc = true;
                                     break;
                             }
                         }
                     }
-                } else {
-                    //ctr.logger.persist("Scan fail");
-                    scanOkay = false;
                 }
             }
-            if (scanOkay) {
-                veloFact *= 1.1;
+            Vector3D result;
+            if (mObstacle.Radius > 0) {
+                result = orbitalManeuver(wv, mObstacle);
+                if (result.IsZero()) {
+                    result = calculateTarget(wv, mObstacle);
+                }
             } else {
-                veloFact *= 0.9;
+                result = calculateTarget(wv, mObstacle);
             }
-            veloFact = MathHelper.Clamp(veloFact, 0.01, 1.0);
-            if (needCalc || (mObstacle.Radius == 0 && mDestination.WorldVolume.Radius != calcRadius)) {
-                if (mObstacle.Radius == 0) {
-                    calcRadius = mDestination.WorldVolume.Radius;
-                    calculateTarget(mDestination.WorldVolume, true);
-                } else {
-                    calculateTarget(mObstacle, false);
-                }
-            }
+            return result;
         }
         
         
         public void Update() {
-    
-            collisionDetect();
+            var wv = ctr.Grid.WorldVolume;
             var m = ModuleManager.WorldMatrix;
-            var dir = MAF.world2pos(mTarget, ModuleManager.WorldMatrix);
-
-            var dist = dir.Normalize();
-            if (!onDestination) {
-                dist = (mDestination.Position - ModuleManager.WorldMatrix.Translation).Length();
-            }
-            ctr.logger.log("dist ", dist);
-            var velocityVec = ctr.LocalLinearVelo;
+            var worldDir = collisionDetect();
+            var localDir = MAF.world2dir(worldDir, m);
+            var llv = ctr.LocalLinearVelo;
             var preferredVelocity = 100.0;
-
+            var dist = (mObstacle.Center - wv.Center).Length() + mObstacle.Radius + wv.Radius + PADDING;
             preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
             ctr.logger.log("preferredVelocity ", preferredVelocity);
-            var preferredVelocityVector = dir * preferredVelocity;
-            var veloReq = preferredVelocityVector - velocityVec;
-            var vrsq = veloReq.LengthSquared();
+            var preferredVelocityVector = localDir * preferredVelocity;
+            var accelReq = 2 * (preferredVelocityVector - llv);
+            //var vrsq = veloReq.LengthSquared();
             
             if (!ctr.Damp) {
-                var disp = mTarget - ModuleManager.WorldMatrix.Translation;
-                if (onDestination && disp.LengthSquared() < 1) {
+                if (dist < 1) {
                     ctr.Gyro.SetTargetDirection(Vector3D.Normalize(mDestination.Position - ctr.Grid.WorldVolume.Center));
                     ctr.Thrust.Acceleration = Vector3D.Zero;
                     Complete =
                     ctr.Damp = true;
                 } else if (dist < 20) {
-                    ctr.Thrust.Acceleration = veloReq;
+                    ctr.Thrust.Acceleration = accelReq;
                     ctr.Gyro.SetTargetDirection(Vector3D.Normalize(mDestination.Position - ctr.Grid.WorldVolume.Center));
                 } else { 
-                    ctr.Thrust.Acceleration = veloReq;
+                    ctr.Thrust.Acceleration = accelReq;
                     ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
                 }
             }
