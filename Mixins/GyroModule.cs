@@ -14,6 +14,17 @@ namespace IngameScript
         double smallMax = 0.4;  // angle remaining in turn when smallFactor is applied
         double smallFact = 1.9; // factor applied when within smallMax
 
+        public bool Active {
+            get { return base.Active; }
+            private set {
+                ModuleManager.logger.persist("Gyro setting from " + base.Active + " to " + value);
+                if (base.Active != value) {
+                    base.Active = value;
+                    init();
+                }
+            }
+        }
+
         Vector3D mTargetPosition;
         Vector3D mTargetDirection;
         bool calcDirection = false;
@@ -25,7 +36,7 @@ namespace IngameScript
             onSave = SaveAction;
             onLoad = LoadAction;
             mainMenu();
-            Nactivate();
+            init();
             onPage = p => {
                 if (onUpdate != UpdateAction) {
                     onUpdate = UpdateAction;
@@ -209,7 +220,6 @@ namespace IngameScript
             init();
             var emm = mMenuItems[0];
             mMenuItems[0] = new MenuItem(Active ? "Deactivate" : "Activate", emm.State, emm.Method);
-            
         }
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
@@ -222,32 +232,34 @@ namespace IngameScript
 
         
         void UpdateAction() {
-            if (!Active) return;
+            if (!Active) {
+                return;
+            }
             var sc = controller.Remote;
             if (sc == null) {
                 init();
                 return;
             }
+            var m = controller.Remote.WorldMatrix;
             if (calcDirection) {
                 if (mTargetPosition.IsZero()) {
                     mTargetDirection = Vector3D.Zero;
                 } else {
-                    mTargetDirection = Vector3D.Normalize(mTargetPosition - sc.WorldMatrix.Translation);
+                    mTargetDirection = Vector3D.Normalize(mTargetPosition - m.Translation);
                 }
             }
             if (mTargetDirection.IsZero()) {
                 init();
-                Active = false;
                 return;
             }
 
             double pitch, yaw;
 
             var sv = controller.ShipVelocities;
-            var av = MAF.world2dir(sv.AngularVelocity, sc.WorldMatrix);
+            var av = MAF.world2dir(sv.AngularVelocity, m);
 
             
-            MAF.getRotationAngles(mTargetDirection, sc.WorldMatrix, out yaw, out pitch);
+            MAF.getRotationAngles(mTargetDirection, m, out yaw, out pitch);
 
 
             if (Math.Abs(pitch) < smallMax) {
@@ -305,7 +317,7 @@ namespace IngameScript
 
             pitch += pitchDif;
             yaw += yawDif;            
-            applyGyroOverride(sc.WorldMatrix, pitch, yaw, 0);
+            applyGyroOverride(m, pitch, yaw, 0);
         }
 
         public void setGyrosEnabled(bool aValue) {
@@ -324,6 +336,8 @@ namespace IngameScript
             if (!aGyro.GyroOverride) {
                 aGyro.GyroOverride = true;
             }
+            aGyro.ShowInTerminal = 
+            aGyro.ShowOnHUD = false;
             aGyro.Yaw = 0;
             aGyro.Pitch = 0;
             aGyro.Roll = 0;

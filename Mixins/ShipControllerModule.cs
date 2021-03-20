@@ -11,6 +11,7 @@ namespace IngameScript {
         public readonly float GyroSpeed;
         public readonly IMyCubeGrid Grid;
 
+
         public ThyDetectedEntityInfo Target;
         public MyShipVelocities ShipVelocities { get; private set; }
         public Vector3D LinearVelocityDirection { get; private set; }
@@ -25,7 +26,7 @@ namespace IngameScript {
         public GyroModule Gyro { get; private set; }
         public CameraModule Camera { get; private set; }
 
-        public bool Damp = true;
+        public bool Damp = false;
         public ShipControllerModule() {
 
             
@@ -130,17 +131,24 @@ namespace IngameScript {
             Mass = sm.PhysicalMass;
             var lastVelo = ShipVelocities.LinearVelocity;
             ShipVelocities = Remote.GetShipVelocities();
-
+            logger.log(Remote.CustomName);
             var change = ShipVelocities.LinearVelocity - lastVelo;
             var accel = change.Length() / ModuleManager.Program.Runtime.TimeSinceLastRun.TotalSeconds;
 
-            logger.log($"Acceleration ", accel);
+            //logger.log($"Acceleration ", accel);
             var lvd = ShipVelocities.LinearVelocity;
-
-            
             LinearVelocity = lvd.Normalize();
-            LinearVelocityDirection = lvd;
-            LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, Remote.WorldMatrix);
+            if (lvd.IsValid()) {
+                LinearVelocityDirection = lvd;
+            } else {
+                lvd = Vector3D.Zero;
+                LinearVelocity = 0;
+            }
+            
+            
+            
+            LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, ModuleManager.WorldMatrix);
+            //logger.log("LocalLinearVelo", LocalLinearVelo);
         }
         Mission m;
         void UpdateGlobal() {
@@ -148,16 +156,16 @@ namespace IngameScript {
 
             if (Target != null) {
                 m = new Mission(this, Target);
-                logger.persist($"SET NEW MISSION TO {Target.Name}");
+                //logger.persist($"SET NEW MISSION TO {Target.Name}");
                 Target = null;
-                
+                Damp = false;
             } else if (m != null) {
 
                 if (m.Complete) {
                     logger.persist("MISSION COMPLETE");
                     m = null;
                 } else {
-                    logger.log("MISSION UNDERWAY");
+                    //logger.log("MISSION UNDERWAY");
                     m.Update();
                 }
             }

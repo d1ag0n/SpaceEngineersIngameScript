@@ -96,8 +96,11 @@ namespace IngameScript {
         }
         public ThyDetectedEntityInfo objThyDetectedEntityInfo(IEnumerator<string> e) => new ThyDetectedEntityInfo(
             objlong(e), objstring(e), objThyDetectedEntityType(e), objVector3D_(e), objMatrixD(e),
-            objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objlong(e), objBoundingSphereD(e)
+            objVector3D(e), objMyRelationsBetweenPlayerAndBlock(e), objDateTime(e), objBoundingSphereD(e)
         );
+
+        public void str(DateTime t) => str(t.ToOADate());
+        public DateTime objDateTime(IEnumerator<string> e) => DateTime.FromOADate(objdouble(e));
         public void str(MyRelationsBetweenPlayerAndBlock r) => sb.AppendLine(r.ToString());
         public MyRelationsBetweenPlayerAndBlock objMyRelationsBetweenPlayerAndBlock(IEnumerator<string> e) {
             var s = e.Current;

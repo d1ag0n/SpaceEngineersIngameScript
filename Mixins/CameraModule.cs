@@ -47,7 +47,7 @@ namespace IngameScript
                     if (thy == null) {
                         cluster();
                     } else {
-                        thy.Seen();
+                        thy.Seen(mCurrentIncoming.Value);
                         mCurrentIncoming = null;
                     }
                 } else {
@@ -169,6 +169,9 @@ namespace IngameScript
         readonly Queue<MyDetectedEntityInfo> mIncoming = new Queue<MyDetectedEntityInfo>();
 
         public void AddNew(MyDetectedEntityInfo aEntity, out ThyDetectedEntityInfo thy) {
+            if (aEntity.EntityId == 0) {
+                throw new Exception();
+            }
             thy = Find(aEntity.EntityId);
             if (thy == null) {
                 mIncoming.Enqueue(aEntity); 
@@ -178,7 +181,7 @@ namespace IngameScript
                     onUpdate = ClusterAction;
                 }
             } else {
-                thy.Seen();
+                thy.Seen(aEntity);
                 //logger.persist($"CameraModule.AddNew - updating {thy.Name}");
             }
         }
@@ -195,8 +198,8 @@ namespace IngameScript
                 p = p % 2;
                 mMenuItems.Clear();
                 if (deleted || p == 0) {
-                    var ts = (MAF.time - e.TimeStamp) / HR;
-                    mMenuItems.Add(new MenuItem($"Time: {ts:f2} hours ago"));
+                    var ts = (MAF.time - e.TimeStamp).TotalHours;
+                    mMenuItems.Add(new MenuItem($"Time: {e.TimeStamp} ({ts:f2} hours ago)"));
                     mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship}"));
                     mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
                     mMenuItems.Add(new MenuItem($"Distance: {(e.Position - Grid.WorldMatrix.Translation).Length():f0}"));
@@ -246,6 +249,7 @@ namespace IngameScript
 
 
         public override bool Accept(IMyTerminalBlock aBlock) {
+            bool result = false; 
             if (aBlock is IMyMotorStator) {
                 var rotor = aBlock as IMyMotorStator;
                 if (ModuleManager.HasTag(rotor, "camera")) {
@@ -255,19 +259,17 @@ namespace IngameScript
                     rotor.Torque = 1000.0f;
                     rotor.TargetVelocityRad = 1.0f;
                 }
-                return true;
-            }
-            bool result = false;
-            if (aBlock.CubeGrid == ModuleManager.Program.Me.CubeGrid) {
+                result = true;
+            } else if (aBlock.CubeGrid == ModuleManager.Program.Me.CubeGrid) {
                 result = base.Accept(aBlock);
                 if (result) {
 
                     if (mCameraList == null) {
-                        mCameraList = new CameraList(aBlock.CubeGrid);
+                        mCameraList = new CameraList();
                     }
                     var camera = aBlock as IMyCameraBlock;
                     
-                    mCameraList.Add(camera, "Camera ");
+                    mCameraList.Add(camera);
                     //logger.persist(camera.CustomName);
                     camera.ShowInTerminal = false;
                     camera.Enabled = true;
@@ -285,12 +287,15 @@ namespace IngameScript
         /// <returns></returns>
         public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo entity, out ThyDetectedEntityInfo thy, double aAddDist = 0) {
             if (mCameraList.Scan(aTarget, out entity, aAddDist)) {
-                AddNew(entity, out thy);
-            } else {
-                thy = null;
-                entity = default(MyDetectedEntityInfo);
+                if (entity.EntityId != 0) {
+                    AddNew(entity, out thy);
+                } else {
+                    thy = null;
+                }
+                return true;
             }
-            
+            thy = null;
+            entity = default(MyDetectedEntityInfo);
             return false;
         }
 

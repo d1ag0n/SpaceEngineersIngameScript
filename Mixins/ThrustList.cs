@@ -8,53 +8,60 @@ namespace IngameScript {
     public class ThrustList : BlockDirList<IMyThrust> {
         //public Vector3D Acceleration;
         // these provide acceleration in the respective direction
-        public double LeftForce;
-        public double RightForce;
-        public double UpForce;
-        public double DownForce;
-        public double FrontForce;
-        public double BackForce;
+        public double LeftForce => forces[2];
+        public double RightForce => forces[3];
+        public double UpForce => forces[4];
+        public double DownForce => forces[5];
+        public double FrontForce => forces[0];
+        public double BackForce => forces[1];
+        double[] forces = new double[6];
 
+
+        // Forward = 0,
+        // Backward = 1,
+        // Left = 2,
+        // Right = 3,
+        // Up = 4,
+        // Down = 5
         public void Update(ref Vector3D aAccel, double aMass, bool emergency = false) {
-            pickList(aMass, ref aAccel.X, mLeft, mRight, ref LeftForce, ref RightForce, emergency);
-            pickList(aMass, ref aAccel.Y, mDown, mUp, ref DownForce, ref UpForce, emergency);
-            pickList(aMass, ref aAccel.Z, mFront, mBack, ref FrontForce, ref BackForce, emergency);
+            int f = 0, b = 1, l = 2, r = 3, u = 4, d = 5;
+            if (aAccel.X < 0) {
+                r = 2; l = 3;
+            }
+            if (aAccel.Y > 0) {
+                u = 5; d = 4;
+            }
+            if (aAccel.Z < 0) {
+                f = 1; b = 0;
+            }
+
+            handleLists(aMass, ref aAccel.X, l, r, emergency);
+            handleLists(aMass, ref aAccel.Y, u, d, emergency);
+            handleLists(aMass, ref aAccel.Z, f, b, emergency);
             
         }
 
-        void pickList(double aMass, ref double aAccel, List<IMyThrust> aNeg, List<IMyThrust> aPos, ref double aFNeg, ref double aFPos, bool emergency) {
-            var o = aNeg;
-            var swap = false;
-            if (aAccel > 0) {
-                swap = true;
-                aNeg = aPos;
-                aPos = o;
-            }
-            var F1 = runList(aMass, ref aAccel, aNeg, emergency);
-            var F2 = 0.0;
-            foreach (var t in aPos) {
+        void handleLists(double aMass, ref double aAccel, int aUse, int aDisable, bool emergency) {
+
+            runList(aMass, ref aAccel, aUse, emergency);
+            var forceSum = 0.0;
+            foreach (var t in mLists[aDisable]) {
                 if (t.Enabled) t.Enabled = false;
-                F2 += t.MaxEffectiveThrust;
+                forceSum += t.MaxEffectiveThrust;
             }
-            if (swap) {
-                aFPos = F1;
-                aFNeg = F2;
-            } else {
-                aFNeg = F1;
-                aFPos = F2;
-            }
+            forces[aDisable] = forceSum;
         }
 
-        double runList(double aMass, ref double aAccel, List<IMyThrust> aList, bool emergency) {
+        void runList(double aMass, ref double aAccel, int aList, bool emergency) {
             var A = Math.Abs(aAccel);
             var F = aMass * A;
             //ModuleManager.logger.log($"F = {F}");
             //ModuleManager.logger.log($"M = {aMass}");
             //ModuleManager.logger.log($"A = {A}");
-            var result = 0.0;
-            foreach (var t in aList) {
+            var forceSum = 0.0;
+            foreach (var t in mLists[aList]) {
                 double met = t.MaxEffectiveThrust;
-                result += met;
+                forceSum += met;
                 if (A > 0 && (met / t.MaxThrust > 0.75 || (emergency && t.MaxEffectiveThrust > 0))) {
                     if (t.IsFunctional) {
                         if (!t.Enabled) t.Enabled = true;
@@ -78,7 +85,7 @@ namespace IngameScript {
                     t.ThrustOverride = 0;
                 }
             }
-            return result;
+            forces[aList] = forceSum;
         }
     }
 }

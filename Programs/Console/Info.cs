@@ -7,26 +7,40 @@ using VRageMath;
 
 namespace commandline {
     class Info {
+        static double? ffoo1() => 0;
+        static double? ffoo2() => new double?(0.0);
         static void collide() {
-            var thing = new Vector3D(0, 0, -10);
-            var me = new Vector3D(0, 0, -1);
+            var foo1 = ffoo1();
+            var foo2 = ffoo2();
+            bool value = 0 == new double?(0);
+
+
+            var thing = new Vector3D(0, 20, 0);
+            var me = new Vector3D(0, 10, 0);
             var disp = thing - me;
             var norm = disp;
-            var mag = norm.Normalize();
+            norm.Normalize();
 
-            var velo = new Vector3D(1, 0, -3);
-            var veloNorm = velo;
-            var veloMag = veloNorm.Normalize();
+            var velo = new Vector3D(1, 3, 0);
+            var veloNorm = velo;   
+            veloNorm.Normalize(); 
 
-            double d1, d2;
-            var r1 = reject(veloNorm, norm, out d1);
-            var r2 = reject(norm, veloNorm, out d2);
-
+            var rejection = reject(veloNorm, norm);
+            var intersection = thing + rejection;
+            var bb = new BoundingBoxD();
+            var rd = new RayD();
+            
             return;
         }
+        public static Vector3D orthoProject(Vector3D aTarget, Vector3D aPlane, Vector3D aNormal) =>
+            aTarget - ((aTarget - aPlane).Dot(aNormal) * aNormal);
         public static Vector3D reject(Vector3D a, Vector3D b, out double aDot) {
             aDot = a.Dot(b);
-            return a - aDot / b.Dot(b) * b;
+            return a - aDot / b.LengthSquared() * b;
+        }
+        public static Vector3D wreject(Vector3D a, Vector3D b, out double aDot) {
+            aDot = a.Dot(b);
+            return a - aDot / b.LengthSquared() * b;
         }
         public static Vector3D reject(Vector3D a, Vector3D b) => a - a.Dot(b) / b.Dot(b) * b;
         static void accel() {
@@ -95,7 +109,7 @@ namespace commandline {
         static void Main(string[] args) {
             //accel();
             collide();
-            Console.ReadKey();
+            //Console.ReadKey();
         }
     }
 }

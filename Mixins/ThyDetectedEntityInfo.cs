@@ -1,4 +1,5 @@
 using Sandbox.ModAPI.Ingame;
+using System;
 using VRage.Game;
 using VRageMath;
 
@@ -9,18 +10,35 @@ namespace IngameScript {
         public readonly long EntityId;
         public string Name { get; private set; }
         public ThyDetectedEntityType Type { get; private set; }
-        public readonly Vector3D? HitPosition;
-        public readonly MatrixD Orientation;
-        public readonly Vector3 Velocity;
-        public readonly MyRelationsBetweenPlayerAndBlock Relationship;
+        public Vector3D? HitPosition { get; private set; }
+        public MatrixD Orientation { get; private set; }
+        public Vector3 Velocity { get; private set; }
+        public MyRelationsBetweenPlayerAndBlock Relationship { get; private set; }
         public BoundingSphereD WorldVolume { get; private set; }
-        public double TimeStamp { get; private set; }
+        public DateTime TimeStamp { get; private set; }
         public Vector3D Position => WorldVolume.Center;
         public ThyDetectedEntityInfo() { }
-        public void Seen() {
+        public void Seen(MyDetectedEntityInfo entity) {
+            switch (Type) {
+                case ThyDetectedEntityType.Asteroid:
+                case ThyDetectedEntityType.AsteroidCluster:
+                case ThyDetectedEntityType.Planet:
+                    WorldVolume = WorldVolume.Include(BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox));
+                    break;
+                default:
+                    WorldVolume = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
+                    break;
+            }
+            
+            if (entity.HitPosition.HasValue) {
+                HitPosition = entity.HitPosition;
+            }
+            Orientation = entity.Orientation;
+            Relationship = entity.Relationship;
+            Velocity = entity.Velocity;
             TimeStamp = MAF.time;
         }
-        public ThyDetectedEntityInfo(long aEntityId, string aName, ThyDetectedEntityType aType, Vector3D? aHitPosition, MatrixD aOrientation, Vector3 aVelocity, MyRelationsBetweenPlayerAndBlock aRelationship, double aTimeStamp, BoundingSphereD aSphere) {
+        public ThyDetectedEntityInfo(long aEntityId, string aName, ThyDetectedEntityType aType, Vector3D? aHitPosition, MatrixD aOrientation, Vector3 aVelocity, MyRelationsBetweenPlayerAndBlock aRelationship, DateTime aDateTime, BoundingSphereD aSphere) {
             EntityId = aEntityId;
             Name = aName;
             Type = aType;
@@ -28,7 +46,7 @@ namespace IngameScript {
             Orientation = aOrientation;
             Velocity = aVelocity;
             Relationship = aRelationship;
-            TimeStamp = aTimeStamp;
+            TimeStamp = aDateTime;
             WorldVolume = aSphere;
         }
 
@@ -54,7 +72,7 @@ namespace IngameScript {
                 Name = aName;
             }
         }
-        public void SetTimeStamp(double aTime) => TimeStamp = aTime;
+        public void SetTimeStamp(DateTime aDateTime) => TimeStamp = aDateTime;
         public bool IsClusterable => Type == ThyDetectedEntityType.AsteroidCluster | Type == ThyDetectedEntityType.Asteroid;
         public void Cluster(BoundingSphereD aSphere) {
             if (Type == ThyDetectedEntityType.Asteroid) {

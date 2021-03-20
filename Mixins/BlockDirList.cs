@@ -5,66 +5,26 @@ using VRageMath;
 
 namespace IngameScript {
 
+    /// <summary>
+    /// Forward = 0,
+    /// Backward = 1,
+    /// Left = 2,
+    /// Right = 3,
+    /// Up = 4,
+    /// Down = 5
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class BlockDirList<T> where T: IMyTerminalBlock {
-        protected readonly List<T> mLeft = new List<T>();
-        protected readonly List<T> mRight = new List<T>();
-        protected readonly List<T> mUp = new List<T>();
-        protected readonly List<T> mDown = new List<T>();
-        protected readonly List<T> mFront = new List<T>();
-        protected readonly List<T> mBack = new List<T>();
+        protected readonly List<T>[] mLists = new List<T>[6];
 
-        public void Add(T aBlock, string aPrefix = "") {
-            var f = aBlock.Orientation.Forward;
-
-            if (f == Base6Directions.Direction.Backward) {
-                mBack.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Back";
-            } else if (f == Base6Directions.Direction.Down) {
-                mDown.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Down";
-            } else if (f == Base6Directions.Direction.Right) {
-                mRight.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Right";
-            } else if (f == Base6Directions.Direction.Forward) {
-                mFront.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Front";
-            } else if (f == Base6Directions.Direction.Up) {
-                mUp.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Up";
-            } else if (f == Base6Directions.Direction.Left) {
-                mLeft.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Left";
-            }
+        public BlockDirList() {
+            for (int i = 0; i < 6; i++) mLists[i] = new List<T>();
         }
-        public void Add(IMyShipController aController, T aBlock, string aPrefix = "") {
-            var o = aController.Orientation;
-            var f = aBlock.Orientation.Forward;
-            
-            if (aPrefix == "") {
-                aPrefix = typeof(T).ToString();
-            }
-            aBlock.ShowInTerminal = false;
-            
-            if (f == o.Forward) {
-                mBack.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Back";
-            } else if (f == o.Up) {
-                mDown.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Down";
-            } else if (f == o.Left) {
-                mRight.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Right";
-            } else if (f == Base6Directions.GetOppositeDirection(o.Forward)) {
-                mFront.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Front";
-            } else if (f == Base6Directions.GetOppositeDirection(o.Up)) {
-                mUp.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Up";
-            } else if (f == Base6Directions.GetOppositeDirection(o.Left)) {
-                mLeft.Add(aBlock);
-                aBlock.CustomName = $"{aPrefix}Left";
-            }
+        public void Add(T aBlock) {
+            aBlock.CustomName = aBlock.Orientation.Forward.ToString();
+            aBlock.ShowInTerminal = 
+            aBlock.ShowOnHUD = false;
+            mLists[(int)aBlock.Orientation.Forward].Add(aBlock);
         }
-        
     }
 }

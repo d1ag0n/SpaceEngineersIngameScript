@@ -1,31 +1,34 @@
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
-using VRage.Game.ModAPI.Ingame;
+using System.Text;
 using VRageMath;
 
 namespace IngameScript {
 
     class CameraList : BlockDirList<IMyCameraBlock> {
-        readonly IMyCubeGrid Grid;
-        public CameraList(IMyCubeGrid aGrid) {
-            Grid = aGrid;
-        }
-
+        static int count = 0;
+        //readonly IMyCubeGrid Grid;
+        public CameraList() {}
+        readonly StringBuilder sb = new StringBuilder();
         public bool Scan(Vector3D aTargetWorld, out MyDetectedEntityInfo aEntity, double aAddDist = 0) {
-            var targetLocal = MAF.world2pos(aTargetWorld, Grid.WorldMatrix);
+            ModuleManager.Program.Me.CustomData = aTargetWorld.ToString() + Environment.NewLine;
+            var targetLocal = MAF.world2pos(aTargetWorld, ModuleManager.WorldMatrix);
             var targetNormal = Vector3D.Normalize(targetLocal);
-            //ModuleManager.logger.persist(targetNormal);
-            //ModuleManager.logger.persist("targetNormal");
-
-
-            foreach (var c in pickList(targetNormal)) {
+            int time = int.MaxValue;
+            
+            sb.Clear();
+            var list = pickList(targetNormal);
+            //sb.AppendLine(list.Count + " cameras in list");
+            count++;
+            sb.AppendLine(ModuleManager.logger.gps("aTargetWorld " + count, aTargetWorld));
+            foreach (var c in list) {
                 var dir = aTargetWorld - c.WorldMatrix.Translation;
                 var dist = dir.Normalize() + aAddDist;
                 //ModuleManager.logger.log(c.CustomName);
                 if (c.AvailableScanRange > dist) {
                     double azimuth, elevation;
-                    if (testCameraAngles(c, dir)) {
+                    if (testCameraAngles(c, ref dir)) {
                         Vector3D.GetAzimuthAndElevation(dir, out azimuth, out elevation);
                         azimuth = -(azimuth * (180.0 / Math.PI));
                         elevation = (elevation * (180.0 / Math.PI));
@@ -33,23 +36,49 @@ namespace IngameScript {
 
                         if (aEntity.Type != MyDetectedEntityType.None) {
                             if (aEntity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
+                                sb.AppendLine(c.CustomName + " scanned own grid " + aEntity.EntityId + " " + azimuth + " " + elevation);
+                                sb.AppendLine(ModuleManager.logger.gps(c.CustomName, c.WorldMatrix.Translation));
                                 continue;
                             }
                             if (ModuleManager.ConnectedGrid(aEntity.EntityId)) {
+                                sb.AppendLine("Connected grid");
                                 continue;
                             }
-                            return true;
+                            sb.AppendLine(ModuleManager.logger.gps(aEntity.Type + " " + aEntity.Name, aEntity.HitPosition.Value));
                         }
+                        ModuleManager.logger.log(sb.ToString());
+                        return true;
+                    } else {
+                        Vector3D.GetAzimuthAndElevation(dir, out azimuth, out elevation);
+                        azimuth = -(azimuth * (180.0 / Math.PI));
+                        elevation = (elevation * (180.0 / Math.PI));
+                       
+                        sb.AppendLine(ModuleManager.logger.gps("Camera " + count, c.WorldMatrix.Translation));
+                        sb.AppendLine(ModuleManager.logger.gps("Camera " + count + " F", c.WorldMatrix.Translation + c.WorldMatrix.Forward));
+
+
+                        //sb.AppendLine("out of angle " + azimuth + " " + elevation);
                     }
+                } else {
+                    sb.AppendLine("Not enough range");
+                    int t = c.TimeUntilScan(dist);
+                    if (t < time) {
+                        time = t;
+                    }
+
                 }
             }
+            if (time != int.MaxValue) {
+                sb.AppendLine("Time until scan " + time);
+            }
             aEntity = new MyDetectedEntityInfo();
+            ModuleManager.logger.persist(sb.ToString());
             return false;
         }
-        bool testCameraAngles(IMyCameraBlock camera, Vector3D aDirection) {
+        bool testCameraAngles(IMyCameraBlock camera, ref Vector3D aDirection) {
             aDirection = Vector3D.Rotate(aDirection, MatrixD.Transpose(camera.WorldMatrix));
 
-            if (aDirection.Z > 0) //pointing backwards
+            if (aDirection.Z > 0)
                 return false;
 
             var yawTan = Math.Abs(aDirection.X / aDirection.Z);
@@ -59,15 +88,10 @@ namespace IngameScript {
 
         }
         List<IMyCameraBlock> pickList(Vector3D targetLocal) {
-            var cd = Base6Directions.GetClosestDirection(targetLocal);
-            switch (cd) {
-                case Base6Directions.Direction.Forward: return mFront;
-                case Base6Directions.Direction.Backward: return mBack;
-                case Base6Directions.Direction.Left: return mLeft;
-                case Base6Directions.Direction.Right: return mRight;
-                case Base6Directions.Direction.Up: return mUp;
-            }
-            return mDown;
+            Base6Directions.Direction cd;
+            cd = Base6Directions.GetClosestDirection(targetLocal);
+            //sb.AppendLine(cd.ToString());
+            return mLists[(int)cd];
         }
     }
 

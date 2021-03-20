@@ -21,12 +21,12 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        readonly GTS gts;
-        readonly Logger g;
+        
+        
         readonly IMyCameraBlock cam;
         readonly IMyTextPanel lcd;
         readonly IMyShipController pit;
-        readonly Scanner scanner;
+        
         readonly List<IMyCameraBlock> cameras = new List<IMyCameraBlock>();
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;

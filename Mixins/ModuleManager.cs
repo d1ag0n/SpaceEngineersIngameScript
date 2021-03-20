@@ -2,9 +2,18 @@ using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using VRage.Game.ModAPI.Ingame;
+using VRageMath;
 
 namespace IngameScript {
     public static class ModuleManager {
+        public static MatrixD WorldMatrix {
+            get {
+                var g = Program.Me.CubeGrid;
+                var m = g.WorldMatrix;
+                m.Translation = g.WorldVolume.Center;
+                return m;
+            }
+        }
         static readonly Lag mLag = new Lag(6);
         public static double Lag => mLag.Last;
         public static string UserInput = "DEFAULT";
