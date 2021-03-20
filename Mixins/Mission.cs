@@ -154,7 +154,7 @@ namespace IngameScript
                             sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
                         } else {
                             sphere = thy.WorldVolume;
-                            sphere = sphere.Include(BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox));
+                            //sphere = sphere.Include(BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox));
                         }
                         //ctr.logger.persist("Detected a thing " + entity.EntityId);
                         if (mObstacle.Radius == 0) {
