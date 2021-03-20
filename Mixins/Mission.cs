@@ -17,7 +17,7 @@ namespace IngameScript
         double veloFact = 0.1;
 
         public bool Complete { get; private set; }
-        //bool onDestination = false;
+        bool onDestination;
         //double calcRadius = 0;
         public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) {
             ctr = aController;
@@ -67,20 +67,28 @@ namespace IngameScript
                 } else {
                     exitOrbit = mDestination.Position + dirFromDestToShip * (rayIntersect.Value + aShip.Radius + PADDING);
                 }
-                var distToExit = (exitOrbit - aShip.Center).Length();
-                if (distToExit > ctr.Thrust.StopDistance) {
+                var distToExit = (exitOrbit - aShip.Center).LengthSquared();
+                if (distToExit > (ctr.Thrust.StopDistance * ctr.Thrust.StopDistance)) {
                     var dispFromObstToShip = aShip.Center - aObstacle.Center;
                     var dirFromObstToShip = dispFromObstToShip;
                     var distFromObstToShip = dirFromObstToShip.Normalize();
-                    var orbitalPlane = aObstacle.Center + dirFromObstToShip * (aObstacle.Radius + aShip.Radius + PADDING);
-                    var exitProjection = MAF.orthoProject(exitOrbit, orbitalPlane, dirFromObstToShip);
-                    result = Vector3D.Normalize(exitProjection - aShip.Center);
+                    var minOrbitalDist = (aObstacle.Radius + aShip.Radius + PADDING);
+
+                    var minOrbitalPlane = aObstacle.Center + dirFromObstToShip * minOrbitalDist;
+                    
+                    if ((aObstacle.Center - aShip.Center).LengthSquared() < (minOrbitalDist * minOrbitalDist)) {
+                        result = dirFromObstToShip;
+                    } else {
+                        var orbitalPlane = aObstacle.Center + dirFromObstToShip * minOrbitalDist;
+                        var exitProjection = MAF.orthoProject(exitOrbit, orbitalPlane, dirFromObstToShip);
+                        result = Vector3D.Normalize(exitProjection - orbitalPlane);
+                    }
                 }
             }
             return result;
         }
 
-        Vector3D calculateTarget(Vector3D aShip, Vector3D aThing) => Vector3D.Normalize(aThing - aShip);
+        //Vector3D calculateTarget(Vector3D aShip, Vector3D aThing) => Vector3D.Normalize(aThing - aShip);
 
         /// <summary>
         /// returns desired direction of travel
@@ -163,17 +171,20 @@ namespace IngameScript
                     }
                 }
             }
-            Vector3D result;
+            var result = Vector3D.Zero;
             if (mObstacle.Radius > 0) {
                 result = orbitalManeuver(wv, mObstacle);
                 if (result.IsZero()) {
-                    result = calculateTarget(wv.Center, mDestination.Position);
+                    //result = calculateTarget(wv.Center, mDestination.Position);
+                    //onDestination = true;
                     ModuleManager.logger.log("Direct in progress");
                 } else {
+                    //onDestination = false;
                     ModuleManager.logger.log("Orbital in progress");
                 }
             } else {
-                result = calculateTarget(wv.Center, mDestination.Position);
+                //result = calculateTarget(wv.Center, mDestination.Position);
+                //onDestination = true;
                 ModuleManager.logger.log("Direct in progress");
             }
             return result;
@@ -184,14 +195,27 @@ namespace IngameScript
             var wv = ctr.Grid.WorldVolume;
             var m = ModuleManager.WorldMatrix;
             var worldDir = collisionDetect();
+
+            var dispFromDestToShip = wv.Center - mDestination.Position;
+            var dirFromDestToShip = dispFromDestToShip;
+            var distFromDestToShip = dirFromDestToShip.Normalize();
+            var stop = mDestination.Position + dirFromDestToShip * (mDestination.WorldVolume.Radius + wv.Radius + PADDING);
+            var stopDisp = stop - wv.Center;
+            var stopDir = stopDisp;
+            var dist = stopDir.Normalize();
+            if (worldDir.IsZero()) {
+                worldDir = stopDir;
+            }
             var localDir = MAF.world2dir(worldDir, m);
             var llv = ctr.LocalLinearVelo;
-            var preferredVelocity = 100.0;
-            var dist = (mObstacle.Center - wv.Center).Length() + mObstacle.Radius + wv.Radius + PADDING;
-            preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
+            var preferredVelocity = 99.999;
+            ctr.logger.log("dist ", dist);
+            //preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
+            preferredVelocity = MathHelperD.Clamp((dist / 2) / ctr.Thrust.StopDistance, 0, 1.0) * preferredVelocity;
+
             ctr.logger.log("preferredVelocity ", preferredVelocity);
             var preferredVelocityVector = localDir * preferredVelocity;
-            var accelReq = (preferredVelocityVector - llv);
+            var accelReq = 2 * (preferredVelocityVector - llv);
 
             //var vrsq = veloReq.LengthSquared();
             
