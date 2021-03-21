@@ -32,10 +32,10 @@ namespace IngameScript {
         public static Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
         
         public static void Update() {
-            mLag.update(Program.Runtime.LastRunTimeMs);
+            logger.log(mLag.update(Program.Runtime.LastRunTimeMs));
             try {
                 logger.log(DateTime.Now.ToString());
-                logger.log(logger.gps("WV", Program.Me.CubeGrid.WorldVolume.Center));
+                //logger.log(logger.gps("WV", Program.Me.CubeGrid.WorldVolume.Center));
                 for (int i = 1; i < mModules.Count; i++) {
                     mModules[i].onUpdate?.Invoke();
                 }

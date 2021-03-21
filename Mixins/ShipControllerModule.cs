@@ -131,7 +131,7 @@ namespace IngameScript {
             Mass = sm.PhysicalMass;
             var lastVelo = ShipVelocities.LinearVelocity;
             ShipVelocities = Remote.GetShipVelocities();
-            logger.log(Remote.CustomName);
+            //logger.log(Remote.CustomName);
             var change = ShipVelocities.LinearVelocity - lastVelo;
             var accel = change.Length() / ModuleManager.Program.Runtime.TimeSinceLastRun.TotalSeconds;
 

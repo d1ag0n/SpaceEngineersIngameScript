@@ -14,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Delegates.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IGCModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />

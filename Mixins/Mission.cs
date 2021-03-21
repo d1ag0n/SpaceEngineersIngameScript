@@ -114,7 +114,7 @@ namespace IngameScript
             var wv = ctr.Grid.WorldVolume;
 
 
-            ctr.logger.log("mObstacle.Radius ", mObstacle.Radius);
+            //ctr.logger.log("mObstacle.Radius ", mObstacle.Radius);
             //var meToDest = Vector3D.Normalize(mDestination.Position - wv.Center);
             //var meToObst = Vector3D.Normalize(mObstacle.Center - wv.Center);
             //var meToDest = mDestination.Position - wv.Center;
@@ -221,15 +221,15 @@ namespace IngameScript
                     //result = calculateTarget(wv.Center, mDestination.Position);
                     //onDestination = true;
                     //mObstacle.Radius = 0;
-                    ModuleManager.logger.log("Direct in progress");
+                    //ModuleManager.logger.log("Direct in progress");
                 } else {
                     //onDestination = false;
-                    ModuleManager.logger.log("Orbital in progress");
+                    //ModuleManager.logger.log("Orbital in progress");
                 }
             } else {
                 //result = calculateTarget(wv.Center, mDestination.Position);
                 //onDestination = true;
-                ModuleManager.logger.log("Direct in progress");
+                //ModuleManager.logger.log("Direct in progress");
             }
             return lastOrbital;
         }
@@ -254,12 +254,12 @@ namespace IngameScript
             var localDir = MAF.world2dir(worldDir, m);
             var llv = ctr.LocalLinearVelo;
             
-            ctr.logger.log("dist ", dist);
+            //ctr.logger.log("dist ", dist);
             ctr.logger.log("Estimated arrival ", (dist / ctr.LinearVelocity) / 60.0, " minutes");
             //preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
             var preferredVelocity = MathHelperD.Clamp((dist / 2) / ctr.Thrust.StopDistance, 0, 1.0) * mPreferredVelocity;
 
-            ctr.logger.log("preferredVelocity ", preferredVelocity);
+            //ctr.logger.log("preferredVelocity ", preferredVelocity);
             var preferredVelocityVector = localDir * preferredVelocity;
             var accelReq = 2 * (preferredVelocityVector - llv);
 

@@ -175,7 +175,7 @@ namespace IngameScript {
                 //var wStop = stop(controller.LocalLinearVelo, vA);
 
                 //logger.log($"Stop       {llv.Length()}");
-                logger.log($"StopDistance {StopDistance:f0}");
+                //logger.log($"StopDistance {StopDistance:f0}");
                 //logger.log($"wStop      {wStop.Length()}");
                 //logger.log($"yStop      {yStop}");
                 //logger.log($"zStop      {zStop}");
