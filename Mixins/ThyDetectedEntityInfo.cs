@@ -1,12 +1,20 @@
 using Sandbox.ModAPI.Ingame;
 using System;
+using System.Collections.Generic;
 using VRage.Game;
 using VRageMath;
 
 namespace IngameScript {
     public class ThyDetectedEntityInfo {
 
-        public static readonly NameGen Namer = new NameGen();
+        static HashSet<string> names = new HashSet<string>();
+        static readonly NameGen _namer = new NameGen();
+        public static string GenerateName() {
+            string result;
+            do { result = _namer.Next(MAF.random.Next(2, 4)); } while (names.Contains(result));
+            names.Add(result);
+            return result;
+        }
         public readonly long EntityId;
         public string Name { get; private set; }
         public ThyDetectedEntityType Type { get; private set; }
@@ -43,6 +51,7 @@ namespace IngameScript {
         }
         public ThyDetectedEntityInfo(long aEntityId, string aName, ThyDetectedEntityType aType, Vector3D? aHitPosition, MatrixD aOrientation, Vector3 aVelocity, MyRelationsBetweenPlayerAndBlock aRelationship, DateTime aDateTime, BoundingSphereD aSphere) {
             EntityId = aEntityId;
+            names.Add(aName);
             Name = aName;
             Type = aType;
             HitPosition = aHitPosition;
@@ -56,7 +65,7 @@ namespace IngameScript {
         public  ThyDetectedEntityInfo(MyDetectedEntityInfo aEntity) {
             EntityId = aEntity.EntityId;
             if (aEntity.Type == MyDetectedEntityType.Asteroid) {
-                Name = Namer.Next(MAF.random.Next(1,4));
+                Name = GenerateName();
             } else {
                 Name = aEntity.Name;
             }

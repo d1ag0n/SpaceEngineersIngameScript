@@ -4,6 +4,9 @@ using Sandbox.ModAPI.Ingame;
 
 namespace IngameScript
 {
+    /// <summary>
+    /// Clustering Orbital Collision Mitigation
+    /// </summary>
     class Mission {
         const int PADDING = 20;
         
@@ -18,6 +21,13 @@ namespace IngameScript
 
         public bool Complete { get; private set; }
         bool onDestination;
+        /// <summary>
+        /// true when our orbital maneuver result is an escape teajectory this is needed because
+        /// the clustering action may result in a sphere center moving from in front of us to behind us
+        /// </summary>
+        bool onEscape;
+        Vector3D lastOrbital;
+
         //double calcRadius = 0;
         public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) {
             ctr = aController;
@@ -25,7 +35,7 @@ namespace IngameScript
             //calcRadius = aDestination.WorldVolume.Radius;
             //calculateTarget(aDestination.WorldVolume, true);
         }
-        
+
         /*
         Vector3D calculateTarget(BoundingSphereD sphere, bool isDestination) {
             onDestination = isDestination;
@@ -78,6 +88,7 @@ namespace IngameScript
                     
                     if ((aObstacle.Center - aShip.Center).LengthSquared() < (minOrbitalDist * minOrbitalDist)) {
                         result = dirFromObstToShip;
+                        onEscape = true;
                     } else {
                         var orbitalPlane = aObstacle.Center + dirFromObstToShip * minOrbitalDist;
                         var exitProjection = MAF.orthoProject(exitOrbit, orbitalPlane, dirFromObstToShip);
@@ -137,7 +148,7 @@ namespace IngameScript
                     rd = -rd;
                 }
                 // random distance from sphere center to scan
-                var scanRadius = 2.0 + ((wv.Radius * 2) * MAF.random.NextDouble());
+                var scanRadius = 2.0 + ((wv.Radius * 3) * MAF.random.NextDouble());
                 //ctr.logger.log("base scan radius ", scanDist);
 
                 scanPoint += rd * scanRadius;
@@ -150,28 +161,34 @@ namespace IngameScript
                     if ((thy != null && thy != mDestination) || (thy == null && entity.EntityId != 0 && entity.Type != MyDetectedEntityType.CharacterHuman)) {
                         detected = true;
                         BoundingSphereD sphere;
-                        if (thy == null) {
-                            sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
+                        if (onEscape) {
+                            var dispFromThing = wv.Center - entity.Position;
+                            var dirFromThing = Vector3D.Normalize(dispFromThing);
+                            lastOrbital = Vector3D.Normalize(dirFromThing + lastOrbital);
                         } else {
-                            sphere = thy.WorldVolume;
-                            //sphere = sphere.Include(BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox));
-                        }
-                        //ctr.logger.persist("Detected a thing " + entity.EntityId);
-                        if (mObstacle.Radius == 0) {
-                            mObstacle = sphere;
-                            //ctr.logger.persist("Setting new " + sphere.Radius);
-                            break;
-                        } else {
-                            mObstacle = mObstacle.Include(sphere);
-                            switch (mObstacle.Contains(sphere)) {
-                                case ContainmentType.Disjoint:
-                                    //mObstacle = sphere;
-                                    //ctr.logger.persist("Replacing " + sphere.Radius);
-                                    break;
-                                case ContainmentType.Intersects:
-                                    
-                                    //ctr.logger.persist("Including " + mObstacle.Radius);
-                                    break;
+                            if (thy == null) {
+                                sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
+                            } else {
+                                sphere = thy.WorldVolume;
+                                //sphere = sphere.Include(BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox));
+                            }
+                            //ctr.logger.persist("Detected a thing " + entity.EntityId);
+                            if (mObstacle.Radius == 0) {
+                                mObstacle = sphere;
+                                //ctr.logger.persist("Setting new " + sphere.Radius);
+                                break;
+                            } else {
+                                mObstacle = mObstacle.Include(sphere);
+                                switch (mObstacle.Contains(sphere)) {
+                                    case ContainmentType.Disjoint:
+                                        //mObstacle = sphere;
+                                        //ctr.logger.persist("Replacing " + sphere.Radius);
+                                        break;
+                                    case ContainmentType.Intersects:
+
+                                        //ctr.logger.persist("Including " + mObstacle.Radius);
+                                        break;
+                                }
                             }
                         }
 
@@ -188,10 +205,16 @@ namespace IngameScript
                 }
             }
             mPreferredVelocity = MathHelperD.Clamp(mPreferredVelocity, 1.0, 100.0);
-            var result = Vector3D.Zero;
+            
             if (mObstacle.Radius > 0) {
-                result = orbitalManeuver(wv, mObstacle);
-                if (result.IsZero()) {
+                bool wasOnEscape = onEscape;
+                onEscape = false;
+                var orbitalResult = orbitalManeuver(wv, mObstacle);
+                if (wasOnEscape && onEscape) {
+                    orbitalResult = lastOrbital;
+                }
+                lastOrbital = orbitalResult;
+                if (lastOrbital.IsZero()) {
                     //result = calculateTarget(wv.Center, mDestination.Position);
                     //onDestination = true;
                     //mObstacle.Radius = 0;
@@ -205,7 +228,7 @@ namespace IngameScript
                 //onDestination = true;
                 ModuleManager.logger.log("Direct in progress");
             }
-            return result;
+            return lastOrbital;
         }
 
         double mPreferredVelocity = 1;
