@@ -18,7 +18,7 @@ namespace IngameScript
         //int scansPerTick = 6;
 
         double veloFact = 0.1;
-
+        double mPreferredVelocity = 1;
         public bool Complete { get; private set; }
         bool onDestination;
         /// <summary>
@@ -32,6 +32,9 @@ namespace IngameScript
         public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) {
             ctr = aController;
             mDestination = aDestination;
+            if (ctr.LinearVelocity > 1) {
+                mPreferredVelocity = ctr.LinearVelocity;
+            }
             //calcRadius = aDestination.WorldVolume.Radius;
             //calculateTarget(aDestination.WorldVolume, true);
         }
@@ -114,14 +117,14 @@ namespace IngameScript
             ctr.logger.log("mObstacle.Radius ", mObstacle.Radius);
             //var meToDest = Vector3D.Normalize(mDestination.Position - wv.Center);
             //var meToObst = Vector3D.Normalize(mObstacle.Center - wv.Center);
-            var meToDest = mDestination.Position - wv.Center;
-            var meToObst = mObstacle.Center - wv.Center;
-            var dot = meToDest.Dot(meToObst);
-            ctr.logger.log("dot ", dot);
+            //var meToDest = mDestination.Position - wv.Center;
+            //var meToObst = mObstacle.Center - wv.Center;
+            //var dot = meToDest.Dot(meToObst);
+            //ctr.logger.log("dot ", dot);
 
             var scanDist = wv.Radius + (ctr.Thrust.StopDistance * 2) + PADDING;
 
-            ctr.logger.log("base scan dist ", scanDist);
+            //ctr.logger.log("base scan dist ", scanDist);
             
             var detected = false;
             for (int i = 0; i < 8; i++) {
@@ -231,7 +234,7 @@ namespace IngameScript
             return lastOrbital;
         }
 
-        double mPreferredVelocity = 1;
+        
         public void Update() {
             var wv = ctr.Grid.WorldVolume;
             var m = ModuleManager.WorldMatrix;
@@ -240,6 +243,7 @@ namespace IngameScript
             var dispFromDestToShip = wv.Center - mDestination.Position;
             var dirFromDestToShip = dispFromDestToShip;
             var distFromDestToShip = dirFromDestToShip.Normalize();
+
             var stop = mDestination.Position + dirFromDestToShip * (mDestination.WorldVolume.Radius + wv.Radius + PADDING);
             var stopDisp = stop - wv.Center;
             var stopDir = stopDisp;
@@ -251,6 +255,7 @@ namespace IngameScript
             var llv = ctr.LocalLinearVelo;
             
             ctr.logger.log("dist ", dist);
+            ctr.logger.log("Estimated arrival ", (dist / ctr.LinearVelocity) / 60.0, " minutes");
             //preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
             var preferredVelocity = MathHelperD.Clamp((dist / 2) / ctr.Thrust.StopDistance, 0, 1.0) * mPreferredVelocity;
 
