@@ -47,7 +47,7 @@ namespace IngameScript {
             Orientation = entity.Orientation;
             Relationship = entity.Relationship;
             Velocity = entity.Velocity;
-            TimeStamp = MAF.time;
+            TimeStamp = DateTime.Now;
         }
         public ThyDetectedEntityInfo(long aEntityId, string aName, ThyDetectedEntityType aType, Vector3D? aHitPosition, MatrixD aOrientation, Vector3 aVelocity, MyRelationsBetweenPlayerAndBlock aRelationship, DateTime aDateTime, BoundingSphereD aSphere) {
             EntityId = aEntityId;
@@ -75,7 +75,7 @@ namespace IngameScript {
             Orientation = aEntity.Orientation;
             Velocity = aEntity.Velocity;
             Relationship = aEntity.Relationship;
-            TimeStamp = MAF.time;
+            TimeStamp = DateTime.Now;
             WorldVolume = BoundingSphereD.CreateFromBoundingBox(aEntity.BoundingBox);
         }
 

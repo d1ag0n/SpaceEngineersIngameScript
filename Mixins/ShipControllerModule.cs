@@ -65,7 +65,10 @@ namespace IngameScript {
                             Remote.CustomData = sb.ToString();
                         }));
                     }
+                } else {
+                    logger.persist("No camera mod found?");
                 }
+
 
                 mMenuMethods.Add(new MenuItem($"Dampeners {Damp}", () => { 
                     Damp = !Damp;

@@ -99,7 +99,11 @@ namespace IngameScript
                 mTargetPosition = aWorld;
             }
         }
-        
+
+        public float Roll;
+        public float Yaw;
+
+
         public void SetTargetDirection(Vector3D aWorld) {
             calcDirection = false;
             if (mTargetDirection != aWorld) {
@@ -316,7 +320,7 @@ namespace IngameScript
 
             pitch += pitchDif;
             yaw += yawDif;            
-            applyGyroOverride(m, pitch, yaw, 0);
+            applyGyroOverride(m, pitch, Yaw == 0f ? yaw : Yaw, Roll);
         }
 
         public void setGyrosEnabled(bool aValue) {

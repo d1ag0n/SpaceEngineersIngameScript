@@ -6,14 +6,23 @@ using VRageMath;
 
 namespace IngameScript {
     public static class ModuleManager {
+
+        public static bool Mother;
+        public static bool Probe;
+        static readonly Dictionary<string, IGCHandler> mIGCSubscriptions = new Dictionary<string, IGCHandler>();
+        public static IMyCubeGrid Grid => Program.Me.CubeGrid;
+        public static BoundingSphereD WorldVolume => Grid.WorldVolume;
         public static MatrixD WorldMatrix {
             get {
-                var g = Program.Me.CubeGrid;
-                var m = g.WorldMatrix;
-                m.Translation = g.WorldVolume.Center;
+                var m = Grid.WorldMatrix;
+                m.Translation = WorldVolume.Center;
                 return m;
             }
         }
+
+        public static void IGCSubscribe(string tag, IGCHandler h) => mIGCSubscriptions.Add(tag, h);
+
+
         static readonly Lag mLag = new Lag(6);
         public static double Lag => mLag.Last;
         public static string UserInput = "DEFAULT";
@@ -30,18 +39,30 @@ namespace IngameScript {
         static readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
         public static MyGridProgram Program { get; private set; }
         public static Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
-        
+
         public static void Update() {
-            logger.log(mLag.update(Program.Runtime.LastRunTimeMs));
-            try {
-                logger.log(DateTime.Now.ToString());
-                //logger.log(logger.gps("WV", Program.Me.CubeGrid.WorldVolume.Center));
-                for (int i = 1; i < mModules.Count; i++) {
-                    mModules[i].onUpdate?.Invoke();
+            logger.log(mLag.update(Program.Runtime.LastRunTimeMs), " - ", DateTime.Now.ToString());
+            while (Program.IGC.UnicastListener.HasPendingMessage) {
+                var msg = Program.IGC.UnicastListener.AcceptMessage();
+                try {
+                    IGCHandler h;
+                    if (mIGCSubscriptions.TryGetValue(msg.Tag, out h)) {
+                        h(msg);
+                    }
+                } catch (Exception ex) {
+                    logger.persist(ex.ToString());
                 }
-            } catch (Exception ex) {
-                logger.persist(ex.ToString());
             }
+            
+            //logger.log(logger.gps("WV", Program.Me.CubeGrid.WorldVolume.Center));
+            for (int i = 1; i < mModules.Count; i++) {
+                try {
+                    mModules[i].onUpdate?.Invoke();
+                } catch (Exception ex) {
+                    logger.persist(ex.ToString());
+                }
+            }
+
             logger.onUpdate();
         }
         public static string Save() {

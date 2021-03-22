@@ -198,7 +198,7 @@ namespace IngameScript
                 p = p % 2;
                 mMenuItems.Clear();
                 if (deleted || p == 0) {
-                    var ts = (MAF.time - e.TimeStamp).TotalHours;
+                    var ts = (DateTime.Now - e.TimeStamp).TotalHours;
                     mMenuItems.Add(new MenuItem($"Time: {e.TimeStamp} ({ts:f2} hours ago)"));
                     mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship}"));
                     mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
@@ -269,7 +269,7 @@ namespace IngameScript
                     }
                     var camera = aBlock as IMyCameraBlock;
                     
-                    mCameraList.mList.Add(camera);
+                    mCameraList.Add(camera);
                     //logger.persist(camera.CustomName);
                     camera.ShowInTerminal = false;
                     camera.Enabled = true;

@@ -80,6 +80,8 @@ namespace IngameScript {
             //mMenuItems.Add(new MenuMethod())
         }
 
+        public double PreferredVelocity(double distToTarget, double maxSpeed) => MathHelperD.Clamp((distToTarget / 2.0) / StopDistance, 0, 1.0) * maxSpeed;
+
         Vector3D _Acceleration;
         public Vector3D Acceleration {
             get { return _Acceleration; }
@@ -136,6 +138,8 @@ namespace IngameScript {
             if (updateRequired) {
                 var a = Acceleration;
                 var m = controller.Mass;
+
+
 
                 Thrust.Update(ref a, m, false);
                 /*logger.log($"FrontForce {mThrust.FrontForce:F0}");

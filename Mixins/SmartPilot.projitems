@@ -14,7 +14,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Delegates.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)IGCModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
@@ -28,6 +27,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PPS.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Probe.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProbeModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ProbeServerModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SensorModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />

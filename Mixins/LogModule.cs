@@ -145,9 +145,9 @@ namespace IngameScript {
                     mPersistent.RemoveAt(0);
                 }
             }
-            ModuleManager.Program.Echo("logmodupdate");
+            //ModuleManager.Program.Echo("logmodupdate");
             var str = clear();
-            ModuleManager.Program.Echo(str);
+            //ModuleManager.Program.Echo(str);
             foreach (var tp in Blocks) {
                 tp.WriteText(str);
             }

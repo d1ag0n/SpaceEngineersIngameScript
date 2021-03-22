@@ -1,7 +1,7 @@
 ﻿using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
-
+using System.Collections.Generic;
 namespace IngameScript
 {
     /// <summary>
@@ -26,7 +26,7 @@ namespace IngameScript
         /// the clustering action may result in a sphere center moving from in front of us to behind us
         /// </summary>
         bool onEscape;
-        Vector3D lastOrbital;
+        //Vector3D lastOrbital;
 
         //double calcRadius = 0;
         public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) {
@@ -104,6 +104,8 @@ namespace IngameScript
 
         //Vector3D calculateTarget(Vector3D aShip, Vector3D aThing) => Vector3D.Normalize(aThing - aShip);
 
+        HashSet<long> mEscapeSet = new HashSet<long>();
+        List<Vector3D> mEscape = new List<Vector3D>();
         /// <summary>
         /// returns desired direction of travel
         /// </summary>
@@ -122,15 +124,15 @@ namespace IngameScript
             //var dot = meToDest.Dot(meToObst);
             //ctr.logger.log("dot ", dot);
 
-            var scanDist = wv.Radius + (ctr.Thrust.StopDistance * 2) + PADDING;
+            var scanDist = wv.Radius + (ctr.Thrust.StopDistance * 3) + PADDING;
 
             //ctr.logger.log("base scan dist ", scanDist);
             
             var detected = false;
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 5; i++) {
                 var lvd = ctr.LinearVelocityDirection;
 
-                if (lvd.LengthSquared() < 25.0) {
+                if (ctr.LinearVelocity < 5.0) {
                     switch (MAF.random.Next(0, 6)) {
                         case 0: lvd = ModuleManager.WorldMatrix.Forward; break;
                         case 1: lvd = ModuleManager.WorldMatrix.Backward; break;
@@ -140,8 +142,13 @@ namespace IngameScript
                         case 5: lvd = ModuleManager.WorldMatrix.Down; break;
                     }
                 }
-                var scanPoint = wv.Center + lvd * scanDist;
-
+                Vector3D scanPoint;
+                if (true || i == 0) {
+                    scanPoint = wv.Center + MAF.ranDir() * (wv.Radius * 5);
+                }  else {
+                    scanPoint = wv.Center + lvd * scanDist;
+                }
+                //scanPoint = wv.Center + lvd * scanDist;
                 // create a point for scan sphere based on our velocity
 
                 // random dir around point to scan
@@ -151,8 +158,9 @@ namespace IngameScript
                     rd = -rd;
                 }
                 // random distance from sphere center to scan
-                var scanRadius = 2.0 + ((wv.Radius * 3) * MAF.random.NextDouble());
-                //ctr.logger.log("base scan radius ", scanDist);
+                var scanRadius = 0.1 + 2 * wv.Radius * MAF.random.NextDouble();
+                //ctr.logger.log("ship wv radius ", wv.Radius);
+                //ctr.logger.log("base scan distance ", scanDist);
 
                 scanPoint += rd * scanRadius;
                 //ctr.logger.log(ctr.logger.gps("scanPoint", scanPoint));
@@ -162,44 +170,30 @@ namespace IngameScript
                 ThyDetectedEntityInfo thy;
                 if (ctr.Camera.Scan(scanPoint, out entity, out thy)) {
                     if ((thy != null && thy != mDestination) || (thy == null && entity.EntityId != 0 && entity.Type != MyDetectedEntityType.CharacterHuman)) {
+                        //ctr.logger.persist("Avoiding a " + entity.Name);
                         detected = true;
                         BoundingSphereD sphere;
                         if (onEscape) {
-                            var dispFromThing = wv.Center - entity.Position;
-                            var dirFromThing = Vector3D.Normalize(dispFromThing);
-                            lastOrbital = Vector3D.Normalize(dirFromThing + lastOrbital);
-                        } else {
-                            if (thy == null) {
-                                sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
-                            } else {
-                                sphere = thy.WorldVolume;
-                                //sphere = sphere.Include(BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox));
-                            }
-                            //ctr.logger.persist("Detected a thing " + entity.EntityId);
-                            if (mObstacle.Radius == 0) {
-                                mObstacle = sphere;
-                                //ctr.logger.persist("Setting new " + sphere.Radius);
-                                break;
-                            } else {
-                                mObstacle = mObstacle.Include(sphere);
-                                switch (mObstacle.Contains(sphere)) {
-                                    case ContainmentType.Disjoint:
-                                        //mObstacle = sphere;
-                                        //ctr.logger.persist("Replacing " + sphere.Radius);
-                                        break;
-                                    case ContainmentType.Intersects:
-
-                                        //ctr.logger.persist("Including " + mObstacle.Radius);
-                                        break;
-                                }
-                            }
+                            var dispFromThing = wv.Center - entity.HitPosition.Value;
+                            var lengthFromThing = dispFromThing.Length();
+                            var inverseDistFromThing = 1 / lengthFromThing;
+                            mEscape.Add(dispFromThing * inverseDistFromThing);
                         }
-
+                        if (thy == null) {
+                            sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
+                        } else {
+                            sphere = thy.WorldVolume;
+                        }
+                        if (mObstacle.Radius == 0) {
+                            mObstacle = sphere;
+                        } else {
+                            mObstacle = mObstacle.Include(sphere);
+                        }
                     }
                 }
             }
             if (detected) {
-                mPreferredVelocity *= 0.9;
+                mPreferredVelocity *= 0.99;
             } else {
                 mPreferredVelocity *= 1.1;
                 mObstacle.Radius *= 0.99;
@@ -207,31 +201,33 @@ namespace IngameScript
                     mObstacle.Radius = 0;
                 }
             }
-            mPreferredVelocity = MathHelperD.Clamp(mPreferredVelocity, 1.0, 100.0);
-            
+            mPreferredVelocity = MathHelperD.Clamp(mPreferredVelocity, 1.0, 50.0);
+            var result = Vector3D.Zero;
             if (mObstacle.Radius > 0) {
                 bool wasOnEscape = onEscape;
                 onEscape = false;
                 var orbitalResult = orbitalManeuver(wv, mObstacle);
-                if (wasOnEscape && onEscape) {
-                    orbitalResult = lastOrbital;
-                }
-                lastOrbital = orbitalResult;
-                if (lastOrbital.IsZero()) {
-                    //result = calculateTarget(wv.Center, mDestination.Position);
-                    //onDestination = true;
-                    //mObstacle.Radius = 0;
-                    //ModuleManager.logger.log("Direct in progress");
+                if (orbitalResult == Vector3D.Zero) {
+                    mEscapeSet.Clear();
+                    mEscape.Clear();
+                    mObstacle.Radius = 0;
                 } else {
-                    //onDestination = false;
-                    //ModuleManager.logger.log("Orbital in progress");
+                    if (!wasOnEscape && onEscape) {
+                        mEscape.Add(-ctr.LinearVelocityDirection);
+                        mEscape.Add(orbitalResult);
+                    }
+                    if (onEscape) {
+                        foreach(var e in mEscape) {
+                            result += e;
+                        }
+                        result.Normalize();
+                    } else {
+                        result = orbitalResult;
+                    }
                 }
-            } else {
-                //result = calculateTarget(wv.Center, mDestination.Position);
-                //onDestination = true;
-                //ModuleManager.logger.log("Direct in progress");
+                
             }
-            return lastOrbital;
+            return result;
         }
 
         
