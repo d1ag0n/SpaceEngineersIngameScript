@@ -8,7 +8,7 @@ namespace IngameScript {
     /// </summary>
     class RandomMission : MissionBase {
         static int next = 0;
-        readonly Vector3D mDestination;
+        
         public RandomMission(ShipControllerModule aController) : base(aController) {
             Vector3D dir = Vector3D.Zero;
             switch (next) {
@@ -27,7 +27,10 @@ namespace IngameScript {
             mDestination = ctr.Remote.CenterOfMass + dir * 1100.0;
             ctr.logger.persist(ctr.logger.gps("RandomMission", mDestination));
         }
+        
         public override void Update() {
+            FlyTo();
+            return;
             if (!ctr.Damp) {
                 var com = ctr.Remote.CenterOfMass;
                 var disp = mDestination - com;
