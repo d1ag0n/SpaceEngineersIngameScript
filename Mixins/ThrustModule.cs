@@ -87,7 +87,7 @@ namespace IngameScript {
         public double PreferredVelocity(Vector3D aDir, double dist) {
             var maxAccel = mThrust.MaxAccel(aDir, controller.Mass).Length();
             ModuleManager.logger.log("pvMaxAccel ", maxAccel);
-            return 0.99 * Math.Sqrt(2 * maxAccel * dist);
+            return 0.91 * Math.Sqrt(2 * maxAccel * dist);
         }
 
         Vector3D _Acceleration;

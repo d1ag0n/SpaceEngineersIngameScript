@@ -66,13 +66,13 @@ namespace IngameScript {
                             curVelo = veloVec;
                         }
                     }
-                    if (dist < ctr.Thrust.StopDistance) {
-                        ctr.Thrust.Emergency = true;
-                        ctr.Damp = true;
-                    } else {
-                        ctr.Damp = false;
+                    //if (dist < ctr.Thrust.StopDistance) {
+                      //  ctr.Thrust.Emergency = true;
+                        //ctr.Damp = true;
+                    //} else {
+                        //ctr.Damp = false;
                         ctr.Thrust.Acceleration = 6.0 * (veloVec - curVelo);
-                    }
+                    //}
                     
                     
 
