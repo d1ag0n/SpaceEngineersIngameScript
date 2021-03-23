@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MenuItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MenuModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mission.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MissionBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
@@ -30,6 +31,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Probe.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProbeModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProbeServerModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RandomMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SensorModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />

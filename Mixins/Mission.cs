@@ -7,10 +7,10 @@ namespace IngameScript
     /// <summary>
     /// Clustering Orbital Collision Mitigation
     /// </summary>
-    class Mission {
+    class Mission : MissionBase {
         const int PADDING = 20;
-        
-        readonly ShipControllerModule ctr;
+
+        const double MAXVELO = 100.0;
         readonly ThyDetectedEntityInfo mDestination;
 
         Vector3D mTargetDirection;
@@ -19,7 +19,7 @@ namespace IngameScript
 
         double veloFact = 0.1;
         double mPreferredVelocity = 1;
-        public bool Complete { get; private set; }
+        
         bool onDestination;
         /// <summary>
         /// true when our orbital maneuver result is an escape teajectory this is needed because
@@ -29,8 +29,7 @@ namespace IngameScript
         //Vector3D lastOrbital;
 
         //double calcRadius = 0;
-        public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) {
-            ctr = aController;
+        public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) :base(aController) {
             mDestination = aDestination;
             if (ctr.LinearVelocity > 1) {
                 mPreferredVelocity = ctr.LinearVelocity;
@@ -201,7 +200,7 @@ namespace IngameScript
                     mObstacle.Radius = 0;
                 }
             }
-            mPreferredVelocity = MathHelperD.Clamp(mPreferredVelocity, 1.0, 50.0);
+            mPreferredVelocity = MathHelperD.Clamp(mPreferredVelocity, 1.0, MAXVELO);
             var result = Vector3D.Zero;
             if (mObstacle.Radius > 0) {
                 bool wasOnEscape = onEscape;
@@ -231,7 +230,7 @@ namespace IngameScript
         }
 
         
-        public void Update() {
+        public override void Update() {
             var wv = ctr.Grid.WorldVolume;
             var m = ModuleManager.WorldMatrix;
             var worldDir = collisionDetect();
@@ -250,6 +249,7 @@ namespace IngameScript
             var localDir = MAF.world2dir(worldDir, m);
             var llv = ctr.LocalLinearVelo;
             
+            
             //ctr.logger.log("dist ", dist);
             ctr.logger.log("Estimated arrival ", (dist / ctr.LinearVelocity) / 60.0, " minutes");
             //preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
@@ -257,8 +257,11 @@ namespace IngameScript
 
             //ctr.logger.log("preferredVelocity ", preferredVelocity);
             var preferredVelocityVector = localDir * preferredVelocity;
-            var accelReq = 2 * (preferredVelocityVector - llv);
 
+            var accelReq = preferredVelocityVector - llv;
+            if (MAF.nearEqual(accelReq.LengthSquared(), 0, 0.0001)) {
+                accelReq = Vector3D.Zero;
+            }
             //var vrsq = veloReq.LengthSquared();
             
             if (!ctr.Damp) {

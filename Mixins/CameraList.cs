@@ -40,13 +40,13 @@ namespace IngameScript {
             var targetLocal = MAF.world2pos(aTargetWorld, ModuleManager.WorldMatrix);
             var targetNormal = Vector3D.Normalize(targetLocal);
             var cd = Base6Directions.GetClosestDirection(targetNormal);
-            ModuleManager.logger.persist("vanilla " + cd);
+            //ModuleManager.logger.persist("vanilla " + cd);
             //cd = GetClosestDirection(targetNormal);
-            ModuleManager.logger.persist("custom " + cd);
-            ModuleManager.logger.persist(ModuleManager.logger.string4(targetNormal));
+            //ModuleManager.logger.persist("custom " + cd);
+            //ModuleManager.logger.persist(ModuleManager.logger.string4(targetNormal));
             int icd = (int)cd;
             var list = mLists[(int)icd];
-            ModuleManager.logger.log("Camera picked " + cd + " " + list.Count + " cameras in list");
+            //ModuleManager.logger.log("Camera picked " + cd + " " + list.Count + " cameras in list");
             
             //ModuleManager.logger.log("Camera picked " + cd);
             foreach (var c in list) {
@@ -76,6 +76,7 @@ namespace IngameScript {
            
                         return true;
                     } else {
+                        
                         Vector3D.GetAzimuthAndElevation(dir, out azimuth, out elevation);
                         azimuth = -(azimuth * (180.0 / Math.PI));
                         elevation = (elevation * (180.0 / Math.PI));
@@ -86,9 +87,9 @@ namespace IngameScript {
                                     dir = aTargetWorld - c.WorldMatrix.Translation;
                                     dir.Normalize();
                                     if (testCameraAngles(cc, ref dir)) {
-                                        ModuleManager.logger.persist("Camera from list " + (Base6Directions.Direction)i + " okay, list " + (Base6Directions.Direction)icd + " bad");
-                                        aEntity = new MyDetectedEntityInfo();
-                                        return false;
+                                        //ModuleManager.logger.persist("Camera from list " + (Base6Directions.Direction)i + " okay, list " + (Base6Directions.Direction)icd + " bad");
+                                        //aEntity = new MyDetectedEntityInfo();
+                                        //return false;
                                         //ModuleManager.logger.persist("Camera out of angle: " + azimuth.ToString("f0") + " " + elevation.ToString("f0"));
                                     }
                                 }

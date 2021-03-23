@@ -34,6 +34,7 @@ namespace IngameScript
             onUpdate = UpdateAction;
             onSave = SaveAction;
             onLoad = LoadAction;
+            Active = true;
             mainMenu();
             init();
             onPage = p => {

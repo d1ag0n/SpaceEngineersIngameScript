@@ -4,10 +4,90 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using VRageMath;
+using IngameScript;
 
 namespace commandline {
     class Info {
-        static void Main() => pass();
+        static void Main() => accelCalcs();
+
+        static void accelCalcs() {
+            /*
+             *  F = 4320000
+             *  m = 5406435
+             *  1.664 for 1
+             *  3.328 for 2
+             *  4.992 for 3
+             *  6.656 for 4
+             *  8.320 for 5
+             *  9.985 for 6
+             *  
+             *  (V * V) / (2.0 * a)
+             *  1908.291856 / 6.656
+             *  
+             *  a = 9.589
+             */
+
+            var a = 1.664;
+            var m = 5406435;
+            var F = 4320000 * 12;
+            var v = 99.88;
+
+            var stp = stop(v, m, F);
+            return;
+        }
+        static double stop(double v, double m, double F) => (v * v) * m / (2 * F);
+        static void vecscale() {
+            var v = new Vector3D(1, 10, 100);
+            var n = Vector3D.Normalize(v);
+            var p = v * 0.1;
+            var pn = Vector3D.Normalize(p);
+            var ab = MAF.angleBetween(n, pn);
+            MaxAccel(MAF.ranDir(), 1000);
+            return;
+        }
+        const double force = 1000;
+        public static Vector3D MaxAccel(Vector3D aDirection, double aMass) {
+
+            var amp = aDirection * 1000.0;
+
+
+            var z = Math.Abs(amp.Z) * aMass;
+            var x = Math.Abs(amp.X) * aMass;
+            var y = Math.Abs(amp.Y) * aMass;
+
+
+            double ratio = force / z;
+            double tempRatio = force / x;
+
+            if (tempRatio < ratio) {
+                ratio = tempRatio;
+            }
+            tempRatio = force / y;
+            if (tempRatio < ratio) {
+                ratio = tempRatio;
+            }
+            var result = new Vector3D(x, y, z);
+            if (ratio < 1.0) {
+                result *= ratio;
+                z *= ratio;
+                x *= ratio;
+                y *= ratio;
+            }
+
+            if (aDirection.Z < 0) {
+                result.Z *= -1.0;
+            }
+            if (aDirection.X < 0) {
+                result.X *= -1.0;
+            }
+            if (aDirection.Y < 0) {
+                result.Y *= -1.0;
+            }
+
+            var norm = Vector3D.Normalize(result);
+            var ab = MAF.angleBetween(aDirection, norm);
+            return result;
+        }
         static void pass() {
             Vector3D destination = new Vector3D(2, 0, 10);
             Vector3D ship = new Vector3D(1, 0, 5);

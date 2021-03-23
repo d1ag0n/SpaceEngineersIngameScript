@@ -1,13 +1,10 @@
 using Sandbox.ModAPI.Ingame;
 using System;
-using System.Collections.Generic;
 using VRageMath;
 
 namespace IngameScript {
     
     public class ThrustList : BlockDirList<IMyThrust> {
-        //public Vector3D Acceleration;
-        // these provide acceleration in the respective direction
         public double LeftForce => forces[2];
         public double RightForce => forces[3];
         public double UpForce => forces[4];
@@ -16,68 +13,142 @@ namespace IngameScript {
         public double BackForce => forces[1];
         double[] forces = new double[6];
 
-
         // Forward = 0,
         // Backward = 1,
         // Left = 2,
         // Right = 3,
         // Up = 4,
         // Down = 5
-        public void Update(ref Vector3D aAccel, double aMass, bool emergency = false) {
+        public void Update(Vector3D aAccel, double aMass, bool emergency = false) {
+            Vector3D original = aAccel;
+            ModuleManager.logger.log("original", original);
             int f = 0, b = 1, l = 2, r = 3, u = 4, d = 5;
+            if (aAccel.Z < 0) {
+                f = 1; b = 0;
+            }
             if (aAccel.X < 0) {
                 r = 2; l = 3;
             }
             if (aAccel.Y > 0) {
                 u = 5; d = 4;
             }
-            if (aAccel.Z < 0) {
-                f = 1; b = 0;
-            }
-
-            handleLists(aMass, ref aAccel.X, l, r, emergency);
-            handleLists(aMass, ref aAccel.Y, u, d, emergency);
-            handleLists(aMass, ref aAccel.Z, f, b, emergency);
             
+                // converting to force here
+            var z = Math.Abs(aAccel.Z) * aMass;
+            var x = Math.Abs(aAccel.X) * aMass;
+            var y = Math.Abs(aAccel.Y) * aMass;
+
+            if (emergency) {
+                ModuleManager.logger.log("EMERGENCY!");
+            } else {
+                double ratio = forces[f] / z;
+                double tempRatio = forces[l] / x;
+                if (tempRatio < ratio) {
+                    ratio = tempRatio;
+                }
+                tempRatio = forces[u] / y;
+                if (tempRatio < ratio) {
+                    ratio = tempRatio;
+                }
+                if (ratio < 1.0) {
+                    z *= ratio;
+                    x *= ratio;
+                    y *= ratio;
+                }
+            }
+            
+            var applied = new Vector3D(handleLists(x, l, r), handleLists(y, u, d), handleLists(z, f, b));
+            if (aAccel.Z < 0) {
+                applied.Z *= -1.0;
+            }
+            if (aAccel.X < 0) {
+                applied.X *= -1.0;
+            }
+            if (aAccel.Y < 0) {
+                applied.Y *= -1.0;
+            }
         }
 
-        void handleLists(double aMass, ref double aAccel, int aUse, int aDisable, bool emergency) {
+        public Vector3D MaxAccel(Vector3D aDirection, double aMass) {
+            //ModuleManager.logger.log("MaxAccel aDirection", aDirection);
+            ModuleManager.logger.log("MaxAccel aMass", aMass);
+            int f = 0, l = 2, u = 4;
+            if (aDirection.Z < 0) {
+                f = 1;
+            }
+            if (aDirection.X < 0) {
+                l = 3;
+            }
+            if (aDirection.Y > 0) {
+                u = 5;
+            }
 
-            runList(aMass, ref aAccel, aUse, emergency);
+            var amp = aDirection * 1000.0;
+            var z = Math.Abs(amp.Z) * aMass;
+            var x = Math.Abs(amp.X) * aMass;
+            var y = Math.Abs(amp.Y) * aMass;
+
+
+            double ratio = forces[f] / z;
+            double tempRatio = forces[l] / x;
+
+            if (tempRatio < ratio) {
+                ratio = tempRatio;
+            }
+            tempRatio = forces[u] / y;
+            if (tempRatio < ratio) {
+                ratio = tempRatio;
+            }
+            var result = new Vector3D(x, y, z);
+            if (ratio < 1.0) {
+                result *= ratio;
+            }
+            result /= aMass;
+
+            if (aDirection.Z < 0) {
+                result.Z *= -1.0;
+            }
+            if (aDirection.X < 0) {
+                result.X *= -1.0;
+            }
+            if (aDirection.Y < 0) {
+                result.Y *= -1.0;
+            }
+            //ModuleManager.logger.log("MaxAccel result", result);
+            return result;
+        }
+
+        double handleLists(double aForce, int aUse, int aDisable) {
             var forceSum = 0.0;
             foreach (var t in mLists[aDisable]) {
                 if (t.Enabled) t.Enabled = false;
                 forceSum += t.MaxEffectiveThrust;
             }
             forces[aDisable] = forceSum;
+
+            return runList(aForce, aUse);
         }
 
-        void runList(double aMass, ref double aAccel, int aList, bool emergency) {
-            var A = Math.Abs(aAccel);
-            var F = aMass * A;
-            //ModuleManager.logger.log($"F = {F}");
-            //ModuleManager.logger.log($"M = {aMass}");
-            //ModuleManager.logger.log($"A = {A}");
+        double runList(double aForce, int aList) {
+            double applied = 0;
             var forceSum = 0.0;
             foreach (var t in mLists[aList]) {
                 double met = t.MaxEffectiveThrust;
+                //ModuleManager.logger.log("MET ", met);
                 forceSum += met;
-                if (A > 0 && (met / t.MaxThrust > 0.75 || (emergency && t.MaxEffectiveThrust > 0))) {
+                if (aForce > 0) {
                     if (t.IsFunctional) {
                         if (!t.Enabled) t.Enabled = true;
-                        // 2 < 1 = false;
-                        if (met < F) {
+                        if (met < aForce) {
                             t.ThrustOverridePercentage = 1;
-                            F -= met;
-                            if (aAccel > 0) {
-                                aAccel -= met / aMass;
-                            } else {
-                                aAccel += met / aMass;
-                            }
+                            applied += met;
+                            aForce -= met;
                         } else {
-                            t.ThrustOverridePercentage = (float)(F / met);
-                            F = 0;
-                            aAccel = 0;
+                            var p = aForce / met;
+                            t.ThrustOverridePercentage = (float)p;
+                            applied += t.ThrustOverride;
+                            aForce -= t.ThrustOverride;
+                            //applied += met * p;
                         }
                     }
                 } else {
@@ -86,6 +157,7 @@ namespace IngameScript {
                 }
             }
             forces[aList] = forceSum;
+            return applied;
         }
     }
 }

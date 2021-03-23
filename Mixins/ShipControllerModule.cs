@@ -10,7 +10,7 @@ namespace IngameScript {
         public readonly bool LargeGrid;
         public readonly float GyroSpeed;
         public readonly IMyCubeGrid Grid;
-
+        MissionBase mission;
 
         public ThyDetectedEntityInfo Target;
         public MyShipVelocities ShipVelocities { get; private set; }
@@ -26,7 +26,7 @@ namespace IngameScript {
         public GyroModule Gyro { get; private set; }
         public CameraModule Camera { get; private set; }
 
-        public bool Damp = false;
+        public bool Damp = true;
         public ShipControllerModule() {
 
             
@@ -69,6 +69,9 @@ namespace IngameScript {
                     logger.persist("No camera mod found?");
                 }
 
+                mMenuMethods.Add(new MenuItem("Random Mission", () => {
+                    mission = new RandomMission(this);
+                }));
 
                 mMenuMethods.Add(new MenuItem($"Dampeners {Damp}", () => { 
                     Damp = !Damp;
@@ -153,23 +156,23 @@ namespace IngameScript {
             LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, ModuleManager.WorldMatrix);
             //logger.log("LocalLinearVelo", LocalLinearVelo);
         }
-        Mission m;
+        
         void UpdateGlobal() {
             UpdateLocal();
 
             if (Target != null) {
-                m = new Mission(this, Target);
+                mission = new Mission(this, Target);
                 //logger.persist($"SET NEW MISSION TO {Target.Name}");
                 Target = null;
                 Damp = false;
-            } else if (m != null) {
+            } else if (mission != null) {
 
-                if (m.Complete) {
+                if (mission.Complete) {
                     logger.persist("MISSION COMPLETE");
-                    m = null;
+                    mission = null;
                 } else {
                     //logger.log("MISSION UNDERWAY");
-                    m.Update();
+                    mission.Update();
                 }
             }
             if (Damp) {
@@ -179,11 +182,15 @@ namespace IngameScript {
 
                 if (localVeloSq <= 0.000025) {
                     localVelo = Vector3D.Zero;
-                    //Damp = false;
+                    //logger.persist(logger.gps("Started", lastPos));
+                    //logger.persist(logger.gps("Stopped", Remote.CenterOfMass));
+                    //logger.persist("Estimated " + estimatedStop.ToString("f2"));
+                    //logger.persist("Actual " + (lastPos - Remote.CenterOfMass).Length().ToString("f2"));
+                    Damp = false;
                 } else {
-                    localVelo = localVelo * -2.0;
+                    //localVelo = localVelo * -2.0;
                 }
-                Thrust.Acceleration = localVelo;
+                Thrust.Acceleration = localVelo * -6.0;
                 
                 /*
                 if (GetModule(out gyro)) {
@@ -193,8 +200,13 @@ namespace IngameScript {
                         gyro.SetTargetDirection(Vector3D.Zero);
                     }
                 }*/
+            } else {
+                lastPos = Remote.CenterOfMass;
+                estimatedStop = Thrust.StopDistance;
             }
         }
+        Vector3D lastPos;
+        double estimatedStop;
         void zzzzUpdateAction() {
             // maxAcceleration = thrusterThrust / shipMass;
             // boosterFireDuration = Speed / maxAcceleration / 2;

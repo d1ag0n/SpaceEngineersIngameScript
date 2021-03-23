@@ -1,5 +1,6 @@
 using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
+using System;
 using System.Collections.Generic;
 using VRageMath;
 
@@ -42,6 +43,7 @@ namespace IngameScript {
         bool charge = false;
         IMySolarPanel maxPanel;
         Vector3D Target;
+
         void ProbeMessage(MyIGCMessage m) {
             Target = (Vector3D)m.Data;
             onUpdate = UpdateAction;
@@ -62,17 +64,17 @@ namespace IngameScript {
                     ctr.Damp = false;
                     var dir = disp;
                     var dist = dir.Normalize();
-                    var prefVelo = ctr.Thrust.PreferredVelocity(dist, 75.0);
-                    if (prefVelo > dist) {
-                        prefVelo = dist;
-                    }
+                    //var prefVelo = ctr.Thrust.PreferredVelocity(dist, 75.0);
+                    var prefVelo = ctr.Thrust.PreferredVelocity(-dir, dist);
+                    
+                    
                     ctr.logger.log("Preferred Velocity ", prefVelo);
                     ctr.logger.log("Distance ", dist);
                     ctr.logger.log("Stop ", ctr.Thrust.StopDistance);
                     ctr.logger.log("Full Stop ", ctr.Thrust.FullStop);
                     var localDir = MAF.world2dir(dir, ModuleManager.WorldMatrix);
                     var veloVec = localDir * prefVelo;
-                    ctr.Thrust.Acceleration = 2 * (veloVec - ctr.LocalLinearVelo);
+                    ctr.Thrust.Acceleration = veloVec - ctr.LocalLinearVelo;
                 } else {
                     ctr.Damp = true;
                 }

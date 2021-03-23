@@ -109,7 +109,7 @@ namespace IngameScript {
             if (mod != null) {
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
-                if (mod.Scan(camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * 10, out entity, out thy)) {
+                if (mod.Scan(camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * range, out entity, out thy)) {
                     if (entity.Type == MyDetectedEntityType.None) {
                         logger.persist("Module scan empty.");
                     } else {
