@@ -7,12 +7,11 @@ using VRageMath;
 namespace IngameScript {
     public class ProbeModule : Module<IMyTerminalBlock> {
         readonly ShipControllerModule ctr;
-        readonly GyroModule gyro;
-        readonly ThrustModule thrust;
         readonly HashSet<long> probes;
         readonly List<IMySolarPanel> mPanels = new List<IMySolarPanel>();
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
-
+        readonly GyroModule gyro;
+        readonly ThrustModule thrust;
         public ProbeModule() {
             ctr = ModuleManager.controller;
             ModuleManager.IGCSubscribe("probe", ProbeMessage);
@@ -42,42 +41,84 @@ namespace IngameScript {
         int rollCount = 0;
         bool charge = false;
         IMySolarPanel maxPanel;
-        Vector3D Target;
+        BoundingSphereD MotherSphere;
+        Vector3D MotherVeloDir;
+        double MotherSpeed;
+        DateTime lastUpdate;
 
         void ProbeMessage(MyIGCMessage m) {
-            Target = (Vector3D)m.Data;
+            var pf = ProbeServerModule.ProbeFollow(m.Data);
+            MotherSphere = pf.Item1;
+            MotherVeloDir = pf.Item2;
+            MotherSpeed = pf.Item3;
             onUpdate = UpdateAction;
+            lastUpdate = DateTime.Now;
         }
         void RegisterAction() {
             ModuleManager.Program.IGC.SendBroadcastMessage("Register", 1);
         }
         // Vector3D absoluteNorthVecPlanetWorlds = new Vector3D(0, -1, 0); //this was determined via Keen's code
         // Vector3D absoluteNorthVecNotPlanetWorlds = new Vector3D(0.342063708833718, -0.704407897782847, -0.621934025954579); //this was determined via Keen's code
+        const double PADDING = 100.0;
         void UpdateAction() {
-            
-            if (Target == Vector3D.Zero) {
-                ctr.Damp = true;
+            if ((DateTime.Now - lastUpdate).TotalSeconds > 1) {
+                RegisterAction();
+                controller.Damp = true;
+                
             } else {
-                var wv = ctr.Grid.WorldVolume;
-                var disp = Target - wv.Center;
-                if (disp.LengthSquared() > 4) {
-                    ctr.Damp = false;
-                    var dir = disp;
-                    var dist = dir.Normalize();
-                    //var prefVelo = ctr.Thrust.PreferredVelocity(dist, 75.0);
-                    var prefVelo = ctr.Thrust.PreferredVelocity(-dir, dist);
-                    
-                    
-                    ctr.logger.log("Preferred Velocity ", prefVelo);
-                    ctr.logger.log("Distance ", dist);
-                    ctr.logger.log("Stop ", ctr.Thrust.StopDistance);
-                    ctr.logger.log("Full Stop ", ctr.Thrust.FullStop);
-                    var localDir = MAF.world2dir(dir, ModuleManager.WorldMatrix);
-                    var veloVec = localDir * prefVelo;
-                    ctr.Thrust.Acceleration = veloVec - ctr.LocalLinearVelo;
-                } else {
-                    ctr.Damp = true;
+                ctr.Damp = false;
+                var wv = ctr.Grid.WorldVolume; 
+                var minDist = MotherSphere.Radius + wv.Radius + PADDING;
+                var maxDist = minDist + PADDING;
+                var dispToMother = MotherSphere.Center - wv.Center;
+                var dirToMother = dispToMother;
+                var distToMother = dirToMother.Normalize();
+
+                double dist = 0;
+                Vector3D baseVec = MotherVeloDir * MotherSpeed;
+
+                logger.log("MotherSpeed ", MotherSpeed);
+
+                var syncVec = Vector3D.Zero;
+                if (distToMother > maxDist) {
+                    syncVec = dirToMother;
+                    dist = distToMother - maxDist;
+                } else if (distToMother < minDist) {
+                    dirToMother.CalculatePerpendicularVector(out syncVec);
+                    dist = minDist - distToMother;
                 }
+                logger.log("Mother dist ", minDist, " - ", dist, " - ", maxDist);
+                var llv = ctr.LocalLinearVelo;
+                
+                if (dist > 0) {
+                    if (ctr.LinearVelocity > 0.0) {
+                        var maxAccelLength = ctr.Thrust.MaxAccel(syncVec).Length();
+                        var prefVelo = MathHelperD.Clamp(ctr.Thrust.PreferredVelocity(maxAccelLength, dist), 0.0, 25.0);
+                        logger.log("prefVelo ", prefVelo);
+                        
+                        syncVec *= prefVelo;
+                        logger.log("syncVec Length ", syncVec.Length());
+                        logger.log("baseVec Length ", baseVec.Length());
+                        baseVec += syncVec;
+                        logger.log("baseVec + syncVec Length ", baseVec.Length());
+                    }
+                }
+                
+                var baseVelo = baseVec.Normalize();
+                logger.log("baseVelo ", baseVelo);
+                //ctr.logger.log("Stop ", ctr.Thrust.StopDistance);
+                //ctr.logger.log("Full Stop ", ctr.Thrust.FullStop);
+                var localDir = MAF.world2dir(baseVec, ModuleManager.WorldMatrix);
+                var veloVec = localDir * baseVelo;
+                var accelVec = veloVec - llv;
+                var accelVecLenSq = accelVec.LengthSquared();
+                logger.log("accelVecLenSq ", accelVecLenSq);
+                if (accelVecLenSq < 2.0) {
+                    ctr.Thrust.Acceleration = accelVec;
+                } else {
+                    ctr.Thrust.Acceleration = 6.0 * accelVec;
+                }
+                
             }
 
             var stored = 0f;

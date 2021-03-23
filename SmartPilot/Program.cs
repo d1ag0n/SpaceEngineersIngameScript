@@ -61,8 +61,10 @@ namespace IngameScript {
                     
                 }
                 if ((type & UpdateType.Update10) != 0) {
-                    
                     ModuleManager.Update();
+                    if (ModuleManager.Probe) {
+                        Echo(ModuleManager.logger.LastText);
+                    }
                 }
             } catch (Exception ex) {
                 ModuleManager.logger.persist(ex.ToString());

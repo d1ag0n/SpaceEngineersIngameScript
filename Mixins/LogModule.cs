@@ -137,6 +137,7 @@ namespace IngameScript {
             }
             return mLog.ToString();
         }
+        public string LastText;
         void UpdateAction() {
             pcount++;
             if (pcount == 90) {
@@ -146,10 +147,10 @@ namespace IngameScript {
                 }
             }
             //ModuleManager.Program.Echo("logmodupdate");
-            var str = clear();
+            LastText = clear();
             //ModuleManager.Program.Echo(str);
             foreach (var tp in Blocks) {
-                tp.WriteText(str);
+                tp.WriteText(LastText);
             }
         }
     }

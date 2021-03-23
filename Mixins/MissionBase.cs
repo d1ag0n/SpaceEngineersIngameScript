@@ -18,7 +18,12 @@ namespace IngameScript {
                 ctr.Damp = false;
                 var dir = disp;
                 var dist = dir.Normalize();
-                var prefVelo = ctr.Thrust.PreferredVelocity(-Vector3D.Normalize(ctr.LocalLinearVelo), dist);
+                var distSq = dist * dist;
+                var maxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
+                var maxAccelLength = maxAccel.Length();
+                var stop = ctr.Thrust.Stop(maxAccel);
+                var stopDistSq = stop.LengthSquared();
+                var prefVelo = ctr.Thrust.PreferredVelocity(maxAccelLength, dist);
                 if (ctr.LinearVelocity == 0) {
                     prefVelo = 1.0;
                 } else {
@@ -40,7 +45,8 @@ namespace IngameScript {
                         curVelo = veloVec;
                     }
                 }
-                if (false && dist < ctr.Thrust.StopDistance) {
+
+                if (false && distSq < stopDistSq) {
                     ctr.Thrust.Emergency = true;
                     ctr.Damp = true;
                 } else {

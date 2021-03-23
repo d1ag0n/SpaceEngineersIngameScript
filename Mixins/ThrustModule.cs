@@ -11,14 +11,19 @@ namespace IngameScript {
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         readonly ThrustList mHydro = new ThrustList();
-        public double FullStop { get; private set; }
-        public Vector3 Stop { get; private set; }
-        public double StopDistance { get; private set; }
+        public Vector3D FullStop(Vector3D aLocalDirection, Vector3D aMaxAccel) {
+            return stop(aLocalDirection * 100, aMaxAccel);
+        }
+        public Vector3D Stop(Vector3D aMaxAccel) {
+            return stop(controller.LocalLinearVelo, aMaxAccel);
+        }
+        
         enum enGroup { Hydro, Ion, Atmos, Not }
         public ThrustModule() {
             onUpdate = InitAction;
-             MenuName = "Thrust Controller";
-            //*
+
+            /*
+            MenuName = "Thrust Controller";
             onPage = (p) => {
                 mMenuItems.Clear();
 
@@ -78,16 +83,15 @@ namespace IngameScript {
                 }));
                 return mMenuItems;
             };//*/
-            //mMenuItems.Add(new MenuMethod())
         }
-
-        public double zPreferredVelocity(double distToTarget, double maxSpeed) => MathHelperD.Clamp((distToTarget * 0.5) / StopDistance, 0, 1.0) * maxSpeed;
-
+        
         //whiplash says V^2 = 2ad
-        public double PreferredVelocity(Vector3D aDir, double dist) {
-            var maxAccel = mThrust.MaxAccel(aDir, controller.Mass).Length();
-            ModuleManager.logger.log("pvMaxAccel ", maxAccel);
-            return 0.91 * Math.Sqrt(2 * maxAccel * dist);
+        public Vector3D MaxAccel(Vector3D aLocalVelo) {
+            // controller.LocalLinearVelo
+            return mThrust.MaxAccel(aLocalVelo, controller.Mass); 
+        }
+        public double PreferredVelocity(double aMaxAccel, double dist) {
+            return 0.91 * Math.Sqrt(2 * aMaxAccel * dist);
         }
 
         Vector3D _Acceleration;
@@ -95,7 +99,8 @@ namespace IngameScript {
         public Vector3D Acceleration {
             get { return _Acceleration; }
             set {
-                _Acceleration = value; updateRequired = true;
+                _Acceleration = value; 
+                updateRequired = true;
             }
         }
         enGroup GetGroup(IMyThrust aThrust) {
@@ -141,73 +146,19 @@ namespace IngameScript {
         void UpdateAction() {
             if (updateRequired) {
                 var a = Acceleration;
-                var m = controller.Mass;
-
-                mThrust.Update(a, m, Emergency);
-                /*logger.log($"FrontForce {mThrust.FrontForce:F0}");
-                logger.log($"BackForce  {mThrust.BackForce:F0}");
-
-                logger.log($"LeftForce  {mThrust.LeftForce:F0}");
-                logger.log($"RightForce {mThrust.RightForce:F0}");
-
-                logger.log($"UpForce    {mThrust.UpForce:F0}");
-                logger.log($"DownForce  {mThrust.DownForce:F0}");*/
-
-                // v^2*m/(2F)
-                var llv = controller.LocalLinearVelo;
-                var vF = new Vector3D(
-                    llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce,
-                    llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce,
-                    llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce
-                );
-
-                var llvd = Vector3D.Normalize(llv);
-                var maxAccel = mThrust.MaxAccel(llvd, m);
-                //ModuleManager.logger.log("maxAccel", maxAccel);
-                //FullStop = stop(llvd * 100, m, vF).Length();
-                FullStop = stop(llvd * 100, maxAccel).Length();
-                ModuleManager.logger.log("FullStop", FullStop);
-                
-                Stop = stop(llv, maxAccel);
-                ModuleManager.logger.log("Stop  ", Stop.Length());
-                ModuleManager.logger.log("Stop2 ", stop(llv, m, vF).Length());
-                StopDistance = Stop.Length();
-                //llv.X = stop(llv.X, m, llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce);
-                //llv.Y = stop(llv.Y, m, llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce);
-                //llv.Z = stop(llv.Z, m, llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce);
-
-                // a = F / m
-
-                // a = F / m
-
-                /*var vA = new Vector3D(
-                    (llv.X > 0 ? mThrust.LeftForce : mThrust.RightForce) / m,
-                    (llv.Y > 0 ? mThrust.DownForce : mThrust.UpForce) / m,
-                    (llv.Z > 0 ? mThrust.FrontForce : mThrust.BackForce) / m
-                );*/
-                //var wStop = stop(controller.LocalLinearVelo, vA);
-
-                //logger.log($"Stop       {llv.Length()}");
-                //logger.log($"StopDistance {StopDistance:f0}");
-                //logger.log($"wStop      {wStop.Length()}");
-                //logger.log($"yStop      {yStop}");
-                //logger.log($"zStop      {zStop}");
-                if (_Acceleration.IsZero()) {
+                if (a.IsZero()) {
                     updateRequired = false;
-                }
+                    mThrust.AllStop();
+                } else {
+                    var m = controller.Mass;
+                    mThrust.Update(a, m, Emergency);
+                } 
             }
         }
-        //whiplash says
-        //d = V^2/(2*a)
+        // whiplash says
+        // d = V^2/(2*a)
         Vector3D stop(Vector3D V, Vector3D a) => (V * V) / (2.0 * a);
-        // 10 = 2 * 5
-        // F = m * a
 
-        // 2 = 10 / 5
-        // m = F / a
-
-        // 5 = 10 / 2
-        // a = F / m
 
         //double stop(double v, double m, double F) => (v * v) * m / (2 * F);
         Vector3D stop(Vector3D v, double m, Vector3D F) => (v * v) * m / (2 * F);

@@ -10,16 +10,14 @@ namespace IngameScript
     class Mission : MissionBase {
         const int PADDING = 20;
 
-        const double MAXVELO = 100.0;
+        const double MAXVELO = 50.0;
         readonly ThyDetectedEntityInfo mDestination;
 
-        Vector3D mTargetDirection;
         BoundingSphereD mObstacle;
         //int scansPerTick = 6;
 
-        double veloFact = 0.1;
-        double mPreferredVelocity = 1;
-        
+        double mPreferredVelocityFactor = 1;
+
         bool onDestination;
         /// <summary>
         /// true when our orbital maneuver result is an escape teajectory this is needed because
@@ -27,13 +25,11 @@ namespace IngameScript
         /// </summary>
         bool onEscape;
         //Vector3D lastOrbital;
-
+        readonly ProbeServerModule probe;
         //double calcRadius = 0;
         public Mission(ShipControllerModule aController, ThyDetectedEntityInfo aDestination) :base(aController) {
             mDestination = aDestination;
-            if (ctr.LinearVelocity > 1) {
-                mPreferredVelocity = ctr.LinearVelocity;
-            }
+            ModuleManager.GetModule(out probe);
             //calcRadius = aDestination.WorldVolume.Radius;
             //calculateTarget(aDestination.WorldVolume, true);
         }
@@ -80,7 +76,9 @@ namespace IngameScript
                     exitOrbit = mDestination.Position + dirFromDestToShip * (rayIntersect.Value + aShip.Radius + PADDING);
                 }
                 var distToExit = (exitOrbit - aShip.Center).LengthSquared();
-                if (distToExit > (ctr.Thrust.StopDistance * ctr.Thrust.StopDistance)) {
+
+                var maxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
+                if (distToExit > (mStopLength * mStopLength)) {
                     var dispFromObstToShip = aShip.Center - aObstacle.Center;
                     var dirFromObstToShip = dispFromObstToShip;
                     var distFromObstToShip = dirFromObstToShip.Normalize();
@@ -123,26 +121,18 @@ namespace IngameScript
             //var dot = meToDest.Dot(meToObst);
             //ctr.logger.log("dot ", dot);
 
-            var scanDist = wv.Radius + (ctr.Thrust.StopDistance * 3) + PADDING;
+            
+
+            var scanDist = wv.Radius + (mStopLength * 3) + PADDING;
 
             //ctr.logger.log("base scan dist ", scanDist);
             
             var detected = false;
             for (int i = 0; i < 5; i++) {
                 var lvd = ctr.LinearVelocityDirection;
-
-                if (ctr.LinearVelocity < 5.0) {
-                    switch (MAF.random.Next(0, 6)) {
-                        case 0: lvd = ModuleManager.WorldMatrix.Forward; break;
-                        case 1: lvd = ModuleManager.WorldMatrix.Backward; break;
-                        case 2: lvd = ModuleManager.WorldMatrix.Left; break;
-                        case 3: lvd = ModuleManager.WorldMatrix.Right; break;
-                        case 4: lvd = ModuleManager.WorldMatrix.Up; break;
-                        case 5: lvd = ModuleManager.WorldMatrix.Down; break;
-                    }
-                }
                 Vector3D scanPoint;
-                if (true || i == 0) {
+                if (ctr.LinearVelocity < 1.0) {
+
                     scanPoint = wv.Center + MAF.ranDir() * (wv.Radius * 5);
                 }  else {
                     scanPoint = wv.Center + lvd * scanDist;
@@ -169,38 +159,40 @@ namespace IngameScript
                 ThyDetectedEntityInfo thy;
                 if (ctr.Camera.Scan(scanPoint, out entity, out thy)) {
                     if ((thy != null && thy != mDestination) || (thy == null && entity.EntityId != 0 && entity.Type != MyDetectedEntityType.CharacterHuman)) {
-                        //ctr.logger.persist("Avoiding a " + entity.Name);
-                        detected = true;
-                        BoundingSphereD sphere;
-                        if (onEscape) {
-                            var dispFromThing = wv.Center - entity.HitPosition.Value;
-                            var lengthFromThing = dispFromThing.Length();
-                            var inverseDistFromThing = 1 / lengthFromThing;
-                            mEscape.Add(dispFromThing * inverseDistFromThing);
-                        }
-                        if (thy == null) {
-                            sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
-                        } else {
-                            sphere = thy.WorldVolume;
-                        }
-                        if (mObstacle.Radius == 0) {
-                            mObstacle = sphere;
-                        } else {
-                            mObstacle = mObstacle.Include(sphere);
+                        if (!probe.KnownProbe(entity.EntityId)) {
+                            //ctr.logger.persist("Avoiding a " + entity.Name);
+                            detected = true;
+                            BoundingSphereD sphere;
+                            if (onEscape) {
+                                var dispFromThing = wv.Center - entity.HitPosition.Value;
+                                var lengthFromThing = dispFromThing.Length();
+                                var inverseDistFromThing = 1 / lengthFromThing;
+                                mEscape.Add(dispFromThing * inverseDistFromThing);
+                            }
+                            if (thy == null) {
+                                sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
+                            } else {
+                                sphere = thy.WorldVolume;
+                            }
+                            if (mObstacle.Radius == 0) {
+                                mObstacle = sphere;
+                            } else {
+                                mObstacle = mObstacle.Include(sphere);
+                            }
                         }
                     }
                 }
             }
             if (detected) {
-                mPreferredVelocity *= 0.99;
+                mPreferredVelocityFactor -= 0.01;
             } else {
-                mPreferredVelocity *= 1.1;
+                mPreferredVelocityFactor += 0.01;
                 mObstacle.Radius *= 0.99;
                 if (mObstacle.Radius < 1) {
                     mObstacle.Radius = 0;
                 }
             }
-            mPreferredVelocity = MathHelperD.Clamp(mPreferredVelocity, 1.0, MAXVELO);
+            mPreferredVelocityFactor = MathHelperD.Clamp(mPreferredVelocityFactor, 0.01, 1.0);
             var result = Vector3D.Zero;
             if (mObstacle.Radius > 0) {
                 bool wasOnEscape = onEscape;
@@ -228,11 +220,20 @@ namespace IngameScript
             }
             return result;
         }
-
+        Vector3D mStop;
+        double mStopLength;
+        Vector3D mMaxAccel;
+        double mMaxAccelLength;
         
         public override void Update() {
             var wv = ctr.Grid.WorldVolume;
             var m = ModuleManager.WorldMatrix;
+            var llv = ctr.LocalLinearVelo;
+            mMaxAccel = ctr.Thrust.MaxAccel(llv);
+            mMaxAccelLength = mMaxAccel.Length();
+            mStop = ctr.Thrust.Stop(mMaxAccel);
+            mStopLength = mStop.Length();
+
             var worldDir = collisionDetect();
 
             var dispFromDestToShip = wv.Center - mDestination.Position;
@@ -247,16 +248,17 @@ namespace IngameScript
                 worldDir = stopDir;
             }
             var localDir = MAF.world2dir(worldDir, m);
-            var llv = ctr.LocalLinearVelo;
+            
             
             
             //ctr.logger.log("dist ", dist);
             ctr.logger.log("Estimated arrival ", (dist / ctr.LinearVelocity) / 60.0, " minutes");
-            //preferredVelocity = MathHelperD.Clamp(dist / ctr.Thrust.FullStop, 0, 1.0) * preferredVelocity;
-            var preferredVelocity = MathHelperD.Clamp((dist / 2) / ctr.Thrust.StopDistance, 0, 1.0) * mPreferredVelocity;
+
+
+            var preferredVelocity = MathHelperD.Clamp(ctr.Thrust.PreferredVelocity(mMaxAccelLength, distFromDestToShip), 0.0, MAXVELO);
 
             //ctr.logger.log("preferredVelocity ", preferredVelocity);
-            var preferredVelocityVector = localDir * preferredVelocity;
+            var preferredVelocityVector = localDir * (preferredVelocity * mPreferredVelocityFactor);
 
             var accelReq = preferredVelocityVector - llv;
             if (MAF.nearEqual(accelReq.LengthSquared(), 0, 0.0001)) {

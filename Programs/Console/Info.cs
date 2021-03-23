@@ -8,8 +8,11 @@ using IngameScript;
 
 namespace commandline {
     class Info {
-        static void Main() => accelCalcs();
-
+        static void Main() => perp();
+        static void perp() {
+            var v1 = Vector3D.Up;
+            return;
+        }
         static void accelCalcs() {
             /*
              *  F = 4320000

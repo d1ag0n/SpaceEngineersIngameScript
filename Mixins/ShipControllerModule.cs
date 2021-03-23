@@ -82,6 +82,10 @@ namespace IngameScript {
                         }
                     }
                 }));
+                mMenuMethods.Add(new MenuItem("Abort Mission", () => {
+                    mission = null;
+                    Damp = true;
+                }));
                 return mMenuMethods;
             };
         }
@@ -178,20 +182,13 @@ namespace IngameScript {
             if (Damp) {
                 var localVelo = LocalLinearVelo;
                 var localVeloSq = localVelo.LengthSquared();
-                
 
                 if (localVeloSq <= 0.000025) {
                     localVelo = Vector3D.Zero;
-                    //logger.persist(logger.gps("Started", lastPos));
-                    //logger.persist(logger.gps("Stopped", Remote.CenterOfMass));
-                    //logger.persist("Estimated " + estimatedStop.ToString("f2"));
-                    //logger.persist("Actual " + (lastPos - Remote.CenterOfMass).Length().ToString("f2"));
                     Damp = false;
-                } else {
-                    //localVelo = localVelo * -2.0;
                 }
                 Thrust.Acceleration = localVelo * -6.0;
-                
+
                 /*
                 if (GetModule(out gyro)) {
                     if (localVeloSq > 25) {
@@ -201,12 +198,12 @@ namespace IngameScript {
                     }
                 }*/
             } else {
-                lastPos = Remote.CenterOfMass;
-                estimatedStop = Thrust.StopDistance;
+                //lastPos = Remote.CenterOfMass;
+                //estimatedStop = Thrust.StopDistance;
             }
         }
-        Vector3D lastPos;
-        double estimatedStop;
+        //Vector3D lastPos;
+        //double estimatedStop;
         void zzzzUpdateAction() {
             // maxAcceleration = thrusterThrust / shipMass;
             // boosterFireDuration = Speed / maxAcceleration / 2;

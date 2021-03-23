@@ -21,7 +21,7 @@ namespace IngameScript {
         // Down = 5
         public void Update(Vector3D aAccel, double aMass, bool emergency = false) {
             Vector3D original = aAccel;
-            ModuleManager.logger.log("original", original);
+            //ModuleManager.logger.log("original", original);
             int f = 0, b = 1, l = 2, r = 3, u = 4, d = 5;
             if (aAccel.Z < 0) {
                 f = 1; b = 0;
@@ -68,22 +68,26 @@ namespace IngameScript {
                 applied.Y *= -1.0;
             }
         }
-
-        public Vector3D MaxAccel(Vector3D aDirection, double aMass) {
-            //ModuleManager.logger.log("MaxAccel aDirection", aDirection);
-            ModuleManager.logger.log("MaxAccel aMass", aMass);
+        public void AllStop() {
+            foreach (var list in mLists) {
+                foreach (var t in list) {
+                    t.Enabled = false;
+                }
+            }
+        }
+        public Vector3D MaxAccel(Vector3D aLocalVec, double aMass) {
             int f = 0, l = 2, u = 4;
-            if (aDirection.Z < 0) {
+            if (aLocalVec.Z < 0) {
                 f = 1;
             }
-            if (aDirection.X < 0) {
+            if (aLocalVec.X < 0) {
                 l = 3;
             }
-            if (aDirection.Y > 0) {
+            if (aLocalVec.Y > 0) {
                 u = 5;
             }
 
-            var amp = aDirection * 1000.0;
+            var amp = aLocalVec * 1000.0;
             var z = Math.Abs(amp.Z) * aMass;
             var x = Math.Abs(amp.X) * aMass;
             var y = Math.Abs(amp.Y) * aMass;
@@ -105,16 +109,15 @@ namespace IngameScript {
             }
             result /= aMass;
 
-            if (aDirection.Z < 0) {
+            if (aLocalVec.Z < 0) {
                 result.Z *= -1.0;
             }
-            if (aDirection.X < 0) {
+            if (aLocalVec.X < 0) {
                 result.X *= -1.0;
             }
-            if (aDirection.Y < 0) {
+            if (aLocalVec.Y < 0) {
                 result.Y *= -1.0;
             }
-            //ModuleManager.logger.log("MaxAccel result", result);
             return result;
         }
 

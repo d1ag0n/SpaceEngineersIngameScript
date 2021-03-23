@@ -27,7 +27,11 @@ namespace IngameScript {
         protected bool Okay = false;
         public ModuleBase() {
             ModuleManager.GetModule(out logger);
-            ModuleManager.GetModule(out controller);
+            if (this is ShipControllerModule) {
+                controller = this as ShipControllerModule;
+            } else {
+                ModuleManager.GetModule(out controller);
+            }
         }
         /*public void MenuData(List<object> aList) {
              
