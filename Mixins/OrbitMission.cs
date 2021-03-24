@@ -7,5 +7,10 @@ namespace IngameScript {
         public OrbitMission(ShipControllerModule aController, BoundingSphereD aSphere) : base(aController, aSphere) {
             
         }
+
+        public override void Update() {
+            base.Update();
+
+        }
     }
 }

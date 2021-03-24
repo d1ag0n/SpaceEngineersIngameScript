@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using VRage;
 using VRageMath;
 
 namespace IngameScript
@@ -22,6 +23,7 @@ namespace IngameScript
                 result.Position = aCBoxCenter;
                 kmap.Add(ckey, result);
             } else {
+                
                 if (result.Reserved + reservationTime < MAF.time) {
                     result.Reserved =
                     result.Reserver = 0;
@@ -53,7 +55,6 @@ namespace IngameScript
         public BoxInfo dropReservation(long sender, Vector3D aCBoxCenter) {
             var info = getInfo(aCBoxCenter);
             if (sender == info.Reserver) {
-                info.Reserved =
                 info.Reserver = 0;
                 setInfo(info);
             }
@@ -62,7 +63,7 @@ namespace IngameScript
         public BoxInfo setReservation(long sender, Vector3D aCBoxCenter) {
             var info = getInfo(aCBoxCenter);
             if (info.Reserver == 0) {
-                info.Reserved = MAF.time;
+                info.Reserved = MAF.Now;
                 info.Reserver = sender;
                 setInfo(info);
             }
@@ -78,8 +79,18 @@ namespace IngameScript
     }
     struct BoxInfo {
         public long Reserver;
-        public double Reserved;
+        public DateTime Reserved;
         public bool Obstructed;
         public Vector3D Position;
+        public MyTuple<long, long, bool, Vector3D> Box() => MyTuple.Create(Reserver, Reserved.ToBinary(), Obstructed, Position);
+        public static BoxInfo Unbox(object data) {
+            var t = (MyTuple<long, long, bool, Vector3D>)data;
+            BoxInfo result;
+            result.Reserver = t.Item1;
+            result.Reserved = DateTime.FromBinary(t.Item2);
+            result.Obstructed = t.Item3;
+            result.Position = t.Item4;
+            return result;
+        }
     }
 }

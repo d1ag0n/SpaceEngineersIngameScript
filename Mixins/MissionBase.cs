@@ -14,6 +14,7 @@ namespace IngameScript {
         double mStopLength;
         bool onEscape;
         BoundingSphereD mObstacle;
+        
 
         protected readonly ShipControllerModule ctr;
         protected readonly BoundingSphere mDestination;
@@ -24,6 +25,9 @@ namespace IngameScript {
         protected double MAXVELO = 50.0;
         protected double mPreferredVelocityFactor = 1;
         protected double mMaxAccelLength;
+        protected Vector3D mDispFromDest;
+        protected Vector3D mDirFromDest;
+        protected double mDistFromDest;
 
         public bool Complete { get; protected set; }
         
@@ -39,18 +43,24 @@ namespace IngameScript {
             ModuleManager.GetModule(out probe);
         }
         public virtual void Update() {
+            var wv = ctr.Grid.WorldVolume;
             var llv = ctr.LocalLinearVelo;
             mMaxAccel = ctr.Thrust.MaxAccel(llv);
             mMaxAccelLength = mMaxAccel.Length();
             mStop = ctr.Thrust.Stop(mMaxAccel);
             mStopLength = mStop.Length();
+            mDispFromDest = mDestination.Center - wv.Center;
+            mDirFromDest = mDispFromDest;
+            mDistFromDest = mDirFromDest.Normalize();
+
+            if (mDestination.Radius > 0) {
+                mDistFromDest -= (mDestination.Radius + wv.Radius + PADDING);
+            }
         }
         Vector3D orbitalManeuver(BoundingSphereD aShip, BoundingSphereD aObstacle) {
             var result = Vector3D.Zero;
-            var dispFromDestToShip = aShip.Center - mDestination.Center;                // displacement from destination to ship
-            var dirFromDestToShip = dispFromDestToShip;                                 // direction from destination to ship
-            var distDestToShip = dirFromDestToShip.Normalize();                         // length of displacement from destination to ship
-            var rayFromDestToShip = new RayD(mDestination.Center, dirFromDestToShip); // ray from destination to ship            
+                                  
+            var rayFromDestToShip = new RayD(mDestination.Center, mDirFromDest);   // ray from destination to ship            
             var rayIntersect = rayFromDestToShip.Intersects(aObstacle);                 // calculate intersect
             if (rayIntersect.HasValue) {
                 Vector3D exitOrbit;                                                     // position where we exit orbit
@@ -62,7 +72,7 @@ namespace IngameScript {
                     var dirFromObstToDest = Vector3D.Normalize(dispFromObstToDest);
                     exitOrbit = aObstacle.Center + dirFromObstToDest * (aObstacle.Radius + aShip.Radius + PADDING);
                 } else {
-                    exitOrbit = mDestination.Center + dirFromDestToShip * (rayIntersect.Value + aShip.Radius + PADDING);
+                    exitOrbit = mDestination.Center + mDirFromDest * (rayIntersect.Value + aShip.Radius + PADDING);
                 }
                 var distToExit = (exitOrbit - aShip.Center).LengthSquared();
 
@@ -118,7 +128,7 @@ namespace IngameScript {
                         // this is getting nasty
                         // mothership should only avoid objects owned by me if they have no velocity
                         // everything else should be aware of the mothership and gtfo of the way
-                        if (!ModuleManager.Mother || !probe.KnownProbe(entity.EntityId)) {
+                        if (!ModuleManager.Mother || entity.Velocity.LengthSquared() == 0 ) {
                             detected = true;
                             BoundingSphereD sphere;
                             if (onEscape) {
@@ -145,7 +155,7 @@ namespace IngameScript {
                 mPreferredVelocityFactor -= 0.01;
             } else {
                 mPreferredVelocityFactor += 0.01;
-                mObstacle.Radius *= 0.99;
+                mObstacle.Radius *= 0.999;
                 if (mObstacle.Radius < 1) {
                     mObstacle.Radius = 0;
                 }
@@ -179,23 +189,20 @@ namespace IngameScript {
             return result;
         }
         protected void FlyTo(double maxVelo = 100.0) {
-            var shipCenter = ctr.Grid.WorldVolume.Center;
-            var disp = mDestination.Center - shipCenter;
-            if (disp.LengthSquared() > 1.0 || ctr.LinearVelocity > 0.1) {
+            if (mDistFromDest > 1.0 || ctr.LinearVelocity > 0.1) {
                 ctr.Damp = false;
-                var dir = disp;
-                var dist = dir.Normalize();
-                var distSq = dist * dist;
+                var dir = -mDirFromDest;
+                var distSq = mDistFromDest * mDistFromDest;
                 var maxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
                 var maxAccelLength = maxAccel.Length();
                 var stop = ctr.Thrust.Stop(maxAccel);
                 var stopDistSq = stop.LengthSquared();
-                var prefVelo = ctr.Thrust.PreferredVelocity(maxAccelLength, dist);
+                var prefVelo = ctr.Thrust.PreferredVelocity(maxAccelLength, mDistFromDest);
                 if (ctr.LinearVelocity == 0) {
                     prefVelo = 1.0;
                 } else {
-                    if (prefVelo > dist) {
-                        prefVelo = dist;
+                    if (prefVelo > mDistFromDest) {
+                        prefVelo = mDistFromDest;
                     }
                 }
                 var accelerating = prefVelo > ctr.LinearVelocity;
@@ -218,7 +225,7 @@ namespace IngameScript {
                     ctr.Damp = true;
                 } else {
                     ctr.Damp = false;
-                    disp = (veloVec - curVelo);
+                    var disp = (veloVec - curVelo);
                     if (accelerating && disp.LengthSquared() < 2.0) {
                         ctr.Thrust.Acceleration = disp;
                     } else {
@@ -230,7 +237,9 @@ namespace IngameScript {
                 ctr.Thrust.Emergency = false;
             }
         }
-
+        // todo make FlyAt(direction) method
+        // call flyat from here
+        // call fly at from flyTo
         protected void collisionDetectTo() {
             var wv = ctr.Grid.WorldVolume;
             var m = ModuleManager.WorldMatrix;
@@ -248,8 +257,6 @@ namespace IngameScript {
                 worldDir = stopDir;
             }
             var localDir = MAF.world2dir(worldDir, m);
-
-
 
             //ctr.logger.log("dist ", dist);
             ctr.logger.log("Estimated arrival ", (dist / ctr.LinearVelocity) / 60.0, " minutes");
