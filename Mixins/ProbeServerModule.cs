@@ -33,14 +33,15 @@ namespace IngameScript {
                 if (!v.IsZero()) {
                     s = v.Normalize();
                 }
-                var t = ProbeFollow(ModuleManager.WorldVolume, v, s);
+
+                var count = 1;
                 foreach (var p in mProbes) {
-                    logger.log("Sending to probe.");
-                    ModuleManager.Program.IGC.SendUnicastMessage(p, "probe", t);
+                    var t = ProbeFollow(ModuleManager.WorldVolume, v, s, count);
+                    ModuleManager.Program.IGC.SendUnicastMessage(p, "ProbeFollow", t);
                 }
             }
         }
-        public static MyTuple<BoundingSphereD, Vector3D, double> ProbeFollow(BoundingSphereD position, Vector3D dir, double speed) => MyTuple.Create(position, dir, speed);
-        public static MyTuple<BoundingSphereD, Vector3D, double> ProbeFollow(object data) => (MyTuple<BoundingSphereD, Vector3D, double>)data;
+        public static MyTuple<BoundingSphereD, Vector3D, double, int> ProbeFollow(BoundingSphereD position, Vector3D dir, double speed, int name) => MyTuple.Create(position, dir, speed, name);
+        public static MyTuple<BoundingSphereD, Vector3D, double, int> ProbeFollow(object data) => (MyTuple<BoundingSphereD, Vector3D, double, int>)data;
     }
 }

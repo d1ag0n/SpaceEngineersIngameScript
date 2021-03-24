@@ -9,10 +9,8 @@ namespace IngameScript {
     class RandomMission : MissionBase {
         static int next = 0;
         
-        public RandomMission(ShipControllerModule aController) : base(aController) {
-            
-            mDestination = ctr.Remote.CenterOfMass + MAF.ranDir() * 1100.0;
-            ctr.logger.persist(ctr.logger.gps("RandomMission", mDestination));
+        public RandomMission(ShipControllerModule aController, BoundingSphereD aDestination) : base(aController, aDestination) {
+            ctr.logger.persist(ctr.logger.gps("RandomMission", mDestination.Center));
         }
         
         public override void Update() => FlyTo();

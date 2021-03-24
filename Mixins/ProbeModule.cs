@@ -10,19 +10,25 @@ namespace IngameScript {
         readonly HashSet<long> probes;
         readonly List<IMySolarPanel> mPanels = new List<IMySolarPanel>();
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
+        readonly List<IMyRadioAntenna> mAntennas = new List<IMyRadioAntenna>();
         readonly GyroModule gyro;
-        readonly ThrustModule thrust;
+        int name;
         public ProbeModule() {
             ctr = ModuleManager.controller;
-            ModuleManager.IGCSubscribe("probe", ProbeMessage);
+            ModuleManager.IGCSubscribe("ProbeFollow", ProbeFollow);
             GetModule(out gyro);
-            GetModule(out thrust);
+            
             ctr.Damp = true;
             onUpdate = RegisterAction;
+            
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
             var result = false;
+
             if (ModuleManager.Probe) {
+                if (aBlock is IMyRadioAntenna) {
+                    mAntennas.Add(aBlock as IMyRadioAntenna);
+                }
                 if (aBlock is IMyBatteryBlock) {
                     mBatteries.Add(aBlock as IMyBatteryBlock);
                     return true;
@@ -46,13 +52,23 @@ namespace IngameScript {
         double MotherSpeed;
         DateTime lastUpdate;
 
-        void ProbeMessage(MyIGCMessage m) {
+        void ProbeFollow(MyIGCMessage m) {
             var pf = ProbeServerModule.ProbeFollow(m.Data);
             MotherSphere = pf.Item1;
             MotherVeloDir = pf.Item2;
             MotherSpeed = pf.Item3;
             onUpdate = UpdateAction;
             lastUpdate = DateTime.Now;
+            if (pf.Item4 != name) {
+                name = pf.Item4;
+                var one = true;
+                foreach (var a in mAntennas) {
+                    a.CustomName = $"Probe {name:D2}";
+                    a.EnableBroadcasting =
+                    a.Enabled = one;
+                    one = false;
+                }
+            }
         }
         void RegisterAction() {
             ModuleManager.Program.IGC.SendBroadcastMessage("Register", 1);
@@ -64,7 +80,6 @@ namespace IngameScript {
             if ((DateTime.Now - lastUpdate).TotalSeconds > 1) {
                 RegisterAction();
                 controller.Damp = true;
-                
             } else {
                 ctr.Damp = false;
                 var wv = ctr.Grid.WorldVolume; 

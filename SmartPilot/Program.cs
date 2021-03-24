@@ -1,8 +1,5 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
-using System.Collections.Generic;
-using VRage.Game.ModAPI.Ingame;
-using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
@@ -23,7 +20,6 @@ namespace IngameScript {
             if (Me.CustomData.Contains("mother")) {
                 ModuleManager.logger.persist("I'm a Mother Ship");
                 ModuleManager.Mother = true;
-                
                 new PeriscopeModule();
                 mMenu = new MenuModule();
                 new ProbeServerModule();
@@ -34,7 +30,6 @@ namespace IngameScript {
             } else {
                 Runtime.UpdateFrequency = UpdateFrequency.None;
             }
-            
             Update = load;
         }
 

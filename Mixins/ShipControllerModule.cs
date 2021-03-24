@@ -69,9 +69,7 @@ namespace IngameScript {
                     logger.persist("No camera mod found?");
                 }
 
-                mMenuMethods.Add(new MenuItem("Random Mission", () => {
-                    mission = new RandomMission(this);
-                }));
+                mMenuMethods.Add(new MenuItem("Random Mission", () => mission = new RandomMission(this, new BoundingSphereD(Remote.CenterOfMass + MAF.ranDir() * 1100.0, 0))));
 
                 mMenuMethods.Add(new MenuItem($"Dampeners {Damp}", () => { 
                     Damp = !Damp;
@@ -82,10 +80,12 @@ namespace IngameScript {
                         }
                     }
                 }));
+
                 mMenuMethods.Add(new MenuItem("Abort Mission", () => {
                     mission = null;
                     Damp = true;
                 }));
+
                 return mMenuMethods;
             };
         }
