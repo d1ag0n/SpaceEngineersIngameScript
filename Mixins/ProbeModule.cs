@@ -99,7 +99,11 @@ namespace IngameScript {
                     syncVec = dirToMother;
                     dist = distToMother - maxDist;
                 } else if (distToMother < minDist) {
-                    dirToMother.CalculatePerpendicularVector(out syncVec);
+                    if (MotherSpeed > 1) {
+                        syncVec = Vector3D.Normalize(wv.Center - MAF.orthoProject(MotherSphere.Center + MotherVeloDir, wv.Center, dirToMother));
+                    } else {
+                        dirToMother.CalculatePerpendicularVector(out syncVec);
+                    }
                     dist = minDist - distToMother;
                 }
                 logger.log("Mother dist ", minDist, " - ", dist, " - ", maxDist);

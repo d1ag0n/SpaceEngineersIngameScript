@@ -21,7 +21,7 @@ namespace IngameScript {
                     var tp = b as IMyTextPanel;
                     tp.CustomName = "Menu Console - " + Blocks.Count;
                     tp.ContentType = ContentType.TEXT_AND_IMAGE;
-                    tp.Font = "Monospace";
+                    tp.Font = "DEBUG";
                     if (tp.FontColor == Color.White) {
                         tp.FontColor = new Color(51, 255, 0);
                     }

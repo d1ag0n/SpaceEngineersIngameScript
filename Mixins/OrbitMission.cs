@@ -50,9 +50,9 @@ namespace IngameScript {
                 dir = proj - ctr.Grid.WorldVolume.Center;
                 var dist = dir.Normalize();
                 if (orbitLocked) {
-                    ctr.logger.log("Orbit is stable, distance to orbit state change ", dist);
+                    ctr.logger.log("Orbit is stable, distance to orbit state change ", dist - 100);
                 } else {
-                    ctr.logger.log("Orbit is unstable, distance to stable orbit ", dist);
+                    ctr.logger.log("Orbit is unstable, distance to stable orbit ", dist - 100);
                 }
                 if (dist < 100) {
                     orbitLocked = true;

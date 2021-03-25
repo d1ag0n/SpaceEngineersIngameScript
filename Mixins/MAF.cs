@@ -8,6 +8,7 @@ namespace IngameScript
 {
     static class MAF
     {
+        public static DateTime Epoch => DateTime.MinValue;
         public static DateTime Now => DateTime.Now;
         public static readonly Random random = new Random();
         public static Vector3D ranDir() => Vector3D.Normalize(new Vector3D(random.NextDouble() - 0.5, random.NextDouble() - 0.5, random.NextDouble() - 0.5));

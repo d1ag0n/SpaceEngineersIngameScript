@@ -35,13 +35,16 @@ namespace IngameScript
             onSave = SaveAction;
             onLoad = LoadAction;
             Active = true;
-            mainMenu();
+            
             init();
             onPage = p => {
                 if (onUpdate != UpdateAction) {
                     onUpdate = UpdateAction;
                     init();
                 }
+                mMenuItems.Clear();
+                mMenuItems.Add(new MenuItem("Activate", Nactivate));
+                mMenuItems.Add(new MenuItem("Configurator", null, ConfigAction));
                 return mMenuItems;
             };
         }
@@ -112,11 +115,7 @@ namespace IngameScript
                 mTargetDirection = aWorld;
             }
         }
-        void mainMenu() {
-            mMenuItems.Clear();
-            mMenuItems.Add(new MenuItem("Activate", Nactivate));
-            mMenuItems.Add(new MenuItem("Configurator", null, ConfigAction));
-        }
+
 
         string strRaiseDifMax => $"Increase max difference for AV correction: {difMax.ToString("f4")}";
         void  raiseDifMax() => difMax *= 1.1;
