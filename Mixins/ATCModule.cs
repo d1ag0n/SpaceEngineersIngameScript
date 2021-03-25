@@ -17,6 +17,7 @@ namespace IngameScript
         public override bool Accept(IMyTerminalBlock aBlock) => false;
 
         void processMessage(MyIGCMessage m) {
+            logger.persist("Received ATC message from " + m.Source);
             var msg = ATCMsg.Unbox(m.Data);
             switch (msg.Subject) {
                 case enATC.Drop:
@@ -26,7 +27,8 @@ namespace IngameScript
                     msg.Info = map.setReservation(m.Source, msg.Info.Position);
                     break;
             }
-            ModuleManager.Program.IGC.SendUnicastMessage(m.Source, "ATC", msg.Box());
+            var result = ModuleManager.Program.IGC.SendUnicastMessage(m.Source, "ATC", msg.Box());
+            logger.log("Respose result ", result);
         }
     }
     struct ATCMsg {
