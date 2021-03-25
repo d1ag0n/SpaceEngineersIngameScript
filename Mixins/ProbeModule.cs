@@ -12,14 +12,15 @@ namespace IngameScript {
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
         readonly List<IMyRadioAntenna> mAntennas = new List<IMyRadioAntenna>();
         readonly GyroModule gyro;
+        IMyBroadcastListener mMotherState;
         int name;
         public ProbeModule() {
             ctr = ModuleManager.controller;
-            ModuleManager.IGCSubscribe("ProbeFollow", ProbeFollow);
+            mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
             GetModule(out gyro);
             
             ctr.Damp = true;
-            onUpdate = RegisterAction;
+            onUpdate = UpdateAction;
             
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
@@ -52,33 +53,22 @@ namespace IngameScript {
         double MotherSpeed;
         DateTime lastUpdate;
 
-        void ProbeFollow(MyIGCMessage m) {
-            var pf = ProbeServerModule.ProbeFollow(m.Data);
-            MotherSphere = pf.Item1;
-            MotherVeloDir = pf.Item2;
-            MotherSpeed = pf.Item3;
-            onUpdate = UpdateAction;
-            lastUpdate = DateTime.Now;
-            if (pf.Item4 != name) {
-                name = pf.Item4;
-                var one = true;
-                foreach (var a in mAntennas) {
-                    a.CustomName = $"Probe {name:D2}";
-                    a.EnableBroadcasting =
-                    a.Enabled = one;
-                    one = false;
-                }
-            }
-        }
-        void RegisterAction() {
-            ModuleManager.Program.IGC.SendBroadcastMessage("Register", 1);
-        }
+
+
         // Vector3D absoluteNorthVecPlanetWorlds = new Vector3D(0, -1, 0); //this was determined via Keen's code
         // Vector3D absoluteNorthVecNotPlanetWorlds = new Vector3D(0.342063708833718, -0.704407897782847, -0.621934025954579); //this was determined via Keen's code
         const double PADDING = 100.0;
         void UpdateAction() {
+            while (mMotherState.HasPendingMessage) {
+                
+                var m = mMotherState.AcceptMessage();
+                var ms = MotherShipModule.MotherState(m.Data);
+                MotherSphere = ms.Item1;
+                MotherVeloDir = ms.Item2;
+                MotherSpeed = ms.Item3;
+                lastUpdate = MAF.Now;
+            }
             if ((DateTime.Now - lastUpdate).TotalSeconds > 1) {
-                RegisterAction();
                 controller.Damp = true;
             } else {
                 ctr.Damp = false;
@@ -92,7 +82,6 @@ namespace IngameScript {
                 double dist = 0;
                 Vector3D baseVec = MotherVeloDir * MotherSpeed;
 
-                logger.log("MotherSpeed ", MotherSpeed);
 
                 var syncVec = Vector3D.Zero;
                 if (distToMother > maxDist) {
@@ -106,32 +95,23 @@ namespace IngameScript {
                     }
                     dist = minDist - distToMother;
                 }
-                logger.log("Mother dist ", minDist, " - ", dist, " - ", maxDist);
                 var llv = ctr.LocalLinearVelo;
                 
                 if (dist > 0) {
                     if (ctr.LinearVelocity > 0.0) {
                         var maxAccelLength = ctr.Thrust.MaxAccel(syncVec).Length();
                         var prefVelo = MathHelperD.Clamp(ctr.Thrust.PreferredVelocity(maxAccelLength, dist), 0.0, 25.0);
-                        logger.log("prefVelo ", prefVelo);
                         
                         syncVec *= prefVelo;
-                        logger.log("syncVec Length ", syncVec.Length());
-                        logger.log("baseVec Length ", baseVec.Length());
                         baseVec += syncVec;
-                        logger.log("baseVec + syncVec Length ", baseVec.Length());
                     }
                 }
                 
                 var baseVelo = baseVec.Normalize();
-                logger.log("baseVelo ", baseVelo);
-                //ctr.logger.log("Stop ", ctr.Thrust.StopDistance);
-                //ctr.logger.log("Full Stop ", ctr.Thrust.FullStop);
                 var localDir = MAF.world2dir(baseVec, ModuleManager.WorldMatrix);
                 var veloVec = localDir * baseVelo;
                 var accelVec = veloVec - llv;
                 var accelVecLenSq = accelVec.LengthSquared();
-                logger.log("accelVecLenSq ", accelVecLenSq);
                 if (accelVecLenSq < 2.0) {
                     ctr.Thrust.Acceleration = accelVec;
                 } else {
@@ -156,8 +136,7 @@ namespace IngameScript {
                 charge = false;
             }
 
-            ctr.logger.log("battery % ", percent);
-            //charge = true;
+            charge = true;
 
             if (charge) {
                 percent = maxPanel.MaxOutput / maxEver;

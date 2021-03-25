@@ -22,7 +22,7 @@ namespace IngameScript {
                 ModuleManager.Mother = true;
                 new PeriscopeModule();
                 mMenu = new MenuModule();
-                new ProbeServerModule();
+                new MotherShipModule();
             } else if (Me.CustomData.Contains("#probe")) {
                 ModuleManager.logger.persist("I'm a Probe");
                 ModuleManager.Probe = true;

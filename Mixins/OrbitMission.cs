@@ -7,6 +7,9 @@ namespace IngameScript {
         int orbit = -1;
         bool orbitStarted;
         bool orbitLocked;
+        // this orbit isn't great 
+        // this should be updated to begin an arbitrary orbit in any direction based on the approach
+        // I just wanted to get something going quickly and move on to drill docking
         public OrbitMission(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) : base(aController, aEntity) {
             findStart(mEntity.Orientation);
         }

@@ -21,7 +21,7 @@ namespace IngameScript {
         protected readonly BoundingSphereD _mDestination;
         
         protected readonly ThyDetectedEntityInfo mEntity;
-        protected readonly ProbeServerModule probe;
+        
 
         protected double PADDING = 20.0;
         protected double MAXVELO = 50.0;
@@ -38,12 +38,10 @@ namespace IngameScript {
         public MissionBase(ShipControllerModule aController, BoundingSphereD aDestination) {
             ctr = aController;
             _mDestination = aDestination;
-            ModuleManager.GetModule(out probe);
         }
         public MissionBase(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) {
             ctr = aController;
             mEntity = aEntity;
-            ModuleManager.GetModule(out probe);
         }
         public virtual void Update() {
             var wv = ctr.Grid.WorldVolume;

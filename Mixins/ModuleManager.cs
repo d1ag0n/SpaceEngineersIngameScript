@@ -9,7 +9,7 @@ namespace IngameScript {
 
         public static bool Mother;
         public static bool Probe;
-        static readonly Dictionary<string, IGCHandler> mIGCSubscriptions = new Dictionary<string, IGCHandler>();
+        static readonly Dictionary<string, List<IGCHandler>> mIGCSubscriptions = new Dictionary<string, List<IGCHandler>>();
         public static IMyCubeGrid Grid => Program.Me.CubeGrid;
         public static BoundingSphereD WorldVolume => Grid.WorldVolume;
         public static MatrixD WorldMatrix {
@@ -20,7 +20,13 @@ namespace IngameScript {
             }
         }
 
-        public static void IGCSubscribe(string tag, IGCHandler h) => mIGCSubscriptions.Add(tag, h);
+        public static void IGCSubscribe(string tag, IGCHandler h) {
+            List<IGCHandler> list;
+            if (!mIGCSubscriptions.TryGetValue(tag, out list)) {
+                list = new List<IGCHandler>();
+            }
+            list.Add(h);
+        }
 
 
         static readonly Lag mLag = new Lag(6);
@@ -44,14 +50,17 @@ namespace IngameScript {
             logger.log(mLag.update(Program.Runtime.LastRunTimeMs), " - ", DateTime.Now.ToString());
             while (Program.IGC.UnicastListener.HasPendingMessage) {
                 var msg = Program.IGC.UnicastListener.AcceptMessage();
-                try {
-                    IGCHandler h;
-                    if (mIGCSubscriptions.TryGetValue(msg.Tag, out h)) {
-                        h(msg);
+                List<IGCHandler> list;
+                if (mIGCSubscriptions.TryGetValue(msg.Tag, out list)) {
+                    foreach (var h in list) {
+                        try {
+                            h(msg);
+                        } catch (Exception ex) {
+                            logger.persist(ex.ToString());
+                        }
                     }
-                } catch (Exception ex) {
-                    logger.persist(ex.ToString());
                 }
+
             }
             
             //logger.log(logger.gps("WV", Program.Me.CubeGrid.WorldVolume.Center));
