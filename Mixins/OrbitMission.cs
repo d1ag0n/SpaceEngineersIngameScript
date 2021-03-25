@@ -10,8 +10,14 @@ namespace IngameScript {
 
         public override void Update() {
             base.Update();
+            if (mDistToDest < 100) {
+
+            } else {
+            
+            }
             ctr.logger.log("Orbit Mission Distance ", mDistToDest);
             var ops = new OPS(Volume.Center, Volume.Radius, ctr.Grid.WorldVolume.Center);
+            ctr.logger.log("Grid Radius: ", ctr.Grid.WorldVolume.Radius);
             ctr.logger.log(ops);
             collisionDetectTo();
         }

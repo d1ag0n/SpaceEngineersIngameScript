@@ -31,7 +31,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OrbitMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)PPS.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OPS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Probe.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProbeModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProbeServerModule.cs" />

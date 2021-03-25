@@ -18,7 +18,8 @@ namespace IngameScript {
         
 
         protected readonly ShipControllerModule ctr;
-        protected readonly BoundingSphereD mDestination;
+        protected readonly BoundingSphereD _mDestination;
+        
         protected readonly ThyDetectedEntityInfo mEntity;
         protected readonly ProbeServerModule probe;
 
@@ -29,18 +30,17 @@ namespace IngameScript {
         
         protected Vector3D mDirToDest;
         protected double mDistToDest;
-        protected BoundingSphereD Volume => mEntity == null ? mDestination : mEntity.WorldVolume;
+        protected BoundingSphereD Volume => mEntity == null ? _mDestination : mEntity.WorldVolume;
         public bool Complete { get; protected set; }
         
         public MissionBase(ShipControllerModule aController, BoundingSphereD aDestination) {
             ctr = aController;
-            mDestination = aDestination;
+            _mDestination = aDestination;
             ModuleManager.GetModule(out probe);
         }
         public MissionBase(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) {
             ctr = aController;
             mEntity = aEntity;
-            mDestination = aEntity.WorldVolume;
             ModuleManager.GetModule(out probe);
         }
         public virtual void Update() {
@@ -57,7 +57,8 @@ namespace IngameScript {
             mDistToDest = mDirToDest.Normalize();
 
             if (Volume.Radius > 0) {
-                Target = Volume.Center + (-mDirToDest * wv.Radius + Volume.Radius + PADDING);
+                Target = Volume.Center + -mDirToDest * (wv.Radius + Volume.Radius + PADDING);
+                ctr.logger.log(ctr.logger.gps("Target", Target));
                 dispToDest = Target - wv.Center;
                 mDirToDest = dispToDest;
                 mDistToDest = mDirToDest.Normalize();
@@ -67,7 +68,7 @@ namespace IngameScript {
             var result = Vector3D.Zero;
                 
             // todo can probably use ortho project here
-            var rayFromDestToShip = new RayD(mDestination.Center, -mDirToDest);        // ray from destination to ship            
+            var rayFromDestToShip = new RayD(Volume.Center, -mDirToDest);        // ray from destination to ship            
             var rayIntersect = rayFromDestToShip.Intersects(aObstacle);                 // calculate intersect
             if (rayIntersect.HasValue) {
                 Vector3D exitOrbit;                                                     // position where we exit orbit
@@ -75,13 +76,13 @@ namespace IngameScript {
                 if (rayIntersect.Value == 0) {
                     // ray originates inside of obstacle
                     // calculate exit point "above" destination
-                    aObstacle = aObstacle.Include(mDestination);
-                    var dispFromObstToDest = mDestination.Center - aObstacle.Center;
+                    aObstacle = aObstacle.Include(Volume);
+                    var dispFromObstToDest = Volume.Center - aObstacle.Center;
                     var dirFromObstToDest = Vector3D.Normalize(dispFromObstToDest);
                     exitOrbit = aObstacle.Center + dirFromObstToDest * (aObstacle.Radius + aShip.Radius + PADDING);
                 } else {
                     // todo use ortho project?
-                    exitOrbit = mDestination.Center + (-mDirToDest) * (rayIntersect.Value + aShip.Radius + PADDING);
+                    exitOrbit = Volume.Center + (-mDirToDest) * (rayIntersect.Value + aShip.Radius + PADDING);
                 }
                 var distToExit = (exitOrbit - aShip.Center).LengthSquared();
 
