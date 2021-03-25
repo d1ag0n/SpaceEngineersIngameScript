@@ -27,13 +27,14 @@ namespace IngameScript {
         public CameraModule Camera { get; private set; }
         readonly IMyBroadcastListener mMotherState;
 
-
+        ATCLientModule ATClient;
         public bool Damp = true;
 
         public ShipControllerModule() {
             if (!ModuleManager.Mother) {
                 mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
             }
+            
             MotherLastUpdate = MAF.Epoch;
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
@@ -117,6 +118,11 @@ namespace IngameScript {
                 Camera = cam;
             }
             if (result) {
+                if (ModuleManager.Drill) {
+                    GetModule(out ATClient);
+
+                    Mission = new CBoxMission(this, ATClient, Volume);
+                }
                 if (ModuleManager.Mother) {
                     onUpdate = UpdateGlobal;
                 } else {

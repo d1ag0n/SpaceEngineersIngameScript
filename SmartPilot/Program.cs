@@ -23,13 +23,15 @@ namespace IngameScript {
                 new PeriscopeModule();
                 mMenu = new MenuModule();
                 new MotherShipModule();
+                new ATCModule();
             } else if (Me.CustomData.Contains("#probe")) {
                 ModuleManager.logger.persist("I'm a Probe");
                 ModuleManager.Probe = true;
                 new ProbeModule();
             } else if (Me.CustomData.Contains("#drill")) {
-                ModuleManager.logger.persist("I'm a Probe");
+                ModuleManager.logger.persist("I'm a Drill");
                 ModuleManager.Drill = true;
+                new ATCLientModule();
             } else {
                 Runtime.UpdateFrequency = UpdateFrequency.None;
             }

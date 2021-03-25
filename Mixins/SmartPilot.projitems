@@ -9,7 +9,7 @@
     <Import_RootNamespace>SmartPilot</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)ATClient.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ATClientModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ATCModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BlockDirList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />

@@ -8,7 +8,7 @@ namespace IngameScript
 {
     public class BoxMap
     {
-        readonly TimeSpan reservationTime = new TimeSpan(0,1,0);
+        public static readonly double reservationTime = 300.0;
         readonly Dictionary<string, Dictionary<int, BoxInfo>> map = new Dictionary<string, Dictionary<int, BoxInfo>>();
 
         public BoxInfo getInfo(Vector3D aCBoxCenter) {
@@ -24,7 +24,7 @@ namespace IngameScript
                 kmap.Add(ckey, result);
             } else {
                 
-                if (result.Reserved + reservationTime < MAF.Now) {
+                if ((MAF.Now - result.Reserved).TotalSeconds > reservationTime) {
                     result.Reserver = 0;
                     kmap[ckey] = result;
                 }
@@ -91,5 +91,8 @@ namespace IngameScript
             result.Position = t.Item4;
             return result;
         }
+        public BoundingBoxD CBox => BOX.GetCBox(Position);
+        public bool ReservationValid => (MAF.Now - Reserved).TotalSeconds < BoxMap.reservationTime;
+        public bool IsReservedBy(long id) => Reserver == id && ReservationValid;
     }
 }
