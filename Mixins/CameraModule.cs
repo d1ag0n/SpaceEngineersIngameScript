@@ -172,6 +172,7 @@ namespace IngameScript
             if (aEntity.EntityId == 0) {
                 throw new Exception();
             }
+
             thy = Find(aEntity.EntityId);
             if (thy == null) {
                 mIncoming.Enqueue(aEntity); 

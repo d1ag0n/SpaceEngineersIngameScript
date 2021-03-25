@@ -59,6 +59,7 @@ namespace IngameScript {
                     
                 }
                 if ((type & UpdateType.Update10) != 0) {
+                    ModuleManager.logger.log("PB Id ", Me.EntityId);
                     ModuleManager.Update();
                     if (ModuleManager.Probe) {
                         Echo(ModuleManager.logger.LastText);

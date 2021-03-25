@@ -19,9 +19,7 @@ namespace IngameScript {
 
         protected readonly ShipControllerModule ctr;
         protected readonly BoundingSphereD _mDestination;
-        
         protected readonly ThyDetectedEntityInfo mEntity;
-        
 
         protected double PADDING = 20.0;
         protected double MAXVELO = 50.0;
@@ -29,12 +27,11 @@ namespace IngameScript {
         protected double mMaxAccelLength;
         protected double Altitude;
         protected Vector3D Target;
-
         protected Vector3D mDirToDest;
         protected double mDistToDest;
+
         protected BoundingSphereD Volume => mEntity == null ? _mDestination : mEntity.WorldVolume;
         public bool Complete { get; protected set; }
-        
         public MissionBase(ShipControllerModule aController, BoundingSphereD aDestination) {
             ctr = aController;
             _mDestination = aDestination;

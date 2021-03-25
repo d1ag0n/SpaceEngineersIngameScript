@@ -25,14 +25,17 @@ namespace IngameScript {
         public ThrustModule Thrust { get; private set; }
         public GyroModule Gyro { get; private set; }
         public CameraModule Camera { get; private set; }
+        readonly IMyBroadcastListener mMotherState;
 
 
         public bool Damp = true;
 
         Vector3I current;
         public ShipControllerModule() {
-            
-            
+            if (!ModuleManager.Mother) {
+                mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
+            }
+            MotherLastUpdate = MAF.Epoch;
             current = Grid.Min;
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
@@ -116,14 +119,38 @@ namespace IngameScript {
                 Camera = cam;
             }
             if (result) {
-                onUpdate = UpdateGlobal;
-                UpdateGlobal();
+                if (ModuleManager.Mother) {
+                    onUpdate = UpdateGlobal;
+                } else {
+                    onUpdate = UpdateChild;
+                }
+                onUpdate();
             } else {
                 UpdateLocal();
             }
         }
-        void UpdateLocal() {
+        public long MotherId { get; private set; }
+        public BoundingSphereD MotherSphere { get; private set; }
+        public Vector3D MotherVeloDir { get; private set; }
+        public double MotherSpeed { get; private set; }
+        public DateTime MotherLastUpdate { get; private set; }
+        public long EntityId => ModuleManager.Program.Me.EntityId;
 
+        void UpdateChild() {
+            while (mMotherState.HasPendingMessage) {
+                var m = mMotherState.AcceptMessage();
+                MotherId = m.Source;
+                logger.log("MotherId ", MotherId);
+                var ms = MotherShipModule.MotherState(m.Data);
+                MotherSphere = ms.Item1;
+                MotherVeloDir = ms.Item2;
+                MotherSpeed = ms.Item3;
+                MotherLastUpdate = MAF.Now;
+            }
+            UpdateGlobal();
+        }
+        void UpdateLocal() {
+   
             if (Remote == null || !Remote.IsFunctional || !(Remote is IMyRemoteControl)) {
                 foreach (var sc in Blocks) {
                     Remote = sc;

@@ -8,4 +8,5 @@ namespace IngameScript {
     public delegate List<MenuItem> PaginationHandler(int page);
     public delegate Vector3D VectorHandler();
     public delegate void IGCHandler(MyIGCMessage m);
+    public delegate void BoxInfoHandler(BoxInfo b);
 }

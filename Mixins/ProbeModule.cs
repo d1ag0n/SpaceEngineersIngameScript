@@ -12,11 +12,11 @@ namespace IngameScript {
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
         readonly List<IMyRadioAntenna> mAntennas = new List<IMyRadioAntenna>();
         readonly GyroModule gyro;
-        IMyBroadcastListener mMotherState;
+       
         
         public ProbeModule() {
             ctr = ModuleManager.controller;
-            mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
+            
             GetModule(out gyro);
             
             ctr.Damp = true;
@@ -48,10 +48,7 @@ namespace IngameScript {
         int rollCount = 0;
         bool charge = false;
         IMySolarPanel maxPanel;
-        BoundingSphereD MotherSphere;
-        Vector3D MotherVeloDir;
-        double MotherSpeed;
-        DateTime lastUpdate;
+
 
 
 
@@ -59,28 +56,19 @@ namespace IngameScript {
         // Vector3D absoluteNorthVecNotPlanetWorlds = new Vector3D(0.342063708833718, -0.704407897782847, -0.621934025954579); //this was determined via Keen's code
         const double PADDING = 100.0;
         void UpdateAction() {
-            while (mMotherState.HasPendingMessage) {
-                
-                var m = mMotherState.AcceptMessage();
-                var ms = MotherShipModule.MotherState(m.Data);
-                MotherSphere = ms.Item1;
-                MotherVeloDir = ms.Item2;
-                MotherSpeed = ms.Item3;
-                lastUpdate = MAF.Now;
-            }
-            if ((DateTime.Now - lastUpdate).TotalSeconds > 1) {
+            if ((DateTime.Now - ctr.MotherLastUpdate).TotalSeconds > 1) {
                 controller.Damp = true;
             } else {
                 ctr.Damp = false;
                 var wv = ctr.Grid.WorldVolume; 
-                var minDist = MotherSphere.Radius + wv.Radius + PADDING;
+                var minDist = ctr.MotherSphere.Radius + wv.Radius + PADDING;
                 var maxDist = minDist + PADDING;
-                var dispToMother = MotherSphere.Center - wv.Center;
+                var dispToMother = ctr.MotherSphere.Center - wv.Center;
                 var dirToMother = dispToMother;
                 var distToMother = dirToMother.Normalize();
 
                 double dist = 0;
-                Vector3D baseVec = MotherVeloDir * MotherSpeed;
+                Vector3D baseVec = ctr.MotherVeloDir * ctr.MotherSpeed;
 
 
                 var syncVec = Vector3D.Zero;
@@ -88,8 +76,8 @@ namespace IngameScript {
                     syncVec = dirToMother;
                     dist = distToMother - maxDist;
                 } else if (distToMother < minDist) {
-                    if (MotherSpeed > 1) {
-                        syncVec = Vector3D.Normalize(wv.Center - MAF.orthoProject(MotherSphere.Center + MotherVeloDir, wv.Center, dirToMother));
+                    if (ctr.MotherSpeed > 1) {
+                        syncVec = Vector3D.Normalize(wv.Center - MAF.orthoProject(ctr.MotherSphere.Center + ctr.MotherVeloDir, wv.Center, dirToMother));
                     } else {
                         dirToMother.CalculatePerpendicularVector(out syncVec);
                     }

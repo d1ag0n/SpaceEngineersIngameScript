@@ -7,14 +7,17 @@ namespace IngameScript {
     /// Clustering Orbital Collision Mitigation
     /// </summary>
     class CBoxMission : MissionBase {
-
-        public CBoxMission(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) : base(aController, aEntity) {
-
+        readonly ATCLientModule atc;
+        BoxInfo BoxCurrent;
+        BoxInfo BoxTarget;
+        public CBoxMission(ShipControllerModule aController, ATCLientModule aClient, BoundingSphereD aSphere) : base(aController, aSphere) {
+            atc = aClient;
         }
 
         public override void Update() {
             base.Update();
-            var box = BOX.GetCBox(ctr.Volume.Center);
+            BoxCurrent = atc.GetBoxInfo(Volume.Center);
+            
             
         }
     }

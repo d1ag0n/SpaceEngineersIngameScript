@@ -6,7 +6,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    class BoxMap
+    public class BoxMap
     {
         readonly TimeSpan reservationTime = new TimeSpan(0,1,0);
         readonly Dictionary<string, Dictionary<int, BoxInfo>> map = new Dictionary<string, Dictionary<int, BoxInfo>>();
@@ -76,7 +76,7 @@ namespace IngameScript
             }
         }
     }
-    struct BoxInfo {
+    public struct BoxInfo {
         public long Reserver;
         public DateTime Reserved;
         public bool Obstructed;
