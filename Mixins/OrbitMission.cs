@@ -5,6 +5,8 @@ using System.Collections.Generic;
 namespace IngameScript {
     public  class OrbitMission : MissionBase {
         int orbit = -1;
+        bool orbitStarted;
+        bool orbitLocked;
         public OrbitMission(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) : base(aController, aEntity) {
             findStart(mEntity.Orientation);
         }
@@ -24,7 +26,10 @@ namespace IngameScript {
         public override void Update() {
             base.Update();
 
-            if (mDistToDest < 100) {
+            if (mDistToDest < 10 || orbitStarted) {
+                orbitStarted = true;
+                ctr.Gyro.SetTargetDirection(Vector3D.Zero);
+                ctr.logger.log("Orbiting ", orbit);
                 Vector3D dir;
                 switch (orbit) {
                     case 0:
@@ -44,15 +49,23 @@ namespace IngameScript {
                 var proj = MAF.orthoProject(pos, Target, mDirToDest);
                 dir = proj - ctr.Grid.WorldVolume.Center;
                 var dist = dir.Normalize();
+                if (orbitLocked) {
+                    ctr.logger.log("Orbit is stable, distance to orbit state change ", dist);
+                } else {
+                    ctr.logger.log("Orbit is unstable, distance to stable orbit ", dist);
+                }
                 if (dist < 100) {
+                    orbitLocked = true;
                     orbit++;
                     if (orbit == 4) {
                         orbit = 0;
                     }
                 }
-                var desiredVelo = dir * 10.0;
-                var veloCorrection = desiredVelo - ctr.ShipVelocities.LinearVelocity;
+                dir = MAF.world2dir(dir, ModuleManager.WorldMatrix);
+                var desiredVelo = dir * 5.0;
+                ctr.Thrust.Acceleration = (desiredVelo - ctr.LocalLinearVelo);
             } else {
+                ctr.logger.log("Approaching");
                 collisionDetectTo();
             }
             ctr.logger.log("Orbit Mission Distance ", mDistToDest);
