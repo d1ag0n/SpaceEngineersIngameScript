@@ -8,7 +8,7 @@ namespace IngameScript
 {
     class BoxMap
     {
-        const double reservationTime = 5 * 60;
+        readonly TimeSpan reservationTime = new TimeSpan(0,1,0);
         readonly Dictionary<string, Dictionary<int, BoxInfo>> map = new Dictionary<string, Dictionary<int, BoxInfo>>();
 
         public BoxInfo getInfo(Vector3D aCBoxCenter) {
@@ -24,8 +24,7 @@ namespace IngameScript
                 kmap.Add(ckey, result);
             } else {
                 
-                if (result.Reserved + reservationTime < MAF.time) {
-                    result.Reserved =
+                if (result.Reserved + reservationTime < MAF.Now) {
                     result.Reserver = 0;
                     kmap[ckey] = result;
                 }

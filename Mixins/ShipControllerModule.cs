@@ -10,7 +10,7 @@ namespace IngameScript {
         public readonly bool LargeGrid;
         public readonly float GyroSpeed;
         public readonly IMyCubeGrid Grid;
-        MissionBase mission;
+        public MissionBase Mission;
 
         public ThyDetectedEntityInfo Target;
         public MyShipVelocities ShipVelocities { get; private set; }
@@ -69,7 +69,7 @@ namespace IngameScript {
                     logger.persist("No camera mod found?");
                 }
 
-                mMenuMethods.Add(new MenuItem("Random Mission", () => mission = new RandomMission(this, new BoundingSphereD(Remote.CenterOfMass + MAF.ranDir() * 1100.0, 0))));
+                mMenuMethods.Add(new MenuItem("Random Mission", () => Mission = new RandomMission(this, new BoundingSphereD(Remote.CenterOfMass + MAF.ranDir() * 1100.0, 0))));
 
                 mMenuMethods.Add(new MenuItem($"Dampeners {Damp}", () => { 
                     Damp = !Damp;
@@ -82,7 +82,7 @@ namespace IngameScript {
                 }));
 
                 mMenuMethods.Add(new MenuItem("Abort Mission", () => {
-                    mission = null;
+                    Mission = null;
                     Damp = true;
                 }));
 
@@ -139,6 +139,7 @@ namespace IngameScript {
             }
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
+            logger.log("Mass ", Mass);
             var lastVelo = ShipVelocities.LinearVelocity;
             ShipVelocities = Remote.GetShipVelocities();
             //logger.log(Remote.CustomName);
@@ -165,18 +166,18 @@ namespace IngameScript {
             UpdateLocal();
 
             if (Target != null) {
-                mission = new Mission(this, Target);
+                Mission = new Mission(this, Target);
                 //logger.persist($"SET NEW MISSION TO {Target.Name}");
                 Target = null;
                 Damp = false;
-            } else if (mission != null) {
+            } else if (Mission != null) {
 
-                if (mission.Complete) {
+                if (Mission.Complete) {
                     logger.persist("MISSION COMPLETE");
-                    mission = null;
+                    Mission = null;
                 } else {
                     //logger.log("MISSION UNDERWAY");
-                    mission.Update();
+                    Mission.Update();
                 }
             }
             if (Damp) {
