@@ -14,7 +14,7 @@ namespace IngameScript {
         double mStopLength;
         bool onEscape;
         BoundingSphereD mObstacle;
-        Vector3D Target;
+        
         
 
         protected readonly ShipControllerModule ctr;
@@ -27,7 +27,9 @@ namespace IngameScript {
         protected double MAXVELO = 50.0;
         protected double mPreferredVelocityFactor = 1;
         protected double mMaxAccelLength;
-        
+        protected double Altitude;
+        protected Vector3D Target;
+
         protected Vector3D mDirToDest;
         protected double mDistToDest;
         protected BoundingSphereD Volume => mEntity == null ? _mDestination : mEntity.WorldVolume;
@@ -57,7 +59,8 @@ namespace IngameScript {
             mDistToDest = mDirToDest.Normalize();
 
             if (Volume.Radius > 0) {
-                Target = Volume.Center + -mDirToDest * (wv.Radius + Volume.Radius + PADDING);
+                Altitude = wv.Radius + Volume.Radius + PADDING;
+                Target = Volume.Center + -mDirToDest * Altitude;
                 ctr.logger.log(ctr.logger.gps("Target", Target));
                 dispToDest = Target - wv.Center;
                 mDirToDest = dispToDest;
