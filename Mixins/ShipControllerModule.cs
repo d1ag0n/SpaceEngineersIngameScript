@@ -30,13 +30,11 @@ namespace IngameScript {
 
         public bool Damp = true;
 
-        Vector3I current;
         public ShipControllerModule() {
             if (!ModuleManager.Mother) {
                 mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
             }
             MotherLastUpdate = MAF.Epoch;
-            current = Grid.Min;
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
 
@@ -189,32 +187,7 @@ namespace IngameScript {
             LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, MyMatrix);
             //logger.log("LocalLinearVelo", LocalLinearVelo);
 
-            logger.log(current);
-            for (int i = 0; i < 100; i++) {
-                var cb = Grid.GetCubeBlock(current);
-                if (cb == null) {
-                    if (Grid.CubeExists(current)) {
-                        logger.persist("Unknown block at " + current.ToString());
-                    }
-                } else {
-                    logger.persist(cb.BlockDefinition.TypeIdString);
-                }
-                current.X++;
-                if (current.X > Grid.Max.X) {
-                    current.X = Grid.Min.X;
-                    current.Y++;
-                }
-                if (current.Y > Grid.Max.Y) {
-                    current.X = Grid.Min.X;
-                    current.Y = Grid.Min.Y;
-                    current.Z++;
-                }
-                if (current.Z > Grid.Max.Z) {
-                    current.X = Grid.Min.X;
-                    current.Y = Grid.Min.Y;
-                    current.Z = Grid.Min.Z;
-                }
-            }
+            
         }
         
         void UpdateGlobal() {
