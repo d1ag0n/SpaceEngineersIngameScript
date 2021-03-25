@@ -14,7 +14,7 @@ namespace IngameScript
         double smallMax = 0.4;  // angle remaining in turn when smallFactor is applied
         double smallFact = 1.9; // factor applied when within smallMax
 
-        public bool Active {
+        public new bool Active {
             get { return base.Active; }
             private set {
                 if (base.Active != value) {

@@ -219,7 +219,7 @@ namespace IngameScript {
                 }
                 var accelerating = prefVelo > ctr.LinearVelocity;
                 var curVelo = ctr.LocalLinearVelo;
-                var localDir = MAF.world2dir(dir, ModuleManager.WorldMatrix);
+                var localDir = MAF.world2dir(dir, ctr.MyMatrix);
                 var veloVec = localDir * prefVelo;
                 prefVelo = MathHelperD.Clamp(prefVelo, 0.0, maxVelo);
                 if (!accelerating) {
@@ -253,8 +253,8 @@ namespace IngameScript {
         // call flyat from here
         // call fly at from flyTo
         protected void collisionDetectTo() {
-            var wv = ctr.Grid.WorldVolume;
-            var m = ModuleManager.WorldMatrix;
+            var wv = ctr.Volume;
+            var m = ctr.MyMatrix;
             var worldDir = collisionDetect();
 
             if (worldDir.IsZero()) {

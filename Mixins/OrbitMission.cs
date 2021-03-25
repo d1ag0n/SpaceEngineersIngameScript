@@ -64,7 +64,7 @@ namespace IngameScript {
                         orbit = 0;
                     }
                 }
-                dir = MAF.world2dir(dir, ModuleManager.WorldMatrix);
+                dir = MAF.world2dir(dir, ctr.MyMatrix);
                 var desiredVelo = dir * 5.0;
                 ctr.Thrust.Acceleration = (desiredVelo - ctr.LocalLinearVelo);
             } else {

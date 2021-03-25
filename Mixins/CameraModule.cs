@@ -202,7 +202,7 @@ namespace IngameScript
                     mMenuItems.Add(new MenuItem($"Time: {e.TimeStamp} ({ts:f2} hours ago)"));
                     mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship}"));
                     mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
-                    mMenuItems.Add(new MenuItem($"Distance: {(e.Position - Grid.WorldMatrix.Translation).Length():f0} - Radius: {e.WorldVolume.Radius}"));
+                    mMenuItems.Add(new MenuItem($"Distance: {(e.Position - MyMatrix.Translation).Length():f0} - Radius: {e.WorldVolume.Radius}"));
                     mMenuItems.Add(new MenuItem("Designate Target", () => controller.Mission = new OrbitMission(controller, e)));
                     if (!deleted) {
                         mMenuItems.Add(new MenuItem($"Rename to '{ModuleManager.UserInput}'", aState, renameRecord));
@@ -265,7 +265,7 @@ namespace IngameScript
                 if (result) {
 
                     if (mCameraList == null) {
-                        mCameraList = new CameraList();
+                        mCameraList = new CameraList(this);
                     }
                     var camera = aBlock as IMyCameraBlock;
                     

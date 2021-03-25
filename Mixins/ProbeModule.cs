@@ -7,13 +7,13 @@ using VRageMath;
 namespace IngameScript {
     public class ProbeModule : Module<IMyTerminalBlock> {
         readonly ShipControllerModule ctr;
-        readonly HashSet<long> probes;
+        
         readonly List<IMySolarPanel> mPanels = new List<IMySolarPanel>();
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
         readonly List<IMyRadioAntenna> mAntennas = new List<IMyRadioAntenna>();
         readonly GyroModule gyro;
         IMyBroadcastListener mMotherState;
-        int name;
+        
         public ProbeModule() {
             ctr = ModuleManager.controller;
             mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
@@ -41,7 +41,7 @@ namespace IngameScript {
             }
             return result;
         }
-        public void Register(MyIGCMessage m) => probes.Add(m.Source);
+        
         bool rolling = false;
         const float maxEver = 0.04f;
         float maxInRoll = 0;
@@ -108,7 +108,7 @@ namespace IngameScript {
                 }
                 
                 var baseVelo = baseVec.Normalize();
-                var localDir = MAF.world2dir(baseVec, ModuleManager.WorldMatrix);
+                var localDir = MAF.world2dir(baseVec, MyMatrix);
                 var veloVec = localDir * baseVelo;
                 var accelVec = veloVec - llv;
                 var accelVecLenSq = accelVec.LengthSquared();

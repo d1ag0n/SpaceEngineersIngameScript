@@ -1,14 +1,24 @@
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
 using VRage.Game.ModAPI.Ingame;
+using VRageMath;
 
 namespace IngameScript {
     public class Module<T> : ModuleBase {
         readonly HashSet<long> mRegistry = new HashSet<long>();
         public readonly List<T> Blocks = new List<T>();
-        protected readonly IMyCubeGrid Grid;
+        
+
+        public IMyCubeGrid Grid => ModuleManager.Program.Me.CubeGrid;
+        public BoundingSphereD Volume => Grid.WorldVolume;
+        public MatrixD MyMatrix {
+            get {
+                var m = Grid.WorldMatrix;
+                m.Translation = Volume.Center;
+                return m;
+            }
+        }
         public Module() {
-            Grid = ModuleManager.Program.Me.CubeGrid;
             ModuleManager.Add(this);
         }
         

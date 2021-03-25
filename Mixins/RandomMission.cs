@@ -7,7 +7,7 @@ namespace IngameScript {
     /// Clustering Orbital Collision Mitigation
     /// </summary>
     class RandomMission : MissionBase {
-        static int next = 0;
+        
         
         public RandomMission(ShipControllerModule aController, BoundingSphereD aDestination) : base(aController, aDestination) {
             ctr.logger.persist(ctr.logger.gps("RandomMission", Volume.Center));

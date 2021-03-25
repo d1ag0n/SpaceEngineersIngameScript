@@ -9,16 +9,10 @@ namespace IngameScript {
 
         public static bool Mother;
         public static bool Probe;
+        public static bool Drill;
         static readonly Dictionary<string, List<IGCHandler>> mIGCSubscriptions = new Dictionary<string, List<IGCHandler>>();
-        public static IMyCubeGrid Grid => Program.Me.CubeGrid;
-        public static BoundingSphereD WorldVolume => Grid.WorldVolume;
-        public static MatrixD WorldMatrix {
-            get {
-                var m = Grid.WorldMatrix;
-                m.Translation = WorldVolume.Center;
-                return m;
-            }
-        }
+
+
 
         public static void IGCSubscribe(string tag, IGCHandler h) {
             List<IGCHandler> list;

@@ -9,7 +9,7 @@ namespace IngameScript {
     public class ShipControllerModule : Module<IMyShipController> {
         public readonly bool LargeGrid;
         public readonly float GyroSpeed;
-        public readonly IMyCubeGrid Grid;
+        
         public MissionBase Mission;
 
         public ThyDetectedEntityInfo Target;
@@ -26,13 +26,13 @@ namespace IngameScript {
         public GyroModule Gyro { get; private set; }
         public CameraModule Camera { get; private set; }
 
+
         public bool Damp = true;
 
         Vector3I current;
         public ShipControllerModule() {
             
             
-            Grid = ModuleManager.Program.Me.CubeGrid;
             current = Grid.Min;
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
@@ -159,9 +159,7 @@ namespace IngameScript {
                 LinearVelocity = 0;
             }
 
-
-
-            LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, ModuleManager.WorldMatrix);
+            LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, MyMatrix);
             //logger.log("LocalLinearVelo", LocalLinearVelo);
 
             logger.log(current);

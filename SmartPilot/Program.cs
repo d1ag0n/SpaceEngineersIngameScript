@@ -27,6 +27,9 @@ namespace IngameScript {
                 ModuleManager.logger.persist("I'm a Probe");
                 ModuleManager.Probe = true;
                 new ProbeModule();
+            } else if (Me.CustomData.Contains("#drill")) {
+                ModuleManager.logger.persist("I'm a Probe");
+                ModuleManager.Drill = true;
             } else {
                 Runtime.UpdateFrequency = UpdateFrequency.None;
             }

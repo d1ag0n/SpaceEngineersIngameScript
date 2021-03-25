@@ -23,7 +23,7 @@ namespace IngameScript {
                 if (!v.IsZero()) {
                     s = v.Normalize();
                 }
-                var t = MotherState(ModuleManager.WorldVolume, v, s);
+                var t = MotherState(Volume, v, s);
                 ModuleManager.Program.IGC.SendBroadcastMessage("MotherState", t);
             }
         }
