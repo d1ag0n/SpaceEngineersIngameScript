@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPilot", "SmartPilot\Sm
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SmartPilot", "Mixins\SmartPilot.shproj", "{6677010C-396D-4DA2-83DF-E933B21A4689}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Programs\Console\Console.csproj", "{53ECE70B-9576-43FF-9432-C30BBF8C55F4}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -55,6 +57,14 @@ Global
 		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|Any CPU.Build.0 = Debug|x64
 		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|x64.ActiveCfg = Debug|x64
 		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|x64.Build.0 = Debug|x64
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Debug|x64.Build.0 = Debug|Any CPU
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|x64.ActiveCfg = Release|Any CPU
+		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

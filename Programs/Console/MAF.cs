@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using VRage.Game.ModAPI.Ingame;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace IngameScript

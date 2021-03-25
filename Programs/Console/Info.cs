@@ -8,7 +8,19 @@ using IngameScript;
 
 namespace commandline {
     class Info {
-        static void Main() => perp();
+        static void Main() => vecIt();
+        static void vecIt() {
+            var start = new Vector3I(-3, -3, -3);
+            var end = new Vector3I(3, 3, 3);
+            var vi = new Vector3I_RangeIterator(ref start, ref end);
+            while (vi.IsValid()) {
+
+                Console.WriteLine(vi.Current);
+                vi.MoveNext();
+            }
+            Console.WriteLine("Done");
+            Console.ReadKey();
+        }
         static void perp() {
             var v1 = Vector3D.Up;
             return;

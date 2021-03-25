@@ -27,10 +27,13 @@ namespace IngameScript {
         public CameraModule Camera { get; private set; }
 
         public bool Damp = true;
-        public ShipControllerModule() {
 
+        Vector3I current;
+        public ShipControllerModule() {
+            
             
             Grid = ModuleManager.Program.Me.CubeGrid;
+            current = Grid.Min;
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
 
@@ -120,7 +123,7 @@ namespace IngameScript {
             }
         }
         void UpdateLocal() {
-            
+
             if (Remote == null || !Remote.IsFunctional || !(Remote is IMyRemoteControl)) {
                 foreach (var sc in Blocks) {
                     Remote = sc;
@@ -155,11 +158,38 @@ namespace IngameScript {
                 lvd = Vector3D.Zero;
                 LinearVelocity = 0;
             }
-            
-            
-            
+
+
+
             LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, ModuleManager.WorldMatrix);
             //logger.log("LocalLinearVelo", LocalLinearVelo);
+
+            logger.log(current);
+            for (int i = 0; i < 100; i++) {
+                var cb = Grid.GetCubeBlock(current);
+                if (cb == null) {
+                    if (Grid.CubeExists(current)) {
+                        logger.persist("Unknown block at " + current.ToString());
+                    }
+                } else {
+                    logger.persist(cb.BlockDefinition.TypeIdString);
+                }
+                current.X++;
+                if (current.X > Grid.Max.X) {
+                    current.X = Grid.Min.X;
+                    current.Y++;
+                }
+                if (current.Y > Grid.Max.Y) {
+                    current.X = Grid.Min.X;
+                    current.Y = Grid.Min.Y;
+                    current.Z++;
+                }
+                if (current.Z > Grid.Max.Z) {
+                    current.X = Grid.Min.X;
+                    current.Y = Grid.Min.Y;
+                    current.Z = Grid.Min.Z;
+                }
+            }
         }
         
         void UpdateGlobal() {
