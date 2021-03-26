@@ -47,6 +47,7 @@ namespace IngameScript {
             Update = loop;
         }
         void loop(string arg, UpdateType type) {
+            ModuleManager.Runtime += Runtime.TimeSinceLastRun.TotalMilliseconds;
             try {
                 if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                     if (arg.Length > 0) {

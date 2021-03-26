@@ -23,7 +23,7 @@ namespace IngameScript {
         // Down = 5
         public void Update(Vector3D aAccel, double aMass, bool emergency = false) {
             Vector3D original = aAccel;
-            //ModuleManager.logger.log("original", original);
+            ModuleManager.logger.log("original", original);
             int f = 0, b = 1, l = 2, r = 3, u = 4, d = 5;
             if (aAccel.Z < 0) {
                 f = 1; b = 0;
@@ -78,6 +78,8 @@ namespace IngameScript {
             }
         }
         public Vector3D MaxAccel(Vector3D aLocalVec, double aMass) {
+            ModuleManager.logger.log("aLocalVec", aLocalVec);
+            ModuleManager.logger.log("aMass ", aMass);
             int f = 0, l = 2, u = 4;
             if (aLocalVec.Z < 0) {
                 f = 1;

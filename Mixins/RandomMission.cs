@@ -15,7 +15,7 @@ namespace IngameScript {
 
         public override void Update() {
             base.Update();
-            FlyTo();
+            //FlyTo();
         }
     }
 }

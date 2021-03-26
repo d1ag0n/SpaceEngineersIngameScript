@@ -145,6 +145,7 @@ namespace IngameScript {
         bool updateRequired = false;
         void UpdateAction() {
             if (updateRequired) {
+                logger.log("Thrust updating ", Acceleration);
                 var a = Acceleration;
                 if (a.IsZero()) {
                     updateRequired = false;

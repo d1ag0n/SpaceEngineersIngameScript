@@ -7,6 +7,7 @@ using VRageMath;
 namespace IngameScript {
     public static class ModuleManager {
 
+        public static double Runtime;
         public static bool Mother;
         public static bool Probe;
         public static bool Drill;

@@ -4,22 +4,38 @@ using VRage;
 using VRageMath;
 using System;
 namespace IngameScript {
-    class ATCLientModule : Module<IMyTerminalBlock> {
+    class ATCLientModule : Module<IMyShipConnector> {
         const double reserveInterval = 1.0;
         DateTime reserveRequest;
-
+        public DockMsg Dock;
+        public IMyShipConnector Connector {
+            get;private set;
+        }
         readonly Dictionary<int, BoxInfo> mBoxes = new Dictionary<int, BoxInfo>();
-        
-        public override bool Accept(IMyTerminalBlock aBlock) => false;
+
+        public override bool Accept(IMyTerminalBlock aBlock) {
+            if (Connector == null) {
+                if (base.Accept(aBlock)) {
+                    Connector = aBlock as IMyShipConnector;
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public ATCLientModule() {
             ModuleManager.IGCSubscribe("ATC", onATCMessage);
+            ModuleManager.IGCSubscribe("Dock", onDockMessage);
             onUpdate = UpdateAction;
         }
 
         void UpdateAction() {
             var cbox = BOX.GetCBox(Volume.Center);
 
+        }
+        void onDockMessage(MyIGCMessage m) {
+            Dock = DockMsg.Unbox(m.Data);
+            Dock.Reserved = MAF.Now;
         }
         void onATCMessage(MyIGCMessage m) {
             var msg = ATCMsg.Unbox(m.Data);
@@ -33,6 +49,12 @@ namespace IngameScript {
                 case enATC.Drop:
                     mBoxes.Remove(i);
                     break;
+            }
+        }
+        public void Reserve(DockMsg d) {
+            if ((MAF.Now - reserveRequest).TotalSeconds > reserveInterval) {
+                ModuleManager.Program.IGC.SendUnicastMessage(controller.MotherId, "Dock", d.Box());
+                reserveRequest = MAF.Now;
             }
         }
         public void Reserve(BoxInfo b) {

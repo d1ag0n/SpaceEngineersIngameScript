@@ -115,6 +115,7 @@ namespace IngameScript
                 mTargetDirection = aWorld;
             }
         }
+        public IMyTerminalBlock NavBlock;
 
 
         string strRaiseDifMax => $"Increase max difference for AV correction: {difMax.ToString("f4")}";
@@ -243,7 +244,7 @@ namespace IngameScript
                 init();
                 return;
             }
-            var m = controller.Remote.WorldMatrix;
+            var m = NavBlock == null ? controller.Remote.WorldMatrix : NavBlock.WorldMatrix;
             if (calcDirection) {
                 if (mTargetPosition.IsZero()) {
                     mTargetDirection = Vector3D.Zero;

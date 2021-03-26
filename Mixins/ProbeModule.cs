@@ -56,7 +56,7 @@ namespace IngameScript {
         // Vector3D absoluteNorthVecNotPlanetWorlds = new Vector3D(0.342063708833718, -0.704407897782847, -0.621934025954579); //this was determined via Keen's code
         const double PADDING = 100.0;
         void UpdateAction() {
-            if ((DateTime.Now - ctr.MotherLastUpdate).TotalSeconds > 1) {
+            if (ModuleManager.Runtime - ctr.MotherLastUpdate > 1) {
                 controller.Damp = true;
             } else {
                 ctr.Damp = false;

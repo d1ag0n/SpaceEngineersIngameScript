@@ -10,17 +10,24 @@ namespace IngameScript
     class ATCModule : Module<IMyShipConnector>
     {
         readonly BoxMap map = new BoxMap();
-
+        readonly List<Connector> mConnectors = new List<Connector>();
 
         public ATCModule() {
             ModuleManager.IGCSubscribe("ATC", atcMessage);
             ModuleManager.IGCSubscribe("Dock", dockMessage);
+            onUpdate = UpdateAction;
+        }
+        void UpdateAction() {
+            foreach (var c in mConnectors) {
+                c.Update();
+            }
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
-            if (base.Accept(aBlock)) {
-                var c = aBlock as IMyShipConnector;
-
+            var result = base.Accept(aBlock);
+            if (result) {
+                mConnectors.Add(new Connector(aBlock as IMyShipConnector));
             }
+            return result;
         }
 
         void atcMessage(MyIGCMessage m) {
@@ -40,12 +47,24 @@ namespace IngameScript
         }
         void dockMessage(MyIGCMessage m) {
             var msg = DockMsg.Unbox(m.Data);
-
+            foreach (var c in mConnectors) {
+                if (!c.Reserved) {
+                    msg.Connector = c.Dock.Position;
+                    msg.ConnectorFace = c.Dock.Orientation.Forward;
+                    if (ModuleManager.Program.IGC.SendUnicastMessage(m.Source, "Dock", msg.Box())) {
+                        c.Reserved = true;
+                    }
+                    return;
+                }
+            }
         }
     }
+
     struct DockMsg {
         public Vector3I Connector;
         public Base6Directions.Direction ConnectorFace;
+        public DateTime Reserved;
+        public bool isReserved => (MAF.Now - Reserved).TotalMinutes < 9.0;
         public static DockMsg Unbox(object data) {
             var msg = (MyTuple<Vector3I, int>)data;
             var result = new DockMsg();
@@ -66,7 +85,6 @@ namespace IngameScript
             var result = new ATCMsg();
             result.Subject = (enATC)t.Item1;
             result.Info = BoxInfo.Unbox(t.Item2);
-            result.Connector = 
             return result;
         }
     }

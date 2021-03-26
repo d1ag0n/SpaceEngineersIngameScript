@@ -35,7 +35,7 @@ namespace IngameScript {
                 mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
             }
             
-            MotherLastUpdate = MAF.Epoch;
+            MotherLastUpdate = ModuleManager.Runtime;
             LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             GyroSpeed = LargeGrid ? 30 : 60;
 
@@ -134,10 +134,36 @@ namespace IngameScript {
             }
         }
         public long MotherId { get; private set; }
-        public BoundingSphereD MotherSphere { get; private set; }
+        BoundingSphereD _MotherSphere;
+        public BoundingSphereD MotherSphere {
+            get {
+                var s = _MotherSphere;
+                s.Center += MotherVeloDir * (MotherSpeed * (ModuleManager.Runtime - MotherLastUpdate));
+                return s;
+            }
+            private set {
+                _MotherSphere = value;
+            }
+        }
         public Vector3D MotherVeloDir { get; private set; }
         public double MotherSpeed { get; private set; }
-        public DateTime MotherLastUpdate { get; private set; }
+        public double MotherLastUpdate { get; private set; }
+        MatrixD _MotherMatrix;
+        public MatrixD MotherMatrix {
+            get {
+                var m = _MotherMatrix;
+                var d = ModuleManager.Runtime - MotherLastUpdate;
+                logger.log("Runtime ", ModuleManager.Runtime);
+                logger.log("Update ", MotherLastUpdate);
+                logger.log("delta ", d);
+                m.Translation += MotherVeloDir * (MotherSpeed * (d + 0.6));
+                return m;
+            }
+            private set {
+                _MotherMatrix = value;
+            }
+        }
+        public Vector3D MotherAngularVelo { get; private set; }
         public long EntityId => ModuleManager.Program.Me.EntityId;
 
         void UpdateChild() {
@@ -149,7 +175,10 @@ namespace IngameScript {
                 MotherSphere = ms.Item1;
                 MotherVeloDir = ms.Item2;
                 MotherSpeed = ms.Item3;
-                MotherLastUpdate = MAF.Now;
+                logger.log("MotherSpeed ", MotherSpeed);
+                MotherAngularVelo = ms.Item4;
+                MotherMatrix = ms.Item5;
+                MotherLastUpdate = ModuleManager.Runtime;
             }
             UpdateGlobal();
         }
@@ -220,7 +249,7 @@ namespace IngameScript {
 
                 if (localVeloSq <= 0.000025) {
                     localVelo = Vector3D.Zero;
-                    Damp = false;
+                    //Damp = false;
                 }
                 Thrust.Acceleration = localVelo * -6.0;
 

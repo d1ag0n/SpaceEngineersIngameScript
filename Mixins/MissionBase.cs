@@ -14,11 +14,11 @@ namespace IngameScript {
         double mStopLength;
         bool onEscape;
         BoundingSphereD mObstacle;
-        
+        protected IMyTerminalBlock NavBlock;
         
 
         protected readonly ShipControllerModule ctr;
-        protected readonly BoundingSphereD _mDestination;
+        protected BoundingSphereD mDestination;
         protected readonly ThyDetectedEntityInfo mEntity;
 
         protected double PADDING = 20.0;
@@ -30,11 +30,11 @@ namespace IngameScript {
         protected Vector3D mDirToDest;
         protected double mDistToDest;
 
-        protected BoundingSphereD Volume => mEntity == null ? _mDestination : mEntity.WorldVolume;
+        protected BoundingSphereD Volume => mEntity == null ? mDestination : mEntity.WorldVolume;
         public bool Complete { get; protected set; }
         public MissionBase(ShipControllerModule aController, BoundingSphereD aDestination) {
             ctr = aController;
-            _mDestination = aDestination;
+            mDestination = aDestination;
         }
         public MissionBase(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) {
             ctr = aController;
@@ -42,12 +42,21 @@ namespace IngameScript {
         }
         public virtual void Update() {
             var wv = ctr.Grid.WorldVolume;
-            var llv = ctr.LocalLinearVelo;
-            mMaxAccel = ctr.Thrust.MaxAccel(llv);
+            if (NavBlock != null) {
+                wv.Center = NavBlock.WorldMatrix.Translation;
+            }
+            ctr.logger.log("ctr.LocalLinearVelo", ctr.LocalLinearVelo);
+            mMaxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
+            ctr.logger.log("mMaxAccel", mMaxAccel);
             mMaxAccelLength = mMaxAccel.Length();
             ctr.logger.log("mMaxAccelLength ", mMaxAccelLength);
             mStop = ctr.Thrust.Stop(mMaxAccel);
+            ctr.logger.log("mStop", mStop);
             mStopLength = mStop.Length();
+            if (double.IsNaN(mStopLength)) {
+                mStop.X = mStop.Y = mStop.Z = mStopLength = double.PositiveInfinity;
+            }
+            
             ctr.logger.log("mStopLength ", mStopLength);
             var dispToDest = Volume.Center - wv.Center;
             mDirToDest = dispToDest;
@@ -216,8 +225,8 @@ namespace IngameScript {
                 var accelerating = prefVelo > ctr.LinearVelocity;
                 var curVelo = ctr.LocalLinearVelo;
                 var localDir = MAF.world2dir(dir, ctr.MyMatrix);
-                var veloVec = localDir * prefVelo;
-                prefVelo = MathHelperD.Clamp(prefVelo, 0.0, maxVelo);
+                var veloVec = localDir * MathHelperD.Clamp(prefVelo, 0.0, maxVelo);
+                
                 if (!accelerating) {
                     if (ctr.LinearVelocity < prefVelo) {
                         curVelo = veloVec;
