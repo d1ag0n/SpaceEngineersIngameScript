@@ -12,11 +12,12 @@ namespace IngameScript {
         BoxInfo BoxCurrent;
         bool needTarget = true;
         Vector3D drillStart;
+        
         int emptyScans = 0;
         MyDetectedEntityInfo drillTarget;
         public CBoxMission(ShipControllerModule aController, ATCLientModule aClient, BoundingSphereD aSphere) : base(aController, aSphere) {
             atc = aClient;
-            
+            atc.Connector.Enabled = false;
         }
 
 
@@ -25,6 +26,7 @@ namespace IngameScript {
             
 
             if (atc.Dock.isReserved) {
+                ctr.Damp = false;
                 //ctr.logger.log("atc.Dock.Connector", atc.Dock.Connector);
                 //ctr.logger.log("ctr.MotherMatrix", ctr.MotherMatrix);
                 Vector3D pos = atc.Dock.Connector * 2.5;
@@ -33,30 +35,42 @@ namespace IngameScript {
                 
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
-                if (ctr.Camera.Scan(ctr.MotherSphere.Center, out entity, out thy, 10.0)) {
-                    ctr.logger.log("orientation.translation", entity.Orientation.Translation);
-                    
-                }
+                //if (ctr.Camera.Scan(ctr.MotherSphere.Center, out entity, out thy, 10.0)) {
+                //ctr.logger.log("orientation.translation", entity.Orientation.Translation);
 
-                var conPos = MAF.local2pos(pos, ctr.MotherMatrix);
-                pos += face * 2.0 + (mDistToDest * 0.5);
+                //}
+
+                //var conPos = MAF.local2pos(pos, ctr.MotherMatrix);
+                pos += face * (1.0 + mDistToDest * 0.4);
                 pos = MAF.local2pos(pos, ctr.MotherMatrix);
-                ctr.logger.log("pos", pos);
-                ctr.logger.log("atc.Dock.ConnectorFace", atc.Dock.ConnectorFace);
-                ctr.logger.log("ctr.MotherSphere.Radius", ctr.MotherSphere.Radius);
+                //ctr.logger.log("pos", pos);
+                //ctr.logger.log("atc.Dock.ConnectorFace", atc.Dock.ConnectorFace);
+                //ctr.logger.log("ctr.MotherSphere.Radius", ctr.MotherSphere.Radius);
                 
                 mDestination.Center = pos;
-                ctr.logger.log(ctr.logger.gps("pos", pos));
+                //ctr.logger.log(ctr.logger.gps("pos", pos));
                 mDestination.Radius = 0;
                 ctr.Gyro.NavBlock = NavBlock = atc.Connector;
                 
                 var dir = MAF.world2dir(atc.Connector.WorldMatrix.Forward, ctr.Remote.WorldMatrix);
                 ctr.Gyro.SetTargetDirection(MAF.local2dir(-face, ctr.MotherMatrix));
+                //BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
                 base.Update();
-                FlyTo(10.0);
+                if (mDistToDest < 10.0) {
+                    atc.Connector.Enabled = true;
+                    if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
+                        atc.Dock.Reserved = MAF.Epoch;
+
+                    }
+                } else {
+                    atc.Connector.Enabled = false;
+                }
+
+                FlyTo(30.0);
             } else {
                 ctr.logger.log("reserving dock");
                 atc.Reserve(new DockMsg());
+                ctr.Damp = true;
             }
             return;
             BoxCurrent = atc.GetBoxInfo(Volume.Center);

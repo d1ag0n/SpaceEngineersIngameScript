@@ -152,11 +152,13 @@ namespace IngameScript {
         public MatrixD MotherMatrix {
             get {
                 var m = _MotherMatrix;
+                //logger.log(logger.gps("Position", _MotherMatrix.Translation));
                 var d = ModuleManager.Runtime - MotherLastUpdate;
-                logger.log("Runtime ", ModuleManager.Runtime);
-                logger.log("Update ", MotherLastUpdate);
-                logger.log("delta ", d);
-                m.Translation += MotherVeloDir * (MotherSpeed * (d + 0.6));
+                //logger.log("Runtime ", ModuleManager.Runtime);
+                //logger.log("Update ", MotherLastUpdate);
+                //logger.log("delta ", d);
+                m.Translation += MotherVeloDir * (MotherSpeed * 1.2);
+                //logger.log(logger.gps("Prediction", m.Translation));
                 return m;
             }
             private set {

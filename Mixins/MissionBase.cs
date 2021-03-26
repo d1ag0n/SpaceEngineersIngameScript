@@ -8,7 +8,7 @@ namespace IngameScript {
 
         readonly HashSet<long> mEscapeSet = new HashSet<long>();
         readonly List<Vector3D> mEscape = new List<Vector3D>();
-
+        
         Vector3D mStop;
         Vector3D mMaxAccel;
         double mStopLength;
@@ -45,19 +45,19 @@ namespace IngameScript {
             if (NavBlock != null) {
                 wv.Center = NavBlock.WorldMatrix.Translation;
             }
-            ctr.logger.log("ctr.LocalLinearVelo", ctr.LocalLinearVelo);
+            //ctr.logger.log("ctr.LocalLinearVelo", ctr.LocalLinearVelo);
             mMaxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
-            ctr.logger.log("mMaxAccel", mMaxAccel);
+            //ctr.logger.log("mMaxAccel", mMaxAccel);
             mMaxAccelLength = mMaxAccel.Length();
-            ctr.logger.log("mMaxAccelLength ", mMaxAccelLength);
+            //ctr.logger.log("mMaxAccelLength ", mMaxAccelLength);
             mStop = ctr.Thrust.Stop(mMaxAccel);
-            ctr.logger.log("mStop", mStop);
+            //ctr.logger.log("mStop", mStop);
             mStopLength = mStop.Length();
             if (double.IsNaN(mStopLength)) {
                 mStop.X = mStop.Y = mStop.Z = mStopLength = double.PositiveInfinity;
             }
             
-            ctr.logger.log("mStopLength ", mStopLength);
+            //ctr.logger.log("mStopLength ", mStopLength);
             var dispToDest = Volume.Center - wv.Center;
             mDirToDest = dispToDest;
             mDistToDest = mDirToDest.Normalize();
@@ -242,6 +242,12 @@ namespace IngameScript {
                     ctr.Damp = true;
                 } else {
                     ctr.Damp = false;
+                    /*if (!BaseVelocity.IsZero()) {
+                        var baseDir = BaseVelocity;
+                        var baseSpeed = baseDir.Normalize();
+                        baseDir = MAF.world2dir(baseDir, ctr.Remote.WorldMatrix);
+                        curVelo -= baseDir * baseSpeed;
+                    }*/
                     var disp = (veloVec - curVelo);
                     if (accelerating && disp.LengthSquared() < 2.0) {
                         ctr.Thrust.Acceleration = disp;

@@ -65,7 +65,7 @@ namespace IngameScript {
                     }
                 }
                 dir = MAF.world2dir(dir, ctr.MyMatrix);
-                var desiredVelo = dir * 5.0;
+                var desiredVelo = dir * 15.0;
                 ctr.Thrust.Acceleration = (desiredVelo - ctr.LocalLinearVelo);
             } else {
                 ctr.logger.log("Approaching");
