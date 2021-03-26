@@ -210,7 +210,7 @@ namespace IngameScript {
                     logger.persist("MISSION COMPLETE");
                     Mission = null;
                 } else {
-                    //logger.log("MISSION UNDERWAY");
+                    logger.log("MISSION UNDERWAY");
                     Mission.Update();
                 }
             }

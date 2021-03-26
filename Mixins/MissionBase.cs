@@ -56,7 +56,6 @@ namespace IngameScript {
             if (Volume.Radius > 0) {
                 Altitude = wv.Radius + Volume.Radius + PADDING;
                 Target = Volume.Center + -mDirToDest * Altitude;
-                ctr.logger.log(ctr.logger.gps("Target", Target));
                 dispToDest = Target - wv.Center;
                 mDirToDest = dispToDest;
                 mDistToDest = mDirToDest.Normalize();

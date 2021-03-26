@@ -13,6 +13,8 @@ namespace IngameScript {
         public double BackForce => forces[1];
         double[] forces = new double[6];
 
+        // todo index based acceleration modification, track how many thrusters currently powered to full
+
         // Forward = 0,
         // Backward = 1,
         // Left = 2,

@@ -25,6 +25,7 @@ namespace IngameScript {
             var msg = ATCMsg.Unbox(m.Data);
             var c = BOX.GetCBox(msg.Info.Position);
             var i = BOX.CVectorToIndex(c.Center);
+            logger.persist("Incoming ATC message " + msg.Subject);
             switch (msg.Subject) {
                 case enATC.Reserve:
                     mBoxes[i] = msg.Info;
@@ -51,10 +52,11 @@ namespace IngameScript {
 
         public BoxInfo GetBoxInfo(Vector3D aPos) {
             var b = BOX.GetCBox(aPos);
+            logger.log(b);
             var i = BOX.CVectorToIndex(b.Center);
             BoxInfo result;
             if (!mBoxes.TryGetValue(i, out result)) {
-                result.Position = aPos;
+                result.Position = b.Center;
             }
             return result;
             

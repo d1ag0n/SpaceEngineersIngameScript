@@ -12,8 +12,11 @@ namespace IngameScript {
         public RandomMission(ShipControllerModule aController, BoundingSphereD aDestination) : base(aController, aDestination) {
             ctr.logger.persist(ctr.logger.gps("RandomMission", Volume.Center));
         }
-        
-        public override void Update() => FlyTo();
+
+        public override void Update() {
+            base.Update();
+            FlyTo();
+        }
     }
 }
 
