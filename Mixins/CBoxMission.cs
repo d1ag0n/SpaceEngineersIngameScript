@@ -41,7 +41,8 @@ namespace IngameScript {
                 //}
 
                 //var conPos = MAF.local2pos(pos, ctr.MotherMatrix);
-                pos += face * (1.0 + mDistToDest * 0.4);
+                //pos += face * (3.0 + mDistToDest * 0.6);
+                pos += face * 2.7;
                 pos = MAF.local2pos(pos, ctr.MotherMatrix);
                 //ctr.logger.log("pos", pos);
                 //ctr.logger.log("atc.Dock.ConnectorFace", atc.Dock.ConnectorFace);
@@ -54,7 +55,7 @@ namespace IngameScript {
                 
                 var dir = MAF.world2dir(atc.Connector.WorldMatrix.Forward, ctr.Remote.WorldMatrix);
                 ctr.Gyro.SetTargetDirection(MAF.local2dir(-face, ctr.MotherMatrix));
-                //BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
+                BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
                 base.Update();
                 if (mDistToDest < 10.0) {
                     atc.Connector.Enabled = true;
@@ -66,7 +67,7 @@ namespace IngameScript {
                     atc.Connector.Enabled = false;
                 }
 
-                FlyTo(30.0);
+                FlyTo(100.0);
             } else {
                 ctr.logger.log("reserving dock");
                 atc.Reserve(new DockMsg());

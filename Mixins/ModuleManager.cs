@@ -46,10 +46,10 @@ namespace IngameScript {
             logger.log(mLag.update(Program.Runtime.LastRunTimeMs), " - ", DateTime.Now.ToString());
             while (Program.IGC.UnicastListener.HasPendingMessage) {
                 var msg = Program.IGC.UnicastListener.AcceptMessage();
-                logger.persist("Got message " + msg.Tag);
+                //logger.persist("Got message " + msg.Tag);
                 List<IGCHandler> list;
                 if (mIGCSubscriptions.TryGetValue(msg.Tag, out list)) {
-                    logger.persist("list count " + list.Count);
+                    //logger.persist("list count " + list.Count);
                     foreach (var h in list) {
                         try {
                             h(msg);

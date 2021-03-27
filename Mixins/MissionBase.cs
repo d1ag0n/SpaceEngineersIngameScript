@@ -8,21 +8,41 @@ namespace IngameScript {
 
         readonly HashSet<long> mEscapeSet = new HashSet<long>();
         readonly List<Vector3D> mEscape = new List<Vector3D>();
-        
+
+        double mPrefVelo;
         Vector3D mStop;
         Vector3D mMaxAccel;
-        double mStopLength;
+        double mStopLengthSquared;
         bool onEscape;
         BoundingSphereD mObstacle;
         protected IMyTerminalBlock NavBlock;
-        
+        double BaseVelocityLength;
+        Vector3D _BaseVelocity;
+        Vector3D BaseVelocityDirection;
+        protected Vector3D BaseVelocity {
+            get {
+                return _BaseVelocity;
+            }
+            set {
+                if (_BaseVelocity != value) {
+                    _BaseVelocity = value;
+                    if (value.IsZero()) {
+                        BaseVelocityLength = 0.0;
+                        BaseVelocityDirection = Vector3D.Zero;
+                    } else {
+                        BaseVelocityDirection = value;
+                        BaseVelocityLength = BaseVelocityDirection.Normalize();
+                    }
+                }
+            }
+        }
 
         protected readonly ShipControllerModule ctr;
         protected BoundingSphereD mDestination;
         protected readonly ThyDetectedEntityInfo mEntity;
 
         protected double PADDING = 20.0;
-        protected double MAXVELO = 50.0;
+        protected double MAXVELO = 80.0;
         protected double mPreferredVelocityFactor = 1;
         protected double mMaxAccelLength;
         protected double Altitude;
@@ -40,41 +60,12 @@ namespace IngameScript {
             ctr = aController;
             mEntity = aEntity;
         }
-        public virtual void Update() {
-            var wv = ctr.Grid.WorldVolume;
-            if (NavBlock != null) {
-                wv.Center = NavBlock.WorldMatrix.Translation;
-            }
-            //ctr.logger.log("ctr.LocalLinearVelo", ctr.LocalLinearVelo);
-            mMaxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
-            //ctr.logger.log("mMaxAccel", mMaxAccel);
-            mMaxAccelLength = mMaxAccel.Length();
-            //ctr.logger.log("mMaxAccelLength ", mMaxAccelLength);
-            mStop = ctr.Thrust.Stop(mMaxAccel);
-            //ctr.logger.log("mStop", mStop);
-            mStopLength = mStop.Length();
-            if (double.IsNaN(mStopLength)) {
-                mStop.X = mStop.Y = mStop.Z = mStopLength = double.PositiveInfinity;
-            }
-            
-            //ctr.logger.log("mStopLength ", mStopLength);
-            var dispToDest = Volume.Center - wv.Center;
-            mDirToDest = dispToDest;
-            mDistToDest = mDirToDest.Normalize();
-
-            if (Volume.Radius > 0) {
-                Altitude = wv.Radius + Volume.Radius + PADDING;
-                Target = Volume.Center + -mDirToDest * Altitude;
-                dispToDest = Target - wv.Center;
-                mDirToDest = dispToDest;
-                mDistToDest = mDirToDest.Normalize();
-            }
-        }
+        
         Vector3D orbitalManeuver(BoundingSphereD aShip, BoundingSphereD aObstacle) {
             var result = Vector3D.Zero;
                 
             // todo can probably use ortho project here
-            var rayFromDestToShip = new RayD(Volume.Center, -mDirToDest);        // ray from destination to ship            
+            var rayFromDestToShip = new RayD(Volume.Center, -mDirToDest);               // ray from destination to ship            
             var rayIntersect = rayFromDestToShip.Intersects(aObstacle);                 // calculate intersect
             if (rayIntersect.HasValue) {
                 Vector3D exitOrbit;                                                     // position where we exit orbit
@@ -93,7 +84,7 @@ namespace IngameScript {
                 var distToExit = (exitOrbit - aShip.Center).LengthSquared();
 
                 var maxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
-                if (distToExit > (mStopLength * mStopLength)) {
+                if (distToExit > mStopLengthSquared) {
                     var dispFromObstToShip = aShip.Center - aObstacle.Center;
                     var dirFromObstToShip = dispFromObstToShip;
                     var distFromObstToShip = dirFromObstToShip.Normalize();
@@ -115,7 +106,8 @@ namespace IngameScript {
         }
         Vector3D collisionDetect() {
             var wv = ctr.Grid.WorldVolume;
-            var scanDist = wv.Radius + (mStopLength * 3) + PADDING;
+            var stopLen = Math.Sqrt(mStopLengthSquared);
+            var scanDist = wv.Radius + (stopLen * 3) + PADDING;
             var detected = false;
 
             for (int i = 0; i < 5; i++) {
@@ -201,64 +193,89 @@ namespace IngameScript {
                         result = orbitalResult;
                     }
                 }
-
             }
             return result;
         }
-        protected void FlyTo(double maxVelo = 100.0) {
-            if (mDistToDest > 1.0 || ctr.LinearVelocity > 0.1) {
-                ctr.Damp = false;
-                var dir = mDirToDest;
-                var distSq = mDistToDest * mDistToDest;
-                var maxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
-                var maxAccelLength = maxAccel.Length();
-                var stop = ctr.Thrust.Stop(maxAccel);
-                var stopDistSq = stop.LengthSquared();
-                var prefVelo = ctr.Thrust.PreferredVelocity(maxAccelLength, mDistToDest);
-                if (ctr.LinearVelocity == 0) {
-                    prefVelo = 1.0;
-                } else {
-                    if (prefVelo > mDistToDest) {
-                        prefVelo = mDistToDest;
-                    }
-                }
-                var accelerating = prefVelo > ctr.LinearVelocity;
-                var curVelo = ctr.LocalLinearVelo;
-                var localDir = MAF.world2dir(dir, ctr.MyMatrix);
-                var veloVec = localDir * MathHelperD.Clamp(prefVelo, 0.0, maxVelo);
-                
-                if (!accelerating) {
-                    if (ctr.LinearVelocity < prefVelo) {
-                        curVelo = veloVec;
-                    }
-                } else {
-                    if (ctr.LinearVelocity > prefVelo) {
-                        curVelo = veloVec;
-                    }
-                }
+        public virtual void Update() {
+            var wv = ctr.Grid.WorldVolume;
+            if (NavBlock != null) {
+                wv.Center = NavBlock.WorldMatrix.Translation;
+            }
+            mMaxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
+            mMaxAccelLength = mMaxAccel.Length();
+            mStop = ctr.Thrust.Stop(mMaxAccel);
+            mStopLengthSquared = mStop.LengthSquared();
+            if (double.IsNaN(mStopLengthSquared)) {
+                mStop.X = mStop.Y = mStop.Z = mStopLengthSquared = double.PositiveInfinity;
+            }
 
-                if (false && distSq < stopDistSq) {
-                    ctr.Thrust.Emergency = true;
-                    ctr.Damp = true;
+            //ctr.logger.log("mStopLength ", mStopLength);
+            var dispToDest = Volume.Center - wv.Center;
+            mDirToDest = dispToDest;
+            mDistToDest = mDirToDest.Normalize();
+            ctr.logger.log("mDistToDest ", mDistToDest);
+            if (Volume.Radius > 0) {
+                Altitude = wv.Radius + Volume.Radius + PADDING;
+                Target = Volume.Center + -mDirToDest * Altitude;
+                dispToDest = Target - wv.Center;
+                mDirToDest = dispToDest;
+                mDistToDest = mDirToDest.Normalize();
+            }
+            ctr.logger.log("BaseVelocityLength ", BaseVelocityLength);
+
+            mPrefVelo = ctr.Thrust.PreferredVelocity(mMaxAccelLength, mDistToDest);
+            ctr.logger.log("mPrefVelo ", mPrefVelo);
+            //mPrefVelo += BaseVelocityLength;
+
+            ctr.logger.log("mPrefVelo ", mPrefVelo);
+
+            if (ctr.LinearVelocity == 0) {
+                mPrefVelo = 1.0;
+            } else {
+                if (mPrefVelo > mDistToDest) {
+                    mPrefVelo = mDistToDest;
+                }
+            }
+        }
+        protected void FlyTo(double maxVelo = 100.0) {
+
+            ctr.Damp = false;
+            var distSq = mDistToDest * mDistToDest;
+            var stopDistSq = mStop * mStop;
+            var syncVelo = ctr.ShipVelocities.LinearVelocity - BaseVelocity;
+            var syncVeloLen = syncVelo.Length();
+            var accelerating = mPrefVelo > ctr.LinearVelocity;
+
+            var curVelo = ctr.LocalLinearVelo;
+            var localDir = MAF.world2dir(mDirToDest, ctr.MyMatrix);
+            var veloVec = localDir * MathHelperD.Clamp(mPrefVelo, 0.0, maxVelo);
+            //veloVec += BaseVelocity;
+            if (BaseVelocity.IsZero()) {
+                if (accelerating) {
+                    if (ctr.LinearVelocity > mPrefVelo) {
+                        curVelo = veloVec;
+                    }
                 } else {
-                    ctr.Damp = false;
-                    /*if (!BaseVelocity.IsZero()) {
-                        var baseDir = BaseVelocity;
-                        var baseSpeed = baseDir.Normalize();
-                        baseDir = MAF.world2dir(baseDir, ctr.Remote.WorldMatrix);
-                        curVelo -= baseDir * baseSpeed;
-                    }*/
-                    var disp = (veloVec - curVelo);
-                    if (accelerating && disp.LengthSquared() < 2.0) {
-                        ctr.Thrust.Acceleration = disp;
-                    } else {
-                        ctr.Thrust.Acceleration = 6.0 * disp;
+                    if (ctr.LinearVelocity < mPrefVelo) {
+                        curVelo = veloVec;
                     }
                 }
             } else {
-                ctr.Damp = true;
-                ctr.Thrust.Emergency = false;
+                accelerating = false;
+                var localBase = MAF.world2dir(BaseVelocityDirection, ctr.MyMatrix) * BaseVelocityLength;
+                curVelo -= localBase;
             }
+
+            ctr.Damp = false;
+
+            var disp = (veloVec - curVelo);
+
+            if (accelerating && disp.LengthSquared() < 2.0) {
+                ctr.Thrust.Acceleration = disp;
+            } else {
+                ctr.Thrust.Acceleration = 6.0 * disp;
+            }
+
         }
         // todo make FlyAt(direction) method
         // call flyat from here

@@ -157,7 +157,7 @@ namespace IngameScript {
                 //logger.log("Runtime ", ModuleManager.Runtime);
                 //logger.log("Update ", MotherLastUpdate);
                 //logger.log("delta ", d);
-                m.Translation += MotherVeloDir * (MotherSpeed * 1.2);
+                m.Translation += MotherVeloDir * (MotherSpeed * 0.15);
                 //logger.log(logger.gps("Prediction", m.Translation));
                 return m;
             }

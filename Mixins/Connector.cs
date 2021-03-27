@@ -35,7 +35,7 @@ namespace IngameScript {
                 if (CanRelease) {
                     Reserved = s;
                 } else {
-                    if ((MAF.Now - ReserveSet).TotalMinutes > 5.0) {
+                    if ((MAF.Now - ReserveSet).TotalMinutes > 1.0) {
                         Reserved = false;
                     } else {
                         CanRelease = s;
