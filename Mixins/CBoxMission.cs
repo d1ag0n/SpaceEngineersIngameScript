@@ -42,7 +42,7 @@ namespace IngameScript {
 
                 //var conPos = MAF.local2pos(pos, ctr.MotherMatrix);
                 //pos += face * (3.0 + mDistToDest * 0.6);
-                pos += face * 2.7;
+                pos += face * MathHelperD.Clamp((mDistToDest) - 2.7, 2.8, 50.0);
                 pos = MAF.local2pos(pos, ctr.MotherMatrix);
                 //ctr.logger.log("pos", pos);
                 //ctr.logger.log("atc.Dock.ConnectorFace", atc.Dock.ConnectorFace);
@@ -67,7 +67,7 @@ namespace IngameScript {
                     atc.Connector.Enabled = false;
                 }
 
-                FlyTo(100.0);
+                FlyTo(10.0);
             } else {
                 ctr.logger.log("reserving dock");
                 atc.Reserve(new DockMsg());

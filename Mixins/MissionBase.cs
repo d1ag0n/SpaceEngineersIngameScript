@@ -248,7 +248,7 @@ namespace IngameScript {
 
             var curVelo = ctr.LocalLinearVelo;
             var localDir = MAF.world2dir(mDirToDest, ctr.MyMatrix);
-            var veloVec = localDir * MathHelperD.Clamp(mPrefVelo, 0.0, maxVelo);
+            var veloVec = localDir * MathHelperD.Clamp(mPrefVelo * 0.9, 0.0, maxVelo);
             //veloVec += BaseVelocity;
             if (BaseVelocity.IsZero()) {
                 if (accelerating) {
@@ -271,7 +271,7 @@ namespace IngameScript {
             var disp = (veloVec - curVelo);
 
             if (accelerating && disp.LengthSquared() < 2.0) {
-                ctr.Thrust.Acceleration = disp;
+                ctr.Thrust.Acceleration = 6.0 * disp;
             } else {
                 ctr.Thrust.Acceleration = 6.0 * disp;
             }
