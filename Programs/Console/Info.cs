@@ -10,6 +10,10 @@ namespace commandline {
     class Info {
         static void Main() => vecIt();
         static void vecIt() {
+
+            int g = 0;
+            int h = 1;
+            int v = h / g;
             var start = new Vector3I(-3, -3, -3);
             var end = new Vector3I(3, 3, 3);
             var vi = new Vector3I_RangeIterator(ref start, ref end);

@@ -29,11 +29,10 @@ namespace IngameScript {
                 ctr.Damp = false;
                 //ctr.logger.log("atc.Dock.Connector", atc.Dock.Connector);
                 //ctr.logger.log("ctr.MotherMatrix", ctr.MotherMatrix);
-                Vector3D pos = atc.Dock.Connector * 2.5;
+                Vector3D pos = atc.Dock.theConnector * 2.5;
                 Vector3D face = Base6Directions.GetVector(atc.Dock.ConnectorFace);
-                
-                
                 MyDetectedEntityInfo entity;
+                
                 ThyDetectedEntityInfo thy;
                 //if (ctr.Camera.Scan(ctr.MotherSphere.Center, out entity, out thy, 10.0)) {
                 //ctr.logger.log("orientation.translation", entity.Orientation.Translation);

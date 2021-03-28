@@ -145,6 +145,7 @@ namespace IngameScript {
                 _MotherSphere = value;
             }
         }
+        public Vector3D MotherCoM { get; private set; } 
         public Vector3D MotherVeloDir { get; private set; }
         public double MotherSpeed { get; private set; }
         public double MotherLastUpdate { get; private set; }
@@ -155,8 +156,19 @@ namespace IngameScript {
                 //logger.log(logger.gps("Position", _MotherMatrix.Translation));
                 var d = ModuleManager.Runtime - MotherLastUpdate;
                 //logger.log("Runtime ", ModuleManager.Runtime);
-                //logger.log("Update ", MotherLastUpdate);
+                logger.log("MotherAngularVelo ", MotherAngularVelo);
                 //logger.log("delta ", d);
+                if (!MotherAngularVelo.IsZero()) {
+
+                    var ng = MotherAngularVelo * 0.15;// * 10.0;
+                    var len = ng.Normalize();
+                    var rot = MatrixD.CreateFromAxisAngle(ng, len);
+                    //var q = Quaternion.CreateFromAxisAngle(ng, (float)len);
+                    //m = MatrixD.Transform(m, q);
+                    m.Forward = Vector3D.TransformNormal(m.Forward, rot);
+                    m.Up = Vector3D.TransformNormal(m.Up, rot);
+                    m.Left = Vector3D.TransformNormal(m.Left, rot);
+                }
                 m.Translation += MotherVeloDir * (MotherSpeed * 0.15);
                 //logger.log(logger.gps("Prediction", m.Translation));
                 return m;
@@ -180,6 +192,7 @@ namespace IngameScript {
                 logger.log("MotherSpeed ", MotherSpeed);
                 MotherAngularVelo = ms.Item4;
                 MotherMatrix = ms.Item5;
+                MotherCoM = ms.Item6;
                 MotherLastUpdate = ModuleManager.Runtime;
             }
             UpdateGlobal();

@@ -23,12 +23,13 @@ namespace IngameScript {
                 if (!v.IsZero()) {
                     s = v.Normalize();
                 }
+                var m = Grid.WorldMatrix;
                 var t = MotherState(Volume, v, s, controller.ShipVelocities.AngularVelocity, Grid.WorldMatrix);
                 ModuleManager.Program.IGC.SendBroadcastMessage("MotherState", t);
             }
         }
 
-        public MyTuple<BoundingSphereD, Vector3D, double, Vector3D, MatrixD> MotherState(BoundingSphereD position, Vector3D dir, double speed, Vector3D ngVelo, MatrixD orientation) => MyTuple.Create(position, dir, speed, ngVelo, orientation);
-        public static MyTuple<BoundingSphereD, Vector3D, double, Vector3D, MatrixD> MotherState(object data) => (MyTuple<BoundingSphereD, Vector3D, double,Vector3D, MatrixD>)data;
+        public MyTuple<BoundingSphereD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(BoundingSphereD volume, Vector3D dir, double speed, Vector3D ngVelo, MatrixD orientation) => MyTuple.Create(volume, dir, speed, ngVelo, orientation, controller.Remote.CenterOfMass);
+        public static MyTuple<BoundingSphereD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(object data) => (MyTuple<BoundingSphereD, Vector3D, double,Vector3D, MatrixD, Vector3D>)data;
     }
 }

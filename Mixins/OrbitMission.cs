@@ -31,7 +31,7 @@ namespace IngameScript {
 
             if (mDistToDest < 10 || orbitStarted) {
                 orbitStarted = true;
-                ctr.Gyro.SetTargetDirection(Vector3D.Zero);
+                
                 ctr.logger.log("Orbiting ", orbit);
                 Vector3D dir;
                 switch (orbit) {
@@ -67,6 +67,7 @@ namespace IngameScript {
                 dir = MAF.world2dir(dir, ctr.MyMatrix);
                 var desiredVelo = dir * 15.0;
                 ctr.Thrust.Acceleration = (desiredVelo - ctr.LocalLinearVelo);
+                ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
             } else {
                 ctr.logger.log("Approaching");
                 collisionDetectTo();

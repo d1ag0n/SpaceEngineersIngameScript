@@ -7,6 +7,7 @@ using VRageMath;
 
 namespace IngameScript {
     class Connector {
+        public const double reserveTime = 1.0;
         public readonly IMyShipConnector Dock;
         bool _Reserved;
         DateTime ReserveSet;
@@ -35,13 +36,14 @@ namespace IngameScript {
                 if (CanRelease) {
                     Reserved = s;
                 } else {
-                    if ((MAF.Now - ReserveSet).TotalMinutes > 1.0) {
-                        Reserved = false;
+                    if ((MAF.Now - ReserveSet).TotalMinutes > reserveTime) {
+                        Reserved = false;                        
                     } else {
                         CanRelease = s;
                     }
                 }
             }
+            Dock.Enabled = Reserved;
         }
     }
 }

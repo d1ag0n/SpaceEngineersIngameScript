@@ -49,7 +49,7 @@ namespace IngameScript
             var msg = DockMsg.Unbox(m.Data);
             foreach (var c in mConnectors) {
                 if (!c.Reserved) {
-                    msg.Connector = c.Dock.Position;
+                    msg.theConnector = c.Dock.Position;
                     msg.ConnectorFace = c.Dock.Orientation.Forward;
                     if (ModuleManager.Program.IGC.SendUnicastMessage(m.Source, "Dock", msg.Box())) {
                         c.Reserved = true;
@@ -61,19 +61,19 @@ namespace IngameScript
     }
 
     struct DockMsg {
-        public Vector3I Connector;
+        public Vector3I theConnector;
         public Base6Directions.Direction ConnectorFace;
         public DateTime Reserved;
-        public bool isReserved => (MAF.Now - Reserved).TotalMinutes < 9.0;
+        public bool isReserved => (MAF.Now - Reserved).TotalMinutes < Connector.reserveTime;
         public static DockMsg Unbox(object data) {
             var msg = (MyTuple<Vector3I, int>)data;
             var result = new DockMsg();
-            result.Connector = msg.Item1;
+            result.theConnector = msg.Item1;
             result.ConnectorFace = (Base6Directions.Direction)msg.Item2;
             return result;
         }
         public MyTuple<Vector3I, int> Box() =>
-            MyTuple.Create(Connector, (int)ConnectorFace);
+            MyTuple.Create(theConnector, (int)ConnectorFace);
     }
     struct ATCMsg {
         public enATC Subject;
