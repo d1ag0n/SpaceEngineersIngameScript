@@ -4,29 +4,32 @@ using System.Collections.Generic;
 namespace IngameScript {
 
     public class IGC {
-        readonly IMyIntergridCommunicationSystem mIGC;
+        readonly ModuleManager mManager;
+        
         readonly SubscriptionManager mUnicastMgr;
         readonly SubscriptionManager mBroadcastMgr;
         readonly List<IMyBroadcastListener> mListeners = new List<IMyBroadcastListener>();
 
         bool mUpdateNeeded;
-        public IGC(IMyIntergridCommunicationSystem aIGC) {
-            mIGC = aIGC;
+        public IGC(ModuleManager aManager) {
+            mManager = aManager;
+            
             mUnicastMgr = new SubscriptionManager(this);
             mBroadcastMgr = new SubscriptionManager(this);
         }
         public void SubscribeUnicast(string tag, IGCHandler h) {
             if (mUnicastMgr.Subscribe(tag, h))
-                mIGC.UnicastListener.SetMessageCallback("UNICAST");
+                mManager.mProgram.IGC.UnicastListener.SetMessageCallback("UNICAST");
         }
         public void SubscribeBroadcast(string tag, IGCHandler h) {
             if (mBroadcastMgr.Subscribe(tag, h)) {
-                var listener = mIGC.RegisterBroadcastListener(tag);
+                var listener = mManager.mProgram.IGC.RegisterBroadcastListener(tag);
                 listener.SetMessageCallback(tag);
                 mListeners.Add(listener);
+                mManager.logger.persist($"Callback set for: {tag}");
             }
         }
-        public void Update(double aTime) {
+        public void Update() {
             if (mUpdateNeeded) {
                 mUnicastMgr.Update();
                 mBroadcastMgr.Update();
@@ -34,7 +37,7 @@ namespace IngameScript {
             }
         }
         public void MailCall(double aTime) {
-            mUnicastMgr.MailCall(mIGC.UnicastListener, aTime);
+            mUnicastMgr.MailCall(mManager.mProgram.IGC.UnicastListener, aTime);
             foreach (var listener in mListeners) {
                 mBroadcastMgr.MailCall(listener, aTime);
             }
@@ -65,9 +68,16 @@ namespace IngameScript {
             }
 
             public void Update() {
-                foreach (var envelope in mInbox)
-                    foreach (var handler in mSubscriptions[envelope.Message.Tag])
-                        handler(envelope);
+                foreach (var envelope in mInbox) {
+                    List<IGCHandler> list;
+                    if (mSubscriptions.TryGetValue(envelope.Message.Tag, out list)) {
+                        foreach (var handler in list) {
+                            handler(envelope);
+                        }
+                    } else {
+                        mIGC.mManager.logger.persist($"No handlers found.");
+                    }
+                }
                 mInbox.Clear();
             }
         }

@@ -140,11 +140,11 @@ namespace IngameScript {
 
 
         public Vector3D MotherVeloAt(Vector3D aPos) {
-            if (MotherAngularVelo.LengthSquared() > 0.01) {
-                return MotherAngularVelo.Cross(MAF.local2pos(aPos, _MotherMatrix) - MotherCoM);
+            if (MotherAngularVelo.IsZero()) {
+                logger.log("Zero velo at");
+                return Vector3D.Zero;    
             }
-            logger.log("Zero velo at");
-            return Vector3D.Zero;
+            return MotherAngularVelo.Cross(MAF.local2pos(aPos, _MotherMatrix) - MotherCoM);
         }
 
         MatrixD _MotherMatrix;
@@ -156,12 +156,16 @@ namespace IngameScript {
                 var m = _MotherMatrix;
                 //logger.log(logger.gps("Position", _MotherMatrix.Translation));
                 var d = mManager.Runtime - MotherLastUpdate;
+                //d += 0.0166;
+                
                 logger.log("Runtime ", mManager.Runtime);
                 logger.log("MotherAngularVelo ", MotherAngularVelo);
-                logger.log("delta ", d);
-                if (false && !MotherAngularVelo.IsZero()) {
-                    
-                    var ng = MotherAngularVelo * 0.16;// * 10.0;
+                logger.log("delta ", d.ToString());
+                d += 1.0 / 60.0;
+                if (!MotherAngularVelo.IsZero()) {
+
+                    //var ng = MotherAngularVelo * 0.16;// * 10.0;
+                    var ng = MotherAngularVelo * d;// * 10.0;
                     var len = ng.Normalize();
                     var rot = MatrixD.CreateFromAxisAngle(ng, len);
                     rot.Translation = MotherCoM;
@@ -176,7 +180,9 @@ namespace IngameScript {
                     comDir = Vector3D.TransformNormal(comDir, rot);
                     m.Translation = MotherCoM + comDir * comLen;
                 }
-                m.Translation += MotherVeloDir * (MotherSpeed * 0.135);
+                //m.Translation += MotherVeloDir * (MotherSpeed * 0.135);
+                
+                m.Translation += MotherVeloDir * (MotherSpeed * d);
                 //logger.log(logger.gps("Prediction", m.Translation));
                 return m;
             }

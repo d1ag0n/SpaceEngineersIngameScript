@@ -47,7 +47,6 @@ namespace IngameScript
             logger.persist("Respose result " + result);
         }
         void dockMessage(IGC.Envelope e) {
-
             Connector unReserved = null;
             foreach (var c in mConnectors) {
                 if (c.ReservedBy == e.Message.Source) {

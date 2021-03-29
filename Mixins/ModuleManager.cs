@@ -25,7 +25,7 @@ namespace IngameScript {
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             mProgram.Me.CustomName = "!Smart Pilot";
 
-            mIGC = new IGC(mProgram.IGC);
+            mIGC = new IGC(this);
             controller = new ShipControllerModule(this);
         }
 
@@ -69,6 +69,7 @@ namespace IngameScript {
             }
 
             if ((type & UpdateType.Update10) != 0) {
+                mIGC.Update();
                 logger.log(mLag.Value, " - ", DateTime.Now.ToString());
                 for (int i = 1; i < mModules.Count; i++) {
                     try {

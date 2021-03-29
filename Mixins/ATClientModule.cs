@@ -51,13 +51,14 @@ namespace IngameScript {
                     break;
             }
         }
-        public void Reserve() {
+        public void ReserveDock() {
+            
             if ((MAF.Now - reserveRequest).TotalSeconds > reserveInterval) {
-                mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "Dock", Dock.Box());
+                var result = mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "Dock", Dock.Box());
                 reserveRequest = MAF.Now;
             }
         }
-        public void Reserve(BoxInfo b) {
+        public void ReserveCBox(BoxInfo b) {
             
             if ((MAF.Now - reserveRequest).TotalSeconds > reserveInterval) {
                 var msg = new ATCMsg();

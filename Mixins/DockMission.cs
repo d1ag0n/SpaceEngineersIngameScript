@@ -12,8 +12,6 @@ namespace IngameScript {
         BoxInfo BoxCurrent;
         bool needTarget = true;
         Vector3D drillStart;
-
-
         
         int emptyScans = 0;
         MyDetectedEntityInfo drillTarget;
@@ -23,16 +21,9 @@ namespace IngameScript {
 
         }
 
-        
-
-        void approach() {
-
-        }
-
-
         public override void Update() {
-            
 
+            atc.ReserveDock();
             if (atc.Dock.isReserved) {
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
@@ -76,7 +67,7 @@ namespace IngameScript {
                 BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
                 BaseVelocity += veloAtPos;
                 base.Update();
-                if (mDistToDest < 0.1) {
+                if (mDistToDest < 0.5) {
                     atc.Connector.Enabled = true;
                     if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
                         atc.Dock.Reserved = MAF.Epoch;
@@ -90,11 +81,11 @@ namespace IngameScript {
             } else {
                 ctr.logger.log("reserving dock");
                 
-                ctr.Damp = true;
+                //ctr.Damp = true;
             }
             return;
             BoxCurrent = atc.GetBoxInfo(Volume.Center);
-            atc.Reserve(BoxCurrent);
+            atc.ReserveCBox(BoxCurrent);
             if (BoxCurrent.IsReservedBy(ctr.EntityId)) {
                 
             } else {
