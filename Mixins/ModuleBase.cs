@@ -7,8 +7,8 @@ namespace IngameScript {
         abstract public bool Accept(IMyTerminalBlock aBlock);
         abstract public bool Remove(IMyTerminalBlock aBlock);
 
-        
-        
+        public readonly ModuleManager mManager;
+
         public string MenuName;
         public readonly LogModule logger;
         public readonly ShipControllerModule controller;
@@ -25,12 +25,15 @@ namespace IngameScript {
 
         public bool Active { get; protected set; }
         protected bool Okay = false;
-        public ModuleBase() {
-            ModuleManager.GetModule(out logger);
+
+        public ModuleBase(ModuleManager aManager) {
+            mManager = aManager;
+            
+            mManager.GetModule(out logger);
             if (this is ShipControllerModule) {
                 controller = this as ShipControllerModule;
             } else {
-                ModuleManager.GetModule(out controller);
+                mManager.GetModule(out controller);
             }
         }
         /*public void MenuData(List<object> aList) {

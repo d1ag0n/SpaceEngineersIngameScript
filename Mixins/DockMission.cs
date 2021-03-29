@@ -12,37 +12,56 @@ namespace IngameScript {
         BoxInfo BoxCurrent;
         bool needTarget = true;
         Vector3D drillStart;
+
+
         
         int emptyScans = 0;
         MyDetectedEntityInfo drillTarget;
         public CBoxMission(ShipControllerModule aController, ATCLientModule aClient, BoundingSphereD aSphere) : base(aController, aSphere) {
             atc = aClient;
             atc.Connector.Enabled = false;
+
         }
 
+        
+
+        void approach() {
+
+        }
 
 
         public override void Update() {
             
 
             if (atc.Dock.isReserved) {
+                MyDetectedEntityInfo entity;
+                ThyDetectedEntityInfo thy;
+                if (ctr.Camera.Scan(ctr.MotherCoM, out entity, out thy)) {
+                    if (entity.EntityId == ctr.MotherId) {
+                        
+                    } else {
+                        ctr.logger.log("Mother not scanned");
+                    }
+                }
                 ctr.Damp = false;
                 //ctr.logger.log("atc.Dock.Connector", atc.Dock.Connector);
                 //ctr.logger.log("ctr.MotherMatrix", ctr.MotherMatrix);
                 Vector3D pos = atc.Dock.theConnector * 2.5;
                 Vector3D face = Base6Directions.GetVector(atc.Dock.ConnectorFace);
-                MyDetectedEntityInfo entity;
                 
-                ThyDetectedEntityInfo thy;
+                
                 //if (ctr.Camera.Scan(ctr.MotherSphere.Center, out entity, out thy, 10.0)) {
                 //ctr.logger.log("orientation.translation", entity.Orientation.Translation);
 
                 //}
+                var mm = ctr.MotherMatrix;
 
                 //var conPos = MAF.local2pos(pos, ctr.MotherMatrix);
                 //pos += face * (3.0 + mDistToDest * 0.6);
-                pos += face * MathHelperD.Clamp((mDistToDest) - 2.7, 2.8, 50.0);
-                pos = MAF.local2pos(pos, ctr.MotherMatrix);
+                pos += face * MathHelperD.Clamp((mDistToDest) - 5.0, 2.5, 50.0);
+                var veloAtPos = ctr.MotherVeloAt(pos);
+                ctr.logger.log("veloAtPos", veloAtPos);
+                pos = MAF.local2pos(pos, mm);
                 //ctr.logger.log("pos", pos);
                 //ctr.logger.log("atc.Dock.ConnectorFace", atc.Dock.ConnectorFace);
                 //ctr.logger.log("ctr.MotherSphere.Radius", ctr.MotherSphere.Radius);
@@ -53,10 +72,11 @@ namespace IngameScript {
                 ctr.Gyro.NavBlock = NavBlock = atc.Connector;
                 
                 var dir = MAF.world2dir(atc.Connector.WorldMatrix.Forward, ctr.Remote.WorldMatrix);
-                ctr.Gyro.SetTargetDirection(MAF.local2dir(-face, ctr.MotherMatrix));
+                ctr.Gyro.SetTargetDirection(MAF.local2dir(-face, mm));
                 BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
+                BaseVelocity += veloAtPos;
                 base.Update();
-                if (mDistToDest < 10.0) {
+                if (mDistToDest < 0.1) {
                     atc.Connector.Enabled = true;
                     if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
                         atc.Dock.Reserved = MAF.Epoch;
@@ -66,10 +86,10 @@ namespace IngameScript {
                     atc.Connector.Enabled = false;
                 }
 
-                FlyTo(10.0);
+                FlyTo(20.0);
             } else {
                 ctr.logger.log("reserving dock");
-                atc.Reserve(new DockMsg());
+                
                 ctr.Damp = true;
             }
             return;

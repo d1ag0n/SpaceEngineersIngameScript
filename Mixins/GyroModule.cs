@@ -29,7 +29,7 @@ namespace IngameScript
         bool calcDirection = false;
 
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
-        public GyroModule() {
+        public GyroModule(ModuleManager aManager) : base(aManager) {
             MenuName = "Gyroscope";
             onUpdate = UpdateAction;
             onSave = SaveAction;

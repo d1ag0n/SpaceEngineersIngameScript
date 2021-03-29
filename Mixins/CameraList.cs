@@ -9,9 +9,9 @@ namespace IngameScript {
     class CameraList : BlockDirList<IMyCameraBlock> {
         //public readonly List<IMyCameraBlock> mList = new List<IMyCameraBlock>();
         //readonly IMyCubeGrid Grid;
-        readonly CameraModule Camera;
+        readonly CameraModule mCamera;
         public CameraList(CameraModule aMod) {
-            Camera = aMod;
+            mCamera = aMod;
         }
         Base6Directions.Direction GetClosestDirection(Vector3D v) {
             Base6Directions.Direction result = Base6Directions.Direction.Left;
@@ -40,7 +40,7 @@ namespace IngameScript {
         }
         public bool Scan(Vector3D aTargetWorld, out MyDetectedEntityInfo aEntity, double aAddDist = 0) {
             //ModuleManager.Program.Me.CustomData = aTargetWorld.ToString() + Environment.NewLine;
-            var targetLocal = MAF.world2pos(aTargetWorld, Camera.MyMatrix);
+            var targetLocal = MAF.world2pos(aTargetWorld, mCamera.MyMatrix);
             var targetNormal = Vector3D.Normalize(targetLocal);
             var cd = Base6Directions.GetClosestDirection(targetNormal);
             //ModuleManager.logger.persist("vanilla " + cd);
@@ -65,12 +65,12 @@ namespace IngameScript {
                         aEntity = c.Raycast(dist, (float)elevation, (float)azimuth);
 
                         if (aEntity.Type != MyDetectedEntityType.None) {
-                            if (aEntity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
+                            if (aEntity.EntityId == mCamera.mManager.mProgram.Me.CubeGrid.EntityId) {
                                 //sb.AppendLine(c.CustomName + " scanned own grid " + aEntity.EntityId + " " + azimuth + " " + elevation);
                                 //sb.AppendLine(ModuleManager.logger.gps(c.CustomName, c.WorldMatrix.Translation));
                                 continue;
                             }
-                            if (ModuleManager.ConnectedGrid(aEntity.EntityId)) {
+                            if (mCamera.mManager.ConnectedGrid(aEntity.EntityId)) {
                                 //sb.AppendLine("Connected grid");
                                 continue;
                             }

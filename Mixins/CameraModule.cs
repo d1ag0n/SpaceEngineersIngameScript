@@ -19,7 +19,7 @@ namespace IngameScript
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
 
         // todo organize camera by direction
-        public CameraModule() {
+        public CameraModule(ModuleManager aManager) : base(aManager) {
             MenuName = "Camera Records";
             onSave = SaveAction;
             onLoad = LoadAction;
@@ -206,7 +206,7 @@ namespace IngameScript
                     mMenuItems.Add(new MenuItem($"Distance: {(e.Position - MyMatrix.Translation).Length():f0} - Radius: {e.WorldVolume.Radius}"));
                     mMenuItems.Add(new MenuItem("Designate Target", () => controller.Mission = new OrbitMission(controller, e)));
                     if (!deleted) {
-                        mMenuItems.Add(new MenuItem($"Rename to '{ModuleManager.UserInput}'", aState, renameRecord));
+                        mMenuItems.Add(new MenuItem($"Rename to '{mManager.UserInput}'", aState, renameRecord));
                     }
                 } else {
                     if (!deleted) {
@@ -218,7 +218,7 @@ namespace IngameScript
             });
         }
         Menu renameRecord(MenuModule aMain, object aState) {
-            ((ThyDetectedEntityInfo)aState).SetName(ModuleManager.UserInput);
+            ((ThyDetectedEntityInfo)aState).SetName(mManager.UserInput);
             return null;
         }
         Menu deleteRecord(MenuModule aMain, object aState) {
@@ -246,6 +246,7 @@ namespace IngameScript
                 mod.SetTargetPosition((Vector3D)aState);
             }
             return null;
+            
         }
 
 
@@ -253,7 +254,7 @@ namespace IngameScript
             bool result = false; 
             if (aBlock is IMyMotorStator) {
                 var rotor = aBlock as IMyMotorStator;
-                if (ModuleManager.HasTag(rotor, "camera")) {
+                if (mManager.HasTag(rotor, "camera")) {
                     rotor.Enabled = true;
                     rotor.RotorLock = false;
                     rotor.BrakingTorque = 0;
@@ -261,7 +262,7 @@ namespace IngameScript
                     rotor.TargetVelocityRad = 1.0f;
                 }
                 result = true;
-            } else if (aBlock.CubeGrid == ModuleManager.Program.Me.CubeGrid) {
+            } else if (aBlock.CubeGrid == mManager.mProgram.Me.CubeGrid) {
                 result = base.Accept(aBlock);
                 if (result) {
 

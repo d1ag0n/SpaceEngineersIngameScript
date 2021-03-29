@@ -136,7 +136,7 @@ namespace IngameScript {
                         // this is getting nasty
                         // mothership should only avoid objects owned by me if they have no velocity
                         // everything else should be aware of the mothership and gtfo of the way
-                        if (!ModuleManager.Mother || entity.Velocity.LengthSquared() == 0 ) {
+                        if (!ctr.mManager.Mother || entity.Velocity.LengthSquared() == 0 ) {
                             ctr.logger.log($"Detected {entity.Name} {entity.Velocity.Length()}");
                             detected = true;
                             BoundingSphereD sphere;

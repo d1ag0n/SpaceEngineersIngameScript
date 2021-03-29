@@ -9,7 +9,7 @@ namespace IngameScript {
         readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         double range = 20000;
         bool xneg = false;
-        public PeriscopeModule() {
+        public PeriscopeModule(ModuleManager aManager) : base(aManager) {
             onUpdate = UpdateAction;
             onPage = p => {
                 if (Okay) {
@@ -61,10 +61,10 @@ namespace IngameScript {
                         first = b as IMyMotorStator;
                         first.ShowInTerminal = false;
                         if (first != null && first.TopGrid != null) {
-                            ModuleManager.GetByGrid(first.TopGrid.EntityId, ref second);
+                            mManager.GetByGrid(first.TopGrid.EntityId, ref second);
                             if (second != null && second.TopGrid != null) {
                                 second.ShowInTerminal = false;
-                                ModuleManager.GetByGrid(second.TopGrid.EntityId, ref camera);
+                                mManager.GetByGrid(second.TopGrid.EntityId, ref camera);
                                 if (camera != null) {
                                     camera.CustomName = $"!Periscope {first.CustomName} - Camera";
                                     camera.Enabled =
@@ -142,7 +142,7 @@ namespace IngameScript {
                 } else {
                     if (entity.Type == MyDetectedEntityType.None) {
                         logger.persist("Periscope scan empty.");
-                    } else if (entity.EntityId == ModuleManager.Program.Me.CubeGrid.EntityId) {
+                    } else if (entity.EntityId == mManager.mProgram.Me.CubeGrid.EntityId) {
                         logger.persist("Periscope scan obstructed by grid.");
                     } else {
                         logger.persist(logger.gps(entity.Name, entity.Position));

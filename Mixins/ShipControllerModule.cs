@@ -7,7 +7,7 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public class ShipControllerModule : Module<IMyShipController> {
-        public readonly bool LargeGrid;
+        
         public readonly float GyroSpeed;
         
         public MissionBase Mission;
@@ -25,19 +25,19 @@ namespace IngameScript {
         public ThrustModule Thrust { get; private set; }
         public GyroModule Gyro { get; private set; }
         public CameraModule Camera { get; private set; }
-        readonly IMyBroadcastListener mMotherState;
+        
 
         ATCLientModule ATClient;
         public bool Damp = true;
 
-        public ShipControllerModule() {
-            if (!ModuleManager.Mother) {
-                mMotherState = ModuleManager.Program.IGC.RegisterBroadcastListener("MotherState");
+        public ShipControllerModule(ModuleManager aManager) :base (aManager) {
+            if (!aManager.Mother) {
+                aManager.mIGC.SubscribeBroadcast("MotherState", onMotherState);
             }
             
-            MotherLastUpdate = ModuleManager.Runtime;
-            LargeGrid = ModuleManager.Program.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
-            GyroSpeed = LargeGrid ? 30 : 60;
+            
+            
+            GyroSpeed = aManager.LargeGrid ? 30f : 60f;
 
             // if this is changed, UpdateAction needs to work when called before whatever
             // somthing needs to handle call to UpdateAction in ModuleManager.Initialize
@@ -118,58 +118,65 @@ namespace IngameScript {
                 Camera = cam;
             }
             if (result) {
-                if (ModuleManager.Drill) {
+                if (mManager.Drill) {
                     GetModule(out ATClient);
 
                     Mission = new CBoxMission(this, ATClient, Volume);
                 }
-                if (ModuleManager.Mother) {
-                    onUpdate = UpdateGlobal;
-                } else {
-                    onUpdate = UpdateChild;
-                }
+                onUpdate = UpdateGlobal;
                 onUpdate();
             } else {
                 UpdateLocal();
             }
         }
         public long MotherId { get; private set; }
-        BoundingSphereD _MotherSphere;
-        public BoundingSphereD MotherSphere {
-            get {
-                var s = _MotherSphere;
-                s.Center += MotherVeloDir * (MotherSpeed * (ModuleManager.Runtime - MotherLastUpdate));
-                return s;
-            }
-            private set {
-                _MotherSphere = value;
-            }
-        }
+
+        public BoundingSphereD MotherSphere => BoundingSphereD.CreateFromBoundingBox(MotherBox);
+        public BoundingBoxD MotherBox { get; private set; }
         public Vector3D MotherCoM { get; private set; } 
         public Vector3D MotherVeloDir { get; private set; }
         public double MotherSpeed { get; private set; }
         public double MotherLastUpdate { get; private set; }
+
+
+        public Vector3D MotherVeloAt(Vector3D aPos) {
+            if (MotherAngularVelo.LengthSquared() > 0.01) {
+                return MotherAngularVelo.Cross(MAF.local2pos(aPos, _MotherMatrix) - MotherCoM);
+            }
+            logger.log("Zero velo at");
+            return Vector3D.Zero;
+        }
+
         MatrixD _MotherMatrix;
         public MatrixD MotherMatrix {
             get {
+                // Whiplash141 - https://discord.com/channels/125011928711036928/216219467959500800/825805636691951626
+                // cross(angVel, displacement)
+                // Where angVel is in rad / s and displacement is measured from the CoM pointing towards the point of interest
                 var m = _MotherMatrix;
                 //logger.log(logger.gps("Position", _MotherMatrix.Translation));
-                var d = ModuleManager.Runtime - MotherLastUpdate;
-                //logger.log("Runtime ", ModuleManager.Runtime);
+                var d = mManager.Runtime - MotherLastUpdate;
+                logger.log("Runtime ", mManager.Runtime);
                 logger.log("MotherAngularVelo ", MotherAngularVelo);
-                //logger.log("delta ", d);
-                if (!MotherAngularVelo.IsZero()) {
-
-                    var ng = MotherAngularVelo * 0.15;// * 10.0;
+                logger.log("delta ", d);
+                if (false && !MotherAngularVelo.IsZero()) {
+                    
+                    var ng = MotherAngularVelo * 0.16;// * 10.0;
                     var len = ng.Normalize();
                     var rot = MatrixD.CreateFromAxisAngle(ng, len);
-                    //var q = Quaternion.CreateFromAxisAngle(ng, (float)len);
+                    rot.Translation = MotherCoM;
+                    var comDisp = m.Translation - MotherCoM;
+                    var comDir = comDisp;
+                    var comLen = comDir.Normalize();
+                    
                     //m = MatrixD.Transform(m, q);
                     m.Forward = Vector3D.TransformNormal(m.Forward, rot);
                     m.Up = Vector3D.TransformNormal(m.Up, rot);
                     m.Left = Vector3D.TransformNormal(m.Left, rot);
+                    comDir = Vector3D.TransformNormal(comDir, rot);
+                    m.Translation = MotherCoM + comDir * comLen;
                 }
-                m.Translation += MotherVeloDir * (MotherSpeed * 0.15);
+                m.Translation += MotherVeloDir * (MotherSpeed * 0.135);
                 //logger.log(logger.gps("Prediction", m.Translation));
                 return m;
             }
@@ -178,25 +185,22 @@ namespace IngameScript {
             }
         }
         public Vector3D MotherAngularVelo { get; private set; }
-        public long EntityId => ModuleManager.Program.Me.EntityId;
+        public long EntityId => mManager.mProgram.Me.EntityId;
 
-        void UpdateChild() {
-            while (mMotherState.HasPendingMessage) {
-                var m = mMotherState.AcceptMessage();
-                MotherId = m.Source;
-                logger.log("MotherId ", MotherId);
-                var ms = MotherShipModule.MotherState(m.Data);
-                MotherSphere = ms.Item1;
-                MotherVeloDir = ms.Item2;
-                MotherSpeed = ms.Item3;
-                logger.log("MotherSpeed ", MotherSpeed);
-                MotherAngularVelo = ms.Item4;
-                MotherMatrix = ms.Item5;
-                MotherCoM = ms.Item6;
-                MotherLastUpdate = ModuleManager.Runtime;
-            }
-            UpdateGlobal();
+        void onMotherState(IGC.Envelope e) {
+            MotherId = e.Message.Source;
+            logger.log("MotherId ", MotherId);
+            var ms = MotherShipModule.MotherState(e.Message.Data);
+            MotherBox = ms.Item1;
+            MotherVeloDir = ms.Item2;
+            MotherSpeed = ms.Item3;
+            logger.log("MotherSpeed ", MotherSpeed);
+            MotherAngularVelo = ms.Item4;
+            MotherMatrix = ms.Item5;
+            MotherCoM = ms.Item6;
+            MotherLastUpdate = e.Time;
         }
+
         void UpdateLocal() {
    
             if (Remote == null || !Remote.IsFunctional || !(Remote is IMyRemoteControl)) {
@@ -217,23 +221,21 @@ namespace IngameScript {
             }
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
-            logger.log("Mass ", Mass);
-            var lastVelo = ShipVelocities.LinearVelocity;
+            //logger.log("Mass ", Mass);
+            //var lastVelo = ShipVelocities.LinearVelocity;
             ShipVelocities = Remote.GetShipVelocities();
             //logger.log(Remote.CustomName);
-            var change = ShipVelocities.LinearVelocity - lastVelo;
-            var accel = change.Length() / ModuleManager.Program.Runtime.TimeSinceLastRun.TotalSeconds;
+            //var change = ShipVelocities.LinearVelocity - lastVelo;
+            //var accel = change.Length() / ModuleManager.Program.Runtime.TimeSinceLastRun.TotalSeconds;
 
             //logger.log($"Acceleration ", accel);
             var lvd = ShipVelocities.LinearVelocity;
             LinearVelocity = lvd.Normalize();
-            if (lvd.IsValid()) {
-                LinearVelocityDirection = lvd;
-            } else {
+            if (!lvd.IsValid()) {
                 lvd = Vector3D.Zero;
                 LinearVelocity = 0;
             }
-
+            LinearVelocityDirection = lvd;
             LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, MyMatrix);
             //logger.log("LocalLinearVelo", LocalLinearVelo);
 
@@ -301,7 +303,7 @@ namespace IngameScript {
 
         VectorHandler flatScan(MatrixD aMatrix) {
             
-            var grid = ModuleManager.Program.Me.CubeGrid;
+            var grid = mManager.mProgram.Me.CubeGrid;
             Vector3D start = Vector3D.Transform(grid.Min * grid.GridSize, aMatrix);
             int width = 0, height = 0;
             switch (Remote.Orientation.Forward) {
@@ -343,7 +345,7 @@ namespace IngameScript {
 
 
         VectorHandler flatScan(Vector3D right, Vector3D up, Vector3D start, int width, int height) {
-            var gsz = ModuleManager.Program.Me.CubeGrid.GridSize;
+            var gsz = mManager.mProgram.Me.CubeGrid.GridSize;
             int extra = 0;
             start -= right * (gsz * extra);
             start -= up * (gsz * extra);

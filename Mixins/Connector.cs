@@ -10,6 +10,7 @@ namespace IngameScript {
         public const double reserveTime = 1.0;
         public readonly IMyShipConnector Dock;
         bool _Reserved;
+        public long ReservedBy;
         DateTime ReserveSet;
 
         public bool Reserved {
@@ -43,6 +44,8 @@ namespace IngameScript {
                     }
                 }
             }
+            if (!Reserved)
+                ReservedBy = 0;
             Dock.Enabled = Reserved;
         }
     }

@@ -3,77 +3,57 @@ using System;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
-
+        
         delegate void main(string a, UpdateType u);
         
         main Update;
 
         readonly MenuModule mMenu;
+
+        readonly ModuleManager mManager;
+
         
         public Program() {
-            Me.CustomName = "!Smart Pilot";
-            ModuleManager.Initialize(this);
-            new GyroModule();
-            new ThrustModule();
-            new CameraModule();
+            mManager = new ModuleManager(this);
+            
+            
+            new GyroModule(mManager);
+            new ThrustModule(mManager);
+            new CameraModule(mManager);
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             if (Me.CustomData.Contains("mother")) {
-                ModuleManager.logger.persist("I'm a Mother Ship");
-                ModuleManager.Mother = true;
-                new PeriscopeModule();
-                mMenu = new MenuModule();
-                new MotherShipModule();
-                new ATCModule();
+                mManager.logger.persist("I'm a Mother Ship");
+                mManager.Mother = true;
+                new PeriscopeModule(mManager);
+                mMenu = new MenuModule(mManager);
+                new MotherShipModule(mManager);
+                new ATCModule(mManager);
             } else if (Me.CustomData.Contains("#probe")) {
-                ModuleManager.logger.persist("I'm a Probe");
-                ModuleManager.Probe = true;
-                new ProbeModule();
+                mManager.logger.persist("I'm a Probe");
+                mManager.Probe = true;
+                new ProbeModule(mManager);
             } else if (Me.CustomData.Contains("#drill")) {
-                ModuleManager.logger.persist("I'm a Drill");
-                ModuleManager.Drill = true;
-                new ATCLientModule();
+                mManager.logger.persist("I'm a Drill");
+                mManager.Drill = true;
+                new ATCLientModule(mManager);
             } else {
                 Runtime.UpdateFrequency = UpdateFrequency.None;
+                return;
             }
+            mManager.Initialize();
             Update = load;
         }
 
         void load(string a, UpdateType u) {
             try {
-                ModuleManager.Load(Storage);
+                mManager.Load(Storage);
+                Update = mManager.Update;
             } catch (Exception ex) {
-                ModuleManager.logger.persist(ex.ToString());
-            }
-            Update = loop;
-        }
-        void loop(string arg, UpdateType type) {
-            ModuleManager.Runtime += Runtime.TimeSinceLastRun.TotalMilliseconds;
-            try {
-                if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
-                    if (arg.Length > 0) {
-                        if (arg == "save") {
-                            Save();
-                        } else if (mMenu != null) {
-                            mMenu.Input(arg);
-                        }
-                    }
-                }
-                if ((type & UpdateType.IGC) != 0) {
-                    
-                }
-                if ((type & UpdateType.Update10) != 0) {
-                    ModuleManager.logger.log("PB Id ", Me.EntityId);
-                    ModuleManager.Update();
-                    if (ModuleManager.Probe) {
-                        Echo(ModuleManager.logger.LastText);
-                    }
-                }
-            } catch (Exception ex) {
-                ModuleManager.logger.persist(ex.ToString());
-                Echo(ex.ToString());
+                mManager.logger.persist(ex.ToString());
             }
         }
-        public void Save() => Storage = ModuleManager.Save();
+      
+        public void Save() => Storage = mManager.Save();
         public void Main(string a, UpdateType u) => Update(a, u);
     }
 }

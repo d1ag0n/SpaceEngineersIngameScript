@@ -18,7 +18,7 @@ namespace IngameScript
                 aBox.Min.Y + random.NextDouble() * (aBox.Max.Y - aBox.Min.Y),
                 aBox.Min.Z + random.NextDouble() * (aBox.Max.Z - aBox.Min.Z)
             );
-        
+        // probably Whiplash's code
         public static double angleBetween(Vector3D a, Vector3D b) {
             double result = 0;
             if (!Vector3D.IsZero(a) && !Vector3D.IsZero(b))
@@ -51,11 +51,11 @@ namespace IngameScript
             aDot = (aTarget - aPlane).Dot(aNormal);
             return aTarget - (aDot * aNormal);
         }
-
-        public static Vector3D reject(Vector3D a, Vector3D b) => a - a.Dot(b) / b.Dot(b) * b;
+        // len sq this.X * this.X + this.Y * this.Y + this.Z * this.Z
+        public static Vector3D reject(Vector3D a, Vector3D b) => a - a.Dot(b) / b.LengthSquared() * b;
         public static Vector3D reject(Vector3D a, Vector3D b, out double aDot) {
             aDot = a.Dot(b);
-            return a - aDot / b.Dot(b) * b;
+            return a - aDot / b.LengthSquared() * b;    
         }
 
 
@@ -157,11 +157,11 @@ namespace IngameScript
             var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(world));
             var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
 
-            pitch = MAF.angleBetween(Vector3D.Down, flattenedTargetVector);
+            pitch = angleBetween(Vector3D.Down, flattenedTargetVector);
             if (localTargetVector.Z > 0)
                 pitch = -pitch;
 
-            roll = MAF.angleBetween(localTargetVector, flattenedTargetVector);
+            roll = angleBetween(localTargetVector, flattenedTargetVector);
             if (localTargetVector.X > 0)
                 roll = -roll;
         }

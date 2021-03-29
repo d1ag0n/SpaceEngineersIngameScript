@@ -14,7 +14,7 @@ namespace IngameScript {
         readonly StringBuilder mLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>(25);
 
-        public LogModule() {
+        public LogModule(ModuleManager aManager) : base(aManager) {
             onUpdate = UpdateAction;
         }
 

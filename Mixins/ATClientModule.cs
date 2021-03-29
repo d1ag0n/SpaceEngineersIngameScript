@@ -23,9 +23,9 @@ namespace IngameScript {
             return false;
         }
 
-        public ATCLientModule() {
-            ModuleManager.IGCSubscribe("ATC", onATCMessage);
-            ModuleManager.IGCSubscribe("Dock", onDockMessage);
+        public ATCLientModule(ModuleManager aManager) : base(aManager) {
+            aManager.mIGC.SubscribeUnicast("ATC", onATCMessage);
+            aManager.mIGC.SubscribeUnicast("Dock", onDockMessage);
             onUpdate = UpdateAction;
         }
 
@@ -33,12 +33,12 @@ namespace IngameScript {
             var cbox = BOX.GetCBox(Volume.Center);
 
         }
-        void onDockMessage(MyIGCMessage m) {
-            Dock = DockMsg.Unbox(m.Data);
+        void onDockMessage(IGC.Envelope e) {
+            Dock = DockMsg.Unbox(e.Message.Data);
             Dock.Reserved = MAF.Now;
         }
-        void onATCMessage(MyIGCMessage m) {
-            var msg = ATCMsg.Unbox(m.Data);
+        void onATCMessage(IGC.Envelope e) {
+            var msg = ATCMsg.Unbox(e.Message.Data);
             var c = BOX.GetCBox(msg.Info.Position);
             var i = BOX.CVectorToIndex(c.Center);
             logger.persist("Incoming ATC message " + msg.Subject);
@@ -51,9 +51,9 @@ namespace IngameScript {
                     break;
             }
         }
-        public void Reserve(DockMsg d) {
+        public void Reserve() {
             if ((MAF.Now - reserveRequest).TotalSeconds > reserveInterval) {
-                ModuleManager.Program.IGC.SendUnicastMessage(controller.MotherId, "Dock", d.Box());
+                mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "Dock", Dock.Box());
                 reserveRequest = MAF.Now;
             }
         }
@@ -63,7 +63,7 @@ namespace IngameScript {
                 var msg = new ATCMsg();
                 msg.Info = b;
                 msg.Subject = enATC.Reserve;
-                var result = ModuleManager.Program.IGC.SendUnicastMessage(controller.MotherId, "ATC", msg.Box());
+                var result = mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "ATC", msg.Box());
                 reserveRequest = MAF.Now;
                 logger.log("Reservation send result ", result);
             } else {

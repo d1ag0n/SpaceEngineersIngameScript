@@ -7,10 +7,10 @@ using VRageMath;
 
 namespace IngameScript {
     public class ThrustModule : Module<IMyThrust> {
-        public readonly ThrustList mThrust = new ThrustList();
+        public readonly ThrustList mThrust;
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
-        readonly ThrustList mHydro = new ThrustList();
+        readonly ThrustList mHydro;
         public Vector3D FullStop(Vector3D aLocalDirection, Vector3D aMaxAccel) {
             return stop(aLocalDirection * 100, aMaxAccel);
         }
@@ -19,9 +19,11 @@ namespace IngameScript {
         }
         
         enum enGroup { Hydro, Ion, Atmos, Not }
-        public ThrustModule() {
+        public ThrustModule(ModuleManager aManager):base(aManager) {
+            mThrust = new ThrustList(this);
+            mHydro = new ThrustList(this);
             onUpdate = InitAction;
-
+            
             /*
             MenuName = "Thrust Controller";
             onPage = (p) => {

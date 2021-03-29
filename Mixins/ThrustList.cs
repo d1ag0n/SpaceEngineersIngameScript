@@ -12,6 +12,11 @@ namespace IngameScript {
         public double FrontForce => forces[0];
         public double BackForce => forces[1];
         double[] forces = new double[6];
+        readonly ThrustModule mThrust;
+
+        public ThrustList(ThrustModule aThrust) {
+            mThrust = aThrust;
+        }
 
         // todo index based acceleration modification, track how many thrusters currently powered to full
 
@@ -41,7 +46,7 @@ namespace IngameScript {
             var y = Math.Abs(aAccel.Y) * aMass;
 
             if (emergency) {
-                ModuleManager.logger.log("EMERGENCY!");
+                mThrust.logger.log("EMERGENCY!");
             } else {
                 double ratio = forces[f] / z;
                 double tempRatio = forces[l] / x;

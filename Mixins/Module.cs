@@ -5,11 +5,12 @@ using VRageMath;
 
 namespace IngameScript {
     public class Module<T> : ModuleBase {
+        
         readonly HashSet<long> mRegistry = new HashSet<long>();
         public readonly List<T> Blocks = new List<T>();
         
 
-        public IMyCubeGrid Grid => ModuleManager.Program.Me.CubeGrid;
+        public IMyCubeGrid Grid => mManager.mProgram.Me.CubeGrid;
         public BoundingSphereD Volume => Grid.WorldVolume;
         public MatrixD MyMatrix {
             get {
@@ -18,12 +19,12 @@ namespace IngameScript {
                 return m;
             }
         }
-        public Module() {
-            ModuleManager.Add(this);
+        public Module(ModuleManager aManager) : base(aManager) {
+            mManager.Add(this);
         }
         
-        public bool GetModule<S>(out S aComponent) where S : class => ModuleManager.GetModule(out aComponent);
-        public bool GetModules<S>(List<S> aComponentList) where S : class => ModuleManager.GetModules(aComponentList);
+        public bool GetModule<S>(out S aComponent) where S : class => mManager.GetModule(out aComponent);
+        public bool GetModules<S>(List<S> aComponentList) where S : class => mManager.GetModules(aComponentList);
         public override bool Accept(IMyTerminalBlock aBlock) {
             if (aBlock is T) {
                 if (mRegistry.Add(aBlock.EntityId)) {

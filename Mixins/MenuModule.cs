@@ -8,7 +8,7 @@ namespace IngameScript {
         Menu CurrentMenu;
         public bool UpdateRequired = true;
 
-        public MenuModule() {
+        public MenuModule(ModuleManager aManager) : base(aManager) {
             onUpdate = UpdateAction;
         }
         public override bool Accept(IMyTerminalBlock b) {
@@ -47,7 +47,7 @@ namespace IngameScript {
         void UpdateAction() {
             if (UpdateRequired) {
                 if (CurrentMenu == null) {
-                    CurrentMenu = ModuleManager.MainMenu(this);
+                    CurrentMenu = mManager.MainMenu(this);
                 }
                 var str = CurrentMenu.Update();
                 foreach (var tp in Blocks) {

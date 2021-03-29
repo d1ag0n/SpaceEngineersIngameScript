@@ -14,8 +14,8 @@ namespace IngameScript {
         readonly GyroModule gyro;
        
         
-        public ProbeModule() {
-            ctr = ModuleManager.controller;
+        public ProbeModule(ModuleManager aManager):base(aManager) {
+            ctr = aManager.controller;
             
             GetModule(out gyro);
             
@@ -26,7 +26,7 @@ namespace IngameScript {
         public override bool Accept(IMyTerminalBlock aBlock) {
             var result = false;
 
-            if (ModuleManager.Probe) {
+            if (mManager.Probe) {
                 if (aBlock is IMyRadioAntenna) {
                     mAntennas.Add(aBlock as IMyRadioAntenna);
                 }
@@ -56,7 +56,7 @@ namespace IngameScript {
         // Vector3D absoluteNorthVecNotPlanetWorlds = new Vector3D(0.342063708833718, -0.704407897782847, -0.621934025954579); //this was determined via Keen's code
         const double PADDING = 100.0;
         void UpdateAction() {
-            if (ModuleManager.Runtime - ctr.MotherLastUpdate > 1) {
+            if (mManager.Runtime - ctr.MotherLastUpdate > 1) {
                 controller.Damp = true;
             } else {
                 ctr.Damp = false;

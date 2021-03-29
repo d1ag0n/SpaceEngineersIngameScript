@@ -8,7 +8,7 @@ using VRage;
 namespace IngameScript {
     public class MotherShipModule : Module<IMyTerminalBlock> {
         
-        public MotherShipModule() {
+        public MotherShipModule(ModuleManager aManager) : base(aManager) {
             //mListener = ModuleManager.Program.IGC.RegisterBroadcastListener("Register");
             onUpdate = UpdateAction;
         }
@@ -24,12 +24,12 @@ namespace IngameScript {
                     s = v.Normalize();
                 }
                 var m = Grid.WorldMatrix;
-                var t = MotherState(Volume, v, s, controller.ShipVelocities.AngularVelocity, Grid.WorldMatrix);
-                ModuleManager.Program.IGC.SendBroadcastMessage("MotherState", t);
+                var t = MotherState(Grid.WorldAABB, v, s, controller.ShipVelocities.AngularVelocity, Grid.WorldMatrix);
+                mManager.mProgram.IGC.SendBroadcastMessage("MotherState", t);
             }
         }
 
-        public MyTuple<BoundingSphereD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(BoundingSphereD volume, Vector3D dir, double speed, Vector3D ngVelo, MatrixD orientation) => MyTuple.Create(volume, dir, speed, ngVelo, orientation, controller.Remote.CenterOfMass);
-        public static MyTuple<BoundingSphereD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(object data) => (MyTuple<BoundingSphereD, Vector3D, double,Vector3D, MatrixD, Vector3D>)data;
+        public MyTuple<BoundingBoxD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(BoundingBoxD volume, Vector3D dir, double speed, Vector3D ngVelo, MatrixD orientation) => MyTuple.Create(volume, dir, speed, ngVelo, orientation, controller.Remote.CenterOfMass);
+        public static MyTuple<BoundingBoxD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(object data) => (MyTuple<BoundingBoxD, Vector3D, double,Vector3D, MatrixD, Vector3D>)data;
     }
 }

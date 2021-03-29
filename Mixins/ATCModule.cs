@@ -12,9 +12,9 @@ namespace IngameScript
         readonly BoxMap map = new BoxMap();
         readonly List<Connector> mConnectors = new List<Connector>();
 
-        public ATCModule() {
-            ModuleManager.IGCSubscribe("ATC", atcMessage);
-            ModuleManager.IGCSubscribe("Dock", dockMessage);
+        public ATCModule(ModuleManager aManager) : base(aManager) {
+            aManager.mIGC.SubscribeUnicast("ATC", atcMessage);
+            aManager.mIGC.SubscribeUnicast("Dock", dockMessage);
             onUpdate = UpdateAction;
         }
         void UpdateAction() {
@@ -30,32 +30,44 @@ namespace IngameScript
             return result;
         }
 
-        void atcMessage(MyIGCMessage m) {
-            logger.persist("Received ATC message from " + m.Source);
+        void atcMessage(IGC.Envelope e) {
+            var src = e.Message.Source;
+            logger.persist("Received ATC message from " + src);
             
-            var msg = ATCMsg.Unbox(m.Data);
+            var msg = ATCMsg.Unbox(e.Message.Data);
             switch (msg.Subject) {
                 case enATC.Drop:
-                    msg.Info = map.dropReservation(m.Source, msg.Info.Position);
+                    msg.Info = map.dropReservation(src, msg.Info.Position);
                     break;
                 case enATC.Reserve:
-                    msg.Info = map.setReservation(m.Source, msg.Info.Position);
+                    msg.Info = map.setReservation(src, msg.Info.Position);
                     break;
             }
-            var result = ModuleManager.Program.IGC.SendUnicastMessage(m.Source, "ATC", msg.Box());
+            var result = mManager.mProgram.IGC.SendUnicastMessage(src, "ATC", msg.Box());
             logger.persist("Respose result " + result);
         }
-        void dockMessage(MyIGCMessage m) {
-            var msg = DockMsg.Unbox(m.Data);
+        void dockMessage(IGC.Envelope e) {
+
+            Connector unReserved = null;
             foreach (var c in mConnectors) {
-                if (!c.Reserved) {
-                    msg.theConnector = c.Dock.Position;
-                    msg.ConnectorFace = c.Dock.Orientation.Forward;
-                    if (ModuleManager.Program.IGC.SendUnicastMessage(m.Source, "Dock", msg.Box())) {
-                        c.Reserved = true;
-                    }
-                    return;
+                if (c.ReservedBy == e.Message.Source) {
+                    unReserved = c;
+                    break;
+                } else if (!c.Reserved) {
+                    unReserved = c;
                 }
+            }
+            if (unReserved != null) {
+                doReserveDock(unReserved, e.Message);
+            }
+        }
+        void doReserveDock(Connector c, MyIGCMessage m) {
+            var msg = DockMsg.Unbox(m.Data);
+            msg.theConnector = c.Dock.Position;
+            msg.ConnectorFace = c.Dock.Orientation.Forward;
+            if (mManager.mProgram.IGC.SendUnicastMessage(m.Source, "Dock", msg.Box())) {
+                c.Reserved = true;
+                c.ReservedBy = m.Source;
             }
         }
     }
@@ -64,6 +76,7 @@ namespace IngameScript
         public Vector3I theConnector;
         public Base6Directions.Direction ConnectorFace;
         public DateTime Reserved;
+
         public bool isReserved => (MAF.Now - Reserved).TotalMinutes < Connector.reserveTime;
         public static DockMsg Unbox(object data) {
             var msg = (MyTuple<Vector3I, int>)data;

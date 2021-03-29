@@ -11,12 +11,12 @@ namespace IngameScript {
         public int Page;
         string Title;
         public Menu Previous;
-        readonly MenuModule Main;
+        readonly MenuModule mMain;
         List<MenuItem> Items;
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         public Menu(MenuModule aMain, ModuleBase aModule) {
             Title = $"{aModule.MenuName}";
-            Main = aMain;
+            mMain = aMain;
             onPage = aModule.onPage;
             //Items = MenuItems(0);
         }
@@ -24,7 +24,7 @@ namespace IngameScript {
         public static int PageNumber(int pageNumber, int itemCount) => Math.Abs(pageNumber % PageCount(itemCount));
         public Menu(MenuModule aMain, List<ModuleBase> aList) {
             Title = "Main Menu";
-            Main = aMain;
+            mMain = aMain;
             
             onPage = aPage => {
 
@@ -57,7 +57,7 @@ namespace IngameScript {
         }
 
         public Menu(MenuModule aMain, string aTitle, PaginationHandler aPaginator) {
-            Main = aMain;
+            mMain = aMain;
             Title = aTitle;
             onPage = aPaginator;
             //Items = MenuItems(0);
@@ -70,35 +70,35 @@ namespace IngameScript {
                 int selection = argument[0] - 48;
                 //ModuleManager.logger.persist($"Menu input: '{selection}'");
                 if (selection == 6) {
-                    Main.SetMenu(Previous, false);
-                    Main.UpdateRequired = true;
+                    mMain.SetMenu(Previous, false);
+                    mMain.UpdateRequired = true;
                 } else if (selection == 7) {
                     Page--;
-                    Main.UpdateRequired = true;
+                    mMain.UpdateRequired = true;
                 } else if (selection == 8) {
                     Page++;
-                    Main.UpdateRequired = true;
+                    mMain.UpdateRequired = true;
                 } else {
                     if (Items.Count > selection) {
                         HandleInput(Items[selection]);
                     }
                 }
             } else if (argument.Length > 1) {
-                ModuleManager.UserInput = argument;
-                Main.UpdateRequired = true;
+                mMain.mManager.UserInput = argument;
+                mMain.UpdateRequired = true;
             }
         }
         
         void HandleInput(MenuItem aMenuItem) {
             //Main.logger.persist($"Menu.HandleInput({aMenuItem});");
             if (aMenuItem.State is ModuleBase) {
-                Main.SetMenu(new Menu(Main, aMenuItem.State as ModuleBase));
+                mMain.SetMenu(new Menu(mMain, aMenuItem.State as ModuleBase));
             } else {
-                var menu = aMenuItem.Method?.Invoke(Main, aMenuItem.State);
+                var menu = aMenuItem.Method?.Invoke(mMain, aMenuItem.State);
                 if (menu != null) {
-                    Main.SetMenu(menu);
+                    mMain.SetMenu(menu);
                 } else {
-                    Main.UpdateRequired = true;
+                    mMain.UpdateRequired = true;
                 }
             }
         }
