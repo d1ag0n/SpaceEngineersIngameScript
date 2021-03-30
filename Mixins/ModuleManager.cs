@@ -7,7 +7,7 @@ using VRageMath;
 namespace IngameScript {
     public class ModuleManager {
         public readonly MyGridProgram mProgram;
-        readonly Lag mLag = new Lag(6);
+        readonly Lag mLag = new Lag(18);
         
         public double Runtime { get; private set; }
 

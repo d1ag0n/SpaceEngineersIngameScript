@@ -32,7 +32,7 @@ namespace IngameScript {
             if (mDistToDest < 10 || orbitStarted) {
                 orbitStarted = true;
                 
-                ctr.logger.log("Orbiting ", orbit);
+                //ctr.logger.log("Orbiting ", orbit);
                 Vector3D dir;
                 switch (orbit) {
                     case 0:
@@ -53,9 +53,9 @@ namespace IngameScript {
                 dir = proj - ctr.Grid.WorldVolume.Center;
                 var dist = dir.Normalize();
                 if (orbitLocked) {
-                    ctr.logger.log("Orbit is stable, distance to orbit state change ", dist - 10);
+                    //ctr.logger.log("Orbit is stable, distance to orbit state change ", dist - 10);
                 } else {
-                    ctr.logger.log("Orbit is unstable, distance to stable orbit ", dist - 10);
+                    //ctr.logger.log("Orbit is unstable, distance to stable orbit ", dist - 10);
                 }
                 if (dist < 10) {
                     orbitLocked = true;
@@ -69,13 +69,13 @@ namespace IngameScript {
                 ctr.Thrust.Acceleration = (desiredVelo - ctr.LocalLinearVelo);
                 ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
             } else {
-                ctr.logger.log("Approaching");
+                //ctr.logger.log("Approaching");
                 collisionDetectTo();
             }
-            ctr.logger.log("Orbit Mission Distance ", mDistToDest);
+            //ctr.logger.log("Orbit Mission Distance ", mDistToDest);
             var ops = new OPS(Volume.Center, Volume.Radius, ctr.Grid.WorldVolume.Center);
-            ctr.logger.log("Grid Radius: ", ctr.Grid.WorldVolume.Radius);
-            ctr.logger.log(ops);
+            //ctr.logger.log("Grid Radius: ", ctr.Grid.WorldVolume.Radius);
+            //ctr.logger.log(ops);
             
         }
     }

@@ -213,7 +213,7 @@ namespace IngameScript {
             var dispToDest = Volume.Center - wv.Center;
             mDirToDest = dispToDest;
             mDistToDest = mDirToDest.Normalize();
-            ctr.logger.log("mDistToDest ", mDistToDest);
+            //ctr.logger.log("mDistToDest ", mDistToDest);
             if (Volume.Radius > 0) {
                 Altitude = wv.Radius + Volume.Radius + PADDING;
                 Target = Volume.Center + -mDirToDest * Altitude;
@@ -221,13 +221,13 @@ namespace IngameScript {
                 mDirToDest = dispToDest;
                 mDistToDest = mDirToDest.Normalize();
             }
-            ctr.logger.log("BaseVelocityLength ", BaseVelocityLength);
+            //ctr.logger.log("BaseVelocityLength ", BaseVelocityLength);
 
             mPrefVelo = ctr.Thrust.PreferredVelocity(mMaxAccelLength, mDistToDest);
-            ctr.logger.log("mPrefVelo ", mPrefVelo);
+            //ctr.logger.log("mPrefVelo ", mPrefVelo);
             //mPrefVelo += BaseVelocityLength;
 
-            ctr.logger.log("mPrefVelo ", mPrefVelo);
+            //ctr.logger.log("mPrefVelo ", mPrefVelo);
 
             if (ctr.LinearVelocity == 0) {
                 mPrefVelo = 1.0;

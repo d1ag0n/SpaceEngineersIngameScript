@@ -162,28 +162,22 @@ namespace IngameScript {
                 logger.log("MotherAngularVelo ", MotherAngularVelo);
                 logger.log("delta ", d.ToString());
                 d += 1.0 / 60.0;
+                d += 1.0 / 60.0;
                 if (!MotherAngularVelo.IsZero()) {
-
-                    //var ng = MotherAngularVelo * 0.16;// * 10.0;
-                    var ng = MotherAngularVelo * d;// * 10.0;
+                    var ng = MotherAngularVelo * d;
                     var len = ng.Normalize();
                     var rot = MatrixD.CreateFromAxisAngle(ng, len);
                     rot.Translation = MotherCoM;
                     var comDisp = m.Translation - MotherCoM;
                     var comDir = comDisp;
                     var comLen = comDir.Normalize();
-                    
-                    //m = MatrixD.Transform(m, q);
                     m.Forward = Vector3D.TransformNormal(m.Forward, rot);
                     m.Up = Vector3D.TransformNormal(m.Up, rot);
                     m.Left = Vector3D.TransformNormal(m.Left, rot);
                     comDir = Vector3D.TransformNormal(comDir, rot);
                     m.Translation = MotherCoM + comDir * comLen;
                 }
-                //m.Translation += MotherVeloDir * (MotherSpeed * 0.135);
-                
                 m.Translation += MotherVeloDir * (MotherSpeed * d);
-                //logger.log(logger.gps("Prediction", m.Translation));
                 return m;
             }
             private set {
@@ -262,7 +256,7 @@ namespace IngameScript {
                     logger.persist("MISSION COMPLETE");
                     Mission = null;
                 } else {
-                    logger.log("MISSION UNDERWAY");
+                    //logger.log("MISSION UNDERWAY");
                     Mission.Update();
                 }
             }

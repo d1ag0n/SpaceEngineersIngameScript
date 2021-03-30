@@ -5,14 +5,11 @@ using VRageMath;
 namespace IngameScript {
     
     public class ThrustList : BlockDirList<IMyThrust> {
-        public double LeftForce => forces[2];
-        public double RightForce => forces[3];
-        public double UpForce => forces[4];
-        public double DownForce => forces[5];
-        public double FrontForce => forces[0];
-        public double BackForce => forces[1];
+
         double[] forces = new double[6];
         readonly ThrustModule mThrust;
+        int xIndex, yIndex, zIndex;
+        double xForce, yForce, zForce;
 
         public ThrustList(ThrustModule aThrust) {
             mThrust = aThrust;
@@ -27,10 +24,15 @@ namespace IngameScript {
         // Up = 4,
         // Down = 5
         public void Update(Vector3D aAccel, double aMass, bool emergency = false) {
-            Vector3D original = aAccel;
-            //ModuleManager.logger.log("original", original);
-            int f = 0, b = 1, l = 2, r = 3, u = 4, d = 5;
-            if (aAccel.Z < 0) {
+
+            // converting to force here
+            var z = aAccel.Z * aMass;
+            var x = aAccel.X * aMass;
+            var y = aAccel.Y * aMass;
+            
+            // list indices
+            int b = 0, f = 1, l = 2, r = 3, u = 4, d = 5;
+            /*if (aAccel.Z < 0) {
                 f = 1; b = 0;
             }
             if (aAccel.X < 0) {
@@ -38,16 +40,9 @@ namespace IngameScript {
             }
             if (aAccel.Y > 0) {
                 u = 5; d = 4;
-            }
-            
-                // converting to force here
-            var z = Math.Abs(aAccel.Z) * aMass;
-            var x = Math.Abs(aAccel.X) * aMass;
-            var y = Math.Abs(aAccel.Y) * aMass;
+            }*/
 
-            if (emergency) {
-                mThrust.logger.log("EMERGENCY!");
-            } else {
+            if (!emergency) {
                 double ratio = forces[f] / z;
                 double tempRatio = forces[l] / x;
                 if (tempRatio < ratio) {
@@ -63,16 +58,40 @@ namespace IngameScript {
                     y *= ratio;
                 }
             }
-            
-            var applied = new Vector3D(handleLists(x, l, r), handleLists(y, u, d), handleLists(z, f, b));
-            if (aAccel.Z < 0) {
-                applied.Z *= -1.0;
+
+            handleLists(x, ref xForce, ref xIndex, l, r);
+            handleLists(y, ref yForce, ref yIndex, u, d);
+            handleLists(z, ref zForce, ref zIndex, f, b);
+        }
+        // got this idea from Elfi not sure if it's what he was planning but..
+        // move up/down thrust axes, remember index and force applied
+        // onlt hit thrusters required to change the force Sto match
+        // copied some of his pattern for this since I was struggling
+        void handleLists(double aForce, ref double aCurrent, ref int aIndex, int aUp, int aDown) {
+            var delta = aForce - aCurrent;
+            int inc = Math.Sign(delta);
+            if (aIndex == 0) {
+                aIndex += inc;
             }
-            if (aAccel.X < 0) {
-                applied.X *= -1.0;
-            }
-            if (aAccel.Y < 0) {
-                applied.Y *= -1.0;
+            while (delta != 0.0) {
+                var list = mLists[aIndex > 0 ? aUp : aDown];
+                var absIndex = Math.Abs(aIndex);
+                var t = list[absIndex - 1];
+                var tmax = t.MaxEffectiveThrust;
+                var tp = t.ThrustOverridePercentage;
+                double change;
+                if (delta > 0) {
+                    change = Math.Min((1.0 - tp) * tmax, delta);
+                    t.ThrustOverridePercentage += (float)change / tmax;
+                    delta -= change;
+                    aCurrent += change;
+                } else {
+                    change = Math.Min(tp * tmax, Math.Abs(delta));
+                    t.ThrustOverridePercentage += (float)change / tmax;
+                    delta += change;
+                    aCurrent -= change;
+                }
+                aIndex += inc;
             }
         }
         public void AllStop() {
@@ -130,16 +149,7 @@ namespace IngameScript {
             return result;
         }
 
-        double handleLists(double aForce, int aUse, int aDisable) {
-            var forceSum = 0.0;
-            foreach (var t in mLists[aDisable]) {
-                if (t.Enabled) t.Enabled = false;
-                forceSum += t.MaxEffectiveThrust;
-            }
-            forces[aDisable] = forceSum;
 
-            return runList(aForce, aUse);
-        }
 
         double runList(double aForce, int aList) {
             double applied = 0;

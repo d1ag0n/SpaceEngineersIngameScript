@@ -22,8 +22,6 @@ namespace IngameScript {
         }
         public void Add(T aBlock) {
             aBlock.CustomName = aBlock.Orientation.Forward.ToString();
-            aBlock.ShowInTerminal = 
-            aBlock.ShowOnHUD = false;
             mLists[(int)aBlock.Orientation.Forward].Add(aBlock);
         }
     }
