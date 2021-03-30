@@ -145,7 +145,7 @@ namespace IngameScript {
                     mThrust.Add(b);
                 }
             }
-            mThrust.CalculateForces();
+            
             onUpdate = UpdateAction;
         }
         bool updateRequired = false;

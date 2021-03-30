@@ -41,7 +41,7 @@ namespace IngameScript {
         protected BoundingSphereD mDestination;
         protected readonly ThyDetectedEntityInfo mEntity;
 
-        protected double PADDING = 20.0;
+        protected double PADDING = 10.0;
         protected double MAXVELO = 80.0;
         protected double mPreferredVelocityFactor = 1;
         protected double mMaxAccelLength;
@@ -240,10 +240,10 @@ namespace IngameScript {
         protected void FlyTo(double maxVelo = 100.0) {
 
             ctr.Damp = false;
-            var distSq = mDistToDest * mDistToDest;
-            var stopDistSq = mStop * mStop;
-            var syncVelo = ctr.ShipVelocities.LinearVelocity - BaseVelocity;
-            var syncVeloLen = syncVelo.Length();
+            //var distSq = mDistToDest * mDistToDest;
+            //var stopDistSq = mStop * mStop;
+            //var syncVelo = ctr.ShipVelocities.LinearVelocity - BaseVelocity;
+            //var syncVeloLen = syncVelo.Length();
             var accelerating = mPrefVelo > ctr.LinearVelocity;
 
             var curVelo = ctr.LocalLinearVelo;
@@ -266,7 +266,7 @@ namespace IngameScript {
                 curVelo -= localBase;
             }
 
-            ctr.Damp = false;
+            
 
             var disp = (veloVec - curVelo);
 
@@ -284,7 +284,7 @@ namespace IngameScript {
             var wv = ctr.Volume;
             var m = ctr.MyMatrix;
             var worldDir = collisionDetect();
-
+            ctr.Damp = false;
             if (worldDir.IsZero()) {
                 worldDir = mDirToDest;
                 ctr.logger.log("Following vector to destination.");
@@ -311,14 +311,11 @@ namespace IngameScript {
 
             if (mDistToDest < 1) {
                 ctr.Gyro.SetTargetDirection(ctr.Thrust.Acceleration = Vector3D.Zero);
-                ctr.Damp = true;
             } else if (mDistToDest < 100) {
-                ctr.Damp = false;
 
                 ctr.Thrust.Acceleration = (mDistToDest * mDistToDest > 2.0 ? 6.0 : 1.0) * accelReq;
                 ctr.Gyro.SetTargetDirection(Vector3D.Zero);
             } else {
-                ctr.Damp = false;
                 ctr.Thrust.Acceleration = 6.0 * accelReq;
                 ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
             }

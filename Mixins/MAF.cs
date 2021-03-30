@@ -153,7 +153,7 @@ namespace IngameScript
         Dependencies: AngleBetween
         modified by d1ag0n for pitch and roll
         */
-        static void getRotationAnglesFromDown(MatrixD world, Vector3D targetVector, out double pitch, out double roll) {
+        public static void getRotationAnglesFromDown(MatrixD world, Vector3D targetVector, out double pitch, out double roll) {
             var localTargetVector = Vector3D.TransformNormal(targetVector, MatrixD.Transpose(world));
             var flattenedTargetVector = new Vector3D(0, localTargetVector.Y, localTargetVector.Z);
 

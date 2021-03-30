@@ -43,7 +43,7 @@ namespace IngameScript
                     init();
                 }
                 mMenuItems.Clear();
-                mMenuItems.Add(new MenuItem("Activate", Nactivate));
+                mMenuItems.Add(new MenuItem(Active ? "Activate" : "Deactivate", Nactivate));
                 mMenuItems.Add(new MenuItem("Configurator", null, ConfigAction));
                 return mMenuItems;
             };
@@ -106,7 +106,10 @@ namespace IngameScript
 
         public float Roll;
         public float Yaw;
-
+        Vector3D _RollTarget;
+        public void SetRollTarget(Vector3D aWorld) {
+            _RollTarget = aWorld;
+        }
 
         public void SetTargetDirection(Vector3D aWorld) {
             calcDirection = false;
@@ -274,9 +277,6 @@ namespace IngameScript
                 yaw *= smallFact;
             }
 
-
-
-
             var pv = av.X;
             var yv = -av.Y;
 
@@ -317,10 +317,16 @@ namespace IngameScript
                     }
                 }
             }
-
-
             pitch += pitchDif;
-            yaw += yawDif;            
+            yaw += yawDif;
+            if (!_RollTarget.IsZero()) {
+                //var ab = (float)MAF.angleBetween(m.Down, Vector3D.Normalize(_RollTarget - m.Translation));
+                double rp, rr;
+                var dir = Vector3D.Normalize(_RollTarget - MyMatrix.Translation);
+                MAF.getRotationAnglesFromDown(m, dir, out rp, out rr);
+                logger.log($"Roll={rr}");
+                Roll = (float)rr;
+            }
             applyGyroOverride(m, pitch, Yaw == 0f ? yaw : Yaw, Roll);
         }
 

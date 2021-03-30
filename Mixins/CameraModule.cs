@@ -38,7 +38,6 @@ namespace IngameScript
             return result;
         }
         void ClusterAction() {
-            //logger.persist("ClusterAction");
             if (mCurrentIncoming == null) {
                 if (mIncoming.Count > 0) {
                     mClusterI = mDetected.Count - 1;
@@ -74,7 +73,7 @@ namespace IngameScript
                 var target = mDetected[mClusterI];
                 //logger.persist($"target is clusterable {target.IsClusterable}");
                 if (target.IsClusterable) {
-                    var incomingWV = BoundingSphereD.CreateFromBoundingBox(mCurrentIncoming.Value.BoundingBox);
+                    var incomingWV = new BoundingSphereD(mCurrentIncoming.Value.HitPosition.Value, 1.0);
                     var sqdist = (target.WorldVolume.Center - incomingWV.Center).LengthSquared();
                     //logger.persist($"sqdist {sqdist}");
                     if (sqdist < 1048576) {
@@ -170,7 +169,8 @@ namespace IngameScript
 
         public void AddNew(MyDetectedEntityInfo aEntity, out ThyDetectedEntityInfo thy) {
             if (aEntity.EntityId == 0) {
-                throw new Exception();
+                thy = null;
+                return;
             }
 
             thy = Find(aEntity.EntityId);
@@ -178,10 +178,10 @@ namespace IngameScript
                 mIncoming.Enqueue(aEntity); 
                 //logger.persist("CameraModule.AddNew - new unrecognized entity added to queue");
                 if (onUpdate == null) {
-                    logger.persist("assigning ClusterAction");
                     onUpdate = ClusterAction;
                 }
             } else {
+                
                 thy.Seen(aEntity);
                 //logger.persist($"CameraModule.AddNew - updating {thy.Name}");
             }

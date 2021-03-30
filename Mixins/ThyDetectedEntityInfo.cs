@@ -33,14 +33,14 @@ namespace IngameScript {
             switch (Type) {
                 case ThyDetectedEntityType.Asteroid:
                 case ThyDetectedEntityType.AsteroidCluster:
-                case ThyDetectedEntityType.Planet:
-                    WorldVolume = WorldVolume.Include(BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox));
+                    WorldVolume = WorldVolume.Include(new BoundingSphereD(entity.HitPosition.Value, 1.0));
                     break;
                 default:
                     WorldVolume = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
                     break;
             }
-            
+            TimeStamp = DateTime.Now;
+
             if (entity.HitPosition.HasValue) {
                 HitPosition = entity.HitPosition;
             }
@@ -76,7 +76,7 @@ namespace IngameScript {
             Velocity = aEntity.Velocity;
             Relationship = aEntity.Relationship;
             TimeStamp = DateTime.Now;
-            WorldVolume = BoundingSphereD.CreateFromBoundingBox(aEntity.BoundingBox);
+            WorldVolume = new BoundingSphereD(aEntity.HitPosition.Value, 1.0);
         }
 
         public void SetName(string aName) {

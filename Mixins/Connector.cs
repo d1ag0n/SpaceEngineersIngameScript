@@ -21,8 +21,8 @@ namespace IngameScript {
                 if (_Reserved != value) {
                     CanRelease = false;
                     _Reserved = value;
-                    ReserveSet = MAF.Now;
                 }
+                ReserveSet = MAF.Now;
             }
         }
         bool CanRelease;

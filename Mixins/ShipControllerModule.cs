@@ -148,7 +148,6 @@ namespace IngameScript {
 
         public Vector3D MotherVeloAt(Vector3D aPos) {
             if (MotherAngularVelo.IsZero()) {
-                logger.log("Zero velo at");
                 return Vector3D.Zero;    
             }
             return MotherAngularVelo.Cross(MAF.local2pos(aPos, _MotherMatrix) - MotherCoM);
@@ -165,24 +164,14 @@ namespace IngameScript {
                 var d = mManager.Runtime - MotherLastUpdate;
                 //d += 0.0166;
                 
-                logger.log("Runtime ", mManager.Runtime);
-                logger.log("MotherAngularVelo ", MotherAngularVelo);
-                logger.log("delta ", d.ToString());
-                d += 1.0 / 60.0;
                 d += 1.0 / 60.0;
                 if (!MotherAngularVelo.IsZero()) {
                     var ng = MotherAngularVelo * d;
                     var len = ng.Normalize();
                     var rot = MatrixD.CreateFromAxisAngle(ng, len);
-                    rot.Translation = MotherCoM;
                     var comDisp = m.Translation - MotherCoM;
-                    var comDir = comDisp;
-                    var comLen = comDir.Normalize();
-                    m.Forward = Vector3D.TransformNormal(m.Forward, rot);
-                    m.Up = Vector3D.TransformNormal(m.Up, rot);
-                    m.Left = Vector3D.TransformNormal(m.Left, rot);
-                    comDir = Vector3D.TransformNormal(comDir, rot);
-                    m.Translation = MotherCoM + comDir * comLen;
+                    m *= rot;
+                    m.Translation = MotherCoM + Vector3D.Transform(comDisp, rot);
                 }
                 m.Translation += MotherVeloDir * (MotherSpeed * d);
                 return m;

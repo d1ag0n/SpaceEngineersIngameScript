@@ -67,11 +67,12 @@ namespace IngameScript {
                 BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
                 BaseVelocity += veloAtPos;
                 base.Update();
-                if (mDistToDest < 0.5) {
+                ctr.logger.log($"mDistToDest={mDistToDest}");
+                if (mDistToDest < 1.0) {
                     atc.Connector.Enabled = true;
                     if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
-                        atc.Dock.Reserved = MAF.Epoch;
-
+                        ctr.Thrust.Acceleration = Vector3D.Zero;
+                        return;
                     }
                 } else {
                     atc.Connector.Enabled = false;

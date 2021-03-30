@@ -28,8 +28,20 @@ namespace IngameScript {
             mIGC = new IGC(this);
             controller = new ShipControllerModule(this);
         }
+        /// <summary>
+        /// https://discord.com/channels/125011928711036928/216219467959500800/755140967517913148
+        /// </summary>
+        /// <param name="block"></param>
+        /// <returns></returns>
+        float GetTerminalBlockHealth(IMyTerminalBlock block) {
+            IMySlimBlock slimblock = block.CubeGrid.GetCubeBlock(block.Position);
+            float maxIntegrity = slimblock.MaxIntegrity;
+            float buildIntegrity = slimblock.BuildIntegrity;
+            float currentDamage = slimblock.CurrentDamage;
+            float health = (buildIntegrity - currentDamage) / maxIntegrity;
+            return health;
+        }
 
-        
         public double Lag => mLag.Value;
         public string UserInput = "DEFAULT";
         readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
@@ -130,6 +142,7 @@ namespace IngameScript {
             
             mRegistry.Clear();
             mBlocks.Clear();
+            
             
             mProgram.GridTerminalSystem.GetBlocksOfType(mBlocks, block => {
                 addByGrid(block);

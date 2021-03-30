@@ -52,7 +52,7 @@ namespace IngameScript
                 if (c.ReservedBy == e.Message.Source) {
                     unReserved = c;
                     break;
-                } else if (!c.Reserved) {
+                } else if (!c.Reserved) { 
                     unReserved = c;
                 }
             }
@@ -67,6 +67,7 @@ namespace IngameScript
             if (mManager.mProgram.IGC.SendUnicastMessage(m.Source, "Dock", msg.Box())) {
                 c.Reserved = true;
                 c.ReservedBy = m.Source;
+
             }
         }
     }
