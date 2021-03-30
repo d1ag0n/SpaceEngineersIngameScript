@@ -15,6 +15,26 @@ namespace IngameScript {
             mThrust = aThrust;
         }
 
+        public void CalculateForces() {
+            xForce = yForce = zForce = xIndex = yIndex = zIndex = 0;
+
+            for (int i = 0; i < 6; i++) {
+                forces[i] = 0;
+                foreach (var t in mLists[i]) {
+                    forces[i] += t.MaxEffectiveThrust;
+                    t.ThrustOverridePercentage = 0f;
+                    t.Enabled = true;
+                }
+            }
+        }
+        readonly int b = 0, f = 1, l = 2, r = 3, u = 4, d = 5;
+
+        public void AllStop() {
+            handleLists(-xForce, ref xForce, ref xIndex, l, r);
+            handleLists(-yForce, ref yForce, ref yIndex, u, d);
+            handleLists(-zForce, ref zForce, ref zIndex, f, b);
+        }
+
         // todo index based acceleration modification, track how many thrusters currently powered to full
 
         // Forward = 0,
@@ -31,7 +51,7 @@ namespace IngameScript {
             var y = aAccel.Y * aMass;
             
             // list indices
-            int b = 0, f = 1, l = 2, r = 3, u = 4, d = 5;
+            
             /*if (aAccel.Z < 0) {
                 f = 1; b = 0;
             }
@@ -67,43 +87,65 @@ namespace IngameScript {
         // move up/down thrust axes, remember index and force applied
         // onlt hit thrusters required to change the force Sto match
         // copied some of his pattern for this since I was struggling
+        bool fail = false;
         void handleLists(double aForce, ref double aCurrent, ref int aIndex, int aUp, int aDown) {
+            if (fail)
+                return;
             var delta = aForce - aCurrent;
             int inc = Math.Sign(delta);
             if (aIndex == 0) {
                 aIndex += inc;
             }
+            var originalDelta = delta;
             while (delta != 0.0) {
                 var list = mLists[aIndex > 0 ? aUp : aDown];
                 var absIndex = Math.Abs(aIndex);
-                var t = list[absIndex - 1];
+                IMyThrust t = null;
+                try {
+
+                    t = list[absIndex - 1];
+                } catch(Exception ex)  {
+                    fail = true;
+                    throw new Exception($"Tried to get absIndex {absIndex - 1}, delta={delta}, originalDelta={originalDelta}");
+                }
                 var tmax = t.MaxEffectiveThrust;
                 var tp = t.ThrustOverridePercentage;
                 double change;
-                if (delta > 0) {
+                if (delta > 0d && inc > 0 || delta < 0d && inc < 0) {
                     change = Math.Min((1.0 - tp) * tmax, delta);
+                    if (change == 0.0) {
+                        mThrust.logger.persist($"+delta={delta}, change={change}, tp={tp}, tmax={tmax}");
+                        fail = true;
+                        return;
+                    }
+                    mThrust.logger.persist($"+delta={delta}, change={change}");
                     t.ThrustOverridePercentage += (float)change / tmax;
                     delta -= change;
                     aCurrent += change;
                 } else {
                     change = Math.Min(tp * tmax, Math.Abs(delta));
+                    if (change == 0.0) {
+                        //-delta=-916266.285922977, change=0, tp=0, tmax=4320000
+                        mThrust.logger.persist($"-delta={delta}, change={change}, tp={tp}, tmax={tmax}");
+                        fail = true;
+                        return;
+                    }
+                    mThrust.logger.persist($"-delta={delta}, change={change}");
                     t.ThrustOverridePercentage += (float)change / tmax;
+
                     delta += change;
                     aCurrent -= change;
                 }
-                aIndex += inc;
-            }
-        }
-        public void AllStop() {
-            foreach (var list in mLists) {
-                foreach (var t in list) {
-                    t.Enabled = false;
+                if (delta != 0.0) {
+                    aIndex += inc;
+                    
                 }
             }
         }
+
         public Vector3D MaxAccel(Vector3D aLocalVec, double aMass) {
-            //ModuleManager.logger.log("aLocalVec", aLocalVec);
-            //ModuleManager.logger.log("aMass ", aMass);
+            mThrust.logger.log("aLocalVec", aLocalVec);
+            
             int f = 0, l = 2, u = 4;
             if (aLocalVec.Z < 0) {
                 f = 1;

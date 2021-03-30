@@ -93,7 +93,10 @@ namespace IngameScript {
             return mThrust.MaxAccel(aLocalVelo, controller.Mass); 
         }
         public double PreferredVelocity(double aMaxAccel, double dist) {
+            if (aMaxAccel == 0)
+                return 1.0;
             return 0.91 * Math.Sqrt(2 * aMaxAccel * dist);
+
         }
 
         Vector3D _Acceleration;
@@ -142,6 +145,7 @@ namespace IngameScript {
                     mThrust.Add(b);
                 }
             }
+            mThrust.CalculateForces();
             onUpdate = UpdateAction;
         }
         bool updateRequired = false;

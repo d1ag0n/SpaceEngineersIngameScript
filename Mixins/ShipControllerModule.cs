@@ -94,6 +94,13 @@ namespace IngameScript {
                 return mMenuMethods;
             };
         }
+        public override bool Accept(IMyTerminalBlock aBlock) {
+            var result = base.Accept(aBlock);
+            if (result) {
+                (aBlock as IMyShipController).DampenersOverride = false;
+            }
+            return result;
+        }
         void InitializeAction() {
             var result = true;
             if (Gyro == null) {
