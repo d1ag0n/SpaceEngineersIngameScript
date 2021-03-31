@@ -49,11 +49,13 @@ namespace IngameScript {
                 if (CurrentMenu == null) {
                     CurrentMenu = mManager.MainMenu(this);
                 }
-                var str = CurrentMenu.Update();
-                foreach (var tp in Blocks) {
-                    tp.WriteText(str);
-                }
                 UpdateRequired = false;
+                var str = CurrentMenu.Update();
+                if (str != null) {
+                    foreach (var tp in Blocks) {
+                        tp.WriteText(str);
+                    }
+                }
             }
         }
     }

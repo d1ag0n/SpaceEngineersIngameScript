@@ -2,6 +2,8 @@ using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
+using Sandbox.ModAPI.Interfaces;
+
 namespace IngameScript {
     public  class OrbitMission : MissionBase {
         Vector3D orbit;
@@ -13,9 +15,16 @@ namespace IngameScript {
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
         public OrbitMission(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) : base(aController, aEntity) {
-            orbit = Vector3D.Normalize(mEntity.Position - ctr.Volume.Center);
+            orbit = Vector3D.Normalize(ctr.Volume.Center - mEntity.Position);
+            calculateOrbitMatrix();
+        }
+
+        void calculateOrbitMatrix() {
+            orbitIncrements = 0;
+            ctr.logger.persist("Recaclculating Orbital Matrix");
             orbit.CalculatePerpendicularVector(out orbitAxis);
-            MatrixD.CreateFromAxisAngle(ref orbitAxis, 0.1, out orbitMatrix);
+            MatrixD.CreateFromAxisAngle(ref orbitAxis, -0.1, out orbitMatrix);
+            Vector3D.Transform(orbitAxis, orbitMatrix);
         }
 
         Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - ctr.Volume.Center);
@@ -26,6 +35,10 @@ namespace IngameScript {
         }
         void incOrbit() {
             orbitIncrements++;
+            var tot = orbitIncrements * 0.1;
+            if (tot > MathHelperD.TwoPi) {
+                calculateOrbitMatrix();
+            }
             Vector3D.TransformNormal(ref orbit, ref orbitMatrix, out orbit);
         }
         
@@ -38,7 +51,6 @@ namespace IngameScript {
         public override void Update() {
             ctr.logger.log($"mEntity.WorldVolume.Radius={mEntity.WorldVolume.Radius}");
             ctr.Damp = false;
-
  
             var dest = orbitProj();
             var disp = dest - ctr.Volume.Center;
@@ -92,10 +104,45 @@ namespace IngameScript {
             MyDetectedEntityInfo entity;
             ThyDetectedEntityInfo thy;
             ctr.Camera.Scan(scanPos, out entity, out thy);
+            if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
+                ore(thy, scanPos);
+            }
             scanPos = wv.Center + ctr.LinearVelocityDirection * wv.Radius * 2.0;
             scanPos += MAF.ranDir() * wv.Radius * 2.0;
             ctr.Camera.Scan(scanPos, out entity, out thy);
             
+        }
+        List<IMyOreDetector> detectors;
+        void ore(ThyDetectedEntityInfo thy, Vector3D aPos) {
+            if (detectors == null) {
+                detectors = new List<IMyOreDetector>();
+                ctr.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(detectors);
+                var blackList = "Stone";
+                foreach (var detector in detectors) {
+                    detector.SetValue("OreBlacklist", blackList);
+                    if (detector.GetValue<string>("OreBlacklist") != blackList) {
+                        ctr.logger.persist("OreBlacklist Inequal");
+                    }
+                }
+            }
+
+            foreach (var detector in detectors) {
+                detector.SetValue("RaycastTarget", aPos);
+                var res = detector.GetValue<MyDetectedEntityInfo>("RaycastResult");
+                if (res.Name == "") {
+                    break;
+                }
+                
+                
+                if (res.TimeStamp != 0) {
+                    if (thy.AddOre(res)) {
+                        ctr.logger.persist($"New {res.Name} Deposit found!");
+                    }
+                }
+                //detector.SetValue("ScanEpoch", 0L);
+                //throw new Exception("shouldnt be able to write ScanEpoch");
+            }
+
         }
     }
 }

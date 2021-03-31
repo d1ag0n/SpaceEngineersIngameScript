@@ -105,10 +105,14 @@ namespace IngameScript {
 
         public string Update() {
             var index = Page * 6;
-            
+
             mWork.AppendLine(Title);
             int count = 0;
             Items = onPage(Page);
+            if (Items == null) {
+                return null;
+            }
+
             foreach (var item in Items) {
                 mWork.Append(++count);
                 mWork.Append(' ');
@@ -123,9 +127,9 @@ namespace IngameScript {
                 } else {
                     mWork.AppendLine(item.Name);
                 }
-                
+
             }
-            
+
             while (count < 7) {
                 count++;
                 mWork.AppendLine();

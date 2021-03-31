@@ -9,6 +9,25 @@ namespace IngameScript {
 
         static HashSet<string> names = new HashSet<string>();
         static readonly NameGen _namer = new NameGen();
+        public readonly HashSet<string> mOreTypes = new HashSet<string>();
+        readonly HashSet<Vector3L> mOreRegistry = new HashSet<Vector3L>();
+        readonly List<MyDetectedEntityInfo> mOres = new List<MyDetectedEntityInfo>();
+
+        // true if type of ore added is new to this asterois/cluster
+        public bool AddOre(MyDetectedEntityInfo e) {
+            if (e.HitPosition.HasValue) {
+                Vector3L pos;
+                var hit = e.HitPosition.Value;
+                pos.X = (long)hit.X;
+                pos.Y = (long)hit.Y;
+                pos.Z = (long)hit.Z;
+                if (mOreRegistry.Add(pos)) {
+                    mOres.Add(e);
+                    return mOreTypes.Add(e.Name);
+                }
+            }
+            return false;
+        }
         public static string GenerateName() {
             string result;
             do { result = _namer.Next(MAF.random.Next(2, 4)); } while (names.Contains(result));

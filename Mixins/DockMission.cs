@@ -71,7 +71,10 @@ namespace IngameScript {
                 if (mDistToDest < 1.0) {
                     atc.Connector.Enabled = true;
                     if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
+                        atc.Connector.Connect();
                         ctr.Thrust.Acceleration = Vector3D.Zero;
+                        return;
+                    } else if (atc.Connector.Status == MyShipConnectorStatus.Connected) {
                         return;
                     }
                 } else {

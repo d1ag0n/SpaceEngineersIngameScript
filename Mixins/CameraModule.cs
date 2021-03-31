@@ -198,6 +198,10 @@ namespace IngameScript
             return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => {
                 p = p % 2;
                 mMenuItems.Clear();
+                if (deleted) {
+                    aMain.Input("6");
+                    return null;
+                }
                 if (deleted || p == 0) {
                     var ts = (DateTime.Now - e.TimeStamp).TotalHours;
                     mMenuItems.Add(new MenuItem($"Time: {e.TimeStamp} ({ts:f2} hours ago)"));
@@ -209,9 +213,11 @@ namespace IngameScript
                         mMenuItems.Add(new MenuItem($"Rename to '{mManager.UserInput}'", aState, renameRecord));
                     }
                 } else {
-                    if (!deleted) {
-                        mMenuItems.Add(new MenuItem("Delete Record", aState, deleteRecord));
+                    if (e.mOreTypes.Count > 0) {
+                        mMenuItems.Add(new MenuItem("Ores: " + string.Join(", ", e.mOreTypes)));
                     }
+                    mMenuItems.Add(new MenuItem("Delete Record", aState, deleteRecordConfirm));
+
                 }
                 
                 return mMenuItems;
@@ -221,10 +227,29 @@ namespace IngameScript
             ((ThyDetectedEntityInfo)aState).SetName(mManager.UserInput);
             return null;
         }
+        Menu deleteRecordConfirm(MenuModule aMain, object aState) {
+
+            if (mIncoming.Count > 0) {
+                logger.persist($"Clustering in process please wait to delete.");
+            } else {
+                if (deleted) {
+                    aMain.Input("6");
+                } else {
+                    return new Menu(aMain, "Confirm Deletion", p => {
+                        var list = new List<MenuItem>();
+                        list.Add(new MenuItem("Yes", aState, deleteRecord));
+                        return list;
+                    });
+                }
+            }
+            return null;
+
+        }
         Menu deleteRecord(MenuModule aMain, object aState) {
             if (mIncoming.Count > 0) {
                 logger.persist($"Clustering in process please wait to delete."); 
             } else {
+                aMain.Input("6");
                 var thy = aState as ThyDetectedEntityInfo;
                 deleted = mDetected.Remove(thy);
                 mLookup.Remove(thy.EntityId);
