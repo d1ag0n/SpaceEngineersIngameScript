@@ -124,7 +124,9 @@ namespace IngameScript
             if (localTargetVector.X < 0)
                 yaw = -yaw;
         }
-
+        // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
+        // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
+        // var obb = new MyOrientedBoundingBoxD(bb, grid.WorldMatrix);
         public static MyOrientedBoundingBoxD obb(IMyCubeGrid aGrid, double aInflate = 0) {
 
 
@@ -139,12 +141,10 @@ namespace IngameScript
                 bb = aGrid.WorldAABB.Inflate(aInflate);
             }
 
-            return new MyOrientedBoundingBoxD(bb, aGrid.WorldMatrix);
-            /*obb.GetCorners(arCorners, 0);
             
-            for (int i = 0; i < arCorners.Length; i++) {
-                logger.log(logger.gps("obb" + i, arCorners[i]));
-            }*/
+
+            return new MyOrientedBoundingBoxD(bb, aGrid.WorldMatrix);
+            
         }
 
         /*

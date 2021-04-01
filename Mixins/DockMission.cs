@@ -6,7 +6,7 @@ namespace IngameScript {
     /// <summary>
     /// Clustering Orbital Collision Mitigation
     /// </summary>
-    class CBoxMission : MissionBase {
+    class DockMission : MissionBase {
         
         readonly ATCLientModule atc;
         BoxInfo BoxCurrent;
@@ -15,10 +15,8 @@ namespace IngameScript {
         
         int emptyScans = 0;
         MyDetectedEntityInfo drillTarget;
-        public CBoxMission(ShipControllerModule aController, ATCLientModule aClient, BoundingSphereD aSphere) : base(aController, aSphere) {
+        public DockMission(ShipControllerModule aController, ATCLientModule aClient) : base(aController, default(BoundingSphereD)) {
             atc = aClient;
-            atc.Connector.Enabled = false;
-
         }
 
         public override void Update() {
@@ -34,7 +32,7 @@ namespace IngameScript {
                         ctr.logger.log("Mother not scanned");
                     }
                 }
-                ctr.Damp = false;
+                ctr.Thrust.Damp = false;
                 //ctr.logger.log("atc.Dock.Connector", atc.Dock.Connector);
                 //ctr.logger.log("ctr.MotherMatrix", ctr.MotherMatrix);
                 Vector3D pos = atc.Dock.theConnector * 2.5;
@@ -73,8 +71,12 @@ namespace IngameScript {
                     if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
                         atc.Connector.Connect();
                         ctr.Thrust.Acceleration = Vector3D.Zero;
+                        ctr.Gyro.SetTargetDirection(Vector3D.Zero);
                         return;
                     } else if (atc.Connector.Status == MyShipConnectorStatus.Connected) {
+                        if (ctr.cargoLevel() == 0d) {
+                            Complete = true;
+                        }
                         return;
                     }
                 } else {
@@ -93,7 +95,7 @@ namespace IngameScript {
             if (BoxCurrent.IsReservedBy(ctr.EntityId)) {
                 
             } else {
-                ctr.Damp = true;
+                ctr.Thrust.Damp = true;
                 ctr.logger.log("Acquiring reservation ", BoxCurrent.Position);
             }
         }

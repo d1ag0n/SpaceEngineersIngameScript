@@ -1,7 +1,6 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using VRage;
 using VRageMath;
 
@@ -23,9 +22,12 @@ namespace IngameScript
             }
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
-            var result = base.Accept(aBlock);
-            if (result) {
-                mConnectors.Add(new Connector(aBlock as IMyShipConnector));
+            var result = false;
+            if (aBlock.CustomData.Contains("#dock")) {
+                result = base.Accept(aBlock);
+                if (result) {
+                    mConnectors.Add(new Connector(this, aBlock as IMyShipConnector));
+                }
             }
             return result;
         }

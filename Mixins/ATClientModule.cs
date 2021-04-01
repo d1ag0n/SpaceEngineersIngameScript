@@ -8,6 +8,8 @@ namespace IngameScript {
         const double reserveInterval = 1.0;
         DateTime reserveRequest;
         public DockMsg Dock;
+
+        public bool connected => Connector.Status == MyShipConnectorStatus.Connected;
         public IMyShipConnector Connector {
             get;private set;
         }

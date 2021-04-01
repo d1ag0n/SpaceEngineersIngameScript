@@ -1,6 +1,7 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
+using VRage.Game;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
@@ -100,6 +101,13 @@ namespace IngameScript
                 s.unt("Record");
                 s.str(e);
                 one = true;
+                foreach (var o in e.mOres) {
+                    s.rec();
+                    s.unt("Ore");
+                    s.str(e.EntityId);
+                    s.str(o.Name);
+                    s.str(o.HitPosition.Value);
+                }
             }
             foreach(var p in mClusterLookup) {
                 if (one) {
@@ -120,7 +128,7 @@ namespace IngameScript
                     var entries = entry[1].Split(s.NL, StringSplitOptions.None);
                     if (entries.Length > 0) {
                         IEnumerable<string> elements = entries;
-                        
+
                         using (var en = elements.GetEnumerator()) {
                             en.MoveNext();
                             var thy = s.objThyDetectedEntityInfo(en);
@@ -132,6 +140,24 @@ namespace IngameScript
                     var entries = entry[1].Split(s.NL, StringSplitOptions.None);
                     if (entries.Length > 0) {
                         mClusterLookup[s.objlong(entries[0])] = s.objlong(entries[1]);
+                    }
+                } else if (entry[0] == "Ore") {
+                    var entries = entry[1].Split(s.NL, StringSplitOptions.None);
+                    if (entries.Length > 0) {
+                        IEnumerable<string> elements = entries;
+                        using (var en = elements.GetEnumerator()) {
+                            en.MoveNext();
+                            var id = s.objlong(en);
+                            var name = s.objstring(en);
+                            var pos = s.objVector3D(en);
+                            ThyDetectedEntityInfo thy;
+                            if (mLookup.TryGetValue(id, out thy)) {
+                                thy.AddOre(
+                                    new MyDetectedEntityInfo(0, name, MyDetectedEntityType.Unknown, pos, default(MatrixD), Vector3D.Zero, MyRelationsBetweenPlayerAndBlock.NoOwnership, default(BoundingBoxD), 0)
+                                );
+                            }
+                        }
+
                     }
                 }
             }
@@ -208,7 +234,7 @@ namespace IngameScript
                     mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship}"));
                     mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
                     mMenuItems.Add(new MenuItem($"Distance: {(e.Position - MyMatrix.Translation).Length():f0} - Radius: {e.WorldVolume.Radius}"));
-                    mMenuItems.Add(new MenuItem("Designate Target", () => controller.Mission = new OrbitMission(controller, e)));
+                    mMenuItems.Add(new MenuItem("Designate Target", () => controller.NewMission(new OrbitMission(controller, e))));
                     if (!deleted) {
                         mMenuItems.Add(new MenuItem($"Rename to '{mManager.UserInput}'", aState, renameRecord));
                     }

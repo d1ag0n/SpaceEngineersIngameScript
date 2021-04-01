@@ -18,7 +18,7 @@ namespace IngameScript {
                     mMenuMethods.Add(new MenuItem($"Periscope Scan {camera.AvailableScanRange:f0}m Available", null, Scan));
                     mMenuMethods.Add(new MenuItem("Fly Out", () => {
                         var pos = camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * range;
-                        controller.Target = new ThyDetectedEntityInfo(pos);
+                        controller.NewMission(new Mission(controller, new ThyDetectedEntityInfo(pos)));
                     }));
                     mMenuMethods.Add(new MenuItem("Camera Module Scan", null, ModuleScan));
                     //mMenuMethods.Add(new MenuItem("Planetary Scan", null, PlanetScan));

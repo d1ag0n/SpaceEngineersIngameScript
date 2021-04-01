@@ -11,7 +11,7 @@ namespace IngameScript {
         static readonly NameGen _namer = new NameGen();
         public readonly HashSet<string> mOreTypes = new HashSet<string>();
         readonly HashSet<Vector3L> mOreRegistry = new HashSet<Vector3L>();
-        readonly List<MyDetectedEntityInfo> mOres = new List<MyDetectedEntityInfo>();
+        public readonly List<MyDetectedEntityInfo> mOres = new List<MyDetectedEntityInfo>();
 
         // true if type of ore added is new to this asterois/cluster
         public bool AddOre(MyDetectedEntityInfo e) {

@@ -19,7 +19,7 @@ namespace IngameScript {
             
             GetModule(out gyro);
             
-            ctr.Damp = true;
+            ctr.Thrust.Damp = true;
             onUpdate = UpdateAction;
             
         }
@@ -57,9 +57,9 @@ namespace IngameScript {
         const double PADDING = 100.0;
         void UpdateAction() {
             if (mManager.Runtime - ctr.MotherLastUpdate > 1) {
-                controller.Damp = true;
+                controller.Thrust.Damp = true;
             } else {
-                ctr.Damp = false;
+                ctr.Thrust.Damp = false;
                 var wv = ctr.Grid.WorldVolume; 
                 var minDist = ctr.MotherSphere.Radius + wv.Radius + PADDING;
                 var maxDist = minDist + PADDING;

@@ -4,15 +4,18 @@ using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
 using VRage.Game.ModAPI.Ingame;
+using System.Xml.Serialization;
 
 namespace IngameScript {
+    
     public class ShipControllerModule : Module<IMyShipController> {
         
         public readonly float GyroSpeed;
-        
-        public MissionBase Mission;
 
-        public ThyDetectedEntityInfo Target;
+        readonly Queue<MissionBase> mMissionQ = new Queue<MissionBase>();
+        MissionBase mMission;
+
+        readonly List<IMyCargoContainer> mCargo = new List<IMyCargoContainer>();
         public MyShipVelocities ShipVelocities { get; private set; }
         public Vector3D LinearVelocityDirection { get; private set; }
         public double LinearVelocity { get; private set; }
@@ -26,15 +29,30 @@ namespace IngameScript {
         public GyroModule Gyro { get; private set; }
         public CameraModule Camera { get; private set; }
         
-
+        
         ATCLientModule ATClient;
-        public bool Damp = true;
+
+        public void ExtendMission(MissionBase m) {
+            if (mMission != null) {
+                mMissionQ.Enqueue(mMission);
+            }
+            mMission = m; 
+        }
+        public void ReplaceMission(MissionBase m) {
+            mMission = m;
+        }
+        public void NewMission(MissionBase m) {
+            mMissionQ.Clear();
+            mMission = m;
+        }
+
+
 
         public ShipControllerModule(ModuleManager aManager) :base (aManager) {
             if (!aManager.Mother) {
                 aManager.mIGC.SubscribeBroadcast("MotherState", onMotherState);
             }
-            
+
             
             
             GyroSpeed = aManager.LargeGrid ? 30f : 60f;
@@ -46,60 +64,45 @@ namespace IngameScript {
             MenuName = "Ship Controller";
             onPage = p => {
                 mMenuMethods.Clear();
-                CameraModule cam;
-                if (GetModule(out cam)) {
-                    if (Target == null) {
-                        new MenuItem("Flat Scan - No Target Designated");
-                    } else {
-                        mMenuMethods.Add(new MenuItem($"Flat Scan {Target.Name}", () => {
-                            double yaw, pitch;
-                            
-                            MAF.getRotationAngles(Vector3D.Normalize(Target.Position - Remote.WorldMatrix.Translation), Remote.WorldMatrix, out yaw, out pitch);
-                            
-                            var act = flatScan(MatrixD.Transform(Remote.WorldMatrix, Quaternion.CreateFromYawPitchRoll((float)yaw, (float)pitch, 0)));
-                            //var act = flatScan(Remote.WorldMatrix);
-                            StringBuilder sb = new StringBuilder();
-                            int i = 0;
-                            while (true) {
-                                var f = act();
-                                if (f == Vector3D.Zero) {
-                                    break;
-                                }
-                                sb.AppendLine(logger.gps($"v{i++}", f));
-                            }
-                            Remote.CustomData = sb.ToString();
-                        }));
-                    }
-                } else {
-                    logger.persist("No camera mod found?");
-                }
+                
 
-                mMenuMethods.Add(new MenuItem("Random Mission", () => Mission = new RandomMission(this, new BoundingSphereD(Remote.CenterOfMass + MAF.ranDir() * 1100.0, 0))));
+                //mMenuMethods.Add(new MenuItem("Random Mission", () => Mission = new RandomMission(this, new BoundingSphereD(Remote.CenterOfMass + MAF.ranDir() * 1100.0, 0))));
 
-                mMenuMethods.Add(new MenuItem($"Dampeners {Damp}", () => { 
-                    Damp = !Damp;
-                    if (!Damp) {
-                        ThrustModule thrust;
-                        if (GetModule(out thrust)) {
-                            thrust.Acceleration = Vector3D.Zero;
-                        }
-                    }
+                mMenuMethods.Add(new MenuItem($"Dampeners {Thrust.Damp}", () => { 
+                    Thrust.Damp = !Thrust.Damp;
                 }));
 
-                mMenuMethods.Add(new MenuItem("Abort Mission", () => {
-                    Mission = null;
-                    Damp = true;
+                mMenuMethods.Add(new MenuItem("Abort All Missions", () => {
+                    mMissionQ.Clear();
+                    mMission = null;
+                    Thrust.Damp = true;
                 }));
 
                 return mMenuMethods;
             };
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
+            if (aBlock is IMyCargoContainer) {
+                mCargo.Add(aBlock as IMyCargoContainer);
+                return true;
+            }
             var result = base.Accept(aBlock);
             if (result) {
                 (aBlock as IMyShipController).DampenersOverride = false;
             }
             return result;
+        }
+        public float cargoLevel() {
+            float c = 0f, m = 0f;
+            foreach (var cargo in mCargo) {
+                var i = cargo.GetInventory();
+                c += (float)i.CurrentVolume;
+                m += (float)i.MaxVolume;
+
+            }
+            var v = c / m;
+            logger.log($"Cargo Level {v * 100d:f0}%");
+            return v;
         }
         void InitializeAction() {
             var result = true;
@@ -126,9 +129,16 @@ namespace IngameScript {
             }
             if (result) {
                 if (mManager.Drill) {
-                    GetModule(out ATClient);
-
-                    Mission = new CBoxMission(this, ATClient, Volume);
+                    if (ATClient == null) {
+                        GetModule(out ATClient);
+                    }
+                    if (ATClient.connected) {
+                        Thrust.Damp = false;
+                    } else {
+                        
+                        //Mission = new DockMission(this, ATClient, Volume);
+                        
+                    }
                 }
                 onUpdate = UpdateGlobal;
                 onUpdate();
@@ -217,14 +227,7 @@ namespace IngameScript {
             }
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
-            //logger.log("Mass ", Mass);
-            //var lastVelo = ShipVelocities.LinearVelocity;
             ShipVelocities = Remote.GetShipVelocities();
-            //logger.log(Remote.CustomName);
-            //var change = ShipVelocities.LinearVelocity - lastVelo;
-            //var accel = change.Length() / ModuleManager.Program.Runtime.TimeSinceLastRun.TotalSeconds;
-
-            //logger.log($"Acceleration ", accel);
             var lvd = ShipVelocities.LinearVelocity;
             LinearVelocity = lvd.Normalize();
             if (!lvd.IsValid()) {
@@ -233,65 +236,21 @@ namespace IngameScript {
             }
             LinearVelocityDirection = lvd;
             LocalLinearVelo = MAF.world2dir(ShipVelocities.LinearVelocity, MyMatrix);
-            //logger.log("LocalLinearVelo", LocalLinearVelo);
-
-            
         }
         
         void UpdateGlobal() {
             UpdateLocal();
-
-            if (Target != null) {
-                Mission = new Mission(this, Target);
-                //logger.persist($"SET NEW MISSION TO {Target.Name}");
-                Target = null;
-                Damp = false;
-            } else if (Mission != null) {
-
-                if (Mission.Complete) {
-                    logger.persist("MISSION COMPLETE");
-                    Mission = null;
-                } else {
-                    //logger.log("MISSION UNDERWAY");
-                    Mission.Update();
-                }
+            if (mManager.Drill && mMission == null) {
+                mMission = new DrillMission(this, default(Vector3D));
             }
-            if (Damp) {
-                var localVelo = LocalLinearVelo;
-                var localVeloSq = localVelo.LengthSquared();
-
-                if (localVeloSq <= 0.000025) {
-                    localVelo = Vector3D.Zero;
-                    //Damp = false;
-                }
-                Thrust.Acceleration = localVelo * -6.0;
-
-                /*
-                if (GetModule(out gyro)) {
-                    if (localVeloSq > 25) {
-                        gyro.SetTargetDirection(ShipVelocities.LinearVelocity);
-                    } else {
-                        gyro.SetTargetDirection(Vector3D.Zero);
-                    }
-                }*/
-            } else {
-                //lastPos = Remote.CenterOfMass;
-                //estimatedStop = Thrust.StopDistance;
+            if (mMission == null || mMission.Complete) {
+                mMissionQ.TryDequeue(out mMission);
             }
+            mMission?.Update();
         }
         //Vector3D lastPos;
         //double estimatedStop;
-        void zzzzUpdateAction() {
-            // maxAcceleration = thrusterThrust / shipMass;
-            // boosterFireDuration = Speed / maxAcceleration / 2;
-            // minAltitude = Speed * boosterFireDuration;
 
-            
-            
-            //var start = Vector3I.One;
-
-            // Update = flatScan(remote.WorldMatrix.Right, remote.WorldMatrix.Up, grid.GridIntegerToWorld(grid.Min), 3, 3);
-        }
         // digi, whiplash - https://discord.com/channels/125011928711036928/216219467959500800/819309679863136257
         // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
         // var obb = new MyOrientedBoundingBoxD(bb, grid.WorldMatrix);

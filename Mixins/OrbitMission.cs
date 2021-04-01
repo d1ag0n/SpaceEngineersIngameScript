@@ -10,6 +10,7 @@ namespace IngameScript {
         Vector3D orbitAxis;
         MatrixD orbitMatrix;
         int orbitIncrements = 0;
+        int matrixCalculations = 0;
         
         // this orbit is okayish I hope testing now
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
@@ -20,11 +21,17 @@ namespace IngameScript {
         }
 
         void calculateOrbitMatrix() {
+            if (matrixCalculations * 0.1 > MathHelperD.TwoPi) {
+                Complete = true;
+                ctr.Thrust.Damp = true;
+                return;
+            }
             orbitIncrements = 0;
             ctr.logger.persist("Recaclculating Orbital Matrix");
             orbit.CalculatePerpendicularVector(out orbitAxis);
             MatrixD.CreateFromAxisAngle(ref orbitAxis, -0.1, out orbitMatrix);
             Vector3D.Transform(orbitAxis, orbitMatrix);
+            matrixCalculations++;
         }
 
         Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - ctr.Volume.Center);
@@ -50,7 +57,7 @@ namespace IngameScript {
             mEntity.WorldVolume.Center + orbit * space;
         public override void Update() {
             ctr.logger.log($"mEntity.WorldVolume.Radius={mEntity.WorldVolume.Radius}");
-            ctr.Damp = false;
+            ctr.Thrust.Damp = false;
  
             var dest = orbitProj();
             var disp = dest - ctr.Volume.Center;
@@ -58,9 +65,8 @@ namespace IngameScript {
             ctr.logger.log($"dist={dist}");
             ctr.logger.log($"mDistToDest={mDistToDest}");
             if (mDistToDest < 100) {
-                
-                
                 ctr.logger.log($"orbitIncrements={orbitIncrements}");
+                ctr.logger.log($"matrixCalculations={matrixCalculations}");
                 var dir = disp;
                 var mag = dir.Normalize();
                 ctr.logger.log($"mag={mag}");
@@ -125,22 +131,36 @@ namespace IngameScript {
                     }
                 }
             }
-
+            var success = false;
             foreach (var detector in detectors) {
-                detector.SetValue("RaycastTarget", aPos);
-                var res = detector.GetValue<MyDetectedEntityInfo>("RaycastResult");
-                if (res.Name == "") {
-                    break;
+                var range = detector.GetValue<double>("AvailableScanRange");
+                range *= range;
+                var disp = detector.WorldMatrix.Translation - aPos;
+                var dist = disp.LengthSquared();
+                dist += 25;
+                if (dist > range) {
+                    
+                    continue;
                 }
                 
-                
+                detector.SetValue("RaycastTarget", aPos);
+                var res = detector.GetValue<MyDetectedEntityInfo>("RaycastResult");
                 if (res.TimeStamp != 0) {
-                    if (thy.AddOre(res)) {
-                        ctr.logger.persist($"New {res.Name} Deposit found!");
+                    if (res.Name != "") {
+                        if (res.TimeStamp != 0) {
+                            if (thy.AddOre(res)) {
+                                ctr.logger.persist($"New {res.Name} Deposit found!");
+                            }
+                        }
                     }
+                    success = true;
+                    break;
                 }
                 //detector.SetValue("ScanEpoch", 0L);
                 //throw new Exception("shouldnt be able to write ScanEpoch");
+            }
+            if (!success) {
+                ctr.logger.persist("Ore Scan Failure");
             }
 
         }

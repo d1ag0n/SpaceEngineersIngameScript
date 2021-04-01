@@ -161,6 +161,13 @@ namespace IngameScript {
             // when reinitialization is implemented this should be addressed
             
         }
+        public void getByType<T>(List<T> blocks) {
+            foreach (var block in mBlocks) {
+                if (block is T) {
+                    blocks.Add((T)block);
+                }
+            }
+        }
         public void getByTag<T>(string aTag, ref T aBlock) {
             List<IMyTerminalBlock> list;
             if (mTags.TryGetValue(aTag.ToLower(), out list)) {
@@ -211,6 +218,16 @@ namespace IngameScript {
 
         public bool ConnectedGrid(long entityId) => mGridBlocks.ContainsKey(entityId);
 
+        public void GetAllByGrid<T>(long grid, List<T> blocks) {
+            List<IMyTerminalBlock> list;
+            if (mGridBlocks.TryGetValue(grid, out list)) {
+                foreach (var b in list) {
+                    if (b is T) {
+                        blocks.Add((T)b);
+                    }
+                }
+            }
+        }
         public bool GetByGrid<T>(long grid, ref T block) {
             List<IMyTerminalBlock> list;
             if (mGridBlocks.TryGetValue(grid, out list)) {

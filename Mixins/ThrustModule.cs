@@ -9,7 +9,6 @@ namespace IngameScript {
     public class ThrustModule : Module<IMyThrust> {
         public readonly ThrustList mThrust;
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
-        readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         readonly ThrustList mHydro;
         public Vector3D FullStop(Vector3D aLocalDirection, Vector3D aMaxAccel) {
             return stop(aLocalDirection * 100, aMaxAccel);
@@ -17,7 +16,19 @@ namespace IngameScript {
         public Vector3D Stop(Vector3D aMaxAccel) {
             return stop(controller.LocalLinearVelo, aMaxAccel);
         }
-        
+
+        bool _Damp = true;
+        public bool Damp {
+            get { return _Damp; }
+            set {
+                if (_Damp != value) {
+                    _Acceleration = Vector3D.Zero;
+                    _Damp = value;
+                    updateRequired = true;
+                }
+            }
+        }
+
         enum enGroup { Hydro, Ion, Atmos, Not }
         public ThrustModule(ModuleManager aManager):base(aManager) {
             mThrust = new ThrustList(this);
@@ -104,8 +115,10 @@ namespace IngameScript {
         public Vector3D Acceleration {
             get { return _Acceleration; }
             set {
-                _Acceleration = value; 
-                updateRequired = true;
+                if (_Acceleration != value) {
+                    _Acceleration = value;
+                    updateRequired = true;
+                }
             }
         }
         enGroup GetGroup(IMyThrust aThrust) {
@@ -139,6 +152,8 @@ namespace IngameScript {
         void InitAction() {
             foreach (var b in Blocks) {
                 var g = GetGroup(b);
+                b.Enabled = false;
+                b.ThrustOverridePercentage = 0f;
                 if (g == enGroup.Hydro) {
                     mHydro.Add(b);
                 } else {
@@ -150,8 +165,15 @@ namespace IngameScript {
         }
         bool updateRequired = false;
         void UpdateAction() {
+            if (_Damp) {
+                var localVelo = controller.LocalLinearVelo;
+                var localVeloSq = localVelo.LengthSquared();
+                if (localVeloSq <= 0.000025) {
+                    localVelo = Vector3D.Zero;
+                }
+                Acceleration = localVelo * -6.0;
+            }
             if (updateRequired) {
-                //logger.log("Thrust updating ", Acceleration);
                 var a = Acceleration;
                 if (a.IsZero()) {
                     updateRequired = false;
@@ -159,7 +181,7 @@ namespace IngameScript {
                 } else {
                     var m = controller.Mass;
                     mThrust.Update(a, m, Emergency);
-                } 
+                }
             }
         }
         // whiplash says

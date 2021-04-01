@@ -239,7 +239,7 @@ namespace IngameScript {
         }
         protected void FlyTo(double maxVelo = 100.0) {
 
-            ctr.Damp = false;
+            ctr.Thrust.Damp = false;
             //var distSq = mDistToDest * mDistToDest;
             //var stopDistSq = mStop * mStop;
             //var syncVelo = ctr.ShipVelocities.LinearVelocity - BaseVelocity;
@@ -284,7 +284,7 @@ namespace IngameScript {
             var wv = ctr.Volume;
             var m = ctr.MyMatrix;
             var worldDir = collisionDetect();
-            ctr.Damp = false;
+            ctr.Thrust.Damp = false;
             if (worldDir.IsZero()) {
                 worldDir = mDirToDest;
                 ctr.logger.log("Following vector to destination.");
