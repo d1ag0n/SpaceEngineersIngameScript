@@ -11,24 +11,21 @@ namespace IngameScript {
         readonly List<IMySolarPanel> mPanels = new List<IMySolarPanel>();
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
         readonly List<IMyRadioAntenna> mAntennas = new List<IMyRadioAntenna>();
-        readonly GyroModule gyro;
        
         
         public ProbeModule(ModuleManager aManager):base(aManager) {
             ctr = aManager.controller;
-            
-            GetModule(out gyro);
-            
-            ctr.Thrust.Damp = true;
             onUpdate = UpdateAction;
-            
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
             var result = false;
 
             if (mManager.Probe) {
                 if (aBlock is IMyRadioAntenna) {
-                    mAntennas.Add(aBlock as IMyRadioAntenna);
+                    var ant = aBlock as IMyRadioAntenna;
+                    ant.Radius = 1f;
+                    ant.Enabled = true;
+                    mAntennas.Add(ant);
                 }
                 if (aBlock is IMyBatteryBlock) {
                     mBatteries.Add(aBlock as IMyBatteryBlock);

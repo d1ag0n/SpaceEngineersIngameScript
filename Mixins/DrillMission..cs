@@ -38,14 +38,12 @@ namespace IngameScript {
             missionStart += -missionDirection * 1000d;
             ctr.Thrust.Damp = false;
             onUpdate = enter;
+            lastCargo = ctr.cargoLevel();
         }
         public override void Update() => onUpdate();
         bool firstEntrance = true;        
         void enter() {
-            
             ctr.logger.log("enter");
-
-
             if (firstEntrance) {
                 var flResult = followLine(5.0);
                 entranceDepth = flResult;
@@ -71,10 +69,10 @@ namespace IngameScript {
                 }
             } else {
                 var flResult = followLine(10.0);
-                if (flResult > entranceDepth) {
+                if (flResult + 10d > entranceDepth) {
                     startDrill();
                     onUpdate = drill;
-                } else if (flResult + 10d > entranceDepth) {
+                } else if (flResult + 20d > entranceDepth) {
                     ctr.Gyro.SetTargetDirection(missionDirection);
                 }
             }
@@ -92,9 +90,14 @@ namespace IngameScript {
 
 
             if (lastDepth + 1.0 > deepestDepth) {
-                speed = 0.04;
+                speed = drillSpeed;
             }
             var cargo = ctr.cargoLevel();
+            var gain = cargo - lastCargo;
+            if (gain < 0.1f) {
+                gain = 0f;
+            }
+            ctr.logger.log($"Gain {gain}");
             if (!slow && lastCargo == cargo) {
                 speed = 0.5;
             } else {
@@ -104,7 +107,6 @@ namespace IngameScript {
 
             if (lastDepth < entranceDepth) {
                 speed = 5.0;
-                
             }
 
             var dist = followLine(speed);
@@ -135,8 +137,9 @@ namespace IngameScript {
             mATC.Connector.Enabled = false;
             onUpdate = enter;
         }
+        const double drillSpeed = 0.05;
 
-        double followLine(double aSpeed = 0.04, bool reverse = false) {
+        double followLine(double aSpeed = drillSpeed, bool reverse = false) {
             
             var r = ctr.Remote;
             var com = r.CenterOfMass;
