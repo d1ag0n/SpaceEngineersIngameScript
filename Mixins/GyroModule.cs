@@ -247,6 +247,7 @@ namespace IngameScript
                 init();
                 return;
             }
+            logger.log($"Remote {sc.CustomName}");
             var m = NavBlock == null ? controller.Remote.WorldMatrix : NavBlock.WorldMatrix;
             if (calcDirection) {
                 if (mTargetPosition.IsZero()) {

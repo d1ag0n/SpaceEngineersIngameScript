@@ -15,7 +15,7 @@ namespace IngameScript {
         readonly Queue<MissionBase> mMissionQ = new Queue<MissionBase>();
         MissionBase mMission;
 
-        readonly List<IMyCargoContainer> mCargo = new List<IMyCargoContainer>();
+        readonly List<IMyInventory> mInventory = new List<IMyInventory>();
         public MyShipVelocities ShipVelocities { get; private set; }
         public Vector3D LinearVelocityDirection { get; private set; }
         public double LinearVelocity { get; private set; }
@@ -82,9 +82,11 @@ namespace IngameScript {
             };
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
-            if (aBlock is IMyCargoContainer) {
-                mCargo.Add(aBlock as IMyCargoContainer);
-                return true;
+            var inv = aBlock.GetInventory();
+
+            if (inv != null && (float)inv.MaxVolume > 0f) {
+                mInventory.Add(inv);
+                return false;
             }
             var result = base.Accept(aBlock);
             if (result) {
@@ -94,11 +96,10 @@ namespace IngameScript {
         }
         public float cargoLevel() {
             float c = 0f, m = 0f;
-            foreach (var cargo in mCargo) {
-                var i = cargo.GetInventory();
-                c += (float)i.CurrentVolume;
-                m += (float)i.MaxVolume;
-
+            foreach (var inv in mInventory) {
+                
+                c += (float)inv.CurrentVolume;
+                m += (float)inv.MaxVolume;
             }
             var v = c / m;
             logger.log($"Cargo Level {v * 100d:f0}%");

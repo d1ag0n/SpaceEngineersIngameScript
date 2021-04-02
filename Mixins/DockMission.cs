@@ -75,6 +75,8 @@ namespace IngameScript {
                         return;
                     } else if (atc.Connector.Status == MyShipConnectorStatus.Connected) {
                         if (ctr.cargoLevel() == 0d) {
+                            ctr.Gyro.SetTargetDirection(Vector3D.Zero);
+                            ctr.Gyro.NavBlock = null;
                             Complete = true;
                         }
                         return;
