@@ -6,7 +6,7 @@ using VRageMath;
 
 namespace IngameScript {
     public class ModuleManager {
-        public readonly MyGridProgram mProgram;
+        public readonly Program mProgram;
         readonly Lag mLag = new Lag(18);
         
         public double Runtime { get; private set; }
@@ -18,7 +18,7 @@ namespace IngameScript {
         public bool Probe;
         public bool Drill;
 
-        public ModuleManager(MyGridProgram aProgram) {
+        public ModuleManager(Program aProgram) {
             mProgram = aProgram;
             logger = new LogModule(this);
             
@@ -65,7 +65,9 @@ namespace IngameScript {
 
             if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                 if (arg.Length > 0) {
-                    if (arg == "save") {
+                    if (arg == "reset") {
+                        mProgram.Reset();
+                    } else if (arg == "save") {
                         Save();
                     } else {
                         MenuModule menu;

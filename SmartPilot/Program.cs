@@ -1,10 +1,12 @@
 ﻿using Sandbox.ModAPI.Ingame;
 using System;
+using VRageMath;
 
 namespace IngameScript {
-    partial class Program : MyGridProgram {
+    public partial class Program : MyGridProgram {
         
         delegate void main(string a, UpdateType u);
+        bool reset = false;
         
         main Update;
 
@@ -43,6 +45,10 @@ namespace IngameScript {
             mManager.Initialize();
             Update = load;
         }
+        public void Reset() {
+            Storage = "";
+            reset = true;
+        }
 
         void load(string a, UpdateType u) {
             try {
@@ -52,8 +58,14 @@ namespace IngameScript {
                 mManager.logger.persist(ex.ToString());
             }
         }
-      
-        public void Save() => Storage = mManager.Save();
+
+        public void Save() {
+            if (reset) {
+                reset = false;
+            } else {
+                Storage = mManager.Save();
+            }
+        }
         public void Main(string a, UpdateType u) => Update(a, u);
     }
 }

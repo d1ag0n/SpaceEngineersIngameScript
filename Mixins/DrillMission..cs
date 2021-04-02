@@ -14,6 +14,7 @@ namespace IngameScript {
         double lastDepth;
         double entranceDepth;
         float lastCargo;
+        const float cargoPercent = 0.02f;
 
         readonly List<IMyShipDrill> mDrill = new List<IMyShipDrill>();
         
@@ -21,17 +22,12 @@ namespace IngameScript {
             
             ctr.GetModule(out mATC);
             aPos = new Vector3D(943515.72, 1233397d, 885858.7);
-            ATCLientModule atc;
-            ctr.GetModule(out atc);
-            if (atc != null) {
-                atc.Connector.Enabled = false;
-            }
+            
+            mATC.Connector.Enabled = false;
 
             ctr.mManager.getByType(mDrill);
             
-            if (ctr.Remote == null) {
-                ctr.logger.persist("Remote Null?");
-            }
+ 
             missionStart = ctr.Remote.CenterOfMass;
             missionTarget = aPos;
             missionDirection = Vector3D.Normalize(missionTarget - missionStart);
@@ -57,7 +53,6 @@ namespace IngameScript {
                 ThyDetectedEntityInfo thy;
                 ctr.Camera.Scan(scanPos, out entity, out thy);
                 if (entity.Type == MyDetectedEntityType.Asteroid) {
-
                     var ct = wv.Contains(entity.HitPosition.Value);
                     var disp = wv.Center - entity.HitPosition.Value;
                     var dist = disp.LengthSquared();
@@ -86,9 +81,6 @@ namespace IngameScript {
             ctr.Gyro.SetTargetDirection(missionDirection);
 
             var speed = 1.0;
-
-
-
             if (lastDepth + 1.0 > deepestDepth) {
                 speed = drillSpeed;
             }
@@ -111,7 +103,7 @@ namespace IngameScript {
 
             var dist = followLine(speed);
 
-            if (cargo > 0.9f) {
+            if (cargo > cargoPercent) {
                 stopDrill();
                 onUpdate = extract;
                 deepestDepth -= 1d;
@@ -128,7 +120,8 @@ namespace IngameScript {
         void extract() {
             ctr.logger.log("extract");
             if (followLine(5.0, true) < entranceDepth) {
-                
+                var pos = missionStart + missionDirection * 1000d;
+                ctr.ExtendMission(new Mission(ctr, pos));
                 ctr.ExtendMission(new DockMission(ctr, mATC));
                 onUpdate = undock;
             }

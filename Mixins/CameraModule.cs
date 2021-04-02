@@ -9,6 +9,7 @@ namespace IngameScript
 {
     public class CameraModule : Module<IMyCameraBlock>
     {
+
         int mClusterI = 0;
         MyDetectedEntityInfo? mCurrentIncoming;
 

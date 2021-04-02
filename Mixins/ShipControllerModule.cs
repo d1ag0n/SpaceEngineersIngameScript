@@ -12,7 +12,7 @@ namespace IngameScript {
         
         public readonly float GyroSpeed;
 
-        readonly Queue<MissionBase> mMissionQ = new Queue<MissionBase>();
+        readonly Stack<MissionBase> mMissionStack = new Stack<MissionBase>();
         MissionBase mMission;
 
         readonly List<IMyInventory> mInventory = new List<IMyInventory>();
@@ -34,15 +34,16 @@ namespace IngameScript {
 
         public void ExtendMission(MissionBase m) {
             if (mMission != null) {
-                mMissionQ.Enqueue(mMission);
+                mMissionStack.Push(mMission);
+                logger.persist($"Stacked {mMission}");
             }
-            mMission = m; 
+            mMission = m;
         }
         public void ReplaceMission(MissionBase m) {
             mMission = m;
         }
         public void NewMission(MissionBase m) {
-            mMissionQ.Clear();
+            mMissionStack.Clear();
             mMission = m;
         }
 
@@ -73,7 +74,7 @@ namespace IngameScript {
                 }));
 
                 mMenuMethods.Add(new MenuItem("Abort All Missions", () => {
-                    mMissionQ.Clear();
+                    mMissionStack.Clear();
                     mMission = null;
                     Thrust.Damp = true;
                 }));
@@ -143,6 +144,9 @@ namespace IngameScript {
                 }
                 onUpdate = UpdateGlobal;
                 onUpdate();
+                if (mManager.Drill) {
+                    NewMission(new DrillMission(this, default(Vector3D)));
+                }
             } else {
                 UpdateLocal();
             }
@@ -241,11 +245,11 @@ namespace IngameScript {
         
         void UpdateGlobal() {
             UpdateLocal();
-            if (mManager.Drill && mMission == null) {
-                mMission = new DrillMission(this, default(Vector3D));
-            }
+
             if (mMission == null || mMission.Complete) {
-                mMissionQ.TryDequeue(out mMission);
+                if (mMissionStack.Count != 0) {
+                    mMission = mMissionStack.Pop();
+                }
             }
             mMission?.Update();
         }

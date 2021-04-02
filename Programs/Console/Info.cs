@@ -8,7 +8,16 @@ using IngameScript;
 
 namespace commandline {
     class Info {
-        static void Main() => vecIt();
+        static void Main() => sphere();
+        static void sphere() {
+            var bs1 = new BoundingSphereD(new Vector3D(1d, 1d, 1d), 1d);
+            var bs2 = new BoundingSphereD(new Vector3D(0d, 0d, 0d), 1d);
+
+            var i = bs1.Intersects(bs2);
+            
+            
+            return;
+        }
         static void vecIt() {
 
             int g = 0;

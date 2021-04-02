@@ -15,51 +15,70 @@ namespace IngameScript {
         
         int emptyScans = 0;
         MyDetectedEntityInfo drillTarget;
+        Action onUpdate;
         public DockMission(ShipControllerModule aController, ATCLientModule aClient) : base(aController, default(BoundingSphereD)) {
             atc = aClient;
+            onUpdate = reserve;
         }
 
-        public override void Update() {
+        void reserve() {
+            ctr.logger.log("reserve");
+            atc.ReserveDock();
+            ctr.Thrust.Damp = true;
+            if (atc.Dock.isReserved) {
+                onUpdate = approach;
+            }
+        }
+        public override void Update() => onUpdate();
 
+        void approach() {
+            ctr.logger.log("approach");
+            atc.ReserveDock();
+            if (atc.Dock.isReserved) {
+
+                ctr.Thrust.Damp = false;
+                var wv = ctr.Volume;
+                mDestination = new BoundingSphereD(findApproach(), 0d);
+                var disp = mDestination.Center - wv.Center;
+                if (disp.LengthSquared() < wv.Radius * wv.Radius) {
+                    onUpdate = dock;
+                } else {
+                    base.Update();
+                    collisionDetectTo();
+                }
+            } else {
+                onUpdate = reserve;
+            }
+        }
+        Vector3D findApproach() {
+            var pos = atc.Dock.theConnector * 2.5;
+            Vector3D dir = Base6Directions.GetVector(atc.Dock.ConnectorFace);
+            return MAF.local2pos(pos + dir * (ctr.MotherSphere.Radius * 0.5), ctr.MotherMatrix);
+        }
+        void dock() {
+            ctr.logger.log("dock");
             atc.ReserveDock();
             if (atc.Dock.isReserved) {
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
                 if (ctr.Camera.Scan(ctr.MotherCoM, out entity, out thy)) {
                     if (entity.EntityId == ctr.MotherId) {
-                        
+
                     } else {
-                        ctr.logger.log("Mother not scanned");
+                        ctr.logger.log($"Not Mother scanned: {entity.Name} {entity.EntityId}");
                     }
                 }
                 ctr.Thrust.Damp = false;
-                //ctr.logger.log("atc.Dock.Connector", atc.Dock.Connector);
-                //ctr.logger.log("ctr.MotherMatrix", ctr.MotherMatrix);
                 Vector3D pos = atc.Dock.theConnector * 2.5;
                 Vector3D face = Base6Directions.GetVector(atc.Dock.ConnectorFace);
-                
-                
-                //if (ctr.Camera.Scan(ctr.MotherSphere.Center, out entity, out thy, 10.0)) {
-                //ctr.logger.log("orientation.translation", entity.Orientation.Translation);
-
-                //}
                 var mm = ctr.MotherMatrix;
-
-                //var conPos = MAF.local2pos(pos, ctr.MotherMatrix);
-                //pos += face * (3.0 + mDistToDest * 0.6);
                 pos += face * MathHelperD.Clamp((mDistToDest) - 5.0, 2.5, 50.0);
                 var veloAtPos = ctr.MotherVeloAt(pos);
                 ctr.logger.log("veloAtPos", veloAtPos);
                 pos = MAF.local2pos(pos, mm);
-                //ctr.logger.log("pos", pos);
-                //ctr.logger.log("atc.Dock.ConnectorFace", atc.Dock.ConnectorFace);
-                //ctr.logger.log("ctr.MotherSphere.Radius", ctr.MotherSphere.Radius);
-                
                 mDestination.Center = pos;
-                //ctr.logger.log(ctr.logger.gps("pos", pos));
                 mDestination.Radius = 0;
                 ctr.Gyro.NavBlock = NavBlock = atc.Connector;
-                
                 var dir = MAF.world2dir(atc.Connector.WorldMatrix.Forward, ctr.Remote.WorldMatrix);
                 ctr.Gyro.SetTargetDirection(MAF.local2dir(-face, mm));
                 BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
@@ -77,6 +96,7 @@ namespace IngameScript {
                         if (ctr.cargoLevel() == 0d) {
                             ctr.Gyro.SetTargetDirection(Vector3D.Zero);
                             ctr.Gyro.NavBlock = null;
+                            atc.Connector.Enabled = false;
                             Complete = true;
                         }
                         return;
@@ -84,18 +104,16 @@ namespace IngameScript {
                 } else {
                     atc.Connector.Enabled = false;
                 }
-
                 FlyTo(20.0);
             } else {
-                ctr.logger.log("reserving dock");
-                
-                //ctr.Damp = true;
+                onUpdate = reserve;
             }
-            return;
+        }
+        void nothing() {
             BoxCurrent = atc.GetBoxInfo(Volume.Center);
             atc.ReserveCBox(BoxCurrent);
             if (BoxCurrent.IsReservedBy(ctr.EntityId)) {
-                
+
             } else {
                 ctr.Thrust.Damp = true;
                 ctr.logger.log("Acquiring reservation ", BoxCurrent.Position);

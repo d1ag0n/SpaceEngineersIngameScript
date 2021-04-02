@@ -60,7 +60,49 @@ namespace IngameScript {
             ctr = aController;
             mEntity = aEntity;
         }
-        
+
+        public virtual void Update() {
+            var wv = ctr.Grid.WorldVolume;
+            if (NavBlock != null) {
+                wv.Center = NavBlock.WorldMatrix.Translation;
+            }
+            mMaxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
+            mMaxAccelLength = mMaxAccel.Length();
+            mStop = ctr.Thrust.Stop(mMaxAccel);
+            mStopLengthSquared = mStop.LengthSquared();
+            if (double.IsNaN(mStopLengthSquared)) {
+                mStop.X = mStop.Y = mStop.Z = mStopLengthSquared = double.PositiveInfinity;
+            }
+
+            //ctr.logger.log("mStopLength ", mStopLength);
+            var dispToDest = Volume.Center - wv.Center;
+            mDirToDest = dispToDest;
+            mDistToDest = mDirToDest.Normalize();
+            //ctr.logger.log("mDistToDest ", mDistToDest);
+            if (Volume.Radius > 0) {
+                Altitude = wv.Radius + Volume.Radius + PADDING;
+                Target = Volume.Center + -mDirToDest * Altitude;
+                dispToDest = Target - wv.Center;
+                mDirToDest = dispToDest;
+                mDistToDest = mDirToDest.Normalize();
+            }
+            //ctr.logger.log("BaseVelocityLength ", BaseVelocityLength);
+
+            mPrefVelo = ctr.Thrust.PreferredVelocity(mMaxAccelLength, mDistToDest);
+            //ctr.logger.log("mPrefVelo ", mPrefVelo);
+            //mPrefVelo += BaseVelocityLength;
+
+            //ctr.logger.log("mPrefVelo ", mPrefVelo);
+
+            if (ctr.LinearVelocity == 0) {
+                mPrefVelo = 1.0;
+            } else {
+                if (mPrefVelo > mDistToDest) {
+                    mPrefVelo = mDistToDest;
+                }
+            }
+        }
+
         Vector3D orbitalManeuver(BoundingSphereD aShip, BoundingSphereD aObstacle) {
             var result = Vector3D.Zero;
                 
@@ -147,7 +189,7 @@ namespace IngameScript {
                                 mEscape.Add(dispFromThing * inverseDistFromThing);
                             }
                             if (thy == null) {
-                                sphere = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);
+                                sphere = new BoundingSphereD(entity.HitPosition.Value, 10d);
                             } else {
                                 sphere = thy.WorldVolume;
                             }
@@ -164,7 +206,7 @@ namespace IngameScript {
                 mPreferredVelocityFactor -= 0.01;
             } else {
                 mPreferredVelocityFactor += 0.01;
-                mObstacle.Radius *= 0.999;
+                mObstacle.Radius *= 0.99;
                 if (mObstacle.Radius < 1) {
                     mObstacle.Radius = 0;
                 }
@@ -196,47 +238,7 @@ namespace IngameScript {
             }
             return result;
         }
-        public virtual void Update() {
-            var wv = ctr.Grid.WorldVolume;
-            if (NavBlock != null) {
-                wv.Center = NavBlock.WorldMatrix.Translation;
-            }
-            mMaxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
-            mMaxAccelLength = mMaxAccel.Length();
-            mStop = ctr.Thrust.Stop(mMaxAccel);
-            mStopLengthSquared = mStop.LengthSquared();
-            if (double.IsNaN(mStopLengthSquared)) {
-                mStop.X = mStop.Y = mStop.Z = mStopLengthSquared = double.PositiveInfinity;
-            }
-
-            //ctr.logger.log("mStopLength ", mStopLength);
-            var dispToDest = Volume.Center - wv.Center;
-            mDirToDest = dispToDest;
-            mDistToDest = mDirToDest.Normalize();
-            //ctr.logger.log("mDistToDest ", mDistToDest);
-            if (Volume.Radius > 0) {
-                Altitude = wv.Radius + Volume.Radius + PADDING;
-                Target = Volume.Center + -mDirToDest * Altitude;
-                dispToDest = Target - wv.Center;
-                mDirToDest = dispToDest;
-                mDistToDest = mDirToDest.Normalize();
-            }
-            //ctr.logger.log("BaseVelocityLength ", BaseVelocityLength);
-
-            mPrefVelo = ctr.Thrust.PreferredVelocity(mMaxAccelLength, mDistToDest);
-            //ctr.logger.log("mPrefVelo ", mPrefVelo);
-            //mPrefVelo += BaseVelocityLength;
-
-            //ctr.logger.log("mPrefVelo ", mPrefVelo);
-
-            if (ctr.LinearVelocity == 0) {
-                mPrefVelo = 1.0;
-            } else {
-                if (mPrefVelo > mDistToDest) {
-                    mPrefVelo = mDistToDest;
-                }
-            }
-        }
+        
         protected void FlyTo(double maxVelo = 100.0) {
 
             ctr.Thrust.Damp = false;
@@ -310,14 +312,14 @@ namespace IngameScript {
 
 
             if (mDistToDest < 1) {
-                ctr.Gyro.SetTargetDirection(ctr.Thrust.Acceleration = Vector3D.Zero);
+                //ctr.Gyro.SetTargetDirection(ctr.Thrust.Acceleration = Vector3D.Zero);
             } else if (mDistToDest < 100) {
 
                 ctr.Thrust.Acceleration = (mDistToDest * mDistToDest > 2.0 ? 6.0 : 1.0) * accelReq;
-                ctr.Gyro.SetTargetDirection(Vector3D.Zero);
+                //ctr.Gyro.SetTargetDirection(Vector3D.Zero);
             } else {
                 ctr.Thrust.Acceleration = 6.0 * accelReq;
-                ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
+                //ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
             }
             
         }
