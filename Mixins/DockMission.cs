@@ -26,13 +26,13 @@ namespace IngameScript {
             atc.ReserveDock();
             ctr.Thrust.Damp = true;
             if (atc.Dock.isReserved) {
-                onUpdate = approach;
+                onUpdate = dock;
             }
         }
         public override void Update() => onUpdate();
 
-        void approach() {
-            ctr.logger.log("approach");
+        /*void approach() {
+            ctr.logger.log("Dock approach");
             atc.ReserveDock();
             if (atc.Dock.isReserved) {
 
@@ -49,32 +49,22 @@ namespace IngameScript {
             } else {
                 onUpdate = reserve;
             }
-        }
+        }*/
         Vector3D findApproach() {
             var pos = atc.Dock.theConnector * 2.5;
             Vector3D dir = Base6Directions.GetVector(atc.Dock.ConnectorFace);
             return MAF.local2pos(pos + dir * (ctr.MotherSphere.Radius * 0.5), ctr.MotherMatrix);
         }
         void dock() {
-            ctr.logger.log("dock");
             atc.ReserveDock();
             if (atc.Dock.isReserved) {
-                MyDetectedEntityInfo entity;
-                ThyDetectedEntityInfo thy;
-                if (ctr.Camera.Scan(ctr.MotherCoM, out entity, out thy)) {
-                    if (entity.EntityId == ctr.MotherId) {
-
-                    } else {
-                        ctr.logger.log($"Not Mother scanned: {entity.Name} {entity.EntityId}");
-                    }
-                }
+                
                 ctr.Thrust.Damp = false;
                 Vector3D pos = atc.Dock.theConnector * 2.5;
                 Vector3D face = Base6Directions.GetVector(atc.Dock.ConnectorFace);
                 var mm = ctr.MotherMatrix;
-                pos += face * MathHelperD.Clamp((mDistToDest) - 5.0, 2.5, 50.0);
+                pos += face * MathHelperD.Clamp((mDistToDest) - 0.0, 2.5, 50.0);
                 var veloAtPos = ctr.MotherVeloAt(pos);
-                ctr.logger.log("veloAtPos", veloAtPos);
                 pos = MAF.local2pos(pos, mm);
                 mDestination.Center = pos;
                 mDestination.Radius = 0;
@@ -84,7 +74,6 @@ namespace IngameScript {
                 BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
                 BaseVelocity += veloAtPos;
                 base.Update();
-                ctr.logger.log($"mDistToDest={mDistToDest}");
                 if (mDistToDest < 1.0) {
                     atc.Connector.Enabled = true;
                     if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
@@ -93,7 +82,9 @@ namespace IngameScript {
                         ctr.Gyro.SetTargetDirection(Vector3D.Zero);
                         return;
                     } else if (atc.Connector.Status == MyShipConnectorStatus.Connected) {
+                        ctr.Gyro.setGyrosEnabled(false);
                         if (ctr.cargoLevel() == 0d) {
+                            ctr.Gyro.setGyrosEnabled(true);
                             ctr.Gyro.SetTargetDirection(Vector3D.Zero);
                             ctr.Gyro.NavBlock = null;
                             atc.Connector.Enabled = false;

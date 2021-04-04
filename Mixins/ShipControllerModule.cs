@@ -144,14 +144,13 @@ namespace IngameScript {
                 }
                 onUpdate = UpdateGlobal;
                 onUpdate();
-                if (mManager.Drill) {
-                    NewMission(new DrillMission(this, default(Vector3D)));
-                }
+                
             } else {
                 UpdateLocal();
             }
         }
         public long MotherId { get; private set; }
+        public bool OnMission => mMission != null;
 
         public BoundingSphereD MotherSphere => BoundingSphereD.CreateFromBoundingBox(MotherBox);
         public BoundingBoxD MotherBox { get; private set; }

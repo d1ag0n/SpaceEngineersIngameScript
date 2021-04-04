@@ -174,11 +174,18 @@ namespace IngameScript {
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
                 if (ctr.Camera.Scan(scanPoint, out entity, out thy)) {
-                    if ((thy != null && thy != mEntity) || (thy == null && entity.EntityId != 0 && entity.Type != MyDetectedEntityType.CharacterHuman)) {
+                    if (
+                        (thy != null && thy != mEntity) || 
+                        (
+                            thy == null && entity.EntityId != 0 && 
+                            entity.Type != MyDetectedEntityType.CharacterHuman && 
+                            entity.Type != MyDetectedEntityType.FloatingObject
+                        )
+                    ) {
                         // this is getting nasty
                         // mothership should only avoid objects owned by me if they have no velocity
                         // everything else should be aware of the mothership and gtfo of the way
-                        if (!ctr.mManager.Mother || entity.Velocity.LengthSquared() == 0 ) {
+                        if (!ctr.mManager.Mother || entity.Velocity.LengthSquared() < 0.1 ) {
                             ctr.logger.log($"Detected {entity.Name} {entity.Velocity.Length()}");
                             detected = true;
                             BoundingSphereD sphere;

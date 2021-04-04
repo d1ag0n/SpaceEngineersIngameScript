@@ -9,11 +9,21 @@ using IngameScript;
 namespace commandline {
     class Info {
         static void Main() => sphere();
+        public static int PageCount(int itemCount) => (itemCount / 6) + 1;
+        public static int PageNumber(int pageNumber, int itemCount) => Math.Abs(pageNumber % PageCount(itemCount));
         static void sphere() {
+
+            var itemCount = 11;
+            var pageCount = PageCount(itemCount);
+            
+            List<int> lst = new List<int>();
+
+            for (int i = 0; i < 26; i++) {
+               
+            }
             var bs1 = new BoundingSphereD(new Vector3D(1d, 1d, 1d), 1d);
             var bs2 = new BoundingSphereD(new Vector3D(0d, 0d, 0d), 1d);
 
-            var i = bs1.Intersects(bs2);
             
             
             return;

@@ -7,9 +7,10 @@ namespace IngameScript {
     public class Module<T> : ModuleBase {
         readonly HashSet<long> mRegistry = new HashSet<long>();
         public readonly List<T> Blocks = new List<T>();
-        public MyOrientedBoundingBoxD OBB => new MyOrientedBoundingBoxD(Grid.WorldAABB, Grid.WorldMatrix);
+        
         public IMyCubeGrid Grid => mManager.mProgram.Me.CubeGrid;
         public BoundingSphereD Volume => Grid.WorldVolume;
+        public MyOrientedBoundingBoxD OBB => MAF.obb(Grid, Grid.GridSize);
         public MatrixD MyMatrix {
             get {
                 var m = Grid.WorldMatrix;

@@ -5,7 +5,6 @@ namespace IngameScript {
 
     public class IGC {
         readonly ModuleManager mManager;
-        
         readonly SubscriptionManager mUnicastMgr;
         readonly SubscriptionManager mBroadcastMgr;
         readonly List<IMyBroadcastListener> mListeners = new List<IMyBroadcastListener>();
@@ -26,7 +25,6 @@ namespace IngameScript {
                 var listener = mManager.mProgram.IGC.RegisterBroadcastListener(tag);
                 listener.SetMessageCallback(tag);
                 mListeners.Add(listener);
-                mManager.logger.persist($"Callback set for: {tag}");
             }
         }
         public void Update() {
@@ -74,8 +72,6 @@ namespace IngameScript {
                         foreach (var handler in list) {
                             handler(envelope);
                         }
-                    } else {
-                        mIGC.mManager.logger.persist($"No handlers found.");
                     }
                 }
                 mInbox.Clear();

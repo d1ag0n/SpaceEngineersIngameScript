@@ -28,12 +28,28 @@ namespace IngameScript {
         public ATCLientModule(ModuleManager aManager) : base(aManager) {
             aManager.mIGC.SubscribeUnicast("ATC", onATCMessage);
             aManager.mIGC.SubscribeUnicast("Dock", onDockMessage);
+            aManager.mIGC.SubscribeUnicast("Drill", onDrillMessage);
             onUpdate = UpdateAction;
+            lastRegistration = -60d;
         }
-
+        double lastRegistration;
         void UpdateAction() {
             var cbox = BOX.GetCBox(Volume.Center);
+            var dif = mManager.Runtime - lastRegistration;
+            controller.logger.log($"dif={dif}");
+            if (mManager.Drill && !controller.OnMission && dif > 60d) {
+                if (controller.MotherId != 0) {
+                    if (mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "Registration", "Drill")) {
+                        lastRegistration = mManager.Runtime;
+                    }
+                }
+            }
 
+        }
+        void onDrillMessage(IGC.Envelope e) {
+            var ore = ThyDetectedEntityInfo.Ore.Unbox(e.Message.Data);
+            var m = new DrillMission(controller, ore.Item2, ore.Item1);
+            controller.NewMission(m);
         }
         void onDockMessage(IGC.Envelope e) {
             Dock = DockMsg.Unbox(e.Message.Data);

@@ -1,19 +1,40 @@
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
+using VRage;
 using VRage.Game;
 using VRageMath;
 
 namespace IngameScript {
     public class ThyDetectedEntityInfo {
 
+        public struct Ore {
+            public readonly ThyDetectedEntityInfo Thy;
+            public readonly string Name;
+            public readonly Vector3L Position;
+            public Ore(ThyDetectedEntityInfo aThy, string aName, Vector3L aPosition) {
+                Thy = aThy;
+                Name = aName;
+                Position = aPosition;
+            }
+            public MyTuple<Vector3L, BoundingSphereD> Box() => MyTuple.Create(Position, Thy.WorldVolume);
+            public static MyTuple<Vector3L, BoundingSphereD> Unbox(object data) => (MyTuple<Vector3L, BoundingSphereD>)data;
+        }
+
         static HashSet<string> names = new HashSet<string>();
         static readonly NameGen _namer = new NameGen();
         public readonly HashSet<string> mOreTypes = new HashSet<string>();
         readonly HashSet<Vector3L> mOreRegistry = new HashSet<Vector3L>();
-        public readonly List<MyDetectedEntityInfo> mOres = new List<MyDetectedEntityInfo>();
+        public readonly List<Ore> mOres = new List<Ore>();
 
         // true if type of ore added is new to this asterois/cluster
+        public bool AddOre(Ore o) {
+            if (mOreRegistry.Add(o.Position)) {
+                mOres.Add(o);
+                return mOreTypes.Add(o.Name);
+            }
+            return false;
+        }
         public bool AddOre(MyDetectedEntityInfo e) {
             if (e.HitPosition.HasValue) {
                 Vector3L pos;
@@ -21,10 +42,7 @@ namespace IngameScript {
                 pos.X = (long)hit.X;
                 pos.Y = (long)hit.Y;
                 pos.Z = (long)hit.Z;
-                if (mOreRegistry.Add(pos)) {
-                    mOres.Add(e);
-                    return mOreTypes.Add(e.Name);
-                }
+                return AddOre(new Ore(this, e.Name, pos));
             }
             return false;
         }

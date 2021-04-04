@@ -11,34 +11,35 @@ namespace IngameScript {
         MatrixD orbitMatrix;
         int orbitIncrements = 0;
         int matrixCalculations = 0;
-        
+
+        readonly List<IMyOreDetector> mDetectors = new List<IMyOreDetector>();
+        int updateIndex = 0;
+        bool update = false;
+
         // this orbit is okayish I hope testing now
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
         public OrbitMission(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) : base(aController, aEntity) {
             orbit = Vector3D.Normalize(ctr.Volume.Center - mEntity.Position);
             calculateOrbitMatrix();
+            ctr.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
+            var blackList = "Stone";
+            foreach (var detector in mDetectors) {
+                detector.SetValue("OreBlacklist", blackList);
+            }
+            onScan = analyzeScan;
         }
-
+        
         void calculateOrbitMatrix() {
-            if (matrixCalculations * 0.1 > MathHelperD.TwoPi) {
-                Complete = true;
-                ctr.Thrust.Damp = true;
-                return;
+            if (!update && matrixCalculations * 0.1 > MathHelperD.TwoPi) {
+                update = true;
+                onScan = updateScan;
             }
             orbitIncrements = 0;
-            ctr.logger.persist("Recaclculating Orbital Matrix");
             orbit.CalculatePerpendicularVector(out orbitAxis);
             MatrixD.CreateFromAxisAngle(ref orbitAxis, -0.1, out orbitMatrix);
             Vector3D.Transform(orbitAxis, orbitMatrix);
             matrixCalculations++;
-        }
-
-        Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - ctr.Volume.Center);
-        // position that we want to fly at
-        Vector3D orbitProj() {
-            var dir = dirToThing;
-            return MAF.orthoProject(orbitPos, mEntity.WorldVolume.Center + -dir * space, dir);
         }
         void incOrbit() {
             orbitIncrements++;
@@ -48,6 +49,14 @@ namespace IngameScript {
             }
             Vector3D.TransformNormal(ref orbit, ref orbitMatrix, out orbit);
         }
+
+        Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - ctr.Volume.Center);
+        // position that we want to fly at
+        Vector3D orbitProj() {
+            var dir = dirToThing;
+            return MAF.orthoProject(orbitPos, mEntity.WorldVolume.Center + -dir * space, dir);
+        }
+
         
         // space to keep between us and thing
         double space => ctr.Volume.Radius + PADDING + mEntity.WorldVolume.Radius;
@@ -56,35 +65,30 @@ namespace IngameScript {
         Vector3D orbitPos =>
             mEntity.WorldVolume.Center + orbit * space;
         public override void Update() {
-            ctr.logger.log($"mEntity.WorldVolume.Radius={mEntity.WorldVolume.Radius}");
             ctr.Thrust.Damp = false;
  
             var dest = orbitProj();
             var disp = dest - ctr.Volume.Center;
             var dist = disp.LengthSquared();
-            ctr.logger.log($"dist={dist}");
-            ctr.logger.log($"mDistToDest={mDistToDest}");
             if (mDistToDest < 100) {
                 ctr.logger.log($"orbitIncrements={orbitIncrements}");
                 ctr.logger.log($"matrixCalculations={matrixCalculations}");
                 var dir = disp;
                 var mag = dir.Normalize();
-                ctr.logger.log($"mag={mag}");
                 dir = MAF.world2dir(dir, ctr.MyMatrix);
                 var desiredVelo = dir * 5.0;
                 ctr.Thrust.Acceleration = (desiredVelo - ctr.LocalLinearVelo);
                 ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
                 ctr.Gyro.SetRollTarget(mEntity.Position);
-                scan();
+                onScan();
                 disp = orbitPos - ctr.Volume.Center;
                 dist = disp.LengthSquared();
-                ctr.logger.log($"dist={dist}");
                 if (dist < 10000) {
                     incOrbit();
                 }
             } else {
+                ctr.logger.persist("Out of orbit");
                 base.Update();
-                
                 collisionDetectTo();
             }
             //ctr.logger.log("Orbit Mission Distance ", mDistToDest);
@@ -93,7 +97,20 @@ namespace IngameScript {
             //ctr.logger.log(ops);
             
         }
-        void scan() {
+        Action onScan;
+        void updateScan() {
+            if (mEntity.mOres.Count < updateIndex) {
+                var ore = mEntity.mOres[updateIndex];
+                if (oreScan(mEntity, ore.Position) < 2) {
+                    mEntity.mOres.RemoveAtFast(updateIndex);
+                    ctr.logger.persist("Ore removed.");
+                }
+                updateIndex++;
+            } else {
+                updateIndex = 0;
+            }
+        }
+        void analyzeScan() {
             var wv = ctr.Volume;
             var dir = MAF.ranDir() * (mEntity.WorldVolume.Radius * MAF.random.NextDouble());
             Vector3D scanPos;
@@ -111,58 +128,54 @@ namespace IngameScript {
             ThyDetectedEntityInfo thy;
             ctr.Camera.Scan(scanPos, out entity, out thy);
             if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
-                ore(thy, scanPos);
+                oreScan(thy, scanPos);
             }
             scanPos = wv.Center + ctr.LinearVelocityDirection * wv.Radius * 2.0;
             scanPos += MAF.ranDir() * wv.Radius * 2.0;
             ctr.Camera.Scan(scanPos, out entity, out thy);
             
         }
-        List<IMyOreDetector> detectors;
-        void ore(ThyDetectedEntityInfo thy, Vector3D aPos) {
-            if (detectors == null) {
-                detectors = new List<IMyOreDetector>();
-                ctr.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(detectors);
-                var blackList = "Stone";
-                foreach (var detector in detectors) {
-                    detector.SetValue("OreBlacklist", blackList);
-                    if (detector.GetValue<string>("OreBlacklist") != blackList) {
-                        ctr.logger.persist("OreBlacklist Inequal");
-                    }
-                }
-            }
-            var success = false;
-            foreach (var detector in detectors) {
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="thy"></param>
+        /// <param name="aPos"></param>
+        /// <returns>0 = scan fail, 1 = scan empty, 2 = scan found ore, 3 ore is new</returns>
+        int oreScan(ThyDetectedEntityInfo thy, Vector3D aPos) {
+            int result = 0;
+            foreach (var detector in mDetectors) {
                 var range = detector.GetValue<double>("AvailableScanRange");
                 range *= range;
                 var disp = detector.WorldMatrix.Translation - aPos;
                 var dist = disp.LengthSquared();
                 dist += 25;
                 if (dist > range) {
-                    
                     continue;
                 }
                 
                 detector.SetValue("RaycastTarget", aPos);
                 var res = detector.GetValue<MyDetectedEntityInfo>("RaycastResult");
                 if (res.TimeStamp != 0) {
+                    result = 1;
                     if (res.Name != "") {
-                        if (res.TimeStamp != 0) {
-                            if (thy.AddOre(res)) {
-                                ctr.logger.persist($"New {res.Name} Deposit found!");
-                            }
+                        result = 2;
+                        if (thy.AddOre(res)) {
+                            result = 3;
+                            ctr.logger.persist($"New {res.Name} Deposit found!");
                         }
                     }
-                    success = true;
                     break;
+                } else {
+                    ctr.logger.persist("ORE Timestamp Zero");
                 }
                 //detector.SetValue("ScanEpoch", 0L);
                 //throw new Exception("shouldnt be able to write ScanEpoch");
             }
-            if (!success) {
+            if (result == 0) {
                 ctr.logger.persist("Ore Scan Failure");
             }
-
+            return result;
         }
     }
 }

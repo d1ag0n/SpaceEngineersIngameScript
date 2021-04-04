@@ -131,14 +131,14 @@ namespace IngameScript
 
 
 
-            /*var bb = new BoundingBoxD(
+            var bb = new BoundingBoxD(
                 ((Vector3D)aGrid.Min - Vector3D.Half) * aGrid.GridSize,
                 ((Vector3D)aGrid.Max + Vector3D.Half) * aGrid.GridSize
-            );*/
+            );
 
-            var bb = aGrid.WorldAABB;
+            
             if (aInflate > 0) {
-                bb = aGrid.WorldAABB.Inflate(aInflate);
+                bb = bb.Inflate(aInflate);
             }
 
             

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System;
+using VRageMath;
 
 namespace IngameScript {
     public class Menu {
@@ -21,7 +22,7 @@ namespace IngameScript {
             //Items = MenuItems(0);
         }
         public static int PageCount(int itemCount) => (itemCount / 6) + 1;
-        public static int PageNumber(int pageNumber, int itemCount) => Math.Abs(pageNumber % PageCount(itemCount));
+        public static int PageIndex(int pageNumber, int itemCount) => pageNumber % PageCount(itemCount);
         public Menu(MenuModule aMain, List<ModuleBase> aList) {
             Title = "Main Menu";
             mMain = aMain;
@@ -34,7 +35,7 @@ namespace IngameScript {
                     if (m.MenuName == null) continue;
                     items++;
                 }
-                int index = PageNumber(aPage, items) * 6;
+                int index = PageIndex(aPage, items) * 6;
                 int count = 0;
 
                 mMenuItems.Clear();

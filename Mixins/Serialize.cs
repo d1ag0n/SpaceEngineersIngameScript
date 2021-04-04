@@ -115,6 +115,7 @@ namespace IngameScript {
             return MyRelationsBetweenPlayerAndBlock.NoOwnership;
         }
         public void str(Vector3D v) => sb.AppendLine(v.ToString());
+
         public Vector3D objVector3D(IEnumerator<string> e) {
             Vector3D result;
             Vector3D.TryParse(e.Current, out result);

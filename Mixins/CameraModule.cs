@@ -28,8 +28,6 @@ namespace IngameScript
             onPage = PageAction;
             onUpdate = ClusterAction;
         }
-
-
         public ThyDetectedEntityInfo Find(long entityId) {
             ThyDetectedEntityInfo result;
             long fkey;
@@ -107,7 +105,7 @@ namespace IngameScript
                     s.unt("Ore");
                     s.str(e.EntityId);
                     s.str(o.Name);
-                    s.str(o.HitPosition.Value);
+                    s.str(o.Position);
                 }
             }
             foreach(var p in mClusterLookup) {
@@ -151,14 +149,12 @@ namespace IngameScript
                             var id = s.objlong(en);
                             var name = s.objstring(en);
                             var pos = s.objVector3D(en);
+                            var v3l = new Vector3L((long)pos.X, (long)pos.Y, (long)pos.Z);
                             ThyDetectedEntityInfo thy;
                             if (mLookup.TryGetValue(id, out thy)) {
-                                thy.AddOre(
-                                    new MyDetectedEntityInfo(0, name, MyDetectedEntityType.Unknown, pos, default(MatrixD), Vector3D.Zero, MyRelationsBetweenPlayerAndBlock.NoOwnership, default(BoundingBoxD), 0)
-                                );
+                                thy.AddOre(new ThyDetectedEntityInfo.Ore(thy, name, v3l));
                             }
                         }
-
                     }
                 }
             }
@@ -170,7 +166,7 @@ namespace IngameScript
 
 
         List<MenuItem> PageAction(int aPage) {
-            aPage = Menu.PageNumber(aPage, mDetected.Count);
+            aPage = Menu.PageIndex(aPage, mDetected.Count);
             int index = (mDetected.Count - 1) - (aPage * 6);
             int count = 0;
             mMenuItems.Clear();
@@ -195,7 +191,7 @@ namespace IngameScript
         readonly Queue<MyDetectedEntityInfo> mIncoming = new Queue<MyDetectedEntityInfo>();
 
         public void AddNew(MyDetectedEntityInfo aEntity, out ThyDetectedEntityInfo thy) {
-            if (aEntity.EntityId == 0) {
+            if (aEntity.EntityId == 0 || aEntity.Type == MyDetectedEntityType.FloatingObject) {
                 thy = null;
                 return;
             }
@@ -216,6 +212,42 @@ namespace IngameScript
 
         const double HR = 3600000;
         bool deleted;
+
+        Menu OreMenu(MenuModule aMain, object aState) {
+            var thy = (ThyDetectedEntityInfo)aState;
+            return new Menu(aMain, $"Ore Record for {thy.Name}", pg => {
+                var page = Menu.PageIndex(pg, thy.mOres.Count);
+                int index = pg * 6;
+                int count = 0;
+                mMenuItems.Clear();
+                while (count < 6) {
+                    var o = thy.mOres[index];
+                    mMenuItems.Add(new MenuItem(o.Name, o, (m, state) => {
+                        return new Menu(aMain, $"Actions for {o.Name}", p => {
+                            mMenuItems.Clear();
+                            mMenuItems.Add(new MenuItem("Send Drill Drone", state, sendDrillDrone));
+                            return mMenuItems;
+                        });
+                    }));
+                    index++;
+                    count++;
+                }
+                return mMenuItems;
+            });
+        }
+        Menu sendDrillDrone(MenuModule aMain, object state) {
+            var ore = (ThyDetectedEntityInfo.Ore)state;
+            ATCModule atc;
+            if (GetModule(out atc)) {
+                
+                if (atc.SendDrill(ore)) {
+                    logger.persist(logger.gps(ore.Name, ore.Position));
+                } else {
+                    logger.persist("Drill not sent.");
+                }
+            }
+            return null;
+        }
         Menu EntityMenu(MenuModule aMain, object aState) {
             
             var e = (ThyDetectedEntityInfo)aState;
@@ -232,7 +264,7 @@ namespace IngameScript
                 if (deleted || p == 0) {
                     var ts = (DateTime.Now - e.TimeStamp).TotalHours;
                     mMenuItems.Add(new MenuItem($"Time: {e.TimeStamp} ({ts:f2} hours ago)"));
-                    mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship}"));
+                    mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship} - Type: {e.Type}"));
                     mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
                     mMenuItems.Add(new MenuItem($"Distance: {(e.Position - MyMatrix.Translation).Length():f0} - Radius: {e.WorldVolume.Radius}"));
                     mMenuItems.Add(new MenuItem("Designate Target", () => controller.NewMission(new OrbitMission(controller, e))));
@@ -241,10 +273,9 @@ namespace IngameScript
                     }
                 } else {
                     if (e.mOreTypes.Count > 0) {
-                        mMenuItems.Add(new MenuItem("Ores: " + string.Join(", ", e.mOreTypes)));
+                        mMenuItems.Add(new MenuItem("Ores: " + string.Join(", ", e.mOreTypes), e, OreMenu));
                     }
                     mMenuItems.Add(new MenuItem("Delete Record", aState, deleteRecordConfirm));
-
                 }
                 
                 return mMenuItems;

@@ -2,52 +2,80 @@ using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
+using System.Runtime.Serialization.Formatters.Binary;
+
 namespace IngameScript {
     
     public class DrillMission : MissionBase {
-        readonly Vector3D missionTarget;
-        readonly Vector3D missionStart;
-        readonly Vector3D missionDirection;
+        const float cargoPercent = 0.75f;
+        const double drillSpeed = 0.05;
         readonly ATCLientModule mATC;
+        readonly BoundingSphereD mMissionAsteroid;
+        readonly Vector3D mMissionTarget;
+        readonly Vector3D mMissionStart;
+        readonly Vector3D mMissionDirection;
+        
+        
         Action onUpdate;
+
         double deepestDepth;
         double lastDepth;
         double entranceDepth;
         float lastCargo;
-        const float cargoPercent = 0.02f;
+        
+        bool firstEntrance = true;
 
         readonly List<IMyShipDrill> mDrill = new List<IMyShipDrill>();
-        
-        public DrillMission(ShipControllerModule aController, Vector3D aPos) : base(aController, new BoundingSphereD(aPos, 0d)) {
-            
+
+        public override void Update() => onUpdate();
+
+        public DrillMission(ShipControllerModule aController, BoundingSphereD aAsteroid, Vector3D aTarget) : 
+            base(aController, new BoundingSphereD(aTarget, 0d)) {
+
             ctr.GetModule(out mATC);
-            aPos = new Vector3D(943515.72, 1233397d, 885858.7);
-            
+
+            mMissionAsteroid = aAsteroid;
+            mMissionTarget = aTarget;
+            mMissionDirection = mMissionAsteroid.Center - mMissionTarget;
+            mMissionDirection.Normalize();
+            mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + (ctr.Volume.Radius * 2d));
+            ctr.logger.persist(ctr.logger.gps("MissionStart", mMissionStart));
             mATC.Connector.Enabled = false;
+            
 
             ctr.mManager.getByType(mDrill);
-            
- 
-            missionStart = ctr.Remote.CenterOfMass;
-            missionTarget = aPos;
-            missionDirection = Vector3D.Normalize(missionTarget - missionStart);
-            missionStart += -missionDirection * 1000d;
+            stopDrill();
+            ctr.Gyro.SetTargetDirection(Vector3D.Zero);
             ctr.Thrust.Damp = false;
-            onUpdate = enter;
+
+            onUpdate = approach;
             lastCargo = ctr.cargoLevel();
         }
-        public override void Update() => onUpdate();
-        bool firstEntrance = true;        
+
+        void approach() {
+            var com = ctr.Remote.CenterOfMass;
+            var norm = Vector3D.Normalize(com - mMissionAsteroid.Center);
+            var plane = mMissionAsteroid.Center + norm * mMissionAsteroid.Radius;            
+            mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, norm), 0);
+            //var disp = com - mMissionStart;
+            //var distSq = disp.LengthSquared();
+            base.Update();
+            FlyTo();
+            var r = ctr.Volume.Radius;
+            if (mDistToDest < 1d) {
+                onUpdate = enter;
+            }
+        }
+        
+        
         void enter() {
             ctr.logger.log("enter");
             if (firstEntrance) {
                 var flResult = followLine(5.0);
                 entranceDepth = flResult;
-                if (flResult > 1020d) {
-                    ctr.Gyro.SetTargetDirection(missionDirection);
-                }
+                ctr.Gyro.SetTargetDirection(mMissionDirection);
                 var wv = ctr.Volume;
-                var scanPos = wv.Center + missionDirection * wv.Radius * 2.0;
+                var scanPos = wv.Center + mMissionDirection * wv.Radius * 2.0;
                 scanPos += MAF.ranDir() * wv.Radius;
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
@@ -64,32 +92,24 @@ namespace IngameScript {
                 }
             } else {
                 var flResult = followLine(10.0);
-                if (flResult + 10d > entranceDepth) {
+                if (flResult + 20d > entranceDepth) {
                     startDrill();
                     onUpdate = drill;
-                } else if (flResult + 20d > entranceDepth) {
-                    ctr.Gyro.SetTargetDirection(missionDirection);
+                } else if (flResult + 25d > entranceDepth) {
+                    ctr.Gyro.SetTargetDirection(mMissionDirection);
                 }
             }
             //lastDepth = dlResult;
         }
         bool slow;
         void drill() {
-            ctr.logger.log("drill");
-            ctr.logger.log($"lastDepth={lastDepth}");
-            ctr.logger.log($"deepestDepth={deepestDepth}");
-            ctr.Gyro.SetTargetDirection(missionDirection);
 
-            var speed = 1.0;
+            var speed = 2.5;
             if (lastDepth + 1.0 > deepestDepth) {
                 speed = drillSpeed;
             }
             var cargo = ctr.cargoLevel();
-            var gain = cargo - lastCargo;
-            if (gain < 0.1f) {
-                gain = 0f;
-            }
-            ctr.logger.log($"Gain {gain}");
+
             if (!slow && lastCargo == cargo) {
                 speed = 0.5;
             } else {
@@ -117,64 +137,91 @@ namespace IngameScript {
             }
             lastDepth = dist;
         }
+        
         void extract() {
-            ctr.logger.log("extract");
-            if (followLine(5.0, true) < entranceDepth) {
-                var pos = missionStart + missionDirection * 1000d;
-                ctr.ExtendMission(new Mission(ctr, pos));
-                ctr.ExtendMission(new DockMission(ctr, mATC));
-                onUpdate = undock;
+            var com = ctr.Remote.CenterOfMass;
+            var norm = Vector3D.Normalize(com - mMissionAsteroid.Center);
+            var plane = mMissionAsteroid.Center + norm * mMissionAsteroid.Radius;
+            mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, norm), 0);
+            //var disp = com - mMissionStart;
+            //var distSq = disp.LengthSquared();
+            base.Update();
+            FlyTo();
+            if (mDistToDest < 1d) {
+                onUpdate = alignDock;
+            }
+        }
+        void alignDock() {
+            mATC.ReserveDock();
+            if (mATC.Dock.isReserved) {
+                ctr.Thrust.Damp = false;
+                var com = ctr.Remote.CenterOfMass;
+                var dockPos = MAF.local2pos(
+                    (mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * (ctr.MotherSphere.Radius * 0.5), ctr.MotherMatrix
+                    );
+                var dir = Vector3D.Normalize(com - mMissionAsteroid.Center);
+                var plane = mMissionAsteroid.Center + dir * mMissionAsteroid.Radius;
+                var targetProjection = MAF.orthoProject(dockPos, plane, dir);
+                mDestination = new BoundingSphereD(targetProjection, 0);
+                base.Update();
+                FlyTo();
+                //ctr.logger.log(ctr.logger.gps("targetProjection", targetProjection));
+                //var targetLocal = MAF.world2pos(targetProjection, ctr.MyMatrix);
+                //var len = targetLocal.Normalize();
+                //var velo = targetLocal * 8d;
+                //var accel = velo - ctr.LocalLinearVelo;
+                //ctr.Thrust.Acceleration = accel * 6d;
+                //ctr.logger.log($"len={len}");
+                // todo measure dist to dockPos
+                if (mDistToDest < ctr.MotherSphere.Radius) {
+                    onUpdate = approach;
+                    ctr.ExtendMission(new DockMission(ctr, mATC));
+                }
+            } else {
+                ctr.Thrust.Damp = true;
             }
         }
         void undock() {
             mATC.Connector.Enabled = false;
             onUpdate = enter;
         }
-        const double drillSpeed = 0.05;
+        
 
         double followLine(double aSpeed = drillSpeed, bool reverse = false) {
             
             var r = ctr.Remote;
             var com = r.CenterOfMass;
-            var disp = com - missionStart;
+            var disp = com - mMissionStart;
             var dir = disp;
             var dist = dir.Normalize() + 1.0;
 
             Vector3D pos;
 
             if (reverse) {
-                pos = missionStart;
+                pos = mMissionStart;
             } else {
-                pos = missionStart + missionDirection * (dist + 20d);
+                pos = mMissionStart + mMissionDirection * (dist + 20d);
             }
             
             var m = ctr.MyMatrix;
             pos = MAF.world2pos(pos, m);
             dir = pos;
             dir.Normalize();
-            ctr.logger.log($"deepestDepth={deepestDepth:f0}");
-            ctr.logger.log($"entranceDepth={entranceDepth:f0}");
             dir *= aSpeed;
             ctr.Thrust.Acceleration = dir - ctr.LocalLinearVelo;
-            ctr.logger.log($"followLine={dist:f0}");
             return dist;
         }
-
-
-
         void startDrill() {
             foreach (var d in mDrill) {
                 d.Enabled = true;
             }
             ctr.Gyro.Roll = 0.2f;
         }
-
         void stopDrill() {
             foreach (var d in mDrill) {
                 d.Enabled = false;
             }
             ctr.Gyro.Roll = 0f;
         }
-        
     }
 }

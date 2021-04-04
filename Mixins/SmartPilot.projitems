@@ -14,6 +14,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)BlockDirList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BoxMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DockMission.cs" />

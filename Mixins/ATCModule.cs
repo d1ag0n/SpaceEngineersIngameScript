@@ -8,18 +8,31 @@ namespace IngameScript
 {
     class ATCModule : Module<IMyShipConnector>
     {
+        readonly HashSet<long> mDrills = new HashSet<long>();
         readonly BoxMap map = new BoxMap();
         readonly List<Connector> mConnectors = new List<Connector>();
 
         public ATCModule(ModuleManager aManager) : base(aManager) {
             aManager.mIGC.SubscribeUnicast("ATC", atcMessage);
             aManager.mIGC.SubscribeUnicast("Dock", dockMessage);
+            aManager.mIGC.SubscribeUnicast("Registration", registrationMessage);
             onUpdate = UpdateAction;
         }
         void UpdateAction() {
             foreach (var c in mConnectors) {
                 c.Update();
             }
+        }
+
+        public bool SendDrill(ThyDetectedEntityInfo.Ore ore) {
+            if (mDrills.Count > 0) {
+                var id = mDrills.FirstElement();
+                if (mManager.mProgram.IGC.SendUnicastMessage(id, "Drill", ore.Box())) {
+                    mDrills.Remove(id);
+                    return true;
+                }
+            }
+            return false;
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
             var result = false;
@@ -47,6 +60,14 @@ namespace IngameScript
             }
             var result = mManager.mProgram.IGC.SendUnicastMessage(src, "ATC", msg.Box());
             logger.persist("Respose result " + result);
+        }
+        void registrationMessage(IGC.Envelope e) {
+            if (e.Message.Data != null) {
+                var data = e.Message.Data.ToString();
+                if (data == "Drill") {
+                    mDrills.Add(e.Message.Source);
+                }
+            }
         }
         void dockMessage(IGC.Envelope e) {
             Connector unReserved = null;
@@ -78,6 +99,7 @@ namespace IngameScript
         public Vector3I theConnector;
         public Base6Directions.Direction ConnectorFace;
         public DateTime Reserved;
+        public Vector3D ConnectorDir => Base6Directions.GetVector(ConnectorFace);
 
         public bool isReserved => (MAF.Now - Reserved).TotalMinutes < Connector.reserveTime;
         public static DockMsg Unbox(object data) {
