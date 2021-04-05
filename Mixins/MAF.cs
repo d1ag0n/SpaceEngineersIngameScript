@@ -171,5 +171,7 @@ namespace IngameScript
                 b = a;
             }
         }
+
+        public static long round(long value, long interval = 10L) => (value / interval) * interval;
     }
 }

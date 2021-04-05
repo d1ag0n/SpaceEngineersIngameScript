@@ -11,6 +11,7 @@ namespace IngameScript
         readonly HashSet<long> mDrills = new HashSet<long>();
         readonly BoxMap map = new BoxMap();
         readonly List<Connector> mConnectors = new List<Connector>();
+        readonly Dictionary<Vector3L, long> mDrillMissions = new Dictionary<Vector3L, long>();
 
         public ATCModule(ModuleManager aManager) : base(aManager) {
             aManager.mIGC.SubscribeUnicast("ATC", atcMessage);
@@ -24,11 +25,31 @@ namespace IngameScript
             }
         }
 
+        public void CancelDrill(Vector3L aPos) {
+            long id;
+            if (mDrillMissions.TryGetValue(aPos, out id)) {
+                if (mManager.mProgram.IGC.SendUnicastMessage(id, "Cancel", 0)) {
+                    mDrillMissions.Remove(aPos);
+                }
+            }
+        }
+
         public bool SendDrill(ThyDetectedEntityInfo.Ore ore) {
+            logger.persist($"Drill count = {mDrills.Count}");
             if (mDrills.Count > 0) {
                 var id = mDrills.FirstElement();
+                long existing;
+                if (mDrillMissions.TryGetValue(ore.Position, out existing)) {
+                    if (existing != id) {
+                        return false;
+                    }
+                } else {
+                    mDrillMissions.Add(ore.Position, id);
+                }
+
                 if (mManager.mProgram.IGC.SendUnicastMessage(id, "Drill", ore.Box())) {
                     mDrills.Remove(id);
+                    
                     return true;
                 }
             }
@@ -116,9 +137,9 @@ namespace IngameScript
         public enATC Subject;
         public BoxInfo Info;
         
-        public MyTuple<int, MyTuple<long, long, bool, Vector3D>> Box() => MyTuple.Create((int)Subject, Info.Box());
+        public MyTuple<int, MyTuple<long, long, bool, Vector3D>>  Box() => MyTuple.Create((int)Subject, Info.Box());
         public static ATCMsg Unbox(object data) {
-            var t = (MyTuple<int, MyTuple<long, long, bool, Vector3D>>)data;
+            var t = (MyTuple<int, object>)data;
             var result = new ATCMsg();
             result.Subject = (enATC)t.Item1;
             result.Info = BoxInfo.Unbox(t.Item2);

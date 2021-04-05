@@ -162,7 +162,7 @@ namespace IngameScript {
         void UpdateAction() {
             if (Active) {
                 var sc = controller.Cockpit;
-                
+                logger.log($"Periscope Controller={sc.CustomName}");
                 if (sc != null) {
                     var rot = sc.RotationIndicator;
                     //logger.log(rot);

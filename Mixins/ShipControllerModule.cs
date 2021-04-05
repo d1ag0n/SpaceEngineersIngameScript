@@ -39,6 +39,15 @@ namespace IngameScript {
             }
             mMission = m;
         }
+        public void CancelMission() {
+            if (mMission != null) {
+                if (mMission.onCancel == null) {
+                    mMission = null;
+                } else {
+                    mMission.onCancel();
+                }
+            }
+        }
         public void ReplaceMission(MissionBase m) {
             mMission = m;
         }
@@ -83,17 +92,41 @@ namespace IngameScript {
             };
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
-            var inv = aBlock.GetInventory();
-
-            if (inv != null && (float)inv.MaxVolume > 0f) {
-                mInventory.Add(inv);
-                return false;
-            }
             var result = base.Accept(aBlock);
             if (result) {
                 (aBlock as IMyShipController).DampenersOverride = false;
+            } else {
+                var inv = aBlock.GetInventory();
+
+                if (inv != null && (float)inv.MaxVolume > 0f) {
+                    mInventory.Add(inv);
+                }
             }
+            
             return result;
+        }
+        // todo change this later to something useful
+        public void cargoDetail(Dictionary<string, float> detail) {
+            foreach (var inv in mInventory) {
+                int index = 0;
+                MyInventoryItem? item;
+                float val;
+                while (true) {
+                    item = inv.GetItemAt(index++);
+                    if (item.HasValue) {
+                        var amount = (float)item.Value.Amount;
+                        var name = item.Value.Type.ToString();
+                        logger.persist($"{name} {amount}");
+                        if (detail.TryGetValue(name, out val)) {
+                            detail[name] = amount - val;
+                        } else {
+                            detail.Add(name, amount);
+                        }
+                    } else {
+                        break;
+                    }
+                }
+            }
         }
         public float cargoLevel() {
             float c = 0f, m = 0f;
@@ -222,9 +255,13 @@ namespace IngameScript {
                 }
             }
             if (Cockpit == null || !Cockpit.IsFunctional || !Cockpit.IsUnderControl) {
+                logger.log($"blocks count {Blocks.Count}");
                 foreach (var sc in Blocks) {
                     Cockpit = sc;
+                    logger.log($"{sc.CustomName} under control {sc.IsUnderControl}");
+                    logger.log($"{sc.CustomName} functional {sc.IsFunctional}");
                     if (sc.IsUnderControl && sc.IsFunctional) {
+                        logger.persist($"{sc.CustomName} is func and undecontrol");
                         break;
                     }
                 }

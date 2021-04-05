@@ -14,8 +14,8 @@ namespace IngameScript {
         readonly Vector3D mMissionTarget;
         readonly Vector3D mMissionStart;
         readonly Vector3D mMissionDirection;
-        
-        
+
+        bool mCancel = false;
         Action onUpdate;
 
         double deepestDepth;
@@ -38,7 +38,7 @@ namespace IngameScript {
             mMissionTarget = aTarget;
             mMissionDirection = mMissionAsteroid.Center - mMissionTarget;
             mMissionDirection.Normalize();
-            mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + (ctr.Volume.Radius * 2d));
+            mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + ctr.Volume.Radius);
             ctr.logger.persist(ctr.logger.gps("MissionStart", mMissionStart));
             mATC.Connector.Enabled = false;
             
@@ -50,9 +50,14 @@ namespace IngameScript {
 
             onUpdate = approach;
             lastCargo = ctr.cargoLevel();
+            onCancel = doCancel;
+        }
+        void doCancel() {
+            mCancel = true;
         }
 
         void approach() {
+            mATC.Connector.Enabled = false;
             var com = ctr.Remote.CenterOfMass;
             var norm = Vector3D.Normalize(com - mMissionAsteroid.Center);
             var plane = mMissionAsteroid.Center + norm * mMissionAsteroid.Radius;            
@@ -69,6 +74,10 @@ namespace IngameScript {
         
         
         void enter() {
+            if (mCancel) {
+                stopDrill();
+                onUpdate = extract;
+            }
             ctr.logger.log("enter");
             if (firstEntrance) {
                 var flResult = followLine(5.0);
@@ -103,7 +112,10 @@ namespace IngameScript {
         }
         bool slow;
         void drill() {
-
+            if (mCancel) {
+                stopDrill();
+                onUpdate = extract;
+            }
             var speed = 2.5;
             if (lastDepth + 1.0 > deepestDepth) {
                 speed = drillSpeed;
@@ -139,10 +151,8 @@ namespace IngameScript {
         }
         
         void extract() {
-            var com = ctr.Remote.CenterOfMass;
-            var norm = Vector3D.Normalize(com - mMissionAsteroid.Center);
-            var plane = mMissionAsteroid.Center + norm * mMissionAsteroid.Radius;
-            mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, norm), 0);
+
+            mDestination = new BoundingSphereD(mMissionStart, 0);
             //var disp = com - mMissionStart;
             //var distSq = disp.LengthSquared();
             base.Update();
@@ -162,7 +172,11 @@ namespace IngameScript {
                 var dir = Vector3D.Normalize(com - mMissionAsteroid.Center);
                 var plane = mMissionAsteroid.Center + dir * mMissionAsteroid.Radius;
                 var targetProjection = MAF.orthoProject(dockPos, plane, dir);
-                mDestination = new BoundingSphereD(targetProjection, 0);
+                if ((mMissionAsteroid.Center - com).LengthSquared() > (mMissionAsteroid.Radius + ctr.Volume.Radius) * (mMissionAsteroid.Radius + ctr.Volume.Radius)) {
+                    mDestination = new BoundingSphereD(mMissionAsteroid.Center, 0);
+                } else {
+                    mDestination = new BoundingSphereD(targetProjection, 0);
+                }
                 base.Update();
                 FlyTo();
                 //ctr.logger.log(ctr.logger.gps("targetProjection", targetProjection));
@@ -173,9 +187,13 @@ namespace IngameScript {
                 //ctr.Thrust.Acceleration = accel * 6d;
                 //ctr.logger.log($"len={len}");
                 // todo measure dist to dockPos
-                if (mDistToDest < ctr.MotherSphere.Radius) {
+                if (mDistToDest < ctr.MotherSphere.Radius * 2d) {
                     onUpdate = approach;
-                    ctr.ExtendMission(new DockMission(ctr, mATC));
+                    if (mCancel) {
+                        ctr.NewMission(new DockMission(ctr, mATC));
+                    } else {
+                        ctr.ExtendMission(new DockMission(ctr, mATC));
+                    }
                 }
             } else {
                 ctr.Thrust.Damp = true;

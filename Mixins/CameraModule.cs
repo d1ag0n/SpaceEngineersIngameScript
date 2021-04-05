@@ -220,12 +220,15 @@ namespace IngameScript
                 int index = pg * 6;
                 int count = 0;
                 mMenuItems.Clear();
-                while (count < 6) {
+                while (count < 6 && index < thy.mOres.Count) {
                     var o = thy.mOres[index];
                     mMenuItems.Add(new MenuItem(o.Name, o, (m, state) => {
+                        var ore = (ThyDetectedEntityInfo.Ore)state;
                         return new Menu(aMain, $"Actions for {o.Name}", p => {
                             mMenuItems.Clear();
                             mMenuItems.Add(new MenuItem("Send Drill Drone", state, sendDrillDrone));
+                            mMenuItems.Add(new MenuItem(logger.gps(ore.Name, ore.Position)));
+                            mMenuItems.Add(new MenuItem("Veryify", state, verifyOre));
                             return mMenuItems;
                         });
                     }));
@@ -234,6 +237,9 @@ namespace IngameScript
                 }
                 return mMenuItems;
             });
+        }
+        Menu verifyOre(MenuModule aMain, object state) {
+            return null;
         }
         Menu sendDrillDrone(MenuModule aMain, object state) {
             var ore = (ThyDetectedEntityInfo.Ore)state;

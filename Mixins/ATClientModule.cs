@@ -28,7 +28,11 @@ namespace IngameScript {
         public ATCLientModule(ModuleManager aManager) : base(aManager) {
             aManager.mIGC.SubscribeUnicast("ATC", onATCMessage);
             aManager.mIGC.SubscribeUnicast("Dock", onDockMessage);
-            aManager.mIGC.SubscribeUnicast("Drill", onDrillMessage);
+            if (aManager.Drill) {
+                aManager.mIGC.SubscribeUnicast("Drill", onDrillMessage);
+                
+            }
+            aManager.mIGC.SubscribeUnicast("Cancel", onCancelMessage);
             onUpdate = UpdateAction;
             lastRegistration = -60d;
         }
@@ -46,6 +50,7 @@ namespace IngameScript {
             }
 
         }
+        void onCancelMessage(IGC.Envelope e) => controller.CancelMission();
         void onDrillMessage(IGC.Envelope e) {
             var ore = ThyDetectedEntityInfo.Ore.Unbox(e.Message.Data);
             var m = new DrillMission(controller, ore.Item2, ore.Item1);

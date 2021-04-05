@@ -11,13 +11,22 @@ namespace IngameScript {
         public struct Ore {
             public readonly ThyDetectedEntityInfo Thy;
             public readonly string Name;
-            public readonly Vector3L Position;
-            public Ore(ThyDetectedEntityInfo aThy, string aName, Vector3L aPosition) {
+            public readonly Vector3L Location;
+            const long grid = 3;
+            public Vector3L Index => new Vector3L(
+                MAF.round(Location.X + (Location.X > 0L ? grid : -grid), grid * 2L),
+                MAF.round(Location.Y + (Location.Y > 0L ? grid : -grid), grid * 2L),
+                MAF.round(Location.Z + (Location.Z > 0L ? grid : -grid), grid * 2L)
+            );
+                
+            
+            
+            public Ore(ThyDetectedEntityInfo aThy, string aName, Vector3L aLocation) {
                 Thy = aThy;
                 Name = aName;
-                Position = aPosition;
+                Location = aLocation;
             }
-            public MyTuple<Vector3L, BoundingSphereD> Box() => MyTuple.Create(Position, Thy.WorldVolume);
+            public MyTuple<Vector3L, BoundingSphereD> Box() => MyTuple.Create(Location, Thy.WorldVolume);
             public static MyTuple<Vector3L, BoundingSphereD> Unbox(object data) => (MyTuple<Vector3L, BoundingSphereD>)data;
         }
 
@@ -29,7 +38,7 @@ namespace IngameScript {
 
         // true if type of ore added is new to this asterois/cluster
         public bool AddOre(Ore o) {
-            if (mOreRegistry.Add(o.Position)) {
+            if (mOreRegistry.Add(o.Index)) {
                 mOres.Add(o);
                 return mOreTypes.Add(o.Name);
             }

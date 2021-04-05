@@ -14,27 +14,24 @@ namespace IngameScript {
 
         readonly List<IMyOreDetector> mDetectors = new List<IMyOreDetector>();
         int updateIndex = 0;
-        bool update = false;
-
+        
+        Action onScan;
         // this orbit is okayish I hope testing now
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
         public OrbitMission(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) : base(aController, aEntity) {
             orbit = Vector3D.Normalize(ctr.Volume.Center - mEntity.Position);
             calculateOrbitMatrix();
+            onScan = analyzeScan;
+            
             ctr.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
             var blackList = "Stone";
             foreach (var detector in mDetectors) {
                 detector.SetValue("OreBlacklist", blackList);
             }
-            onScan = analyzeScan;
         }
         
         void calculateOrbitMatrix() {
-            if (!update && matrixCalculations * 0.1 > MathHelperD.TwoPi) {
-                update = true;
-                onScan = updateScan;
-            }
             orbitIncrements = 0;
             orbit.CalculatePerpendicularVector(out orbitAxis);
             MatrixD.CreateFromAxisAngle(ref orbitAxis, -0.1, out orbitMatrix);
@@ -42,6 +39,9 @@ namespace IngameScript {
             matrixCalculations++;
         }
         void incOrbit() {
+            if (onScan == analyzeScan) {
+                onScan = updateScan;
+            }
             orbitIncrements++;
             var tot = orbitIncrements * 0.1;
             if (tot > MathHelperD.TwoPi) {
@@ -97,20 +97,30 @@ namespace IngameScript {
             //ctr.logger.log(ops);
             
         }
-        Action onScan;
+        
         void updateScan() {
-            if (mEntity.mOres.Count < updateIndex) {
+            ctr.logger.log($"updateScan - ore count {mEntity.mOres.Count}");
+            if (mEntity.mOres.Count > updateIndex) {
                 var ore = mEntity.mOres[updateIndex];
-                if (oreScan(mEntity, ore.Position) < 2) {
+                var scanResult = oreScan(mEntity, ore.Position);
+                if (scanResult == 1) {
+                    ATCModule atc;
+                    if (ctr.GetModule(out atc)) {
+                        atc.CancelDrill(ore.Position);
+                    }
                     mEntity.mOres.RemoveAtFast(updateIndex);
                     ctr.logger.persist("Ore removed.");
+                } else if (scanResult == 0) {
+                    ctr.logger.persist("Ore update failed.");
                 }
                 updateIndex++;
             } else {
                 updateIndex = 0;
+                onScan = analyzeScan;
             }
         }
         void analyzeScan() {
+            ctr.logger.log($"analyzeScan - ore count {mEntity.mOres.Count}");
             var wv = ctr.Volume;
             var dir = MAF.ranDir() * (mEntity.WorldVolume.Radius * MAF.random.NextDouble());
             Vector3D scanPos;
@@ -149,7 +159,7 @@ namespace IngameScript {
                 range *= range;
                 var disp = detector.WorldMatrix.Translation - aPos;
                 var dist = disp.LengthSquared();
-                dist += 25;
+                dist += 4.5;
                 if (dist > range) {
                     continue;
                 }

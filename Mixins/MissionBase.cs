@@ -8,6 +8,7 @@ namespace IngameScript {
 
         readonly HashSet<long> mEscapeSet = new HashSet<long>();
         readonly List<Vector3D> mEscape = new List<Vector3D>();
+        public Action onCancel;
 
         double mPrefVelo;
         Vector3D mStop;

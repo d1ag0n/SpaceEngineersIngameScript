@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using VRageMath;
 using VRage;
 
+
 namespace IngameScript {
     public class MotherShipModule : Module<IMyTerminalBlock> {
         
@@ -29,7 +30,10 @@ namespace IngameScript {
             }
         }
 
-        public MyTuple<BoundingBoxD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(BoundingBoxD volume, Vector3D dir, double speed, Vector3D ngVelo, MatrixD orientation) => MyTuple.Create(volume, dir, speed, ngVelo, orientation, controller.Remote.CenterOfMass);
-        public static MyTuple<BoundingBoxD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(object data) => (MyTuple<BoundingBoxD, Vector3D, double,Vector3D, MatrixD, Vector3D>)data;
+        public MyTuple<BoundingBoxD, Vector3D, double, Vector3D, MatrixD, Vector3D> 
+            MotherState(BoundingBoxD volume, Vector3D dir, double speed, Vector3D ngVelo, MatrixD orientation) =>
+            MyTuple.Create(volume, dir, speed, ngVelo, orientation, controller.Remote.CenterOfMass);
+        public static MyTuple<BoundingBoxD, Vector3D, double, Vector3D, MatrixD, Vector3D> MotherState(object data) => 
+            (MyTuple<BoundingBoxD, Vector3D, double,Vector3D, MatrixD, Vector3D>)data;
     }
 }

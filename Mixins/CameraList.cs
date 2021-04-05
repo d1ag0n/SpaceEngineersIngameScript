@@ -107,6 +107,7 @@ namespace IngameScript {
 
             return false;
         }
+        // whiplash141 - https://discord.com/channels/125011928711036928/216219467959500800/810367147489361960
         bool testCameraAngles(IMyCameraBlock camera, ref Vector3D aDirection) {
             aDirection = Vector3D.Rotate(aDirection, MatrixD.Transpose(camera.WorldMatrix));
             if (aDirection.Z > 0)

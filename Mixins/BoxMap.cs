@@ -81,7 +81,7 @@ namespace IngameScript
         public DateTime Reserved;
         public bool Obstructed;
         public Vector3D Position;
-        public MyTuple<long, long, bool, Vector3D> Box() => MyTuple.Create(Reserver, Reserved.ToBinary(), Obstructed, Position);
+        public MyTuple<long,long, bool, Vector3D>  Box() => MyTuple.Create(Reserver, Reserved.ToBinary(), Obstructed, Position);
         public static BoxInfo Unbox(object data) {
             var t = (MyTuple<long, long, bool, Vector3D>)data;
             BoxInfo result;

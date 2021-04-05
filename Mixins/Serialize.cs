@@ -77,7 +77,9 @@ namespace IngameScript {
             return s;
         }
 
-        
+        public void foo() {
+            KeyValuePair<string, object> bar;
+        }
 
         public void str(ThyDetectedEntityInfo e) {
             str(e.EntityId);

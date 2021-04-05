@@ -8,7 +8,18 @@ using IngameScript;
 
 namespace commandline {
     class Info {
-        static void Main() => sphere();
+        static void Main() => round();
+
+        public static void round() {
+            var v = 15L;
+
+            List<long> lst = new List<long>();
+            for (long i = -100L; i < 100L; i++) {
+                lst.Add(round(i + (i > 0L ? 5L : -5L)));
+            }
+            var result = round(v); ;
+        }
+        public static long round(long value, long interval = 10L) => (value / interval) * interval;
         public static int PageCount(int itemCount) => (itemCount / 6) + 1;
         public static int PageNumber(int pageNumber, int itemCount) => Math.Abs(pageNumber % PageCount(itemCount));
         static void sphere() {
