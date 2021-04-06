@@ -60,15 +60,11 @@ namespace IngameScript {
         public override void Update() {
             if (!isActive)
                 return;
-            //mLog.log($"Mission Altitude {Altitude:f0}");
             var dir = MAF.world2dir(mController.Remote.WorldMatrix.Forward, mController.MyMatrix);
             var grav = MAF.world2dir(mController.Remote.GetNaturalGravity(), mController.MyMatrix);
             var axis = dir.Cross(grav);
-            //var ab = MAF.angleBetween(dir, grav);
-
             double elevation;
             mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out elevation);
-            //mController.logger.log($"Current Altitude {elevation:f0}");
 
             var altDif = elevation - lastElevation;
 
@@ -93,6 +89,9 @@ namespace IngameScript {
                 } else if (altDif < -1d) {
                     angle = pitch * 5d;
                 }
+            }
+            if (grav.Dot(mController.Remote.WorldMatrix.Up) > 0d) {
+                angle = -angle;
             }
             if (Math.Abs(altDif * 6d) > 1.0d) {
                 angle *= 10d;
