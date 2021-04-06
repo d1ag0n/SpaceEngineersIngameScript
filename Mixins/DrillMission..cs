@@ -8,7 +8,7 @@ namespace IngameScript {
     
     public class DrillMission : MissionBase {
         const float cargoPercent = 0.75f;
-        const double drillSpeed = 0.05;
+        const double drillSpeed = 0.06;
         readonly ATCLientModule mATC;
         readonly BoundingSphereD mMissionAsteroid;
         readonly Vector3D mMissionTarget;
@@ -55,17 +55,29 @@ namespace IngameScript {
         void doCancel() {
             mCancel = true;
         }
-
+        double AltitudeSq => (mMissionAsteroid.Center - ctr.Remote.CenterOfMass).LengthSquared();
+        double Altitude => Math.Sqrt(AltitudeSq);
+        double MaxAltitudeSq => (mMissionAsteroid.Radius + ctr.Volume.Radius) * (mMissionAsteroid.Radius + ctr.Volume.Radius);
+        double MaxAltitude => Math.Sqrt(MaxAltitudeSq);
         void approach() {
+            ctr.logger.log($"approach, Alt={Altitude}, Max={MaxAltitude}");
+            if (ctr.cargoLevel() > 0f) {
+                onUpdate = alignDock;
+            }
             mATC.Connector.Enabled = false;
             var com = ctr.Remote.CenterOfMass;
             var norm = Vector3D.Normalize(com - mMissionAsteroid.Center);
-            var plane = mMissionAsteroid.Center + norm * mMissionAsteroid.Radius;            
-            mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, norm), 0);
+            var plane = mMissionAsteroid.Center + norm * mMissionAsteroid.Radius;
+            if (AltitudeSq > MaxAltitudeSq) {
+                mDestination = new BoundingSphereD(MAF.orthoProject(mMissionAsteroid.Center, plane, norm), 0);
+            } else {
+
+                mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, norm), 0);
+            }
             //var disp = com - mMissionStart;
             //var distSq = disp.LengthSquared();
             base.Update();
-            FlyTo();
+            FlyTo(10d);
             var r = ctr.Volume.Radius;
             if (mDistToDest < 1d) {
                 onUpdate = enter;
@@ -74,11 +86,11 @@ namespace IngameScript {
         
         
         void enter() {
+            ctr.logger.log($"enter, Alt={Altitude}, Max={MaxAltitude}");
             if (mCancel) {
                 stopDrill();
                 onUpdate = extract;
             }
-            ctr.logger.log("enter");
             if (firstEntrance) {
                 var flResult = followLine(5.0);
                 entranceDepth = flResult;
@@ -112,6 +124,7 @@ namespace IngameScript {
         }
         bool slow;
         void drill() {
+            ctr.logger.log($"drilling, Alt={Altitude}, Max={MaxAltitude}");
             if (mCancel) {
                 stopDrill();
                 onUpdate = extract;
@@ -132,36 +145,43 @@ namespace IngameScript {
             if (lastDepth < entranceDepth) {
                 speed = 5.0;
             }
-
             var dist = followLine(speed);
 
             if (cargo > cargoPercent) {
-                stopDrill();
+                
                 onUpdate = extract;
                 deepestDepth -= 1d;
                 slow = false;
                 return;
-            } else {
-                
             }
             if (dist > deepestDepth) {
                 deepestDepth = dist;
             }
             lastDepth = dist;
+            var targDist = (mMissionTarget - ctr.Remote.CenterOfMass).LengthSquared();
+            ctr.logger.log($"targDist={targDist}");
+            if (targDist < 25d) {
+                mCancel = true;
+            }
         }
         
         void extract() {
-
+            ctr.logger.log($"extract, Alt={Altitude}, Max={MaxAltitude}");
             mDestination = new BoundingSphereD(mMissionStart, 0);
             //var disp = com - mMissionStart;
             //var distSq = disp.LengthSquared();
-            base.Update();
-            FlyTo();
-            if (mDistToDest < 1d) {
+            
+            var flr = followLine(5.0, true);
+            ctr.logger.log($"flr={flr}, entranceDepth={entranceDepth}");
+            if (flr < entranceDepth) {
+                stopDrill();
+            }
+            if (flr < 50d) {
                 onUpdate = alignDock;
             }
         }
         void alignDock() {
+            ctr.logger.log($"alignDock, Alt={Altitude}, Max={MaxAltitude}");
             mATC.ReserveDock();
             if (mATC.Dock.isReserved) {
                 ctr.Thrust.Damp = false;
@@ -170,15 +190,15 @@ namespace IngameScript {
                     (mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * (ctr.MotherSphere.Radius * 0.5), ctr.MotherMatrix
                     );
                 var dir = Vector3D.Normalize(com - mMissionAsteroid.Center);
-                var plane = mMissionAsteroid.Center + dir * mMissionAsteroid.Radius;
+                var plane = mMissionAsteroid.Center + dir * MaxAltitude;
                 var targetProjection = MAF.orthoProject(dockPos, plane, dir);
-                if ((mMissionAsteroid.Center - com).LengthSquared() > (mMissionAsteroid.Radius + ctr.Volume.Radius) * (mMissionAsteroid.Radius + ctr.Volume.Radius)) {
+                if (AltitudeSq > MaxAltitudeSq) {
                     mDestination = new BoundingSphereD(mMissionAsteroid.Center, 0);
                 } else {
                     mDestination = new BoundingSphereD(targetProjection, 0);
                 }
                 base.Update();
-                FlyTo();
+                FlyTo(10d);
                 //ctr.logger.log(ctr.logger.gps("targetProjection", targetProjection));
                 //var targetLocal = MAF.world2pos(targetProjection, ctr.MyMatrix);
                 //var len = targetLocal.Normalize();
@@ -216,9 +236,9 @@ namespace IngameScript {
             Vector3D pos;
 
             if (reverse) {
-                pos = mMissionStart;
+                pos = mMissionStart + mMissionDirection * (dist + -1d);
             } else {
-                pos = mMissionStart + mMissionDirection * (dist + 20d);
+                pos = mMissionStart + mMissionDirection * (dist + 1d);
             }
             
             var m = ctr.MyMatrix;

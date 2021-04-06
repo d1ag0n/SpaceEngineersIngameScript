@@ -105,7 +105,7 @@ namespace IngameScript
                     s.unt("Ore");
                     s.str(e.EntityId);
                     s.str(o.Name);
-                    s.str(o.Position);
+                    s.str(o.Location);
                 }
             }
             foreach(var p in mClusterLookup) {
@@ -222,13 +222,12 @@ namespace IngameScript
                 mMenuItems.Clear();
                 while (count < 6 && index < thy.mOres.Count) {
                     var o = thy.mOres[index];
-                    mMenuItems.Add(new MenuItem(o.Name, o, (m, state) => {
+                    mMenuItems.Add(new MenuItem($"{o.Name} - Altitude: {(thy.Position - o.Location).Length()}", o, (m, state) => {
                         var ore = (ThyDetectedEntityInfo.Ore)state;
                         return new Menu(aMain, $"Actions for {o.Name}", p => {
                             mMenuItems.Clear();
                             mMenuItems.Add(new MenuItem("Send Drill Drone", state, sendDrillDrone));
-                            mMenuItems.Add(new MenuItem(logger.gps(ore.Name, ore.Position)));
-                            mMenuItems.Add(new MenuItem("Veryify", state, verifyOre));
+                            mMenuItems.Add(new MenuItem(logger.gps(ore.Name, ore.Location)));
                             return mMenuItems;
                         });
                     }));
@@ -238,16 +237,13 @@ namespace IngameScript
                 return mMenuItems;
             });
         }
-        Menu verifyOre(MenuModule aMain, object state) {
-            return null;
-        }
         Menu sendDrillDrone(MenuModule aMain, object state) {
             var ore = (ThyDetectedEntityInfo.Ore)state;
             ATCModule atc;
             if (GetModule(out atc)) {
                 
                 if (atc.SendDrill(ore)) {
-                    logger.persist(logger.gps(ore.Name, ore.Position));
+                    logger.persist(logger.gps(ore.Name, ore.Location));
                 } else {
                     logger.persist("Drill not sent.");
                 }

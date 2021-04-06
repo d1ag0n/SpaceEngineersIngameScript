@@ -40,7 +40,8 @@ namespace IngameScript {
         void UpdateAction() {
             var cbox = BOX.GetCBox(Volume.Center);
             var dif = mManager.Runtime - lastRegistration;
-            controller.logger.log($"dif={dif}");
+            controller.logger.log($"controller.OnMission={controller.OnMission}");
+            
             if (mManager.Drill && !controller.OnMission && dif > 60d) {
                 if (controller.MotherId != 0) {
                     if (mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "Registration", "Drill")) {

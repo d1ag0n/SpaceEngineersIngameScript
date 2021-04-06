@@ -1141,8 +1141,8 @@ namespace IngameScript
 
         const double deg = Math.PI / 180.0;
 
-
         Vector3D up(Vector3D forward, Vector3D left) => forward.Cross(left);
+
         Vector3D down(Vector3D forward, Vector3D right) => forward.Cross(right);
         Vector3D left(Vector3D forward, Vector3D down) => forward.Cross(down);
         Vector3D right(Vector3D forward, Vector3D up) => forward.Cross(up);

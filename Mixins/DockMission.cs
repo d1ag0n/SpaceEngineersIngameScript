@@ -74,8 +74,10 @@ namespace IngameScript {
                 BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
                 BaseVelocity += veloAtPos;
                 base.Update();
+                ctr.logger.log($"mDistToDest={mDistToDest}");
                 if (mDistToDest < 1.0) {
                     atc.Connector.Enabled = true;
+                    ctr.logger.log($"atc.Connector.Status={atc.Connector.Status}");
                     if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
                         atc.Connector.Connect();
                         ctr.Thrust.Acceleration = Vector3D.Zero;
@@ -83,10 +85,16 @@ namespace IngameScript {
                         return;
                     } else if (atc.Connector.Status == MyShipConnectorStatus.Connected) {
                         ctr.Gyro.setGyrosEnabled(false);
-                        if (ctr.cargoLevel() == 0d) {
+                        var cargoLevel = ctr.cargoLevel();
+                        ctr.logger.log($"cargoLevel={cargoLevel}");
+                        if (cargoLevel == 0f) {
+                            ctr.logger.log("Completing mission");
                             ctr.Gyro.SetTargetDirection(Vector3D.Zero);
                             ctr.Gyro.NavBlock = null;
                             Complete = true;
+                            return;
+                        } else {
+                            ctr.logger.log("Draining cargo");
                         }
                         return;
                     }

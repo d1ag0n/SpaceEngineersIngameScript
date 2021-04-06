@@ -16,7 +16,7 @@ namespace IngameScript
 
         public new bool Active {
             get { return base.Active; }
-            private set {
+            set {
                 if (base.Active != value) {
                     base.Active = value;
                     init();

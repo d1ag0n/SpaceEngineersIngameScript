@@ -140,47 +140,36 @@ namespace IngameScript {
             return v;
         }
         void InitializeAction() {
-            var result = true;
             if (Gyro == null) {
                 GyroModule gy;
-                if (!GetModule(out gy)) {
-                    result = false;
-                }
+                GetModule(out gy);
                 Gyro = gy;
             }
             if (Thrust == null) {
                 ThrustModule th;
-                if (!GetModule(out th)) {
-                    result = false;
-                }
+                GetModule(out th);
                 Thrust = th;
             }
             if (Camera == null) {
                 CameraModule cam;
-                if (!GetModule(out cam)) {
-                    result = false;
-                }
+                GetModule(out cam);
                 Camera = cam;
             }
-            if (result) {
-                if (mManager.Drill) {
-                    if (ATClient == null) {
-                        GetModule(out ATClient);
-                    }
-                    if (ATClient.connected) {
-                        Thrust.Damp = false;
-                    } else {
-                        
-                        //Mission = new DockMission(this, ATClient, Volume);
-                        
-                    }
+            if (mManager.Drill) {
+                if (ATClient == null) {
+                    GetModule(out ATClient);
                 }
-                onUpdate = UpdateGlobal;
-                onUpdate();
-                
-            } else {
-                UpdateLocal();
+                if (ATClient.connected) {
+                    Thrust.Damp = false;
+                } else {
+                        
+                    //Mission = new DockMission(this, ATClient, Volume);
+                        
+                }
             }
+             
+            onUpdate = UpdateGlobal;
+            onUpdate();
         }
         public long MotherId { get; private set; }
         public bool OnMission => mMission != null;
@@ -255,16 +244,17 @@ namespace IngameScript {
                 }
             }
             if (Cockpit == null || !Cockpit.IsFunctional || !Cockpit.IsUnderControl) {
-                logger.log($"blocks count {Blocks.Count}");
                 foreach (var sc in Blocks) {
                     Cockpit = sc;
-                    logger.log($"{sc.CustomName} under control {sc.IsUnderControl}");
-                    logger.log($"{sc.CustomName} functional {sc.IsFunctional}");
                     if (sc.IsUnderControl && sc.IsFunctional) {
-                        logger.persist($"{sc.CustomName} is func and undecontrol");
                         break;
                     }
                 }
+            }
+            if (Remote == null) {
+                logger.log("No ship controller.");
+                mManager.mProgram.Echo("No ship controller");
+                return;
             }
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
@@ -285,9 +275,14 @@ namespace IngameScript {
             if (mMission == null || mMission.Complete) {
                 if (mMissionStack.Count != 0) {
                     mMission = mMissionStack.Pop();
+                } else {
+                    mMission = null;
                 }
             }
-            mMission?.Update();
+            if (mMission != null) {
+                logger.log($"Mission={mMission}");
+                mMission.Update();
+            }
         }
         //Vector3D lastPos;
         //double estimatedStop;

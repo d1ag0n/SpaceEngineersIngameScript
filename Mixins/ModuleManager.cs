@@ -66,13 +66,19 @@ namespace IngameScript {
             if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                 if (arg.Length > 0) {
                     if (arg == "reset") {
-                        mProgram.Reset();
+                        controller.NewMission(new CruiseMission(controller));
                     } else if (arg == "save") {
                         Save();
                     } else {
                         MenuModule menu;
                         if (GetModule(out menu)) {
-                            menu.Input(arg);
+                            try {
+
+                                menu.Input(arg);
+                            } catch (Exception ex) {
+                                logger.persist(ex.ToString());
+                                mProgram.Echo(ex.ToString());
+                            }
                         }
                     }
                 }
@@ -90,6 +96,7 @@ namespace IngameScript {
                         mModules[i].onUpdate?.Invoke();
                     } catch (Exception ex) {
                         logger.persist(ex.ToString());
+                        mProgram.Echo(ex.ToString());
                     }
                 }
                 logger.onUpdate();

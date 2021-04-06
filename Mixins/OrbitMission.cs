@@ -38,9 +38,14 @@ namespace IngameScript {
             Vector3D.Transform(orbitAxis, orbitMatrix);
             matrixCalculations++;
         }
+        int incrementsSince = 0;
         void incOrbit() {
+            
             if (onScan == analyzeScan) {
-                onScan = updateScan;
+                incrementsSince++;
+                if (incrementsSince > 30) {
+                    onScan = updateScan;
+                }
             }
             orbitIncrements++;
             var tot = orbitIncrements * 0.1;
@@ -102,20 +107,23 @@ namespace IngameScript {
             ctr.logger.log($"updateScan - ore count {mEntity.mOres.Count}");
             if (mEntity.mOres.Count > updateIndex) {
                 var ore = mEntity.mOres[updateIndex];
-                var scanResult = oreScan(mEntity, ore.Position);
+                MyDetectedEntityInfo info;
+                var scanResult = oreScan(mEntity, ore.Location, out info, true);
                 if (scanResult == 1) {
                     ATCModule atc;
                     if (ctr.GetModule(out atc)) {
-                        atc.CancelDrill(ore.Position);
+                        atc.CancelDrill(ore.Index);
                     }
                     mEntity.mOres.RemoveAtFast(updateIndex);
-                    ctr.logger.persist("Ore removed.");
+                    updateIndex--;
+
+                    ctr.logger.persist(ctr.logger.gps("removed", ore.Location));
                 } else if (scanResult == 0) {
                     ctr.logger.persist("Ore update failed.");
                 }
                 updateIndex++;
             } else {
-                updateIndex = 0;
+                incrementsSince = updateIndex = 0;
                 onScan = analyzeScan;
             }
         }
@@ -138,7 +146,8 @@ namespace IngameScript {
             ThyDetectedEntityInfo thy;
             ctr.Camera.Scan(scanPos, out entity, out thy);
             if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
-                oreScan(thy, scanPos);
+                MyDetectedEntityInfo info;
+                oreScan(thy, scanPos, out info, false);
             }
             scanPos = wv.Center + ctr.LinearVelocityDirection * wv.Radius * 2.0;
             scanPos += MAF.ranDir() * wv.Radius * 2.0;
@@ -152,27 +161,27 @@ namespace IngameScript {
         /// <param name="thy"></param>
         /// <param name="aPos"></param>
         /// <returns>0 = scan fail, 1 = scan empty, 2 = scan found ore, 3 ore is new</returns>
-        int oreScan(ThyDetectedEntityInfo thy, Vector3D aPos) {
+        int oreScan(ThyDetectedEntityInfo thy, Vector3D aPos, out MyDetectedEntityInfo info, bool update) {
             int result = 0;
+            info = default(MyDetectedEntityInfo);
             foreach (var detector in mDetectors) {
                 var range = detector.GetValue<double>("AvailableScanRange");
                 range *= range;
                 var disp = detector.WorldMatrix.Translation - aPos;
                 var dist = disp.LengthSquared();
-                dist += 4.5;
-                if (dist > range) {
+                if (dist + 5d > range) {
                     continue;
                 }
                 
                 detector.SetValue("RaycastTarget", aPos);
-                var res = detector.GetValue<MyDetectedEntityInfo>("RaycastResult");
-                if (res.TimeStamp != 0) {
+                info = detector.GetValue<MyDetectedEntityInfo>(update ? "DirectResult" : "RaycastResult");
+                if (info.TimeStamp != 0) {
                     result = 1;
-                    if (res.Name != "") {
+                    if (info.Name != "") {
                         result = 2;
-                        if (thy.AddOre(res)) {
+                        if (thy.AddOre(info)) {
                             result = 3;
-                            ctr.logger.persist($"New {res.Name} Deposit found!");
+                            ctr.logger.persist($"New {info.Name} Deposit found!");
                         }
                     }
                     break;
@@ -183,6 +192,7 @@ namespace IngameScript {
                 //throw new Exception("shouldnt be able to write ScanEpoch");
             }
             if (result == 0) {
+                
                 ctr.logger.persist("Ore Scan Failure");
             }
             return result;

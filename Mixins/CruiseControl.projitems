@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>59812ba8-f6a8-4f95-854d-5aeb80a651b9</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>CruiseControl</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ATClientModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ATCModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BlockDirList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BOX.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CameraList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CruiseMission.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Delegates.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DockMission.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DrillMission..cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IGC.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MenuItem.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MenuModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MissionBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MotherShipModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OPS.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OrbitMission.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThrustList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThrustModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThyDetectedEntityInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThyDetectedEntityType.cs" />
+  </ItemGroup>
+</Project>

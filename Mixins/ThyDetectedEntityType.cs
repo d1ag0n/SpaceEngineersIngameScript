@@ -1,4 +1,6 @@
 namespace IngameScript {
+    #region mdk preserve
+    // Stuff I don't want the minifier to touch
     public enum ThyDetectedEntityType {
         None = 0,
         Unknown = 1,
@@ -13,4 +15,5 @@ namespace IngameScript {
         Missile = 10,
         AsteroidCluster = 11
     }
+    #endregion
 }

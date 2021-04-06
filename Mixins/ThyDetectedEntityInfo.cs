@@ -11,23 +11,23 @@ namespace IngameScript {
         public struct Ore {
             public readonly ThyDetectedEntityInfo Thy;
             public readonly string Name;
-            public readonly Vector3L Location;
-            const long grid = 3;
+            public readonly Vector3D Location;
+            const long grid = 4;
             public Vector3L Index => new Vector3L(
-                MAF.round(Location.X + (Location.X > 0L ? grid : -grid), grid * 2L),
-                MAF.round(Location.Y + (Location.Y > 0L ? grid : -grid), grid * 2L),
-                MAF.round(Location.Z + (Location.Z > 0L ? grid : -grid), grid * 2L)
+                MAF.round((long)Location.X + (Location.X > 0L ? grid : -grid), grid * 2L),
+                MAF.round((long)Location.Y + (Location.Y > 0L ? grid : -grid), grid * 2L),
+                MAF.round((long)Location.Z + (Location.Z > 0L ? grid : -grid), grid * 2L)
             );
                 
             
             
-            public Ore(ThyDetectedEntityInfo aThy, string aName, Vector3L aLocation) {
+            public Ore(ThyDetectedEntityInfo aThy, string aName, Vector3D aLocation) {
                 Thy = aThy;
                 Name = aName;
                 Location = aLocation;
             }
-            public MyTuple<Vector3L, BoundingSphereD> Box() => MyTuple.Create(Location, Thy.WorldVolume);
-            public static MyTuple<Vector3L, BoundingSphereD> Unbox(object data) => (MyTuple<Vector3L, BoundingSphereD>)data;
+            public MyTuple<Vector3D, BoundingSphereD> Box() => MyTuple.Create(Location, Thy.WorldVolume);
+            public static MyTuple<Vector3D, BoundingSphereD> Unbox(object data) => (MyTuple<Vector3D, BoundingSphereD>)data;
         }
 
         static HashSet<string> names = new HashSet<string>();
@@ -46,12 +46,7 @@ namespace IngameScript {
         }
         public bool AddOre(MyDetectedEntityInfo e) {
             if (e.HitPosition.HasValue) {
-                Vector3L pos;
-                var hit = e.HitPosition.Value;
-                pos.X = (long)hit.X;
-                pos.Y = (long)hit.Y;
-                pos.Z = (long)hit.Z;
-                return AddOre(new Ore(this, e.Name, pos));
+                return AddOre(new Ore(this, e.Name, e.HitPosition.Value));
             }
             return false;
         }

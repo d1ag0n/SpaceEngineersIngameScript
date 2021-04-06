@@ -1,5 +1,20 @@
 ﻿R e a d m e
 -----------
+Couple things you need to do:
+Mother ship PB must have #mother in custom data
+You should have RC on the mothership facing correctly
+Mothership LCDs one of each 
+-for menu custom data #menuconsole  in custom data of lcd
+-for log console #logconsole in custom data of lcd
+Periscope needs a rotor setup like picture I will send, put #periscope in custom data of the first rotor only
+Drill takes same script put #drill in PB custom data of the drill
+It will drill in the direction the RC is facing also you should have RC on the mothership 
+Also cameras lots of cameras on the mothership and the drill
+Also Ore detector raycast mod ....you're gonna need my modified version of that
+Antennas on both ships.
 
-In this file you can include any instructions or other comments you want to have injected onto the 
-top of your final script. You can safely delete this file if you do not want any such comments.
+Currently only one drill ship is supported you can probably do more but I can't guarantee they will work and they may collide with eachother.
+
+You can find me on discord in programmable block channel if you need help just ping me.
+
+I will probably create a better guide for setup if there is more interest in this script.

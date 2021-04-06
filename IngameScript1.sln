@@ -35,6 +35,10 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ATests", "Mixins\ATests.shp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Index", "Programs\Index\Index.csproj", "{E5C8CA48-F271-4333-8485-640C5FA61E2F}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CruiseControl", "Mixins\CruiseControl.shproj", "{59812BA8-F6A8-4F95-854D-5AEB80A651B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CruiseControl", "CruiseControl\CruiseControl.csproj", "{B8365198-C870-45BE-9BFE-D60819C4C76F}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -44,10 +48,12 @@ Global
 		Mixins\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9}*SharedItemsImports = 13
 		Mixins\AutoPilot.projitems*{4941e846-35f4-421b-b602-9d4766f96bdb}*SharedItemsImports = 13
+		Mixins\CruiseControl.projitems*{59812ba8-f6a8-4f95-854d-5aeb80a651b9}*SharedItemsImports = 13
 		Mixins\Stator.projitems*{5f82ad74-3d6b-47fe-a9e0-a057ff01556f}*SharedItemsImports = 13
 		Mixins\SmartPilot.projitems*{6677010c-396d-4da2-83df-e933b21a4689}*SharedItemsImports = 13
 		Mixins\OrientationInfo.projitems*{6c40d436-d4c5-4686-8c44-2179bc367042}*SharedItemsImports = 13
 		Mixins\ATests.projitems*{a6d431ac-3bf0-4e2e-8946-3b40fa2473f8}*SharedItemsImports = 4
+		Mixins\CruiseControl.projitems*{b8365198-c870-45be-9bfe-d60819c4c76f}*SharedItemsImports = 4
 		Mixins\Mission.projitems*{f1cfc2c0-6a86-477c-8065-f07745e218c4}*SharedItemsImports = 13
 		Mixins\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
 	EndGlobalSection
@@ -88,6 +94,13 @@ Global
 		{E5C8CA48-F271-4333-8485-640C5FA61E2F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E5C8CA48-F271-4333-8485-640C5FA61E2F}.Release|x64.ActiveCfg = Release|Any CPU
 		{E5C8CA48-F271-4333-8485-640C5FA61E2F}.Release|x64.Build.0 = Release|Any CPU
+		{B8365198-C870-45BE-9BFE-D60819C4C76F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{B8365198-C870-45BE-9BFE-D60819C4C76F}.Debug|x64.ActiveCfg = Debug|x64
+		{B8365198-C870-45BE-9BFE-D60819C4C76F}.Debug|x64.Build.0 = Debug|x64
+		{B8365198-C870-45BE-9BFE-D60819C4C76F}.Release|Any CPU.ActiveCfg = Debug|x64
+		{B8365198-C870-45BE-9BFE-D60819C4C76F}.Release|Any CPU.Build.0 = Debug|x64
+		{B8365198-C870-45BE-9BFE-D60819C4C76F}.Release|x64.ActiveCfg = Debug|x64
+		{B8365198-C870-45BE-9BFE-D60819C4C76F}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -104,6 +117,7 @@ Global
 		{4941E846-35F4-421B-B602-9D4766F96BDB} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{6677010C-396D-4DA2-83DF-E933B21A4689} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{1A42ADC5-AD76-4489-9B68-32BF1DF5581F} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{59812BA8-F6A8-4F95-854D-5AEB80A651B9} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}

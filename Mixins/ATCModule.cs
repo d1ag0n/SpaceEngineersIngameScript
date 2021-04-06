@@ -39,12 +39,12 @@ namespace IngameScript
             if (mDrills.Count > 0) {
                 var id = mDrills.FirstElement();
                 long existing;
-                if (mDrillMissions.TryGetValue(ore.Position, out existing)) {
+                if (mDrillMissions.TryGetValue(ore.Index, out existing)) {
                     if (existing != id) {
                         return false;
                     }
                 } else {
-                    mDrillMissions.Add(ore.Position, id);
+                    mDrillMissions.Add(ore.Index, id);
                 }
 
                 if (mManager.mProgram.IGC.SendUnicastMessage(id, "Drill", ore.Box())) {

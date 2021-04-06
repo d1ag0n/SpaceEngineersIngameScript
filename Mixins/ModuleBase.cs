@@ -21,9 +21,9 @@ namespace IngameScript {
         public Action onUpdate { get; protected set; }
         public SaveHandler onSave { get; protected set; }
         public LoadHandler onLoad{ get; protected set; }
-        
 
-        public bool Active { get; protected set; }
+
+        public bool Active;
         protected bool Okay = false;
 
         public ModuleBase(ModuleManager aManager) {

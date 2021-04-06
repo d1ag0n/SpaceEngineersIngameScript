@@ -20,44 +20,88 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
-        IMyTextPanel lcd;
-        IMyShipController rc;
-        public Program() {
-            GridTerminalSystem.GetBlocksOfType<IMyTextPanel>(null, b => {
-                lcd = b as IMyTextPanel;
-                return false;
-            });
-            GridTerminalSystem.GetBlocksOfType<IMyShipController>(null, b => {
-                rc = b as IMyShipController;
-                return false;
-            });
-        }
+        readonly IMyTextSurface _drawingSurface;
+        RectangleF _viewport;
 
-        public void Save() {
-        }
-        public string gps(string aName, Vector3D aPos) {
-            // GPS:ARC_ABOVE:19680.65:144051.53:-109067.96:#FF75C9F1:
-            var sb = new StringBuilder("GPS:");
-            sb.Append(aName);
-            sb.Append(":");
-            sb.Append(aPos.X.ToString("F2"));
-            sb.Append(":");
-            sb.Append(aPos.Y.ToString("F2"));
-            sb.Append(":");
-            sb.Append(aPos.Z.ToString("F2"));
-            sb.Append(":#FFFF00FF:");
-            return sb.ToString();
+        public Program() {
+            _drawingSurface = Me.GetSurface(0);
+            Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            _viewport = new RectangleF(
+                (_drawingSurface.TextureSize - _drawingSurface.SurfaceSize) / 2f,
+                _drawingSurface.SurfaceSize
+            );
+            PrepareTextSurfaceForSprites(_drawingSurface);
         }
         public void Main(string argument, UpdateType updateSource) {
-            var obb = MAF.obb(Me.CubeGrid, 2.5);
+            var frame = _drawingSurface.DrawFrame();
 
-            var sb = new StringBuilder();
-            var sm = rc.CalculateShipMass();
-            sb.AppendLine($"BaseMass={sm.BaseMass}");
-            sb.AppendLine($"PhysicalMass={sm.PhysicalMass}");
-            sb.AppendLine($"TotalMass={sm.TotalMass}");
-            lcd.WriteText(sb.ToString());
+            // All sprites must be added to the frame here
+            DrawSprites(ref frame);
 
+            // We are done with the frame, send all the sprites to the text panel
+            frame.Dispose();
+        }
+        // Drawing Sprites
+        public void DrawSprites(ref MySpriteDrawFrame frame) {
+            // Create background sprite
+            var sprite = new MySprite() {
+                Type = SpriteType.TEXTURE,
+                Data = "Grid",
+                Position = _viewport.Center,
+                Size = _viewport.Size,
+                Color = _drawingSurface.ScriptForegroundColor.Alpha(0.66f),
+                Alignment = TextAlignment.CENTER
+            };
+            // Add the sprite to the frame
+            frame.Add(sprite);
+
+            // Set up the initial position - and remember to add our viewport offset
+            var position = new Vector2(256, 20) + _viewport.Position;
+
+            // Create our first line
+            sprite = new MySprite() {
+                Type = SpriteType.TEXT,
+                Data = "Line 1",
+                Position = position,
+                RotationOrScale = 0.8f /* 80 % of the font's default size */,
+                Color = Color.Red,
+                Alignment = TextAlignment.CENTER /* Center the text on the position */,
+                FontId = "White"
+            };
+            // Add the sprite to the frame
+            frame.Add(sprite);
+
+            // Move our position 20 pixels down in the viewport for the next line
+            position += new Vector2(0, 20);
+
+            // Here we add our clipping sprite. This is a simple rectangle. Nothing will be drawn outside it.
+            // We create a rectangle that is covering the first half of the next line, cutting it off in the 
+            // middle. 
+            sprite = MySprite.CreateClipRect(new Rectangle(0, (int)position.Y - 16, (int)position.X, (int)position.Y + 16));
+            // Add the sprite to the frame
+            frame.Add(sprite);
+
+            // Create our second line, we'll just reuse our previous sprite variable - this is not necessary, just
+            // a simplification in this case.
+            sprite = new MySprite() {
+                Type = SpriteType.TEXT,
+                Data = "Line 1",
+                Position = position,
+                RotationOrScale = 0.8f,
+                Color = Color.Blue,
+                Alignment = TextAlignment.CENTER,
+                FontId = "White"
+            };
+            // Add the sprite to the frame
+            frame.Add(sprite);
+        }
+
+        // Auto-setup text surface
+        public void PrepareTextSurfaceForSprites(IMyTextSurface textSurface) {
+            // Set the sprite display mode
+            textSurface.ContentType = ContentType.SCRIPT;
+            // Make sure no built-in script has been selected
+            textSurface.Script = "";
         }
     }
 }

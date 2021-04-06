@@ -16,8 +16,6 @@ namespace IngameScript {
 
         public LogModule(ModuleManager aManager) : base(aManager) {
             onUpdate = UpdateAction;
-            
-            MyIGCMessage m;
         }
 
 

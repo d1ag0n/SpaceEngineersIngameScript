@@ -76,11 +76,6 @@ namespace IngameScript {
             sb.Clear();
             return s;
         }
-
-        public void foo() {
-            KeyValuePair<string, object> bar;
-        }
-
         public void str(ThyDetectedEntityInfo e) {
             str(e.EntityId);
             str(e.Name);
@@ -103,18 +98,12 @@ namespace IngameScript {
 
         public void str(DateTime t) => str(t.ToOADate());
         public DateTime objDateTime(IEnumerator<string> e) => DateTime.FromOADate(objdouble(e));
-        public void str(MyRelationsBetweenPlayerAndBlock r) => sb.AppendLine(r.ToString());
+        public void str(MyRelationsBetweenPlayerAndBlock r) => str((int)r);
         public MyRelationsBetweenPlayerAndBlock objMyRelationsBetweenPlayerAndBlock(IEnumerator<string> e) {
             var s = e.Current;
             e.MoveNext();
-            switch (s) {
-                case "Enemies": return MyRelationsBetweenPlayerAndBlock.Enemies;
-                case "FactionShare": return MyRelationsBetweenPlayerAndBlock.FactionShare;
-                case "Friends": return MyRelationsBetweenPlayerAndBlock.Friends;
-                case "Neutral": return MyRelationsBetweenPlayerAndBlock.Neutral;
-                case "Owner": return MyRelationsBetweenPlayerAndBlock.Owner;
-            }
-            return MyRelationsBetweenPlayerAndBlock.NoOwnership;
+            int i = int.Parse(s);
+            return (MyRelationsBetweenPlayerAndBlock)i;
         }
         public void str(Vector3D v) => sb.AppendLine(v.ToString());
 
@@ -181,24 +170,12 @@ namespace IngameScript {
         public MatrixD objMatrixD(IEnumerator<string> e) {
             return MatrixD.CreateWorld(objVector3D(e), objVector3D(e), objVector3D(e));
         }
-        public void str(ThyDetectedEntityType t) => sb.AppendLine(t.ToString());
+        public void str(ThyDetectedEntityType t) => str((int)t);
         public ThyDetectedEntityType objThyDetectedEntityType(IEnumerator<string> e) {
             var s = e.Current;
             e.MoveNext();
-            switch (s) {
-                case "Asteroid": return ThyDetectedEntityType.Asteroid;
-                case "CharacterHuman": return ThyDetectedEntityType.CharacterHuman;
-                case "CharacterOther": return ThyDetectedEntityType.CharacterOther;
-                case "FloatingObject": return ThyDetectedEntityType.FloatingObject;
-                case "LargeGrid": return ThyDetectedEntityType.LargeGrid;
-                case "Meteor": return ThyDetectedEntityType.Meteor;
-                case "Missile": return ThyDetectedEntityType.Missile;
-                case "Planet": return ThyDetectedEntityType.Planet;
-                case "SmallGrid": return ThyDetectedEntityType.SmallGrid;
-                case "Unknown": return ThyDetectedEntityType.Unknown;
-                case "AsteroidCluster": return ThyDetectedEntityType.AsteroidCluster;
-            }
-            return ThyDetectedEntityType.None;
+            int i = int.Parse(s);
+            return (ThyDetectedEntityType)i;
         }
     }
 }

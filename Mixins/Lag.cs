@@ -6,8 +6,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    class Lag : IUpdate
-    {
+    class Lag {
         public double Value { get; private set; }
         bool accurate;
         double[] times;

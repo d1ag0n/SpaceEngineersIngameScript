@@ -152,7 +152,7 @@ namespace IngameScript {
         void InitAction() {
             foreach (var b in Blocks) {
                 var g = GetGroup(b);
-                b.Enabled = false;
+                b.Enabled = true;
                 b.ThrustOverridePercentage = 0f;
                 if (g == enGroup.Hydro) {
                     mHydro.Add(b);
@@ -165,6 +165,8 @@ namespace IngameScript {
         }
         bool updateRequired = false;
         void UpdateAction() {
+            if (!Active)
+                return;
             if (_Damp) {
                 var localVelo = controller.LocalLinearVelo;
                 var localVeloSq = localVelo.LengthSquared();
