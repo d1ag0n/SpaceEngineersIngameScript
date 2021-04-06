@@ -1,5 +1,6 @@
 using Sandbox.ModAPI.Ingame;
 using System;
+using System.Collections;
 
 namespace IngameScript {
     public abstract class ModuleBase {
@@ -17,10 +18,10 @@ namespace IngameScript {
         /// </summary>
         /// <param name="aPage"></param>
         /// <returns></returns>
-        public PaginationHandler onPage { get; protected set; }
+        public IEnumerable onPage { get; protected set; }
         public Action onUpdate { get; protected set; }
-        public SaveHandler onSave { get; protected set; }
-        public LoadHandler onLoad{ get; protected set; }
+        //public SaveHandler onSave { get; protected set; }
+        //public LoadHandler onLoad{ get; protected set; }
 
 
         public bool Active;

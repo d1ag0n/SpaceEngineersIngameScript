@@ -2,8 +2,10 @@ using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
+using System.Collections.Generic;
 
 namespace IngameScript {
+    //public delegate List<MenuItem> PaginationHandler(int page);
     public class MenuModule : Module<IMyTextPanel> {
         Menu CurrentMenu;
         public bool UpdateRequired = true;

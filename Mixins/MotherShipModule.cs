@@ -11,7 +11,21 @@ namespace IngameScript {
         
         public MotherShipModule(ModuleManager aManager) : base(aManager) {
             //mListener = ModuleManager.Program.IGC.RegisterBroadcastListener("Register");
+            aManager.mIGC.SubscribeBroadcast("MotherState", onMotherState);
             onUpdate = UpdateAction;
+        }
+        void onMotherState(IGC.Envelope e) {
+            MotherId = e.Message.Source;
+            logger.log("MotherId ", MotherId);
+            var ms = MotherShipModule.MotherState(e.Message.Data);
+            MotherBox = ms.Item1;
+            MotherVeloDir = ms.Item2;
+            MotherSpeed = ms.Item3;
+            logger.log("MotherSpeed ", MotherSpeed);
+            MotherAngularVelo = ms.Item4;
+            MotherMatrix = ms.Item5;
+            MotherCoM = ms.Item6;
+            MotherLastUpdate = e.Time;
         }
         public override bool Accept(IMyTerminalBlock aBlock) => false;
         DateTime lastUpdate = DateTime.MinValue;

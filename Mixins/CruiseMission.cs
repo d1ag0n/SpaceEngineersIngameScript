@@ -7,27 +7,67 @@ namespace IngameScript {
     /// Clustering Orbital Collision Mitigation
     /// </summary>
     public class CruiseMission : MissionBase {
-        readonly double Altitude;
-        const double pitch = -0.0001;
-        const double maxDif = 1.0;
-        public CruiseMission(ShipControllerModule aController):base(aController, default(BoundingSphereD)) {
-            ctr.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out Altitude);
-            ctr.Thrust.Damp = false;
-            ctr.Thrust.Emergency = true;
-            ctr.Thrust.Active = true;
-            ctr.Gyro.Active = true;
-        }
         double lastElevation;
+        double Altitude;
+        const double pitch = -0.0001;
+        const double maxDif = 5.0;
+        readonly ShipControllerModule mController;
+        readonly ThrustModule mThrust;
+        readonly GyroModule mGyro;
+        readonly LogModule mLog;
+        bool isActive = false;
+        bool doThrust = false;
+        double Velocity;
+
+
+        public CruiseMission(ModuleManager aManager):base(aManager) {
+            aManager.GetModule(out mController);
+            aManager.GetModule(out mThrust);
+            aManager.GetModule(out mGyro);
+            aManager.GetModule(out mLog);
+            
+            mThrust.Damp = false;
+            mThrust.Emergency = true;
+            mThrust.Active = true;
+            mGyro.Active = true;
+        }
+        public override bool Cancel() => true;
+        public override void Input(string arg) {
+            arg = arg.ToLower().Trim();
+            if (arg == "off") {
+                isActive = mThrust.Active = mGyro.Active = false;
+                mThrust.InitAction();
+            } else if (arg.StartsWith("thrust")) {
+                mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out Altitude);
+                isActive = doThrust = mThrust.Active = mGyro.Active = true;
+                if (arg.Length > 6) {
+                    if (double.TryParse(arg.Substring(6).Trim(), out Velocity)) {
+                        Velocity = Math.Abs(Velocity);
+                    } else {
+                        Velocity = mController.LinearVelocity;
+                    }
+                } else {
+                    Velocity = mController.LinearVelocity;
+                }
+            } else if (arg == "nothrust") {
+                mThrust.InitAction();
+                mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out Altitude);
+                isActive = mGyro.Active = true;
+                doThrust = mThrust.Active = false;
+            }
+        }
         public override void Update() {
-            ctr.logger.log($"Mission Altitude {Altitude:f0}");
-            var dir = MAF.world2dir(ctr.Remote.WorldMatrix.Forward, ctr.MyMatrix);
-            var grav = MAF.world2dir(ctr.Remote.GetNaturalGravity(), ctr.MyMatrix);
+            if (!isActive)
+                return;
+            //mLog.log($"Mission Altitude {Altitude:f0}");
+            var dir = MAF.world2dir(mController.Remote.WorldMatrix.Forward, mController.MyMatrix);
+            var grav = MAF.world2dir(mController.Remote.GetNaturalGravity(), mController.MyMatrix);
             var axis = dir.Cross(grav);
             //var ab = MAF.angleBetween(dir, grav);
 
             double elevation;
-            ctr.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out elevation);
-            ctr.logger.log($"Current Altitude {elevation:f0}");
+            mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out elevation);
+            //mController.logger.log($"Current Altitude {elevation:f0}");
 
             var altDif = elevation - lastElevation;
 
@@ -58,26 +98,16 @@ namespace IngameScript {
             }
             if (angle != 0d) {
                 var rot = MatrixD.CreateFromAxisAngle(axis, angle);
-
                 dir = Vector3D.Rotate(dir, rot);
-
-                ctr.Gyro.SetTargetDirection(MAF.local2dir(dir, ctr.MyMatrix));
+                mGyro.SetTargetDirection(MAF.local2dir(dir, mController.MyMatrix));
             }
-
-            ctr.logger.log($"altDif={altDif * 6d}");
-
-
-
             lastElevation = elevation;
-            
-            ctr.logger.log($"thrust active={ctr.Thrust.Active}");
-
-            
-            var vec = dir * 50d;
-            ctr.logger.log("vec", vec);
-            var accel = vec - ctr.LocalLinearVelo;
-            ctr.logger.log("accel", accel);
-            ctr.Thrust.Acceleration = accel;
+            if (doThrust) {
+                //mLog.log($"Velocity {Velocity}");
+                var vec = dir * Velocity;
+                var accel = vec - mController.LocalLinearVelo;
+                mThrust.Acceleration = accel;
+            }
         }
     }
 }

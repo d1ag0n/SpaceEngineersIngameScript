@@ -6,6 +6,8 @@ using VRage.Game;
 using System;
 
 namespace IngameScript {
+    public delegate void SaveHandler(Serialize s);
+    public delegate void LoadHandler(Serialize s, string aData);
     public class Serialize {
 
         // found these acsii codes in a post somewhere

@@ -29,10 +29,24 @@ namespace IngameScript {
 
         public override void Update() => onUpdate();
 
-        public DrillMission(ShipControllerModule aController, BoundingSphereD aAsteroid, Vector3D aTarget) : 
-            base(aController, new BoundingSphereD(aTarget, 0d)) {
+        readonly ATClientModule mATClient;
+        readonly ThrustModule Thrust;
+                    
+    
+                
 
-            ctr.GetModule(out mATC);
+    //Mission = new DockMission(this, ATClient, Volume);
+
+
+
+        public DrillMission(ShipControllerModule aController, BoundingSphereD aAsteroid, Vector3D aTarget) : 
+            base(aController, new BoundingSphereD(aTarget, 0d))
+        {
+            GetModule(out mATClient);
+            GetModule(out mThrust);
+            if (ATClient.connected) {
+                Thrust.Damp = false;
+            }
 
             mMissionAsteroid = aAsteroid;
             mMissionTarget = aTarget;

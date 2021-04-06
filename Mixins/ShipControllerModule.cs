@@ -13,7 +13,9 @@ namespace IngameScript {
         public readonly float GyroSpeed;
 
         readonly Stack<MissionBase> mMissionStack = new Stack<MissionBase>();
-        MissionBase mMission;
+        public MissionBase mMission {
+            get; private set;
+        }
 
         readonly List<IMyInventory> mInventory = new List<IMyInventory>();
         public MyShipVelocities ShipVelocities { get; private set; }
@@ -21,16 +23,17 @@ namespace IngameScript {
         public double LinearVelocity { get; private set; }
         public IMyShipController Remote { get; private set; }
         public IMyShipController Cockpit { get; private set; }
-        readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
+        // todo
+        //readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         public double Mass { get; private set; }
         public Vector3D LocalLinearVelo { get; private set; }
 
-        public ThrustModule Thrust { get; private set; }
-        public GyroModule Gyro { get; private set; }
-        public CameraModule Camera { get; private set; }
+        //public ThrustModule Thrust { get; private set; }
+        //public GyroModule Gyro { get; private set; }
+        //public CameraModule Camera { get; private set; }
         
         
-        ATCLientModule ATClient;
+        //ATCLientModule ATClient;
 
         public void ExtendMission(MissionBase m) {
             if (mMission != null) {
@@ -41,10 +44,8 @@ namespace IngameScript {
         }
         public void CancelMission() {
             if (mMission != null) {
-                if (mMission.onCancel == null) {
+                if (mMission.Cancel()) {
                     mMission = null;
-                } else {
-                    mMission.onCancel();
                 }
             }
         }
@@ -60,7 +61,7 @@ namespace IngameScript {
 
         public ShipControllerModule(ModuleManager aManager) :base (aManager) {
             if (!aManager.Mother) {
-                aManager.mIGC.SubscribeBroadcast("MotherState", onMotherState);
+                
             }
 
             
@@ -72,24 +73,7 @@ namespace IngameScript {
             onUpdate = InitializeAction;
             ////////////////////////
             MenuName = "Ship Controller";
-            onPage = p => {
-                mMenuMethods.Clear();
-                
-
-                //mMenuMethods.Add(new MenuItem("Random Mission", () => Mission = new RandomMission(this, new BoundingSphereD(Remote.CenterOfMass + MAF.ranDir() * 1100.0, 0))));
-
-                mMenuMethods.Add(new MenuItem($"Dampeners {Thrust.Damp}", () => { 
-                    Thrust.Damp = !Thrust.Damp;
-                }));
-
-                mMenuMethods.Add(new MenuItem("Abort All Missions", () => {
-                    mMissionStack.Clear();
-                    mMission = null;
-                    Thrust.Damp = true;
-                }));
-
-                return mMenuMethods;
-            };
+            
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
             var result = base.Accept(aBlock);
@@ -140,32 +124,8 @@ namespace IngameScript {
             return v;
         }
         void InitializeAction() {
-            if (Gyro == null) {
-                GyroModule gy;
-                GetModule(out gy);
-                Gyro = gy;
-            }
-            if (Thrust == null) {
-                ThrustModule th;
-                GetModule(out th);
-                Thrust = th;
-            }
-            if (Camera == null) {
-                CameraModule cam;
-                GetModule(out cam);
-                Camera = cam;
-            }
             if (mManager.Drill) {
-                if (ATClient == null) {
-                    GetModule(out ATClient);
-                }
-                if (ATClient.connected) {
-                    Thrust.Damp = false;
-                } else {
-                        
-                    //Mission = new DockMission(this, ATClient, Volume);
-                        
-                }
+                
             }
              
             onUpdate = UpdateGlobal;
@@ -219,19 +179,7 @@ namespace IngameScript {
         public Vector3D MotherAngularVelo { get; private set; }
         public long EntityId => mManager.mProgram.Me.EntityId;
 
-        void onMotherState(IGC.Envelope e) {
-            MotherId = e.Message.Source;
-            logger.log("MotherId ", MotherId);
-            var ms = MotherShipModule.MotherState(e.Message.Data);
-            MotherBox = ms.Item1;
-            MotherVeloDir = ms.Item2;
-            MotherSpeed = ms.Item3;
-            logger.log("MotherSpeed ", MotherSpeed);
-            MotherAngularVelo = ms.Item4;
-            MotherMatrix = ms.Item5;
-            MotherCoM = ms.Item6;
-            MotherLastUpdate = e.Time;
-        }
+
 
         void UpdateLocal() {
    
@@ -292,7 +240,7 @@ namespace IngameScript {
         // var obb = new MyOrientedBoundingBoxD(bb, grid.WorldMatrix);
 
 
-        VectorHandler flatScan(MatrixD aMatrix) {
+        /*VectorHandler flatScan(MatrixD aMatrix) {
             
             var grid = mManager.mProgram.Me.CubeGrid;
             Vector3D start = Vector3D.Transform(grid.Min * grid.GridSize, aMatrix);
@@ -332,10 +280,10 @@ namespace IngameScript {
             width = 3;
             height = 3;
             return flatScan(aMatrix.Right, aMatrix.Up, start, width, height);
-        }
+        }*/
 
 
-        VectorHandler flatScan(Vector3D right, Vector3D up, Vector3D start, int width, int height) {
+        /*VectorHandler flatScan(Vector3D right, Vector3D up, Vector3D start, int width, int height) {
             var gsz = mManager.mProgram.Me.CubeGrid.GridSize;
             int extra = 0;
             start -= right * (gsz * extra);
@@ -356,6 +304,6 @@ namespace IngameScript {
                 }
                 return start + (right * (x * gsz)) + (up * (y * gsz));
             };
-        }
+        }*/
     }
 }

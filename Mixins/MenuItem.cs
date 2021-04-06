@@ -6,7 +6,7 @@ namespace IngameScript {
         public readonly object State;
         public readonly Func<MenuModule, object, Menu> Method;
         
-        public MenuItem(string aName, object state, Func<MenuModule, object, Menu> aMethod) {
+        public MenuItem(string aName, object state = null,  Func<MenuModule, object, Menu> aMethod = null) {
             Name = aName;
             State = state;
             Method = aMethod;

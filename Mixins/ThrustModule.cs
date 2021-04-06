@@ -9,7 +9,7 @@ namespace IngameScript {
     public class ThrustModule : Module<IMyThrust> {
         public readonly ThrustList mThrust;
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
-        readonly ThrustList mHydro;
+        //readonly ThrustList mHydro;
         public Vector3D FullStop(Vector3D aLocalDirection, Vector3D aMaxAccel) {
             return stop(aLocalDirection * 100, aMaxAccel);
         }
@@ -32,7 +32,7 @@ namespace IngameScript {
         enum enGroup { Hydro, Ion, Atmos, Not }
         public ThrustModule(ModuleManager aManager):base(aManager) {
             mThrust = new ThrustList(this);
-            mHydro = new ThrustList(this);
+            //mHydro = new ThrustList(this);
             onUpdate = InitAction;
             
             /*
@@ -149,18 +149,13 @@ namespace IngameScript {
             }
             return base.Accept(b);
         }
-        void InitAction() {
+        public void InitAction() {
             foreach (var b in Blocks) {
                 var g = GetGroup(b);
                 b.Enabled = true;
                 b.ThrustOverridePercentage = 0f;
-                if (g == enGroup.Hydro) {
-                    mHydro.Add(b);
-                } else {
-                    mThrust.Add(b);
-                }
+                mThrust.Add(b);
             }
-            
             onUpdate = UpdateAction;
         }
         bool updateRequired = false;

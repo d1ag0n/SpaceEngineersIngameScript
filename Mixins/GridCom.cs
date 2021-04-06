@@ -2,27 +2,36 @@ using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
 
 namespace IngameScript {
-
-    public class IGC {
-        readonly ModuleManager mManager;
+    public delegate void IGCHandler(Envelope m);
+    public struct Envelope {
+        public readonly double Time;
+        public readonly MyIGCMessage Message;
+        public Envelope(double aTime, MyIGCMessage aMessage) {
+            Time = aTime;
+            Message = aMessage;
+        }
+    }
+    public class GridCom {
+        //readonly ModuleManager mManager;
+        readonly IMyIntergridCommunicationSystem mIGC;
         readonly SubscriptionManager mUnicastMgr;
         readonly SubscriptionManager mBroadcastMgr;
         readonly List<IMyBroadcastListener> mListeners = new List<IMyBroadcastListener>();
 
         bool mUpdateNeeded;
-        public IGC(ModuleManager aManager) {
-            mManager = aManager;
+        public GridCom(IMyIntergridCommunicationSystem aIGC) {
+            mIGC = aIGC;
             
             mUnicastMgr = new SubscriptionManager(this);
             mBroadcastMgr = new SubscriptionManager(this);
         }
         public void SubscribeUnicast(string tag, IGCHandler h) {
             if (mUnicastMgr.Subscribe(tag, h))
-                mManager.mProgram.IGC.UnicastListener.SetMessageCallback("UNICAST");
+                mIGC.UnicastListener.SetMessageCallback("UNICAST");
         }
         public void SubscribeBroadcast(string tag, IGCHandler h) {
             if (mBroadcastMgr.Subscribe(tag, h)) {
-                var listener = mManager.mProgram.IGC.RegisterBroadcastListener(tag);
+                var listener = mIGC.RegisterBroadcastListener(tag);
                 listener.SetMessageCallback(tag);
                 mListeners.Add(listener);
             }
@@ -35,7 +44,7 @@ namespace IngameScript {
             }
         }
         public void MailCall(double aTime) {
-            mUnicastMgr.MailCall(mManager.mProgram.IGC.UnicastListener, aTime);
+            mUnicastMgr.MailCall(mIGC.UnicastListener, aTime);
             foreach (var listener in mListeners) {
                 mBroadcastMgr.MailCall(listener, aTime);
             }
@@ -43,9 +52,9 @@ namespace IngameScript {
         class SubscriptionManager {
             readonly List<Envelope> mInbox = new List<Envelope>();
             readonly Dictionary<string, List<IGCHandler>> mSubscriptions = new Dictionary<string, List<IGCHandler>>();
-            readonly IGC mIGC;
-            public SubscriptionManager(IGC aIGC) {
-                mIGC = aIGC;
+            readonly GridCom mCom;
+            public SubscriptionManager(GridCom aCom) {
+                mCom = aCom;
             }
             public bool Subscribe(string tag, IGCHandler h) {
                 var result = false;
@@ -60,7 +69,7 @@ namespace IngameScript {
             }
             public void MailCall(IMyMessageProvider aProvider, double aTime) {
                 while (aProvider.HasPendingMessage) {
-                    mIGC.mUpdateNeeded = true;
+                    mCom.mUpdateNeeded = true;
                     mInbox.Add(new Envelope(aTime, aProvider.AcceptMessage()));
                 }
             }
@@ -77,13 +86,6 @@ namespace IngameScript {
                 mInbox.Clear();
             }
         }
-        public struct Envelope {
-            public readonly double Time;
-            public readonly MyIGCMessage Message;
-            public Envelope(double aTime, MyIGCMessage aMessage) {
-                Time = aTime;
-                Message = aMessage;
-            }
-        }
+        
     }
 }

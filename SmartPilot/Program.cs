@@ -13,12 +13,14 @@ namespace IngameScript {
         readonly MenuModule mMenu;
 
         readonly ModuleManager mManager;
-
+        readonly GridCom mCom;
         
         public Program() {
+            mCom = new GridCom(IGC);
             mManager = new ModuleManager(this);
             
-            
+
+
             new GyroModule(mManager);
             new ThrustModule(mManager);
             new CameraModule(mManager);
@@ -66,6 +68,12 @@ namespace IngameScript {
                 Storage = mManager.Save();
             }
         }
-        public void Main(string a, UpdateType u) => Update(a, u);
+        public void Main(string arg, UpdateType aType) {
+            mManager.NotifyRun(Runtime);
+            if ((aType & UpdateType.IGC) != 0) {
+                mCom.MailCall(Runtime);
+            }
+            Update(a, u);
+        }
     }
 }

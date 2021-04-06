@@ -76,6 +76,7 @@ namespace IngameScript
             }
         }
     }
+    delegate void BoxInfoHandler(BoxInfo b);
     public struct BoxInfo {
         public long Reserver;
         public DateTime Reserved;

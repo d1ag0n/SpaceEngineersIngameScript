@@ -8,10 +8,15 @@ namespace IngameScript {
     public class ModuleManager {
         public readonly Program mProgram;
         readonly Lag mLag = new Lag(18);
-        
-        public double Runtime { get; private set; }
 
-        public readonly IGC mIGC;
+        double _Runtime;
+        public void NotifyRun(IMyGridProgramRuntimeInfo aInfo) {
+            _Runtime += aInfo.TimeSinceLastRun.TotalSeconds;
+        }
+        public double Runtime => _Runtime;
+
+        // todo make IGC module
+        //public readonly IGC mIGC;
         public readonly bool LargeGrid;
 
         public bool Mother;
@@ -25,7 +30,8 @@ namespace IngameScript {
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             mProgram.Me.CustomName = "!Smart Pilot";
 
-            mIGC = new IGC(this);
+            //todo igc module
+            //mIGC = new IGC(this);
             controller = new ShipControllerModule(this);
         }
         /// <summary>
@@ -56,40 +62,37 @@ namespace IngameScript {
         readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
 
-        public Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
+        // todo menu module with menus added to it
+        //public Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
 
         public void Update(string arg, UpdateType type) {
-            Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;
+            
 
             mLag.Update(mProgram.Runtime.LastRunTimeMs);
 
             if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                 if (arg.Length > 0) {
-                    if (arg == "reset") {
-                        controller.NewMission(new CruiseMission(controller));
-                    } else if (arg == "save") {
-                        Save();
-                    } else {
-                        MenuModule menu;
-                        if (GetModule(out menu)) {
-                            try {
+                    if (controller.OnMission) {
+                        controller.mMission.Input(arg);
+                    }
+                    /* todo menu module
+                    MenuModule menu;
+                    if (GetModule(out menu)) {
+                        try {
 
-                                menu.Input(arg);
-                            } catch (Exception ex) {
-                                logger.persist(ex.ToString());
-                                mProgram.Echo(ex.ToString());
-                            }
+                            menu.Input(arg);
+                        } catch (Exception ex) {
+                            logger.persist(ex.ToString());
+                            mProgram.Echo(ex.ToString());
                         }
                     }
+                    */
                 }
             }
 
-            if ((type & UpdateType.IGC) != 0) {
-                mIGC.MailCall(Runtime);
-            }
-
             if ((type & UpdateType.Update10) != 0) {
-                mIGC.Update();
+                // todo modularize GridCom(IGC)
+                // mIGC.Update();
                 logger.log(mLag.Value, " - ", DateTime.Now.ToString());
                 for (int i = 1; i < mModules.Count; i++) {
                     try {
@@ -102,6 +105,8 @@ namespace IngameScript {
                 logger.onUpdate();
             }
         }
+        // todo Persistence Class
+        /*
         public string Save() {
             var s = new Serialize();
             var one = false;
@@ -119,7 +124,9 @@ namespace IngameScript {
 
             }
             return s.Clear();
-        }
+        }*/
+        // todo persistence class
+        /*
         public void Load(string aStorage) {
             var s = new Serialize();
             var moduleEntries = new Dictionary<string, List<string>>();
@@ -141,6 +148,7 @@ namespace IngameScript {
                 }
             }
         }
+        */
         public void Initialize() {
             foreach (var list in mTags.Values) {
                 list.Clear();
