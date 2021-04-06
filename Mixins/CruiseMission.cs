@@ -36,7 +36,7 @@ namespace IngameScript {
             arg = arg.ToLower().Trim();
             if (arg == "off") {
                 isActive = mThrust.Active = mGyro.Active = false;
-                mThrust.InitAction();
+                mThrust.AllStop();
             } else if (arg.StartsWith("thrust")) {
                 mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out Altitude);
                 isActive = doThrust = mThrust.Active = mGyro.Active = true;
@@ -49,8 +49,9 @@ namespace IngameScript {
                 } else {
                     Velocity = mController.LinearVelocity;
                 }
+                
             } else if (arg == "nothrust") {
-                mThrust.InitAction();
+                mThrust.AllStop();
                 mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out Altitude);
                 isActive = mGyro.Active = true;
                 doThrust = mThrust.Active = false;

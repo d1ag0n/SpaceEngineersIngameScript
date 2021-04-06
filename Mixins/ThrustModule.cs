@@ -17,7 +17,7 @@ namespace IngameScript {
             return stop(controller.LocalLinearVelo, aMaxAccel);
         }
 
-        bool _Damp = true;
+        bool _Damp = false;
         public bool Damp {
             get { return _Damp; }
             set {
@@ -149,9 +149,9 @@ namespace IngameScript {
             }
             return base.Accept(b);
         }
-        public void InitAction() {
+        void InitAction() {
             foreach (var b in Blocks) {
-                var g = GetGroup(b);
+                //var g = GetGroup(b);
                 b.Enabled = true;
                 b.ThrustOverridePercentage = 0f;
                 mThrust.Add(b);
@@ -181,6 +181,7 @@ namespace IngameScript {
                 }
             }
         }
+        public void AllStop() => mThrust.AllStop();
         // whiplash says
         // d = V^2/(2*a)
         Vector3D stop(Vector3D V, Vector3D a) => (V * V) / (2.0 * a);

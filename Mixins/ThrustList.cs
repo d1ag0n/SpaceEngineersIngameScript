@@ -81,7 +81,8 @@ namespace IngameScript {
         public void AllStop() {
             foreach (var list in mLists) {
                 foreach (var t in list) {
-                    t.Enabled = false;
+                    t.Enabled = true;
+                    t.ThrustOverridePercentage = 0f;
                 }
             }
         }
