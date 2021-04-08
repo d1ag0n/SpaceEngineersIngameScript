@@ -8,10 +8,7 @@ namespace IngameScript {
 
         
         
-        protected IMyTerminalBlock NavBlock;
         
-        Vector3D _BaseVelocity;
-        Vector3D BaseVelocityDirection;
 
 
         protected BoundingSphereD mDestination;

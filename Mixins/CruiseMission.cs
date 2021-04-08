@@ -9,8 +9,10 @@ namespace IngameScript {
     public class CruiseMission : MissionBase {
         double lastElevation;
         double Altitude;
-        const double pitch = -0.0001;
-        const double maxDif = 5.0;
+        const double pitch = 0.0001;
+        const double amp = 10d;
+        const double maxDif = 10d;
+        const double prefVert = 2d;
         readonly ShipControllerModule mController;
         readonly ThrustModule mThrust;
         readonly GyroModule mGyro;
@@ -36,10 +38,11 @@ namespace IngameScript {
         public override void Input(string arg) {
             arg = arg.ToLower().Trim();
             if (arg == "off") {
+                mController.AllDampers(true);
                 isActive = mThrust.Active = mGyro.Active = false;
                 mThrust.AllStop();
             } else if (arg.StartsWith("thrust")) {
-                
+                mController.AllDampers(false);
                 mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out Altitude);
                 isActive = doThrust = mThrust.Active = mGyro.Active = true;
                 if (arg.Length > 6) {
@@ -63,61 +66,57 @@ namespace IngameScript {
         public override void Update() {
             if (!isActive)
                 return;
-            
-            var grav = MAF.world2dir(mController.Remote.GetNaturalGravity(), mController.MyMatrix);
-            var axis = grav.Cross(mController.LinearVelocityDirection);
+            var worldGrav = mController.Remote.GetNaturalGravity();
+            var localGrav = MAF.world2dir(worldGrav, mController.MyMatrix);
+            var worldAxis = worldGrav.Cross(mController.LinearVelocityDirection);
+            //var localAxis = MAF.world2dir(worldAxis, mController.MyMatrix); ;
             double elevation;
             mController.Remote.TryGetPlanetElevation(MyPlanetElevation.Sealevel, out elevation);
             mLog.log($"Mission Altitude={Altitude}");
             mLog.log($"Current Altitude={elevation}");
             var verticalSpeed = elevation - lastElevation;
-
+            
             var absAltDif = Math.Abs(elevation - Altitude);
             mLog.log($"verticalSpeed={verticalSpeed}");
             mLog.log($"absAltDif={absAltDif}");
             var angle = 0d;
             if (absAltDif < maxDif) {
-                if (verticalSpeed > 0) {
+                if (elevation > Altitude && verticalSpeed > -0.01) {
                     angle = -pitch;
-                } else {
+                } else if (elevation < Altitude && verticalSpeed < 0.01) {
                     angle = pitch;
                 }
             } else if (elevation < Altitude) {
                 if (verticalSpeed < 0d) {
-                    angle = pitch * 5d;
-                } else if (verticalSpeed > 1d) {
-                    angle = -pitch * 5d;
+                    angle = pitch * amp;
+                } else if (verticalSpeed > prefVert) {
+                    angle = -pitch;
                 } else {
                     angle = pitch;
                 }
             } else if (elevation > Altitude) {
                 if (verticalSpeed > 0) {
-                    angle = -pitch * 5d;
-                } else if (verticalSpeed < -1d) {
-                    angle = pitch * 5d;
+                    angle = -pitch * amp;
+                } else if (verticalSpeed < -prefVert) {
+                    angle = pitch;
                 } else {
                     angle = -pitch;
                 }
             }
-            if (grav.Dot(mController.Remote.WorldMatrix.Up) > 0d) {
-                //angle = -angle;
-            }
-            if (Math.Abs(verticalSpeed * 6d) > 1.0d) {
-                angle *= 10d;
-            }
+            
             mLog.log($"angle={angle}");
-            var dir = MAF.world2dir(mController.Remote.WorldMatrix.Forward, mController.MyMatrix);
+            
             if (angle != 0d) {
-                var rot = MatrixD.CreateFromAxisAngle(axis, angle);
-                dir = Vector3D.Rotate(dir, rot);
-                mGyro.SetTargetDirection(MAF.local2dir(dir, mController.MyMatrix));
+                var rot = MatrixD.CreateFromAxisAngle(worldAxis, angle);
+                var dir = Vector3D.Rotate(mController.Remote.WorldMatrix.Forward, rot);
+                mGyro.SetTargetDirection(dir);
             }
             lastElevation = elevation;
             if (doThrust) {
                 //mLog.log($"Velocity {Velocity}");
-                var vec = dir * Velocity;
+                var vec = MAF.world2dir(mController.Remote.WorldMatrix.Forward, mController.MyMatrix) * Velocity;
                 var accel = vec - mController.LocalLinearVelo;
-                mThrust.Acceleration = accel;
+                mThrust.Acceleration = (accel * 5) + (-localGrav / 6d);
             }
         }
     }

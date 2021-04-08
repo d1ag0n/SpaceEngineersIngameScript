@@ -111,14 +111,6 @@ namespace IngameScript
         }
         public IMyTerminalBlock NavBlock;
 
-
-        
-
-
-
-        
-
-
         public override bool Accept(IMyTerminalBlock b) {
             var result = base.Accept(b);
             if (result) {
@@ -127,8 +119,6 @@ namespace IngameScript
             return result;
         }
 
-
-        
         void UpdateAction() {
             if (!Active) {
                 return;
@@ -227,7 +217,7 @@ namespace IngameScript
                 gy.Enabled = aValue;
             }
         }
-        public void init() {
+        void init() {
             foreach (var gy in Blocks) init(gy);
         }
         void init(IMyGyro aGyro) {

@@ -18,7 +18,17 @@ namespace IngameScript {
         double BaseVelocityLength;
         readonly ShipControllerModule ctr;
         protected readonly ThyDetectedEntityInfo mEntity;
+        protected IMyTerminalBlock NavBlock;
+
+        Vector3D _BaseVelocity;
+        Vector3D BaseVelocityDirection;
         protected BoundingSphereD Volume => mEntity == null ? mDestination : mEntity.WorldVolume;
+        public APMission(ModuleManager aManager) : base(aManager) {
+            var f = 4f;
+            var i = 8;
+            var g = i * f;
+
+        }
         protected Vector3D BaseVelocity {
             get {
                 return _BaseVelocity;
@@ -36,9 +46,8 @@ namespace IngameScript {
                 }
             }
         }
-        public APMission(ModuleManager aManager):base (aManager) {
-        }
-        public virtual void Update() {
+     
+        public override void Update() {
             var wv = ctr.Grid.WorldVolume;
             if (NavBlock != null) {
                 wv.Center = NavBlock.WorldMatrix.Translation;

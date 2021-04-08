@@ -9,11 +9,9 @@ namespace IngameScript {
         public readonly Program mProgram;
         readonly Lag mLag = new Lag(18);
 
-        double _Runtime;
-        public void NotifyRun(IMyGridProgramRuntimeInfo aInfo) {
-            _Runtime += aInfo.TimeSinceLastRun.TotalSeconds;
-        }
-        public double Runtime => _Runtime;
+        
+        
+        public double Runtime { get; private set; }
 
         // todo make IGC module
         //public readonly IGC mIGC;
@@ -58,7 +56,7 @@ namespace IngameScript {
         readonly HashSet<long> mRegistry = new HashSet<long>();
         readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
         readonly List<ModuleBase> mModules = new List<ModuleBase>();
-
+        readonly List<ModuleBase> mInputModules = new List<ModuleBase>();
         readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
 
@@ -66,14 +64,15 @@ namespace IngameScript {
         //public Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
 
         public void Update(string arg, UpdateType type) {
-            
-
+            Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;
             mLag.Update(mProgram.Runtime.LastRunTimeMs);
-
             if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                 if (arg.Length > 0) {
                     if (controller.OnMission) {
                         controller.mMission.Input(arg);
+                    }
+                    foreach (var m in mInputModules) {
+                        m.onInput(arg);
                     }
                     /* todo menu module
                     MenuModule menu;
@@ -94,9 +93,9 @@ namespace IngameScript {
                 // todo modularize GridCom(IGC)
                 // mIGC.Update();
                 logger.log(mLag.Value, " - ", DateTime.Now.ToString());
-                for (int i = 1; i < mModules.Count; i++) {
+                foreach (var m in mModules) {
                     try {
-                        mModules[i].onUpdate?.Invoke();
+                        m.onUpdate?.Invoke();
                     } catch (Exception ex) {
                         logger.persist(ex.ToString());
                         mProgram.Echo(ex.ToString());
@@ -172,6 +171,12 @@ namespace IngameScript {
                 }
                 return false;
             });
+
+            foreach (var m in mModules) {
+                if (m.onInput != null) {
+                    mInputModules.Add(m);
+                }
+            }
 
             // todo move up into GTS loop, need to change module initialization behavior first,
             // because modules may look for additionals that mey not yet be loaded

@@ -2,24 +2,22 @@ using System.Collections.Generic;
 using VRageMath;
 
 namespace IngameScript {
-    class ShipControllerMenu {
+    public class ShipControllerMenu : Menu {
+        readonly ShipControllerModule mController;
+        readonly ThrustModule mThrust;
+        readonly List<MenuItem> mItems = new List<MenuItem>();
+        public ShipControllerMenu(MenuModule aMenuModule, Menu aPrevious = null) : base(aMenuModule, aPrevious) {
+            aMenuModule.mManager.GetModule(out mController);
+            aMenuModule.mManager.GetModule(out mThrust);
+        }
 
-        onPage = p => {
-    mMenuMethods.Clear();
+        public override void Update() {
+            mItems.Clear();
+            mItems.Add(new MenuItem($"Dampeners {mThrust.Damp}", () => { mThrust.Damp = !mThrust.Damp; return null; }));
+            mItems.Add(new MenuItem("Abort All Missions", () => { mController.NewMission(null); return null; }));
+        }
+        public override List<MenuItem> Items() => mItems;
 
-
-    //mMenuMethods.Add(new MenuItem("Random Mission", () => Mission = new RandomMission(this, new BoundingSphereD(Remote.CenterOfMass + MAF.ranDir() * 1100.0, 0))));
-
-    mMenuMethods.Add(new MenuItem($"Dampeners {Thrust.Damp}", () => {
-            Thrust.Damp = !Thrust.Damp;
-        }));
-
-    mMenuMethods.Add(new MenuItem("Abort All Missions", () => {
-            mMissionStack.Clear();
-            mMission = null;
-            Thrust.Damp = true;
-        }));
-
-    return mMenuMethods;
-};
+        
+    }
 }

@@ -22,7 +22,7 @@ namespace IngameScript {
         public Action onUpdate { get; protected set; }
         //public SaveHandler onSave { get; protected set; }
         //public LoadHandler onLoad{ get; protected set; }
-
+        public Action<string> onInput;
 
         public bool Active;
         protected bool Okay = false;

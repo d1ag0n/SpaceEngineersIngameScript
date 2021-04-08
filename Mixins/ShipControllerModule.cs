@@ -75,10 +75,15 @@ namespace IngameScript {
             MenuName = "Ship Controller";
             
         }
+        public void AllDampers(bool value) {
+            foreach (var sc in Blocks) {
+                sc.DampenersOverride = value;
+            }
+        }
         public override bool Accept(IMyTerminalBlock aBlock) {
             var result = base.Accept(aBlock);
             if (result) {
-                (aBlock as IMyShipController).DampenersOverride = false;
+                
             } else {
                 var inv = aBlock.GetInventory();
 

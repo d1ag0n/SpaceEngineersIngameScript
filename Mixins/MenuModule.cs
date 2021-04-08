@@ -8,6 +8,7 @@ namespace IngameScript {
     //public delegate List<MenuItem> PaginationHandler(int page);
     public class MenuModule : Module<IMyTextPanel> {
         Menu CurrentMenu;
+        
         public bool UpdateRequired = true;
 
         public MenuModule(ModuleManager aManager) : base(aManager) {

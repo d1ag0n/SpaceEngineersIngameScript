@@ -4,30 +4,36 @@ using System;
 using VRageMath;
 
 namespace IngameScript {
-    public class Menu {
-        
-        
+    public abstract class Menu {
+
+        public abstract List<MenuItem> Items();
+        public abstract void Update();
+
         readonly StringBuilder mWork = new StringBuilder();
-        readonly PaginationHandler onPage;
+        readonly Menu Previous;
+
+        public readonly MenuModule mModule;
+
+        protected string Title;
+        
         public int Page;
-        string Title;
-        public Menu Previous;
-        readonly MenuModule mMain;
-        List<MenuItem> Items;
-        readonly List<MenuItem> mMenuItems = new List<MenuItem>();
-        public Menu(MenuModule aMain, ModuleBase aModule) {
-            Title = $"{aModule.MenuName}";
-            mMain = aMain;
-            onPage = aModule.onPage;
-            //Items = MenuItems(0);
+        
+
+        static int PageCount(int itemCount) => itemCount == 0 ? itemCount : (itemCount / 6) + 1;
+
+        public Menu(MenuModule aModule, Menu aPrevious) {
+            mModule = aModule;
+            Previous = aPrevious;
         }
-        public static int PageCount(int itemCount) => (itemCount / 6) + 1;
-        public static int PageIndex(int pageNumber, int itemCount) => pageNumber % PageCount(itemCount);
-        public Menu(MenuModule aMain, List<ModuleBase> aList) {
-            Title = "Main Menu";
-            mMain = aMain;
+
+        
+
+        public int PageIndex(int aPage, int aCount) => aPage % PageCount(aCount);
+
+        public void  zMenu(MenuModule aMain, Menu aPrevious = null) {
             
-            onPage = aPage => {
+            
+            /*onPage = aPage => {
 
                 int items = 0;
                 foreach(var m in aList) {
@@ -53,17 +59,9 @@ namespace IngameScript {
                     }
                 }
                 return mMenuItems;
-            };
+            };*/
             //Items = MenuItems(0);
         }
-
-        public Menu(MenuModule aMain, string aTitle, PaginationHandler aPaginator) {
-            mMain = aMain;
-            Title = aTitle;
-            onPage = aPaginator;
-            //Items = MenuItems(0);
-        }
-
 
         public void Input(string argument) {
             if (argument.Length == 1) {

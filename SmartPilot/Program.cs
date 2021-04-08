@@ -1,5 +1,7 @@
 ﻿using Sandbox.ModAPI.Ingame;
+using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
+using System.Collections.Generic;
 using VRageMath;
 
 namespace IngameScript {
@@ -14,7 +16,7 @@ namespace IngameScript {
 
         readonly ModuleManager mManager;
         readonly GridCom mCom;
-        
+ 
         public Program() {
             mCom = new GridCom(IGC);
             mManager = new ModuleManager(this);
