@@ -6,9 +6,10 @@ namespace IngameScript {
     /// <summary>
     /// Clustering Orbital Collision Mitigation
     /// </summary>
-    class DockMission : MissionBase {
+    class DockMission : APMission {
+
+        protected readonly ATClientModule mATC;
         
-        readonly ATCLientModule atc;
         BoxInfo BoxCurrent;
         bool needTarget = true;
         Vector3D drillStart;
@@ -16,16 +17,16 @@ namespace IngameScript {
         int emptyScans = 0;
         MyDetectedEntityInfo drillTarget;
         Action onUpdate;
-        public DockMission(ShipControllerModule aController, ATCLientModule aClient) : base(aController, default(BoundingSphereD)) {
-            atc = aClient;
+        public DockMission(ModuleManager aManager) : base(aManager) {
+            aManager.GetModule(out mATC);
             onUpdate = reserve;
         }
 
         void reserve() {
-            ctr.logger.log("reserve");
-            atc.ReserveDock();
-            ctr.Thrust.Damp = true;
-            if (atc.Dock.isReserved) {
+            mLog.log("reserve");
+            mATC.ReserveDock();
+            mThrust.Damp = true;
+            if (mATC.Dock.isReserved) {
                 onUpdate = dock;
             }
         }
@@ -51,55 +52,56 @@ namespace IngameScript {
             }
         }*/
         Vector3D findApproach() {
-            var pos = atc.Dock.theConnector * 2.5;
-            Vector3D dir = Base6Directions.GetVector(atc.Dock.ConnectorFace);
-            return MAF.local2pos(pos + dir * (ctr.MotherSphere.Radius * 0.5), ctr.MotherMatrix);
+            var ms = mATC.Mother;
+            var pos = mATC.Dock.theConnector * 2.5;
+            Vector3D dir = Base6Directions.GetVector(mATC.Dock.ConnectorFace);
+            return MAF.local2pos(pos + dir * (ms.Sphere.Radius * 0.5), ms.Matrix);
         }
         void dock() {
-            atc.ReserveDock();
-            if (atc.Dock.isReserved) {
-                
-                ctr.Thrust.Damp = false;
-                Vector3D pos = atc.Dock.theConnector * 2.5;
-                Vector3D face = Base6Directions.GetVector(atc.Dock.ConnectorFace);
-                var mm = ctr.MotherMatrix;
+            mATC.ReserveDock();
+            if (mATC.Dock.isReserved) {
+                var ms = mATC.Mother;
+                mThrust.Damp = false;
+                Vector3D pos = mATC.Dock.theConnector * 2.5;
+                Vector3D face = Base6Directions.GetVector(mATC.Dock.ConnectorFace);
+                var mm = ms.Matrix;
                 pos += face * MathHelperD.Clamp((mDistToDest) - 0.0, 2.5, 50.0);
-                var veloAtPos = ctr.MotherVeloAt(pos);
+                var veloAtPos = ms.VeloAt(pos);
                 pos = MAF.local2pos(pos, mm);
                 mDestination.Center = pos;
                 mDestination.Radius = 0;
-                ctr.Gyro.NavBlock = NavBlock = atc.Connector;
-                var dir = MAF.world2dir(atc.Connector.WorldMatrix.Forward, ctr.Remote.WorldMatrix);
-                ctr.Gyro.SetTargetDirection(MAF.local2dir(-face, mm));
-                BaseVelocity = ctr.MotherVeloDir * ctr.MotherSpeed;
+                mGyro.NavBlock = NavBlock = mATC.Connector;
+                var dir = MAF.world2dir(mATC.Connector.WorldMatrix.Forward, mController.Remote.WorldMatrix);
+                mGyro.SetTargetDirection(MAF.local2dir(-face, mm));
+                BaseVelocity = ms.VeloDir * ms.Speed;
                 BaseVelocity += veloAtPos;
                 base.Update();
-                ctr.logger.log($"mDistToDest={mDistToDest}");
+                mLog.log($"mDistToDest={mDistToDest}");
                 if (mDistToDest < 1.0) {
-                    atc.Connector.Enabled = true;
-                    ctr.logger.log($"atc.Connector.Status={atc.Connector.Status}");
-                    if (atc.Connector.Status == MyShipConnectorStatus.Connectable) {
-                        atc.Connector.Connect();
-                        ctr.Thrust.Acceleration = Vector3D.Zero;
-                        ctr.Gyro.SetTargetDirection(Vector3D.Zero);
+                    mATC.Connector.Enabled = true;
+                    mLog.log($"atc.Connector.Status={mATC.Connector.Status}");
+                    if (mATC.Connector.Status == MyShipConnectorStatus.Connectable) {
+                        mATC.Connector.Connect();
+                        mThrust.Acceleration = Vector3D.Zero;
+                        mGyro.SetTargetDirection(Vector3D.Zero);
                         return;
-                    } else if (atc.Connector.Status == MyShipConnectorStatus.Connected) {
-                        ctr.Gyro.setGyrosEnabled(false);
-                        var cargoLevel = ctr.cargoLevel();
-                        ctr.logger.log($"cargoLevel={cargoLevel}");
+                    } else if (mATC.Connector.Status == MyShipConnectorStatus.Connected) {
+                        mGyro.setGyrosEnabled(false);
+                        var cargoLevel = mController.cargoLevel();
+                        mLog.log($"cargoLevel={cargoLevel}");
                         if (cargoLevel == 0f) {
-                            ctr.logger.log("Completing mission");
-                            ctr.Gyro.SetTargetDirection(Vector3D.Zero);
-                            ctr.Gyro.NavBlock = null;
+                            mLog.log("Completing mission");
+                            mGyro.SetTargetDirection(Vector3D.Zero);
+                            mGyro.NavBlock = null;
                             Complete = true;
                             return;
                         } else {
-                            ctr.logger.log("Draining cargo");
+                            mLog.log("Draining cargo");
                         }
                         return;
                     }
                 } else {
-                    atc.Connector.Enabled = false;
+                    mATC.Connector.Enabled = false;
                 }
                 FlyTo(20.0);
             } else {
@@ -107,20 +109,20 @@ namespace IngameScript {
             }
         }
         void nothing() {
-            BoxCurrent = atc.GetBoxInfo(Volume.Center);
-            atc.ReserveCBox(BoxCurrent);
-            if (BoxCurrent.IsReservedBy(ctr.EntityId)) {
+            BoxCurrent = mATC.GetBoxInfo(Volume.Center);
+            mATC.ReserveCBox(BoxCurrent);
+            if (BoxCurrent.IsReservedBy(mController.EntityId)) {
 
             } else {
-                ctr.Thrust.Damp = true;
-                ctr.logger.log("Acquiring reservation ", BoxCurrent.Position);
+                mThrust.Damp = true;
+                mLog.log("Acquiring reservation ", BoxCurrent.Position);
             }
         }
 
         void scan() {
             MyDetectedEntityInfo entity;
             ThyDetectedEntityInfo thy;
-            ctr.Camera.Scan(ctr.Volume.Center + MAF.ranDir() + 174.0, out entity, out thy);
+            mCamera.Scan(mController.Volume.Center + MAF.ranDir() + 174.0, out entity, out thy);
             if (entity.EntityId == 0) {
                 emptyScans++;
                 if (emptyScans > 60) {
@@ -132,11 +134,12 @@ namespace IngameScript {
                     if (needTarget) {
                         needTarget = false;
                         drillTarget = entity;
-                        drillStart = ctr.Volume.Center;
-                        ctr.Gyro.SetTargetDirection(Vector3D.Normalize(entity.HitPosition.Value - drillStart));
+                        drillStart = mController.Volume.Center;
+                        mGyro.SetTargetDirection(Vector3D.Normalize(entity.HitPosition.Value - drillStart));
                     }
                 }
             }
         }
+
     }
 }

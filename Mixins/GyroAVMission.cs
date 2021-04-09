@@ -7,7 +7,6 @@ using Sandbox.ModAPI.Interfaces;
 namespace IngameScript {
     public class GyroAVMission : MissionBase {
         
-        readonly ShipControllerModule mController;
         readonly GyroModule mGyro;
         readonly LogModule mLog;
 
@@ -20,10 +19,6 @@ namespace IngameScript {
             aManager.GetModule(out mLog);
             mGyro.Active = true;
         }
-        public override bool Cancel() => true;
-
-        public override void Input(string arg) { }
-
         public override void Update() {
             mLog.log("config update");
             if (mController.ShipVelocities.AngularVelocity.LengthSquared() < 1 && MAF.angleBetween(mController.Remote.WorldMatrix.Forward, configDir) < 0.01) {

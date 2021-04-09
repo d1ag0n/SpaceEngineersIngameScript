@@ -12,11 +12,13 @@ namespace IngameScript
         readonly BoxMap map = new BoxMap();
         readonly List<Connector> mConnectors = new List<Connector>();
         readonly Dictionary<Vector3L, long> mDrillMissions = new Dictionary<Vector3L, long>();
+        readonly GridComModule mCom;
 
         public ATCModule(ModuleManager aManager) : base(aManager) {
-            aManager.mIGC.SubscribeUnicast("ATC", atcMessage);
-            aManager.mIGC.SubscribeUnicast("Dock", dockMessage);
-            aManager.mIGC.SubscribeUnicast("Registration", registrationMessage);
+            aManager.GetModule(out mCom);
+            mCom.SubscribeUnicast("ATC", atcMessage);
+            mCom.SubscribeUnicast("Dock", dockMessage);
+            mCom.SubscribeUnicast("Registration", registrationMessage);
             onUpdate = UpdateAction;
         }
         void UpdateAction() {
@@ -35,7 +37,7 @@ namespace IngameScript
         }
 
         public bool SendDrill(ThyDetectedEntityInfo.Ore ore) {
-            logger.persist($"Drill count = {mDrills.Count}");
+            mLog.persist($"Drill count = {mDrills.Count}");
             if (mDrills.Count > 0) {
                 var id = mDrills.FirstElement();
                 long existing;
@@ -66,9 +68,9 @@ namespace IngameScript
             return result;
         }
 
-        void atcMessage(IGC.Envelope e) {
+        void atcMessage(Envelope e) {
             var src = e.Message.Source;
-            logger.persist("Received ATC message from " + src);
+            mLog.persist("Received ATC message from " + src);
             
             var msg = ATCMsg.Unbox(e.Message.Data);
             switch (msg.Subject) {
@@ -80,9 +82,9 @@ namespace IngameScript
                     break;
             }
             var result = mManager.mProgram.IGC.SendUnicastMessage(src, "ATC", msg.Box());
-            logger.persist("Respose result " + result);
+            mLog.persist("Respose result " + result);
         }
-        void registrationMessage(IGC.Envelope e) {
+        void registrationMessage(Envelope e) {
             if (e.Message.Data != null) {
                 var data = e.Message.Data.ToString();
                 if (data == "Drill") {
@@ -90,7 +92,7 @@ namespace IngameScript
                 }
             }
         }
-        void dockMessage(IGC.Envelope e) {
+        void dockMessage(Envelope e) {
             Connector unReserved = null;
             foreach (var c in mConnectors) {
                 if (c.ReservedBy == e.Message.Source) {

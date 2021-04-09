@@ -4,17 +4,44 @@ using VRage;
 using VRageMath;
 using System;
 namespace IngameScript {
-    class ATCLientModule : Module<IMyShipConnector> {
+    class ATClientModule : Module<IMyShipConnector> {
+        
         const double reserveInterval = 1.0;
+
+        readonly GridComModule mCom;
+        readonly Dictionary<int, BoxInfo> mBoxes = new Dictionary<int, BoxInfo>();
+
         DateTime reserveRequest;
+        
         public DockMsg Dock;
 
         public bool connected => Connector.Status == MyShipConnectorStatus.Connected;
-        public IMyShipConnector Connector {
-            get;private set;
-        }
-        readonly Dictionary<int, BoxInfo> mBoxes = new Dictionary<int, BoxInfo>();
+        public readonly MotherState Mother;
+        public IMyShipConnector Connector { get; private set; }
 
+        
+        void onMotherState(Envelope e) {
+
+        }
+
+
+        public ATClientModule(ModuleManager aManager) : base(aManager) {
+            Mother = new MotherState(aManager);
+            //aManager.GetModule(out mController);
+            aManager.GetModule(out mCom);
+
+            onUpdate = UpdateAction;
+            lastRegistration = -60d;
+
+            mCom.SubscribeBroadcast("MotherState", onMotherState);
+            mCom.SubscribeUnicast("ATC", onATCMessage);
+            mCom.SubscribeUnicast("Dock", onDockMessage);
+            mCom.SubscribeUnicast("Cancel", onCancelMessage);
+            if (aManager.Drill) {
+                mCom.SubscribeUnicast("Drill", onDrillMessage);
+            }
+            
+        }
         public override bool Accept(IMyTerminalBlock aBlock) {
             if (Connector == null) {
                 if (base.Accept(aBlock)) {
@@ -25,47 +52,36 @@ namespace IngameScript {
             return false;
         }
 
-        public ATCLientModule(ModuleManager aManager) : base(aManager) {
-            aManager.mIGC.SubscribeUnicast("ATC", onATCMessage);
-            aManager.mIGC.SubscribeUnicast("Dock", onDockMessage);
-            if (aManager.Drill) {
-                aManager.mIGC.SubscribeUnicast("Drill", onDrillMessage);
-                
-            }
-            aManager.mIGC.SubscribeUnicast("Cancel", onCancelMessage);
-            onUpdate = UpdateAction;
-            lastRegistration = -60d;
-        }
         double lastRegistration;
         void UpdateAction() {
             var cbox = BOX.GetCBox(Volume.Center);
             var dif = mManager.Runtime - lastRegistration;
-            controller.logger.log($"controller.OnMission={controller.OnMission}");
+            mLog.log($"controller.OnMission={mController.OnMission}");
             
-            if (mManager.Drill && !controller.OnMission && dif > 60d) {
-                if (controller.MotherId != 0) {
-                    if (mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "Registration", "Drill")) {
+            if (mManager.Drill && !mController.OnMission && dif > 60d) {
+                if (Mother.Id != 0) {
+                    if (mManager.mProgram.IGC.SendUnicastMessage(Mother.Id, "Registration", "Drill")) {
                         lastRegistration = mManager.Runtime;
                     }
                 }
             }
 
         }
-        void onCancelMessage(IGC.Envelope e) => controller.CancelMission();
-        void onDrillMessage(IGC.Envelope e) {
+        void onCancelMessage(Envelope e) => mController.CancelMission();
+        void onDrillMessage(Envelope e) {
             var ore = ThyDetectedEntityInfo.Ore.Unbox(e.Message.Data);
-            var m = new DrillMission(controller, ore.Item2, ore.Item1);
-            controller.NewMission(m);
+            var m = new DrillMission(mManager, ore.Item2, ore.Item1);
+            mController.NewMission(m);
         }
-        void onDockMessage(IGC.Envelope e) {
+        void onDockMessage(Envelope e) {
             Dock = DockMsg.Unbox(e.Message.Data);
             Dock.Reserved = MAF.Now;
         }
-        void onATCMessage(IGC.Envelope e) {
+        void onATCMessage(Envelope e) {
             var msg = ATCMsg.Unbox(e.Message.Data);
             var c = BOX.GetCBox(msg.Info.Position);
             var i = BOX.CVectorToIndex(c.Center);
-            logger.persist("Incoming ATC message " + msg.Subject);
+            mLog.persist("Incoming ATC message " + msg.Subject);
             switch (msg.Subject) {
                 case enATC.Reserve:
                     mBoxes[i] = msg.Info;
@@ -78,7 +94,7 @@ namespace IngameScript {
         public void ReserveDock() {
             
             if ((MAF.Now - reserveRequest).TotalSeconds > reserveInterval) {
-                var result = mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "Dock", Dock.Box());
+                var result = mManager.mProgram.IGC.SendUnicastMessage(Mother.Id, "Dock", Dock.Box());
                 reserveRequest = MAF.Now;
             }
         }
@@ -88,18 +104,18 @@ namespace IngameScript {
                 var msg = new ATCMsg();
                 msg.Info = b;
                 msg.Subject = enATC.Reserve;
-                var result = mManager.mProgram.IGC.SendUnicastMessage(controller.MotherId, "ATC", msg.Box());
+                var result = mManager.mProgram.IGC.SendUnicastMessage(Mother.Id, "ATC", msg.Box());
                 reserveRequest = MAF.Now;
-                logger.log("Reservation send result ", result);
+                mLog.log("Reservation send result ", result);
             } else {
-                logger.log("Waiting to send reservation.");
+                mLog.log("Waiting to send reservation.");
             }
             
         }
 
         public BoxInfo GetBoxInfo(Vector3D aPos) {
             var b = BOX.GetCBox(aPos);
-            logger.log(b);
+            mLog.log(b);
             var i = BOX.CVectorToIndex(b.Center);
             BoxInfo result;
             if (!mBoxes.TryGetValue(i, out result)) {

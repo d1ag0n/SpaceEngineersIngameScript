@@ -49,7 +49,7 @@ namespace IngameScript {
             var y = Math.Abs(aAccel.Y) * aMass;
 
             if (emergency) {
-                mThrust.logger.log("EMERGENCY!");
+                mThrust.mLog.log("EMERGENCY!");
             } else {
                 double ratio = forces[f] / z;
                 double tempRatio = forces[l] / x;

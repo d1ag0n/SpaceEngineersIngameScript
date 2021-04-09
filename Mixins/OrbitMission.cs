@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using Sandbox.ModAPI.Interfaces;
 
 namespace IngameScript {
-    public  class OrbitMission : MissionBase {
+    public  class OrbitMission : APMission {
+
         Vector3D orbit;
         Vector3D orbitAxis;
         MatrixD orbitMatrix;
@@ -16,15 +17,16 @@ namespace IngameScript {
         int updateIndex = 0;
         
         Action onScan;
+
         // this orbit is okayish I hope testing now
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
-        public OrbitMission(ShipControllerModule aController, ThyDetectedEntityInfo aEntity) : base(aController, aEntity) {
-            orbit = Vector3D.Normalize(ctr.Volume.Center - mEntity.Position);
+        public OrbitMission(ModuleManager aManager) : base(aManager) {
+            orbit = Vector3D.Normalize(mController.Volume.Center - mEntity.Position);
             calculateOrbitMatrix();
             onScan = analyzeScan;
-            
-            ctr.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
+
+            mController.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
             var blackList = "Stone";
             foreach (var detector in mDetectors) {
                 detector.SetValue("OreBlacklist", blackList);
@@ -55,7 +57,7 @@ namespace IngameScript {
             Vector3D.TransformNormal(ref orbit, ref orbitMatrix, out orbit);
         }
 
-        Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - ctr.Volume.Center);
+        Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - mController.Volume.Center);
         // position that we want to fly at
         Vector3D orbitProj() {
             var dir = dirToThing;
@@ -64,62 +66,62 @@ namespace IngameScript {
 
         
         // space to keep between us and thing
-        double space => ctr.Volume.Radius + PADDING + mEntity.WorldVolume.Radius;
+        double space => mController.Volume.Radius + PADDING + mEntity.WorldVolume.Radius;
 
         // position on the far side of the thing
         Vector3D orbitPos =>
             mEntity.WorldVolume.Center + orbit * space;
         public override void Update() {
-            ctr.Thrust.Damp = false;
+            mThrust.Damp = false;
  
             var dest = orbitProj();
-            var disp = dest - ctr.Volume.Center;
+            var disp = dest - mController.Volume.Center;
             var dist = disp.LengthSquared();
             if (mDistToDest < 100) {
-                ctr.logger.log($"orbitIncrements={orbitIncrements}");
-                ctr.logger.log($"matrixCalculations={matrixCalculations}");
+                mLog.log($"orbitIncrements={orbitIncrements}");
+                mLog.log($"matrixCalculations={matrixCalculations}");
                 var dir = disp;
                 var mag = dir.Normalize();
-                dir = MAF.world2dir(dir, ctr.MyMatrix);
+                dir = MAF.world2dir(dir, mController.MyMatrix);
                 var desiredVelo = dir * 5.0;
-                ctr.Thrust.Acceleration = (desiredVelo - ctr.LocalLinearVelo);
-                ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
-                ctr.Gyro.SetRollTarget(mEntity.Position);
+                mThrust.Acceleration = (desiredVelo - mController.LocalLinearVelo);
+                mGyro.SetTargetDirection(mController.LinearVelocityDirection);
+                mGyro.SetRollTarget(mEntity.Position);
                 onScan();
-                disp = orbitPos - ctr.Volume.Center;
+                disp = orbitPos - mController.Volume.Center;
                 dist = disp.LengthSquared();
                 if (dist < 10000) {
                     incOrbit();
                 }
             } else {
-                ctr.logger.persist("Out of orbit");
+                mLog.persist("Out of orbit");
                 base.Update();
                 collisionDetectTo();
             }
             //ctr.logger.log("Orbit Mission Distance ", mDistToDest);
-            var ops = new OPS(Volume.Center, Volume.Radius, ctr.Grid.WorldVolume.Center);
+            var ops = new OPS(Volume.Center, Volume.Radius, mController.Grid.WorldVolume.Center);
             //ctr.logger.log("Grid Radius: ", ctr.Grid.WorldVolume.Radius);
             //ctr.logger.log(ops);
             
         }
         
         void updateScan() {
-            ctr.logger.log($"updateScan - ore count {mEntity.mOres.Count}");
+            mLog.log($"updateScan - ore count {mEntity.mOres.Count}");
             if (mEntity.mOres.Count > updateIndex) {
                 var ore = mEntity.mOres[updateIndex];
                 MyDetectedEntityInfo info;
                 var scanResult = oreScan(mEntity, ore.Location, out info, true);
                 if (scanResult == 1) {
                     ATCModule atc;
-                    if (ctr.GetModule(out atc)) {
+                    if (mManager.GetModule(out atc)) {
                         atc.CancelDrill(ore.Index);
                     }
                     mEntity.mOres.RemoveAtFast(updateIndex);
                     updateIndex--;
 
-                    ctr.logger.persist(ctr.logger.gps("removed", ore.Location));
+                    mLog.persist(mLog.gps("removed", ore.Location));
                 } else if (scanResult == 0) {
-                    ctr.logger.persist("Ore update failed.");
+                    mLog.persist("Ore update failed.");
                 }
                 updateIndex++;
             } else {
@@ -128,8 +130,8 @@ namespace IngameScript {
             }
         }
         void analyzeScan() {
-            ctr.logger.log($"analyzeScan - ore count {mEntity.mOres.Count}");
-            var wv = ctr.Volume;
+            mLog.log($"analyzeScan - ore count {mEntity.mOres.Count}");
+            var wv = mController.Volume;
             var dir = MAF.ranDir() * (mEntity.WorldVolume.Radius * MAF.random.NextDouble());
             Vector3D scanPos;
 
@@ -144,14 +146,14 @@ namespace IngameScript {
 
             MyDetectedEntityInfo entity;
             ThyDetectedEntityInfo thy;
-            ctr.Camera.Scan(scanPos, out entity, out thy);
+            mCamera.Scan(scanPos, out entity, out thy);
             if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
                 MyDetectedEntityInfo info;
                 oreScan(thy, scanPos, out info, false);
             }
-            scanPos = wv.Center + ctr.LinearVelocityDirection * wv.Radius * 2.0;
+            scanPos = wv.Center + mController.LinearVelocityDirection * wv.Radius * 2.0;
             scanPos += MAF.ranDir() * wv.Radius * 2.0;
-            ctr.Camera.Scan(scanPos, out entity, out thy);
+            mCamera.Scan(scanPos, out entity, out thy);
             
         }
         
@@ -181,19 +183,18 @@ namespace IngameScript {
                         result = 2;
                         if (thy.AddOre(info)) {
                             result = 3;
-                            ctr.logger.persist($"New {info.Name} Deposit found!");
+                            mLog.persist($"New {info.Name} Deposit found!");
                         }
                     }
                     break;
                 } else {
-                    ctr.logger.persist("ORE Timestamp Zero");
+                    mLog.persist("ORE Timestamp Zero");
                 }
                 //detector.SetValue("ScanEpoch", 0L);
                 //throw new Exception("shouldnt be able to write ScanEpoch");
             }
             if (result == 0) {
-                
-                ctr.logger.persist("Ore Scan Failure");
+                mLog.persist("Ore Scan Failure");
             }
             return result;
         }

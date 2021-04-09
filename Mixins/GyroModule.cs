@@ -128,7 +128,7 @@ namespace IngameScript
                 init();
                 return;
             }
-            logger.log($"Remote {sc.CustomName}");
+            mLog.log($"Remote {sc.CustomName}");
             var m = NavBlock == null ? controller.Remote.WorldMatrix : NavBlock.WorldMatrix;
             if (calcDirection) {
                 if (mTargetPosition.IsZero()) {
@@ -206,7 +206,7 @@ namespace IngameScript
                 double rp, rr;
                 var dir = Vector3D.Normalize(_RollTarget - MyMatrix.Translation);
                 MAF.getRotationAnglesFromDown(m, dir, out rp, out rr);
-                logger.log($"Roll={rr}");
+                mLog.log($"Roll={rr}");
                 Roll = (float)rr;
             }
             applyGyroOverride(m, pitch, Yaw == 0f ? yaw : Yaw, Roll);

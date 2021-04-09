@@ -17,6 +17,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BoxMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CameraMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DockMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
@@ -26,7 +27,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)GyroAVMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)GridCom.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GridComModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IMenuItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IUpdate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
@@ -39,11 +40,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)MissionBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MotherState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OrbitMission.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OreListMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OreMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OPS.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PersistenceModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ProbeModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MotherShipModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RandomMission.cs" />

@@ -4,12 +4,14 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     class PeriscopeModule : Module<IMyMotorStator> {
+        readonly CameraModule mCamera;
         IMyMotorStator first, second;
         IMyCameraBlock camera;
         readonly List<MenuItem> mMenuMethods = new List<MenuItem>();
         double range = 20000;
         bool xneg = false;
         public PeriscopeModule(ModuleManager aManager) : base(aManager) {
+            aManager.GetModule(out mCamera);
             onUpdate = UpdateAction;
             onPage = p => {
                 if (Okay) {
@@ -97,7 +99,7 @@ namespace IngameScript {
                 Active = !Active;
                 if (Active) {
                     camera.CustomName = "!" + camera.CustomName;
-                    logger.persist($"View {camera.CustomName}");
+                    mLog.persist($"View {camera.CustomName}");
                 } else {
                     camera.CustomName = camera.CustomName.Substring(1);
                 }
@@ -111,13 +113,13 @@ namespace IngameScript {
                 ThyDetectedEntityInfo thy;
                 if (mod.Scan(camera.WorldMatrix.Translation + camera.WorldMatrix.Forward * range, out entity, out thy)) {
                     if (entity.Type == MyDetectedEntityType.None) {
-                        logger.persist("Module scan empty.");
+                        mLog.persist("Module scan empty.");
                     } else {
-                        logger.persist(logger.gps(entity.Name, entity.Position));
-                        logger.persist("Module scan success.");
+                        mLog.persist(mLog.gps(entity.Name, entity.Position));
+                        mLog.persist("Module scan success.");
                     }
                 } else {
-                    logger.persist("Module scan failed.");
+                    mLog.persist("Module scan failed.");
                 }
             }
             return null;
@@ -134,24 +136,24 @@ namespace IngameScript {
         }
         Menu Scan(MenuModule aMain = null, object argument = null) {
             if (camera.AvailableScanRange <= range) {
-                logger.persist("Camera charging " + camera.TimeUntilScan(range) / 1000 + " seconds remaining.");
+                mLog.persist("Camera charging " + camera.TimeUntilScan(range) / 1000 + " seconds remaining.");
             } else {
                 MyDetectedEntityInfo entity = camera.Raycast(range);
                 if (entity.Type == MyDetectedEntityType.None) {
-                    logger.persist("Periscope scanned nothing.");
+                    mLog.persist("Periscope scanned nothing.");
                 } else {
                     if (entity.Type == MyDetectedEntityType.None) {
-                        logger.persist("Periscope scan empty.");
+                        mLog.persist("Periscope scan empty.");
                     } else if (entity.EntityId == mManager.mProgram.Me.CubeGrid.EntityId) {
-                        logger.persist("Periscope scan obstructed by grid.");
+                        mLog.persist("Periscope scan obstructed by grid.");
                     } else {
-                        logger.persist(logger.gps(entity.Name, entity.Position));
-                        var mod = controller.Camera;
+                        mLog.persist(mLog.gps(entity.Name, entity.Position));
+                        var mod = mCamera;
                         ThyDetectedEntityInfo thy;
                         if (mod == null) {
-                            logger.persist("Camera module interface failure."); 
+                            mLog.persist("Camera module interface failure."); 
                         } else {
-                            logger.persist("Periscope scan success.");
+                            mLog.persist("Periscope scan success.");
                             mod.AddNew(entity, out thy);
                         }
                     }
@@ -162,12 +164,12 @@ namespace IngameScript {
         void UpdateAction() {
             if (Active) {
                 var sc = controller.Cockpit;
-                logger.log($"Periscope Controller={sc.CustomName}");
+                mLog.log($"Periscope Controller={sc.CustomName}");
                 if (sc != null) {
                     var rot = sc.RotationIndicator;
                     //logger.log(rot);
                     if (first == null) {
-                        logger.log("first null");
+                        mLog.log("first null");
                     } else {
                         /* If v is the vector that points 'up' and p0 is some point on your plane, and finally p is the point that might be below the plane, 
                          * compute the dot product v * (p−p0). This projects the vector to p on the up-direction. This product is {−,0,+} if p is below, on, above the plane, respectively. */
@@ -178,7 +180,7 @@ namespace IngameScript {
                         first.TargetVelocityRad = rad;
                     }
                     if (second == null) {
-                        logger.log("second null");
+                        mLog.log("second null");
                     } else {
                         var rad = rot.X * 0.01f;
                         if (xneg) {

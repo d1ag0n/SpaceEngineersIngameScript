@@ -16,16 +16,14 @@ namespace IngameScript
         CameraList mCameraList;
         readonly Dictionary<long, long> mClusterLookup = new Dictionary<long, long>();
         readonly Dictionary<long, ThyDetectedEntityInfo> mLookup = new Dictionary<long, ThyDetectedEntityInfo>();
-        readonly List<ThyDetectedEntityInfo> mDetected = new List<ThyDetectedEntityInfo>();
+        public readonly List<ThyDetectedEntityInfo> mDetected = new List<ThyDetectedEntityInfo>();
         public bool hasCamera => Blocks.Count > 0;
-        readonly List<MenuItem> mMenuItems = new List<MenuItem>();
+        
 
         // todo organize camera by direction
         public CameraModule(ModuleManager aManager) : base(aManager) {
-            MenuName = "Camera Records";
             onSave = SaveAction;
             onLoad = LoadAction;
-            onPage = PageAction;
             onUpdate = ClusterAction;
         }
         public ThyDetectedEntityInfo Find(long entityId) {
@@ -165,28 +163,6 @@ namespace IngameScript
         }
 
 
-        List<MenuItem> PageAction(int aPage) {
-            aPage = Menu.PageIndex(aPage, mDetected.Count);
-            int index = (mDetected.Count - 1) - (aPage * 6);
-            int count = 0;
-            mMenuItems.Clear();
-            //logger.persist($"CameraModule.MenuMethods({aPage});");
-            //logger.persist($"index={index}");
-            //logger.persist($"mDetected.Count={mDetected.Count}");
-            while (index >= 0 && count < 6) {
-                var e = mDetected[index];
-                var name = e.Name;
-                if (e.Type == ThyDetectedEntityType.Asteroid) {
-                    name = $"{e.Name} Asteroid";
-                } else if (e.Type == ThyDetectedEntityType.AsteroidCluster) {
-                    name = $"{e.Name} Cluster";
-                }
-                mMenuItems.Add(new MenuItem(name, e, EntityMenu));
-                index--;
-                count++;
-            }
-            return mMenuItems;
-        }
 
         readonly Queue<MyDetectedEntityInfo> mIncoming = new Queue<MyDetectedEntityInfo>();
 

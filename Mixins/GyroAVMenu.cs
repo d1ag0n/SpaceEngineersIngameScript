@@ -20,10 +20,6 @@ namespace IngameScript {
 
         public GyroAVMenu(MenuModule aModule, Menu aPrevious) : base(aModule, aPrevious) {
             aModule.mManager.GetModule(out mGyro);
-        }
-        public override List<MenuItem> Items() => mItems;
-        public override void Update() {
-            mItems.Clear();
             mItems.Add(MenuItem.CreateItem(strRaiseDifMax, raiseDifMax));
             mItems.Add(MenuItem.CreateItem(strLowerDifMax, lowerDifMax));
             mItems.Add(MenuItem.CreateItem(strRaiseFastFact, raiseFastFact));
@@ -36,6 +32,8 @@ namespace IngameScript {
             mItems.Add(MenuItem.CreateItem(strLowerSmallFact, lowerSmallFact));
             mItems.Add(MenuItem.CreateItem("Set Default Values", defaults));
         }
+        public override List<MenuItem> GetPage() => mItems;
+        
         void defaults() {
             difMax = 0.09;
             slowFact = 20.0;

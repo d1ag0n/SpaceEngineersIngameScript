@@ -38,22 +38,26 @@ namespace IngameScript {
         public void ExtendMission(MissionBase m) {
             if (mMission != null) {
                 mMissionStack.Push(mMission);
-                logger.persist($"Stacked {mMission}");
+                mLog.persist($"Stacked {mMission}");
             }
             mMission = m;
         }
         public void CancelMission() {
             if (mMission != null) {
-                if (mMission.Cancel()) {
-                    mMission = null;
-                }
+                mMission.Cancel();
+                mMission = null;
             }
         }
         public void ReplaceMission(MissionBase m) {
             mMission = m;
         }
         public void NewMission(MissionBase m) {
-            mMissionStack.Clear();
+            if (mMission != null) {
+                mMission.Cancel();
+            }
+            while (mMissionStack.Count > 0) {
+                mMissionStack.Pop().Cancel();
+            }
             mMission = m;
         }
 
@@ -105,7 +109,7 @@ namespace IngameScript {
                     if (item.HasValue) {
                         var amount = (float)item.Value.Amount;
                         var name = item.Value.Type.ToString();
-                        logger.persist($"{name} {amount}");
+                        mLog.persist($"{name} {amount}");
                         if (detail.TryGetValue(name, out val)) {
                             detail[name] = amount - val;
                         } else {
@@ -125,7 +129,7 @@ namespace IngameScript {
                 m += (float)inv.MaxVolume;
             }
             var v = c / m;
-            logger.log($"Cargo Level {v * 100d:f0}%");
+            mLog.log($"Cargo Level {v * 100d:f0}%");
             return v;
         }
         void InitializeAction() {
@@ -136,52 +140,8 @@ namespace IngameScript {
             onUpdate = UpdateGlobal;
             onUpdate();
         }
-        public long MotherId { get; private set; }
+        
         public bool OnMission => mMission != null;
-
-        public BoundingSphereD MotherSphere => BoundingSphereD.CreateFromBoundingBox(MotherBox);
-        public BoundingBoxD MotherBox { get; private set; }
-        public Vector3D MotherCoM { get; private set; } 
-        public Vector3D MotherVeloDir { get; private set; }
-        public double MotherSpeed { get; private set; }
-        public double MotherLastUpdate { get; private set; }
-
-
-        public Vector3D MotherVeloAt(Vector3D aPos) {
-            if (MotherAngularVelo.IsZero()) {
-                return Vector3D.Zero;    
-            }
-            return MotherAngularVelo.Cross(MAF.local2pos(aPos, _MotherMatrix) - MotherCoM);
-        }
-
-        MatrixD _MotherMatrix;
-        public MatrixD MotherMatrix {
-            get {
-                // Whiplash141 - https://discord.com/channels/125011928711036928/216219467959500800/825805636691951626
-                // cross(angVel, displacement)
-                // Where angVel is in rad / s and displacement is measured from the CoM pointing towards the point of interest
-                var m = _MotherMatrix;
-                //logger.log(logger.gps("Position", _MotherMatrix.Translation));
-                var d = mManager.Runtime - MotherLastUpdate;
-                //d += 0.0166;
-                
-                d += 1.0 / 60.0;
-                if (!MotherAngularVelo.IsZero()) {
-                    var ng = MotherAngularVelo * d;
-                    var len = ng.Normalize();
-                    var rot = MatrixD.CreateFromAxisAngle(ng, len);
-                    var comDisp = m.Translation - MotherCoM;
-                    m *= rot;
-                    m.Translation = MotherCoM + Vector3D.Transform(comDisp, rot);
-                }
-                m.Translation += MotherVeloDir * (MotherSpeed * d);
-                return m;
-            }
-            private set {
-                _MotherMatrix = value;
-            }
-        }
-        public Vector3D MotherAngularVelo { get; private set; }
         public long EntityId => mManager.mProgram.Me.EntityId;
 
 
@@ -205,7 +165,7 @@ namespace IngameScript {
                 }
             }
             if (Remote == null) {
-                logger.log("No ship controller.");
+                mLog.log("No ship controller.");
                 mManager.mProgram.Echo("No ship controller");
                 return;
             }
@@ -233,7 +193,7 @@ namespace IngameScript {
                 }
             }
             if (mMission != null) {
-                logger.log($"Mission={mMission}");
+                mLog.log($"Mission={mMission}");
                 mMission.Update();
             }
         }

@@ -2,11 +2,13 @@ using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
+using System;
 
 namespace IngameScript {
-    public class Module<T> : ModuleBase {
+    public class Module<T> : ModuleBase, IModuleBlock {
         readonly HashSet<long> mRegistry = new HashSet<long>();
-        public readonly List<T> Blocks = new List<T>();
+
+        protected readonly List<T> Blocks;
         
         public IMyCubeGrid Grid => mManager.mProgram.Me.CubeGrid;
         public BoundingSphereD Volume => Grid.WorldVolume;
@@ -33,13 +35,11 @@ namespace IngameScript {
             }
             return false;
         }
-        public override bool Remove(IMyTerminalBlock b) {
+        public override void Remove(IMyTerminalBlock b) {
             if (b is T) {
                 Blocks.Remove((T)b);
                 mRegistry.Remove(b.EntityId);
-                return true;
             }
-            return false;
         }
     }
 }

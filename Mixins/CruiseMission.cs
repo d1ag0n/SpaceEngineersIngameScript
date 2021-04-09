@@ -13,7 +13,6 @@ namespace IngameScript {
         const double amp = 10d;
         const double maxDif = 10d;
         const double prefVert = 2d;
-        readonly ShipControllerModule mController;
         readonly ThrustModule mThrust;
         readonly GyroModule mGyro;
         readonly LogModule mLog;
@@ -24,7 +23,6 @@ namespace IngameScript {
 
 
         public CruiseMission(ModuleManager aManager):base(aManager) {
-            aManager.GetModule(out mController);
             aManager.GetModule(out mThrust);
             aManager.GetModule(out mGyro);
             aManager.GetModule(out mLog);
@@ -34,7 +32,6 @@ namespace IngameScript {
             mThrust.Active = true;
             mGyro.Active = true;
         }
-        public override bool Cancel() => true;
         public override void Input(string arg) {
             arg = arg.ToLower().Trim();
             if (arg == "off") {

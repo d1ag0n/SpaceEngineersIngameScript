@@ -1,8 +1,6 @@
 using System;
 
 namespace IngameScript {
-    
-
     public struct MenuItem : IMenuItem {
         public readonly string mName;
         readonly Func<Menu> mMethod;

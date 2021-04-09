@@ -5,23 +5,23 @@ using System.Collections;
 namespace IngameScript {
     public abstract class ModuleBase {
 
-        abstract public bool Accept(IMyTerminalBlock aBlock);
-        abstract public bool Remove(IMyTerminalBlock aBlock);
+        public virtual bool Accept(IMyTerminalBlock aBlock) => false;
+        public virtual void Remove(IMyTerminalBlock aBlock) { }
 
         public readonly ModuleManager mManager;
 
-        public string MenuName;
-        public readonly LogModule logger;
-        public readonly ShipControllerModule controller;
+        
+        public readonly LogModule mLog;
+        protected ShipControllerModule mController => mManager.mController;
         /// <summary>
         /// MenuMethod list
         /// </summary>
         /// <param name="aPage"></param>
         /// <returns></returns>
-        public IEnumerable onPage { get; protected set; }
+        //public IEnumerable onPage { get; protected set; }
         public Action onUpdate { get; protected set; }
-        //public SaveHandler onSave { get; protected set; }
-        //public LoadHandler onLoad{ get; protected set; }
+        public SaveHandler onSave { get; protected set; }
+        public LoadHandler onLoad{ get; protected set; }
         public Action<string> onInput;
 
         public bool Active;
@@ -29,13 +29,7 @@ namespace IngameScript {
 
         public ModuleBase(ModuleManager aManager) {
             mManager = aManager;
-            
-            mManager.GetModule(out logger);
-            if (this is ShipControllerModule) {
-                controller = this as ShipControllerModule;
-            } else {
-                mManager.GetModule(out controller);
-            }
+            mManager.GetModule(out mLog);
         }
         /*public void MenuData(List<object> aList) {
              

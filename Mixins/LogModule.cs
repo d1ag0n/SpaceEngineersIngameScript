@@ -10,8 +10,8 @@ namespace IngameScript {
     public class LogModule : Module<IMyTextPanel> {
         int pcount = 0;
         string nl => Environment.NewLine;
-        readonly StringBuilder mWork = new StringBuilder();
-        readonly StringBuilder mLog = new StringBuilder();
+        readonly StringBuilder mSBWork = new StringBuilder();
+        readonly StringBuilder mSBLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>(25);
 
         public LogModule(ModuleManager aManager) : base(aManager) {
@@ -21,16 +21,16 @@ namespace IngameScript {
 
         public void log(MyDetectedEntityInfo e) => log(string4(e));
         public string string4(BoundingBoxD b) {
-            mWork.Clear();
-            mWork.AppendLine(b.Min.ToString());
-            mWork.AppendLine(b.Center.ToString());
-            mWork.AppendLine(b.Max.ToString());
-            return mWork.ToString();
+            mSBWork.Clear();
+            mSBWork.AppendLine(b.Min.ToString());
+            mSBWork.AppendLine(b.Center.ToString());
+            mSBWork.AppendLine(b.Max.ToString());
+            return mSBWork.ToString();
         }
         public string string4(MyDetectedEntityInfo e) {
 
-            mWork.Clear();
-            mWork.AppendLine($"{e.Name} {e.Type} {e.EntityId}");
+            mSBWork.Clear();
+            mSBWork.AppendLine($"{e.Name} {e.Type} {e.EntityId}");
 
             //mWork.AppendLine(e.EntityId.ToString());
 
@@ -49,9 +49,9 @@ namespace IngameScript {
             //mWork.AppendLine(string4(e.Orientation.Up));
             if (e.HitPosition.HasValue) {
                 //mWork.AppendLine("hit");
-                mWork.AppendLine(gps("hit", e.HitPosition.Value));
+                mSBWork.AppendLine(gps("hit", e.HitPosition.Value));
             }
-            return mWork.ToString();
+            return mSBWork.ToString();
         }
 
         public override bool Accept(IMyTerminalBlock b) {
@@ -94,22 +94,22 @@ namespace IngameScript {
                 for (int i = 0; i < args.Length; i++) {
                     var arg = args[i];
                     if (null == arg) {
-                        mLog.AppendLine();
+                        mSBLog.AppendLine();
                     } else if (arg is Vector3D) {
-                        mLog.AppendLine();
+                        mSBLog.AppendLine();
                         log((Vector3D)arg);
                     } else if (arg is double) {
-                        mLog.Append(((double)arg).ToString("F3"));
+                        mSBLog.Append(((double)arg).ToString("F3"));
                     } else {
-                        mLog.Append(arg.ToString());
+                        mSBLog.Append(arg.ToString());
                     }
                 }
             }
-            mLog.AppendLine();
+            mSBLog.AppendLine();
         }
         string clear() {
             string result = get();
-            mLog.Clear();
+            mSBLog.Clear();
             return result;
         }
         public void removeP(int index) {
@@ -132,8 +132,8 @@ namespace IngameScript {
         }
         public string get() {
             for (int i = 0; i < mPersistent.Count; i++) {
-                mLog.Insert(0, Environment.NewLine);
-                mLog.Insert(0, mPersistent[i]);
+                mSBLog.Insert(0, Environment.NewLine);
+                mSBLog.Insert(0, mPersistent[i]);
             }
             return mLog.ToString();
         }

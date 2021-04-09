@@ -11,7 +11,7 @@ namespace IngameScript {
             Message = aMessage;
         }
     }
-    public class GridCom {
+    public class GridComModule : Module<IMyRadioAntenna> {
         //readonly ModuleManager mManager;
         readonly IMyIntergridCommunicationSystem mIGC;
         readonly SubscriptionManager mUnicastMgr;
@@ -19,8 +19,8 @@ namespace IngameScript {
         readonly List<IMyBroadcastListener> mListeners = new List<IMyBroadcastListener>();
 
         bool mUpdateNeeded;
-        public GridCom(IMyIntergridCommunicationSystem aIGC) {
-            mIGC = aIGC;
+        public GridComModule(ModuleManager aManager) :base(aManager) {
+            mIGC = aManager.mProgram.IGC;
             
             mUnicastMgr = new SubscriptionManager(this);
             mBroadcastMgr = new SubscriptionManager(this);
@@ -52,8 +52,8 @@ namespace IngameScript {
         class SubscriptionManager {
             readonly List<Envelope> mInbox = new List<Envelope>();
             readonly Dictionary<string, List<IGCHandler>> mSubscriptions = new Dictionary<string, List<IGCHandler>>();
-            readonly GridCom mCom;
-            public SubscriptionManager(GridCom aCom) {
+            readonly GridComModule mCom;
+            public SubscriptionManager(GridComModule aCom) {
                 mCom = aCom;
             }
             public bool Subscribe(string tag, IGCHandler h) {

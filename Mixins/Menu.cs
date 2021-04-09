@@ -5,139 +5,78 @@ using VRageMath;
 
 namespace IngameScript {
     public abstract class Menu {
-
-        public abstract List<MenuItem> Items();
-        public abstract void Update();
-
-        readonly StringBuilder mWork = new StringBuilder();
-        readonly Menu Previous;
-
-        public readonly MenuModule mModule;
-
-        protected string Title;
-        
-        public int Page;
-        
-
         static int PageCount(int itemCount) => itemCount == 0 ? itemCount : (itemCount / 6) + 1;
 
-        public Menu(MenuModule aModule, Menu aPrevious) {
-            mModule = aModule;
-            Previous = aPrevious;
+        readonly StringBuilder mWork = new StringBuilder();
+
+        string mText;
+
+        public string Title;
+
+        public readonly MenuModule mMenuModule;
+        protected ShipControllerModule mController => mMenuModule.mManager.mController;
+
+        public int mPage;
+
+        public abstract List<MenuItem> GetPage();
+
+        public Menu(MenuModule aMenuModule) {
+            mMenuModule = aMenuModule;
         }
 
-        
+        protected int PageIndex(int aPage, int aCount) => aPage % PageCount(aCount);
 
-        public int PageIndex(int aPage, int aCount) => aPage % PageCount(aCount);
 
-        public void  zMenu(MenuModule aMain, Menu aPrevious = null) {
-            
-            
-            /*onPage = aPage => {
-
-                int items = 0;
-                foreach(var m in aList) {
-                    if (m is MenuModule) continue;
-                    if (m.MenuName == null) continue;
-                    items++;
-                }
-                int index = PageIndex(aPage, items) * 6;
-                int count = 0;
-
-                mMenuItems.Clear();
-                for (int i = index; i < aList.Count; i++) {
-                    if (count == 6) {
-                        break;
-                    }
-                    var m = aList[i];
-                    
-                    if (!(m is MenuModule)) {
-                        if (m.MenuName != null) {
-                            mMenuItems.Add(new MenuItem(m));
-                            count++;
+        /*public void Input(int arg) {
+            if (argument.Length == 1) {
+                int selection;
+                if (int.TryParse(argument, out selection)) {
+                    selection = MathHelper.Clamp(selection, 0, 8);
+                    mMenuModule.mLog.persist($"selection={selection}");
+                    if (selection == 6) {
+                        mMenuModule.SetMenu(Previous);
+                    } else if (selection == 7) {
+                        Page--;
+                        mMenuModule.UpdateRequired = true;
+                    } else if (selection == 8) {
+                        Page++;
+                        mMenuModule.UpdateRequired = true;
+                    } else {
+                        var items = Items();
+                        if (items != null) {
+                            var count = items.Count;
+                            mMenuModule.mLog.persist($"count={count}");
+                            if (count > 0) {
+                                var pageIndex = PageIndex(Page, count);
+                                var index = pageIndex + selection;
+                                mMenuModule.mLog.persist($"pageIndex={pageIndex}");
+                                mMenuModule.mLog.persist($"index={index}");
+                                if (index < count) {
+                                    HandleInput(items[index]);
+                                }
+                            }
                         }
                     }
                 }
-                return mMenuItems;
-            };*/
-            //Items = MenuItems(0);
-        }
-
-        public void Input(string argument) {
-            if (argument.Length == 1) {
-                // menu number selection from !0 to !9
-                int selection = argument[0] - 48;
-                //ModuleManager.logger.persist($"Menu input: '{selection}'");
-                if (selection == 6) {
-                    mMain.SetMenu(Previous, false);
-                    mMain.UpdateRequired = true;
-                } else if (selection == 7) {
-                    Page--;
-                    mMain.UpdateRequired = true;
-                } else if (selection == 8) {
-                    Page++;
-                    mMain.UpdateRequired = true;
-                } else {
-                    if (Items.Count > selection) {
-                        HandleInput(Items[selection]);
-                    }
-                }
             } else if (argument.Length > 1) {
-                mMain.mManager.UserInput = argument;
-                mMain.UpdateRequired = true;
+                // use inputmodules
+
+                mMenuModule.mManager.UserInput = argument;
+                mMenuModule.UpdateRequired = true;
             }
-        }
-        
-        void HandleInput(MenuItem aMenuItem) {
+        }*/
+
+        /*void HandleInput(MenuItem aMenuItem) {
             //Main.logger.persist($"Menu.HandleInput({aMenuItem});");
-            if (aMenuItem.State is ModuleBase) {
-                mMain.SetMenu(new Menu(mMain, aMenuItem.State as ModuleBase));
+            var menu = aMenuItem.Run();
+
+            if (menu != null) {
+                mMenuModule.SetMenu(menu);
             } else {
-                var menu = aMenuItem.Method?.Invoke(mMain, aMenuItem.State);
-                if (menu != null) {
-                    mMain.SetMenu(menu);
-                } else {
-                    mMain.UpdateRequired = true;
-                }
-            }
-        }
-
-        public string Update() {
-            var index = Page * 6;
-
-            mWork.AppendLine(Title);
-            int count = 0;
-            Items = onPage(Page);
-            if (Items == null) {
-                return null;
+                mMenuModule.UpdateRequired = true;
             }
 
-            foreach (var item in Items) {
-                mWork.Append(++count);
-                mWork.Append(' ');
+        }*/
 
-                if (item.Name == null) {
-                    if (item.State is ModuleBase) {
-                        var mb = (ModuleBase)item.State;
-                        mWork.AppendLine(mb.MenuName);
-                    } else {
-                        mWork.AppendLine("Unknown Item in menu");
-                    }
-                } else {
-                    mWork.AppendLine(item.Name);
-                }
-
-            }
-
-            while (count < 7) {
-                count++;
-                mWork.AppendLine();
-            }
-            mWork.AppendLine("7 Previous Menu");
-            mWork.AppendLine("8 - 9 < Page >");
-            var result = mWork.ToString();
-            mWork.Clear();
-            return result;
-        }
     }
 }

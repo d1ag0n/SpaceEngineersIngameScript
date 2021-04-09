@@ -7,6 +7,7 @@ using VRageMath;
 namespace IngameScript {
     public class ModuleManager {
         public readonly Program mProgram;
+        public readonly ShipControllerModule mController;
         readonly Lag mLag = new Lag(18);
 
         
@@ -23,14 +24,14 @@ namespace IngameScript {
 
         public ModuleManager(Program aProgram) {
             mProgram = aProgram;
-            logger = new LogModule(this);
+            mLog = new LogModule(this);
             
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             mProgram.Me.CustomName = "!Smart Pilot";
 
             //todo igc module
             //mIGC = new IGC(this);
-            controller = new ShipControllerModule(this);
+            mController = new ShipControllerModule(this);
         }
         /// <summary>
         /// https://discord.com/channels/125011928711036928/216219467959500800/755140967517913148
@@ -50,8 +51,8 @@ namespace IngameScript {
         public string UserInput = "DEFAULT";
         readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
 
-        public LogModule logger { get; private set; }
-        public ShipControllerModule controller { get; private set; }
+        public readonly LogModule mLog;
+        
 
         readonly HashSet<long> mRegistry = new HashSet<long>();
         readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
@@ -92,16 +93,16 @@ namespace IngameScript {
             if ((type & UpdateType.Update10) != 0) {
                 // todo modularize GridCom(IGC)
                 // mIGC.Update();
-                logger.log(mLag.Value, " - ", DateTime.Now.ToString());
+                mLog.log(mLag.Value, " - ", DateTime.Now.ToString());
                 foreach (var m in mModules) {
                     try {
                         m.onUpdate?.Invoke();
                     } catch (Exception ex) {
-                        logger.persist(ex.ToString());
+                        mLog.persist(ex.ToString());
                         mProgram.Echo(ex.ToString());
                     }
                 }
-                logger.onUpdate();
+                mLog.onUpdate();
             }
         }
         // todo Persistence Class
@@ -125,7 +126,6 @@ namespace IngameScript {
             return s.Clear();
         }*/
         // todo persistence class
-        /*
         public void Load(string aStorage) {
             var s = new Serialize();
             var moduleEntries = new Dictionary<string, List<string>>();
@@ -147,7 +147,7 @@ namespace IngameScript {
                 }
             }
         }
-        */
+        
         public void Initialize() {
             foreach (var list in mTags.Values) {
                 list.Clear();
@@ -262,7 +262,7 @@ namespace IngameScript {
             }
             return false;
         }
-        public void Add<T>(Module<T> aModule) {
+        public void Add(ModuleBase aModule) {
             List<ModuleBase> list;
 
             var type = aModule.GetType();
@@ -273,9 +273,12 @@ namespace IngameScript {
                 mModuleList.Add(hash, list);
             }
             list.Add(aModule);
-            mModules.Add(aModule);
-            foreach (var block in mBlocks) {
-                aModule.Accept(block as IMyTerminalBlock);
+            if (aModule is IModuleBlock) {
+                if (mBlocks.Count > 0) {
+                    foreach (var block in mBlocks) {
+                        aModule.Accept(block);
+                    }
+                }
             }
         }
         public bool GetModule<S>(out S aComponent) where S : class {

@@ -27,11 +27,12 @@ namespace IngameScript {
         public bool Complete { get; protected set; }
 
         protected readonly ModuleManager mManager;
+        protected ShipControllerModule mController => mManager.mController;
         public MissionBase(ModuleManager aManager) {
             mManager = aManager;
         }
         public abstract void Update();
-        public abstract bool Cancel();
-        public abstract void Input(string arg);
+        public virtual void Cancel() { }
+        public virtual void Input(string arg) { }
     }
 }

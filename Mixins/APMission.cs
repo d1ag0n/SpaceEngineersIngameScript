@@ -6,9 +6,12 @@ using VRageMath;
 namespace IngameScript {
     public abstract class APMission : MissionBase {
 
-        public Action onCancel;
         readonly HashSet<long> mEscapeSet = new HashSet<long>();
         readonly List<Vector3D> mEscape = new List<Vector3D>();
+
+        double Altitude;
+        Vector3D _BaseVelocity;
+        Vector3D BaseVelocityDirection;
         double mPrefVelo;
         Vector3D mStop;
         Vector3D mMaxAccel;
@@ -16,18 +19,23 @@ namespace IngameScript {
         bool onEscape;
         BoundingSphereD mObstacle;
         double BaseVelocityLength;
-        readonly ShipControllerModule ctr;
+        
         protected readonly ThyDetectedEntityInfo mEntity;
+        protected readonly ThrustModule mThrust;
+        protected readonly GyroModule mGyro;
+        protected readonly CameraModule mCamera;
+        
+        protected readonly LogModule mLog;
         protected IMyTerminalBlock NavBlock;
 
-        Vector3D _BaseVelocity;
-        Vector3D BaseVelocityDirection;
+        public Action onCancel;
+
         protected BoundingSphereD Volume => mEntity == null ? mDestination : mEntity.WorldVolume;
         public APMission(ModuleManager aManager) : base(aManager) {
-            var f = 4f;
-            var i = 8;
-            var g = i * f;
-
+            aManager.GetModule(out mThrust);
+            aManager.GetModule(out mGyro);
+            aManager.GetModule(out mCamera);
+            mLog = mThrust.mLog;
         }
         protected Vector3D BaseVelocity {
             get {
@@ -48,13 +56,13 @@ namespace IngameScript {
         }
      
         public override void Update() {
-            var wv = ctr.Grid.WorldVolume;
+            var wv = mController.Grid.WorldVolume;
             if (NavBlock != null) {
                 wv.Center = NavBlock.WorldMatrix.Translation;
             }
-            mMaxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
+            mMaxAccel = mThrust.MaxAccel(mController.LocalLinearVelo);
             mMaxAccelLength = mMaxAccel.Length();
-            mStop = ctr.Thrust.Stop(mMaxAccel);
+            mStop = mThrust.Stop(mMaxAccel);
             mStopLengthSquared = mStop.LengthSquared();
             if (double.IsNaN(mStopLengthSquared)) {
                 mStop.X = mStop.Y = mStop.Z = mStopLengthSquared = double.PositiveInfinity;
@@ -74,13 +82,13 @@ namespace IngameScript {
             }
             //ctr.logger.log("BaseVelocityLength ", BaseVelocityLength);
 
-            mPrefVelo = ctr.Thrust.PreferredVelocity(mMaxAccelLength, mDistToDest);
+            mPrefVelo = mThrust.PreferredVelocity(mMaxAccelLength, mDistToDest);
             //ctr.logger.log("mPrefVelo ", mPrefVelo);
             //mPrefVelo += BaseVelocityLength;
 
             //ctr.logger.log("mPrefVelo ", mPrefVelo);
 
-            if (ctr.LinearVelocity == 0) {
+            if (mController.LinearVelocity == 0) {
                 mPrefVelo = 1.0;
             } else {
                 if (mPrefVelo > mDistToDest) {
@@ -110,7 +118,7 @@ namespace IngameScript {
                 }
                 var distToExit = (exitOrbit - aShip.Center).LengthSquared();
 
-                var maxAccel = ctr.Thrust.MaxAccel(ctr.LocalLinearVelo);
+                var maxAccel = mThrust.MaxAccel(mController.LocalLinearVelo);
                 if (distToExit > mStopLengthSquared) {
                     var dispFromObstToShip = aShip.Center - aObstacle.Center;
                     var dirFromObstToShip = dispFromObstToShip;
@@ -132,15 +140,15 @@ namespace IngameScript {
             return result;
         }
         Vector3D collisionDetect() {
-            var wv = ctr.Grid.WorldVolume;
+            var wv = mController.Grid.WorldVolume;
             var stopLen = Math.Sqrt(mStopLengthSquared);
             var scanDist = wv.Radius + (stopLen * 3) + PADDING;
             var detected = false;
 
             for (int i = 0; i < 5; i++) {
-                var lvd = ctr.LinearVelocityDirection;
+                var lvd = mController.LinearVelocityDirection;
                 Vector3D scanPoint;
-                if (ctr.LinearVelocity < 1.0) {
+                if (mController.LinearVelocity < 1.0) {
 
                     scanPoint = wv.Center + MAF.ranDir() * (wv.Radius * 5);
                 } else {
@@ -158,7 +166,7 @@ namespace IngameScript {
 
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
-                if (ctr.Camera.Scan(scanPoint, out entity, out thy)) {
+                if (mCamera.Scan(scanPoint, out entity, out thy)) {
                     if (
                         (thy != null && thy != mEntity) ||
                         (
@@ -170,8 +178,8 @@ namespace IngameScript {
                         // this is getting nasty
                         // mothership should only avoid objects owned by me if they have no velocity
                         // everything else should be aware of the mothership and gtfo of the way
-                        if (!ctr.mManager.Mother || entity.Velocity.LengthSquared() < 0.1) {
-                            ctr.logger.log($"Detected {entity.Name} {entity.Velocity.Length()}");
+                        if (!mManager.Mother || entity.Velocity.LengthSquared() < 0.1) {
+                            mLog.log($"Detected {entity.Name} {entity.Velocity.Length()}");
                             detected = true;
                             BoundingSphereD sphere;
                             if (onEscape) {
@@ -215,7 +223,7 @@ namespace IngameScript {
                     mObstacle.Radius = 0;
                 } else {
                     if (!wasOnEscape && onEscape) {
-                        mEscape.Add(-ctr.LinearVelocityDirection);
+                        mEscape.Add(-mController.LinearVelocityDirection);
                         mEscape.Add(orbitalResult);
                     }
                     if (onEscape) {
@@ -232,30 +240,30 @@ namespace IngameScript {
         }
         protected void FlyTo(double maxVelo = 100.0) {
 
-            ctr.Thrust.Damp = false;
+            mThrust.Damp = false;
             //var distSq = mDistToDest * mDistToDest;
             //var stopDistSq = mStop * mStop;
             //var syncVelo = ctr.ShipVelocities.LinearVelocity - BaseVelocity;
             //var syncVeloLen = syncVelo.Length();
-            var accelerating = mPrefVelo > ctr.LinearVelocity;
+            var accelerating = mPrefVelo > mController.LinearVelocity;
 
-            var curVelo = ctr.LocalLinearVelo;
-            var localDir = MAF.world2dir(mDirToDest, ctr.MyMatrix);
+            var curVelo = mController.LocalLinearVelo;
+            var localDir = MAF.world2dir(mDirToDest, mController.MyMatrix);
             var veloVec = localDir * MathHelperD.Clamp(mPrefVelo * 0.9, 0.0, maxVelo);
             //veloVec += BaseVelocity;
             if (BaseVelocity.IsZero()) {
                 if (accelerating) {
-                    if (ctr.LinearVelocity > mPrefVelo) {
+                    if (mController.LinearVelocity > mPrefVelo) {
                         curVelo = veloVec;
                     }
                 } else {
-                    if (ctr.LinearVelocity < mPrefVelo) {
+                    if (mController.LinearVelocity < mPrefVelo) {
                         curVelo = veloVec;
                     }
                 }
             } else {
                 accelerating = false;
-                var localBase = MAF.world2dir(BaseVelocityDirection, ctr.MyMatrix) * BaseVelocityLength;
+                var localBase = MAF.world2dir(BaseVelocityDirection, mController.MyMatrix) * BaseVelocityLength;
                 curVelo -= localBase;
             }
 
@@ -264,9 +272,9 @@ namespace IngameScript {
             var disp = (veloVec - curVelo);
 
             if (accelerating && disp.LengthSquared() < 2.0) {
-                ctr.Thrust.Acceleration = 6.0 * disp;
+                mThrust.Acceleration = 6.0 * disp;
             } else {
-                ctr.Thrust.Acceleration = 6.0 * disp;
+                mThrust.Acceleration = 6.0 * disp;
             }
 
         }
@@ -274,28 +282,28 @@ namespace IngameScript {
         // call flyat from here
         // call fly at from flyTo
         protected void collisionDetectTo() {
-            var wv = ctr.Volume;
-            var m = ctr.MyMatrix;
+            var wv = mController.Volume;
+            var m = mController.MyMatrix;
             var worldDir = collisionDetect();
-            ctr.Thrust.Damp = false;
+            mThrust.Damp = false;
             if (worldDir.IsZero()) {
                 worldDir = mDirToDest;
-                ctr.logger.log("Following vector to destination.");
+                mLog.log("Following vector to destination.");
             } else {
-                ctr.logger.log("Following avoidance vector.");
+                mLog.log("Following avoidance vector.");
             }
             var localDir = MAF.world2dir(worldDir, m);
 
             //ctr.logger.log("dist ", dist);
-            ctr.logger.log("Estimated arrival ", (mDistToDest / ctr.LinearVelocity) / 60.0, " minutes");
+            mLog.log("Estimated arrival ", (mDistToDest / mController.LinearVelocity) / 60.0, " minutes");
 
 
-            var preferredVelocity = MathHelperD.Clamp(ctr.Thrust.PreferredVelocity(mMaxAccelLength, mDistToDest), 0.0, MAXVELO);
+            var preferredVelocity = MathHelperD.Clamp(mThrust.PreferredVelocity(mMaxAccelLength, mDistToDest), 0.0, MAXVELO);
 
-            ctr.logger.log("preferredVelocity ", preferredVelocity);
+            mLog.log("preferredVelocity ", preferredVelocity);
             var preferredVelocityVector = localDir * (preferredVelocity * mPreferredVelocityFactor);
 
-            var accelReq = preferredVelocityVector - ctr.LocalLinearVelo;
+            var accelReq = preferredVelocityVector - mController.LocalLinearVelo;
             if (MAF.nearEqual(accelReq.LengthSquared(), 0, 0.0001)) {
                 accelReq = Vector3D.Zero;
             }
@@ -306,10 +314,10 @@ namespace IngameScript {
                 //ctr.Gyro.SetTargetDirection(ctr.Thrust.Acceleration = Vector3D.Zero);
             } else if (mDistToDest < 100) {
 
-                ctr.Thrust.Acceleration = (mDistToDest * mDistToDest > 2.0 ? 6.0 : 1.0) * accelReq;
+                mThrust.Acceleration = (mDistToDest * mDistToDest > 2.0 ? 6.0 : 1.0) * accelReq;
                 //ctr.Gyro.SetTargetDirection(Vector3D.Zero);
             } else {
-                ctr.Thrust.Acceleration = 6.0 * accelReq;
+                mThrust.Acceleration = 6.0 * accelReq;
                 //ctr.Gyro.SetTargetDirection(ctr.LinearVelocityDirection);
             }
 

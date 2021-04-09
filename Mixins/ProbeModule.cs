@@ -6,15 +6,26 @@ using VRageMath;
 
 namespace IngameScript {
     public class ProbeModule : Module<IMyTerminalBlock> {
-        readonly ShipControllerModule ctr;
+
         
         readonly List<IMySolarPanel> mPanels = new List<IMySolarPanel>();
         readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
         readonly List<IMyRadioAntenna> mAntennas = new List<IMyRadioAntenna>();
-       
-        
+
+        bool rolling = false;
+        const float maxEver = 0.04f;
+        float maxInRoll = 0;
+        int rollCount = 0;
+        bool charge = false;
+        IMySolarPanel maxPanel;
+        readonly GyroModule mGyro;
+        readonly ThrustModule mThrust;
+        readonly ATClientModule mATC;
+
         public ProbeModule(ModuleManager aManager):base(aManager) {
-            ctr = aManager.controller;
+            aManager.GetModule(out mGyro);
+            aManager.GetModule(out mThrust);
+            aManager.GetModule(out mATC);
             onUpdate = UpdateAction;
         }
         public override bool Accept(IMyTerminalBlock aBlock) {
@@ -39,12 +50,7 @@ namespace IngameScript {
             return result;
         }
         
-        bool rolling = false;
-        const float maxEver = 0.04f;
-        float maxInRoll = 0;
-        int rollCount = 0;
-        bool charge = false;
-        IMySolarPanel maxPanel;
+
 
 
 
@@ -53,19 +59,20 @@ namespace IngameScript {
         // Vector3D absoluteNorthVecNotPlanetWorlds = new Vector3D(0.342063708833718, -0.704407897782847, -0.621934025954579); //this was determined via Keen's code
         const double PADDING = 100.0;
         void UpdateAction() {
-            if (mManager.Runtime - ctr.MotherLastUpdate > 1) {
-                controller.Thrust.Damp = true;
+            var ms = mATC.Mother;
+            if (mManager.Runtime - ms.LastUpdate > 1) {
+                mThrust.Damp = true;
             } else {
-                ctr.Thrust.Damp = false;
-                var wv = ctr.Grid.WorldVolume; 
-                var minDist = ctr.MotherSphere.Radius + wv.Radius + PADDING;
+                mThrust.Damp = false;
+                var wv = mController.Grid.WorldVolume; 
+                var minDist = ms.Sphere.Radius + wv.Radius + PADDING;
                 var maxDist = minDist + PADDING;
-                var dispToMother = ctr.MotherSphere.Center - wv.Center;
+                var dispToMother = ms.Sphere.Center - wv.Center;
                 var dirToMother = dispToMother;
                 var distToMother = dirToMother.Normalize();
 
                 double dist = 0;
-                Vector3D baseVec = ctr.MotherVeloDir * ctr.MotherSpeed;
+                Vector3D baseVec = ms.VeloDir * ms.Speed;
 
 
                 var syncVec = Vector3D.Zero;
@@ -73,19 +80,19 @@ namespace IngameScript {
                     syncVec = dirToMother;
                     dist = distToMother - maxDist;
                 } else if (distToMother < minDist) {
-                    if (ctr.MotherSpeed > 1) {
-                        syncVec = Vector3D.Normalize(wv.Center - MAF.orthoProject(ctr.MotherSphere.Center + ctr.MotherVeloDir, wv.Center, dirToMother));
+                    if (ms.Speed > 1) {
+                        syncVec = Vector3D.Normalize(wv.Center - MAF.orthoProject(ms.Sphere.Center + ms.VeloDir, wv.Center, dirToMother));
                     } else {
                         dirToMother.CalculatePerpendicularVector(out syncVec);
                     }
                     dist = minDist - distToMother;
                 }
-                var llv = ctr.LocalLinearVelo;
+                var llv = mController.LocalLinearVelo;
                 
                 if (dist > 0) {
-                    if (ctr.LinearVelocity > 0.0) {
-                        var maxAccelLength = ctr.Thrust.MaxAccel(syncVec).Length();
-                        var prefVelo = MathHelperD.Clamp(ctr.Thrust.PreferredVelocity(maxAccelLength, dist), 0.0, 25.0);
+                    if (mController.LinearVelocity > 0.0) {
+                        var maxAccelLength = mThrust.MaxAccel(syncVec).Length();
+                        var prefVelo = MathHelperD.Clamp(mThrust.PreferredVelocity(maxAccelLength, dist), 0.0, 25.0);
                         
                         syncVec *= prefVelo;
                         baseVec += syncVec;
@@ -98,9 +105,9 @@ namespace IngameScript {
                 var accelVec = veloVec - llv;
                 var accelVecLenSq = accelVec.LengthSquared();
                 if (accelVecLenSq < 2.0) {
-                    ctr.Thrust.Acceleration = accelVec;
+                    mThrust.Acceleration = accelVec;
                 } else {
-                    ctr.Thrust.Acceleration = 6.0 * accelVec;
+                    mThrust.Acceleration = 6.0 * accelVec;
                 }
                 
             }
@@ -142,20 +149,20 @@ namespace IngameScript {
                 }
                 var roll = -0.1f;
                 var dir = Vector3D.Down;
-                if (ctr.Remote.WorldMatrix.Forward.Dot(dir) < 0) {
+                if (mController.Remote.WorldMatrix.Forward.Dot(dir) < 0) {
                     dir = Vector3D.Up;
                     roll = 0.1f;
                 }
-                ctr.Gyro.SetTargetDirection(dir);
+                mGyro.SetTargetDirection(dir);
                 if (rolling) {
-                    ctr.Gyro.Yaw = 0f;
-                    ctr.Gyro.Roll = roll;
+                    mGyro.Yaw = 0f;
+                    mGyro.Roll = roll;
                 } else {
-                    ctr.Gyro.Roll = 0f;
-                    ctr.Gyro.Yaw = 0.05f;
+                    mGyro.Roll = 0f;
+                    mGyro.Yaw = 0.05f;
                 }
             } else {
-                ctr.Gyro.Roll = ctr.Gyro.Yaw = 0f;
+                mGyro.Roll = mGyro.Yaw = 0f;
                 // can use arbitrary direction
             }
         }

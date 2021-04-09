@@ -15,33 +15,33 @@ namespace IngameScript {
         readonly MenuModule mMenu;
 
         readonly ModuleManager mManager;
-        readonly GridCom mCom;
+        readonly GridComModule mCom;
+
+        static Program _Instance;
+        
  
         public Program() {
-            mCom = new GridCom(IGC);
             mManager = new ModuleManager(this);
-            
-
-
+            mCom = new GridComModule(mManager);
             new GyroModule(mManager);
             new ThrustModule(mManager);
             new CameraModule(mManager);
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             if (Me.CustomData.Contains("mother")) {
-                mManager.logger.persist("I'm a Mother Ship");
+                mManager.mLog.persist("I'm a Mother Ship");
                 mManager.Mother = true;
                 new PeriscopeModule(mManager);
-                mMenu = new MenuModule(mManager);
+                mMenu = new MenuModule(mManager, null);
                 new MotherShipModule(mManager);
                 new ATCModule(mManager);
             } else if (Me.CustomData.Contains("#probe")) {
-                mManager.logger.persist("I'm a Probe");
+                mManager.mLog.persist("I'm a Probe");
                 mManager.Probe = true;
                 new ProbeModule(mManager);
             } else if (Me.CustomData.Contains("#drill")) {
-                mManager.logger.persist("I'm a Drill");
+                mManager.mLog.persist("I'm a Drill");
                 mManager.Drill = true;
-                new ATCLientModule(mManager);
+                new ATClientModule(mManager);
             } else {
                 Runtime.UpdateFrequency = UpdateFrequency.None;
                 return;
@@ -59,7 +59,7 @@ namespace IngameScript {
                 mManager.Load(Storage);
                 Update = mManager.Update;
             } catch (Exception ex) {
-                mManager.logger.persist(ex.ToString());
+                mManager.mLog.persist(ex.ToString());
             }
         }
 
