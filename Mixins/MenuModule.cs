@@ -71,7 +71,7 @@ namespace IngameScript {
         }
 
         void UpdateAction() {
-            if (mUpdateRequired) {
+            if (mUpdateRequired && mCurrent != null) {
                 mPage =  mCurrent.GetPage();
                 var str = GetText();
                 foreach (var tp in Blocks) {

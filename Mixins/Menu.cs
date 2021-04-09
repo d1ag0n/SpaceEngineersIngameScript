@@ -7,6 +7,7 @@ namespace IngameScript {
     public abstract class Menu {
         static int PageCount(int itemCount) => itemCount == 0 ? itemCount : (itemCount / 6) + 1;
 
+        protected readonly List<MenuItem> mItems = new List<MenuItem>();
         readonly StringBuilder mWork = new StringBuilder();
 
         string mText;
@@ -14,7 +15,9 @@ namespace IngameScript {
         public string Title;
 
         public readonly MenuModule mMenuModule;
-        protected ShipControllerModule mController => mMenuModule.mManager.mController;
+        protected ModuleManager mManager => mMenuModule.mManager;
+        protected LogModule mLog => mManager.mLog;
+        protected ShipControllerModule mController => mManager.mController;
 
         public int mPage;
 

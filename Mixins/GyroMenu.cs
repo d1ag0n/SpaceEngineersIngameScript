@@ -7,7 +7,7 @@ namespace IngameScript {
         
         
         readonly GyroModule mGyro;
-        readonly List<MenuItem> mItems = new List<MenuItem>();
+        
         GyroAVMission mMission;
 
         public GyroMenu(MenuModule aMenuModule, Menu aPrevious):base(aMenuModule) {

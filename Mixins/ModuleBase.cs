@@ -10,8 +10,8 @@ namespace IngameScript {
 
         public readonly ModuleManager mManager;
 
-        
-        public readonly LogModule mLog;
+
+        public LogModule mLog => mManager.mLog;
         protected ShipControllerModule mController => mManager.mController;
         /// <summary>
         /// MenuMethod list
@@ -29,7 +29,7 @@ namespace IngameScript {
 
         public ModuleBase(ModuleManager aManager) {
             mManager = aManager;
-            mManager.GetModule(out mLog);
+            mManager.Add(this);
         }
         /*public void MenuData(List<object> aList) {
              

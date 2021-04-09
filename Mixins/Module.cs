@@ -21,7 +21,8 @@ namespace IngameScript {
             }
         }
         public Module(ModuleManager aManager) : base(aManager) {
-            mManager.Add(this);
+            Blocks = new List<T>();
+            
         }
         
         public bool GetModule<S>(out S aComponent) where S : class => mManager.GetModule(out aComponent);

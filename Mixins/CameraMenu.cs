@@ -9,8 +9,6 @@ namespace IngameScript {
         public CameraMenu(MenuModule aMenuModule) : base(aMenuModule) {
             aMenuModule.mManager.GetModule(out mCamera);
         }
-     
-
         public override List<MenuItem> GetPage() {
             var detected = mCamera.mDetected;
             var pageIndex = PageIndex(mPage, detected.Count);

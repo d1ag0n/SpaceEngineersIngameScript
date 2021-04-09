@@ -76,7 +76,7 @@ namespace IngameScript {
             // somthing needs to handle call to UpdateAction in ModuleManager.Initialize
             onUpdate = InitializeAction;
             ////////////////////////
-            MenuName = "Ship Controller";
+            
             
         }
         public void AllDampers(bool value) {

@@ -1,7 +1,7 @@
 using System;
 
 namespace IngameScript {
-    public struct MenuItem : IMenuItem {
+    public struct MenuItem {
         public readonly string mName;
         readonly Func<Menu> mMethod;
         public static MenuItem CreateItem(string aName, Action aMethod) => new MenuItem(aName, () => { aMethod(); return null; });

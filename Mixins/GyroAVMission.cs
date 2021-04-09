@@ -8,15 +8,13 @@ namespace IngameScript {
     public class GyroAVMission : MissionBase {
         
         readonly GyroModule mGyro;
-        readonly LogModule mLog;
+        
 
         Vector3D configDir = Vector3D.Up;
         int configCount = 0;
 
         public GyroAVMission(ModuleManager aManager) : base(aManager) {
-            aManager.GetModule(out mController);
             aManager.GetModule(out mGyro);
-            aManager.GetModule(out mLog);
             mGyro.Active = true;
         }
         public override void Update() {

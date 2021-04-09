@@ -25,13 +25,13 @@ namespace IngameScript {
 
             var time = DateTime.Now;
             if ((time - lastUpdate).TotalSeconds > 1.0) {
-                var v = controller.ShipVelocities.LinearVelocity;
+                var v = mController.ShipVelocities.LinearVelocity;
                 var s = 0.0;
                 if (!v.IsZero()) {
                     s = v.Normalize();
                 }
                 var m = Grid.WorldMatrix;
-                var t = MotherState.Pack(Grid.WorldAABB, v, s, controller.ShipVelocities.AngularVelocity, Grid.WorldMatrix);
+                var t = MotherState.Pack(Grid.WorldAABB, v, s, mController.ShipVelocities.AngularVelocity, Grid.WorldMatrix, mController.Remote.CenterOfMass);
                 mManager.mProgram.IGC.SendBroadcastMessage("MotherState", t);
             }
         }

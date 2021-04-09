@@ -36,11 +36,8 @@ namespace IngameScript {
 
         //Mission = new DockMission(this, ATClient, Volume);
 
-        public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget) : 
-            base(aManager)
-        {
+        public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget) : base(aManager) {
             aManager.GetModule(out mATC);
-            mLog = mATC.mLog;
             if (mATC.connected) {
                 mThrust.Damp = false;
             }
@@ -197,8 +194,9 @@ namespace IngameScript {
             if (mATC.Dock.isReserved) {
                 mThrust.Damp = false;
                 var com = mController.Remote.CenterOfMass;
+                var ms = mATC.Mother;
                 var dockPos = MAF.local2pos(
-                    (mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * (mController.Sphere.Radius * 0.5), mController.MotherMatrix
+                    (mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * 50d, ms.Matrix
                     );
                 var dir = Vector3D.Normalize(com - mMissionAsteroid.Center);
                 var plane = mMissionAsteroid.Center + dir * MaxAltitude;
@@ -218,12 +216,12 @@ namespace IngameScript {
                 //ctr.Thrust.Acceleration = accel * 6d;
                 //ctr.logger.log($"len={len}");
                 // todo measure dist to dockPos
-                if (mDistToDest < mController.MotherSphere.Radius * 2d) {
+                if (mDistToDest < ms.Sphere.Radius * 2d) {
                     onUpdate = approach;
                     if (mCancel) {
-                        mController.NewMission(new DockMission(mController, mATC));
+                        mController.NewMission(new DockMission(mManager));
                     } else {
-                        mController.ExtendMission(new DockMission(mController, mATC));
+                        mController.ExtendMission(new DockMission(mManager));
                     }
                 }
             } else {

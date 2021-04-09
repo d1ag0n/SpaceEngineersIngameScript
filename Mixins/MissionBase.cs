@@ -27,6 +27,7 @@ namespace IngameScript {
         public bool Complete { get; protected set; }
 
         protected readonly ModuleManager mManager;
+        protected LogModule mLog => mManager.mLog;
         protected ShipControllerModule mController => mManager.mController;
         public MissionBase(ModuleManager aManager) {
             mManager = aManager;

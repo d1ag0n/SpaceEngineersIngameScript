@@ -17,8 +17,6 @@ namespace IngameScript {
         public LogModule(ModuleManager aManager) : base(aManager) {
             onUpdate = UpdateAction;
         }
-
-
         public void log(MyDetectedEntityInfo e) => log(string4(e));
         public string string4(BoundingBoxD b) {
             mSBWork.Clear();
@@ -56,8 +54,6 @@ namespace IngameScript {
 
         public override bool Accept(IMyTerminalBlock b) {
             var result = false;
-
-
             if (b.CustomData.Contains("#logconsole")) {
                 result = base.Accept(b);
                 if (result) {
@@ -135,9 +131,9 @@ namespace IngameScript {
                 mSBLog.Insert(0, Environment.NewLine);
                 mSBLog.Insert(0, mPersistent[i]);
             }
-            return mLog.ToString();
+            return mSBLog.ToString();
         }
-        public string LastText;
+        
         void UpdateAction() {
             pcount++;
             if (pcount == 90) {
@@ -146,12 +142,11 @@ namespace IngameScript {
                     mPersistent.RemoveAt(0);
                 }
             }
-            //ModuleManager.Program.Echo("logmodupdate");
-            LastText = clear();
-            //ModuleManager.Program.Echo(str);
+            var str = clear();
             foreach (var tp in Blocks) {
-                tp.WriteText(LastText);
+                tp.WriteText(str);
             }
+            mManager.mProgram.Echo(str);
         }
     }
 }

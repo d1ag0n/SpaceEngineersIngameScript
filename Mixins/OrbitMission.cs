@@ -13,7 +13,9 @@ namespace IngameScript {
         int orbitIncrements = 0;
         int matrixCalculations = 0;
 
+
         readonly List<IMyOreDetector> mDetectors = new List<IMyOreDetector>();
+
         int updateIndex = 0;
         
         Action onScan;
@@ -21,7 +23,8 @@ namespace IngameScript {
         // this orbit is okayish I hope testing now
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
-        public OrbitMission(ModuleManager aManager) : base(aManager) {
+        public OrbitMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager) {
+            
             orbit = Vector3D.Normalize(mController.Volume.Center - mEntity.Position);
             calculateOrbitMatrix();
             onScan = analyzeScan;
@@ -99,7 +102,7 @@ namespace IngameScript {
                 collisionDetectTo();
             }
             //ctr.logger.log("Orbit Mission Distance ", mDistToDest);
-            var ops = new OPS(Volume.Center, Volume.Radius, mController.Grid.WorldVolume.Center);
+            //var ops = new OPS(Volume.Center, Volume.Radius, mController.Grid.WorldVolume.Center);
             //ctr.logger.log("Grid Radius: ", ctr.Grid.WorldVolume.Radius);
             //ctr.logger.log(ops);
             

@@ -6,31 +6,34 @@ using VRageMath;
 
 namespace IngameScript {
     public class ModuleManager {
+        readonly HashSet<long> mRegistry = new HashSet<long>();
+        readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
+        readonly List<ModuleBase> mModules = new List<ModuleBase>();
+        readonly List<ModuleBase> mInputModules = new List<ModuleBase>();
+        readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
+        readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
+        readonly Lag mLag = new Lag(18);
+        readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
+
+        public readonly bool LargeGrid;
         public readonly Program mProgram;
         public readonly ShipControllerModule mController;
-        readonly Lag mLag = new Lag(18);
-
-        
-        
-        public double Runtime { get; private set; }
-
-        // todo make IGC module
-        //public readonly IGC mIGC;
-        public readonly bool LargeGrid;
+        public readonly LogModule mLog;
 
         public bool Mother;
         public bool Probe;
-        public bool Drill;
+        public bool Drill;        
+        public string UserInput = "DEFAULT";
+        
+
+        public double Lag => mLag.Value;
+        public double Runtime { get; private set; }
 
         public ModuleManager(Program aProgram) {
             mProgram = aProgram;
             mLog = new LogModule(this);
-            
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             mProgram.Me.CustomName = "!Smart Pilot";
-
-            //todo igc module
-            //mIGC = new IGC(this);
             mController = new ShipControllerModule(this);
         }
         /// <summary>
@@ -47,30 +50,18 @@ namespace IngameScript {
             return health;
         }
 
-        public double Lag => mLag.Value;
-        public string UserInput = "DEFAULT";
-        readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
-
-        public readonly LogModule mLog;
         
-
-        readonly HashSet<long> mRegistry = new HashSet<long>();
-        readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
-        readonly List<ModuleBase> mModules = new List<ModuleBase>();
-        readonly List<ModuleBase> mInputModules = new List<ModuleBase>();
-        readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
-        readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
 
         // todo menu module with menus added to it
         //public Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
 
-        public void Update(string arg, UpdateType type) {
+        public void Update(string arg, UpdateType aType) {
             Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;
             mLag.Update(mProgram.Runtime.LastRunTimeMs);
-            if ((type & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
+            if ((aType & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                 if (arg.Length > 0) {
-                    if (controller.OnMission) {
-                        controller.mMission.Input(arg);
+                    if (mController.OnMission) {
+                        mController.mMission.Input(arg);
                     }
                     foreach (var m in mInputModules) {
                         m.onInput(arg);
@@ -90,16 +81,18 @@ namespace IngameScript {
                 }
             }
 
-            if ((type & UpdateType.Update10) != 0) {
+            if ((aType & UpdateType.Update10) != 0) {
                 // todo modularize GridCom(IGC)
                 // mIGC.Update();
                 mLog.log(mLag.Value, " - ", DateTime.Now.ToString());
                 foreach (var m in mModules) {
-                    try {
-                        m.onUpdate?.Invoke();
-                    } catch (Exception ex) {
-                        mLog.persist(ex.ToString());
-                        mProgram.Echo(ex.ToString());
+                    if (m != mLog) {
+                        try {
+                            m.onUpdate?.Invoke();
+                        } catch (Exception ex) {
+                            mLog.persist(ex.ToString());
+                            //mProgram.Echo(ex.ToString());
+                        }
                     }
                 }
                 mLog.onUpdate();
@@ -159,7 +152,6 @@ namespace IngameScript {
             mRegistry.Clear();
             mBlocks.Clear();
             
-            
             mProgram.GridTerminalSystem.GetBlocksOfType(mBlocks, block => {
                 addByGrid(block);
                 if (block.IsSameConstructAs(mProgram.Me) && mRegistry.Add(block.EntityId)) {
@@ -172,16 +164,37 @@ namespace IngameScript {
                 return false;
             });
 
-            foreach (var m in mModules) {
-                if (m.onInput != null) {
-                    mInputModules.Add(m);
-                }
-            }
+            
 
             // todo move up into GTS loop, need to change module initialization behavior first,
             // because modules may look for additionals that mey not yet be loaded
             // when reinitialization is implemented this should be addressed
             
+        }
+        public void Add(ModuleBase aModule) {
+            List<ModuleBase> list;
+
+            var type = aModule.GetType();
+            var hash = type.GetHashCode();
+
+            if (!mModuleList.TryGetValue(hash, out list)) {
+                mModuleList.Add(hash, list = new List<ModuleBase>());
+            }
+
+            list.Add(aModule);
+
+            if (aModule is IModuleBlock) {
+                if (mBlocks.Count > 0) {
+                    foreach (var block in mBlocks) {
+                        aModule.Accept(block);
+                    }
+                }
+            }
+            
+            if (aModule.onInput != null) {
+                mInputModules.Add(aModule);
+            }
+            mModules.Add(aModule);
         }
         public void getByType<T>(List<T> blocks) {
             foreach (var block in mBlocks) {
@@ -262,25 +275,7 @@ namespace IngameScript {
             }
             return false;
         }
-        public void Add(ModuleBase aModule) {
-            List<ModuleBase> list;
-
-            var type = aModule.GetType();
-            var hash = type.GetHashCode();
-
-            if (!mModuleList.TryGetValue(hash, out list)) {
-                list = new List<ModuleBase>();
-                mModuleList.Add(hash, list);
-            }
-            list.Add(aModule);
-            if (aModule is IModuleBlock) {
-                if (mBlocks.Count > 0) {
-                    foreach (var block in mBlocks) {
-                        aModule.Accept(block);
-                    }
-                }
-            }
-        }
+        
         public bool GetModule<S>(out S aComponent) where S : class {
             var hash = typeof(S).GetHashCode();
             List<ModuleBase> list;

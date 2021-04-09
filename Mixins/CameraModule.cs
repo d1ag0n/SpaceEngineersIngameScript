@@ -9,7 +9,7 @@ namespace IngameScript
 {
     public class CameraModule : Module<IMyCameraBlock>
     {
-
+        const double HR = 3600000;
         int mClusterI = 0;
         MyDetectedEntityInfo? mCurrentIncoming;
 
@@ -150,7 +150,7 @@ namespace IngameScript
                             var v3l = new Vector3L((long)pos.X, (long)pos.Y, (long)pos.Z);
                             ThyDetectedEntityInfo thy;
                             if (mLookup.TryGetValue(id, out thy)) {
-                                thy.AddOre(new ThyDetectedEntityInfo.Ore(thy, name, v3l));
+                                thy.AddOre(new Ore(thy, name, v3l));
                             }
                         }
                     }
@@ -186,114 +186,16 @@ namespace IngameScript
             }
         }
 
-        const double HR = 3600000;
-        bool deleted;
-
-        Menu OreMenu(MenuModule aMain, object aState) {
-            var thy = (ThyDetectedEntityInfo)aState;
-            return new Menu(aMain, $"Ore Record for {thy.Name}", pg => {
-                var page = Menu.PageIndex(pg, thy.mOres.Count);
-                int index = pg * 6;
-                int count = 0;
-                mMenuItems.Clear();
-                while (count < 6 && index < thy.mOres.Count) {
-                    var o = thy.mOres[index];
-                    mMenuItems.Add(new MenuItem($"{o.Name} - Altitude: {(thy.Position - o.Location).Length()}", o, (m, state) => {
-                        var ore = (ThyDetectedEntityInfo.Ore)state;
-                        return new Menu(aMain, $"Actions for {o.Name}", p => {
-                            mMenuItems.Clear();
-                            mMenuItems.Add(new MenuItem("Send Drill Drone", state, sendDrillDrone));
-                            mMenuItems.Add(new MenuItem(logger.gps(ore.Name, ore.Location)));
-                            return mMenuItems;
-                        });
-                    }));
-                    index++;
-                    count++;
-                }
-                return mMenuItems;
-            });
-        }
-        Menu sendDrillDrone(MenuModule aMain, object state) {
-            var ore = (ThyDetectedEntityInfo.Ore)state;
-            ATCModule atc;
-            if (GetModule(out atc)) {
-                
-                if (atc.SendDrill(ore)) {
-                    logger.persist(logger.gps(ore.Name, ore.Location));
-                } else {
-                    logger.persist("Drill not sent.");
-                }
-            }
-            return null;
-        }
-        Menu EntityMenu(MenuModule aMain, object aState) {
-            
-            var e = (ThyDetectedEntityInfo)aState;
-            
-            deleted = false;
-
-            return new Menu(aMain, $"Camera Record for {e.Name} {e.EntityId}", p => {
-                p = p % 2;
-                mMenuItems.Clear();
-                if (deleted) {
-                    aMain.Input("6");
-                    return null;
-                }
-                if (deleted || p == 0) {
-                    var ts = (DateTime.Now - e.TimeStamp).TotalHours;
-                    mMenuItems.Add(new MenuItem($"Time: {e.TimeStamp} ({ts:f2} hours ago)"));
-                    mMenuItems.Add(new MenuItem($"Relationship: {e.Relationship} - Type: {e.Type}"));
-                    mMenuItems.Add(new MenuItem(logger.gps($"{e.Name}", e.Position)));
-                    mMenuItems.Add(new MenuItem($"Distance: {(e.Position - MyMatrix.Translation).Length():f0} - Radius: {e.WorldVolume.Radius}"));
-                    mMenuItems.Add(new MenuItem("Designate Target", () => controller.NewMission(new OrbitMission(controller, e))));
-                    if (!deleted) {
-                        mMenuItems.Add(new MenuItem($"Rename to '{mManager.UserInput}'", aState, renameRecord));
-                    }
-                } else {
-                    if (e.mOreTypes.Count > 0) {
-                        mMenuItems.Add(new MenuItem("Ores: " + string.Join(", ", e.mOreTypes), e, OreMenu));
-                    }
-                    mMenuItems.Add(new MenuItem("Delete Record", aState, deleteRecordConfirm));
-                }
-                
-                return mMenuItems;
-            });
-        }
-        Menu renameRecord(MenuModule aMain, object aState) {
-            ((ThyDetectedEntityInfo)aState).SetName(mManager.UserInput);
-            return null;
-        }
-        Menu deleteRecordConfirm(MenuModule aMain, object aState) {
-
+        
+        public void DeleteRecord(ThyDetectedEntityInfo aEntity) {
             if (mIncoming.Count > 0) {
-                logger.persist($"Clustering in process please wait to delete.");
+                mLog.persist($"Clustering in process please wait to delete."); 
             } else {
-                if (deleted) {
-                    aMain.Input("6");
-                } else {
-                    return new Menu(aMain, "Confirm Deletion", p => {
-                        var list = new List<MenuItem>();
-                        list.Add(new MenuItem("Yes", aState, deleteRecord));
-                        return list;
-                    });
-                }
+                mDetected.Remove(aEntity);
+                mLookup.Remove(aEntity.EntityId);
+                mClusterLookup.Remove(aEntity.EntityId);
+                mLog.persist("Deleted");
             }
-            return null;
-
-        }
-        Menu deleteRecord(MenuModule aMain, object aState) {
-            if (mIncoming.Count > 0) {
-                logger.persist($"Clustering in process please wait to delete."); 
-            } else {
-                aMain.Input("6");
-                var thy = aState as ThyDetectedEntityInfo;
-                deleted = mDetected.Remove(thy);
-                mLookup.Remove(thy.EntityId);
-                mClusterLookup.Remove(thy.EntityId);
-                logger.persist($"Deleted: {deleted}");
-            }
-            return null;
-
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {
             var e = (MyDetectedEntityInfo)aState;

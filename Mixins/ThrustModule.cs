@@ -14,7 +14,7 @@ namespace IngameScript {
             return stop(aLocalDirection * 100, aMaxAccel);
         }
         public Vector3D Stop(Vector3D aMaxAccel) {
-            return stop(controller.LocalLinearVelo, aMaxAccel);
+            return stop(mController.LocalLinearVelo, aMaxAccel);
         }
 
         bool _Damp = false;
@@ -101,7 +101,7 @@ namespace IngameScript {
         //whiplash says V^2 = 2ad
         public Vector3D MaxAccel(Vector3D aLocalVelo) {
             // controller.LocalLinearVelo
-            return mThrust.MaxAccel(aLocalVelo, controller.Mass); 
+            return mThrust.MaxAccel(aLocalVelo, mController.Mass); 
         }
         public double PreferredVelocity(double aMaxAccel, double dist) {
             if (aMaxAccel == 0)
@@ -163,7 +163,7 @@ namespace IngameScript {
             if (!Active)
                 return;
             if (_Damp) {
-                var localVelo = controller.LocalLinearVelo;
+                var localVelo = mController.LocalLinearVelo;
                 var localVeloSq = localVelo.LengthSquared();
                 if (localVeloSq <= 0.000025) {
                     localVelo = Vector3D.Zero;
@@ -176,7 +176,7 @@ namespace IngameScript {
                     updateRequired = false;
                     mThrust.AllStop();
                 } else {
-                    var m = controller.Mass;
+                    var m = mController.Mass;
                     mThrust.Update(a, m, Emergency);
                 }
             }

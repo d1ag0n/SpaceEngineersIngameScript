@@ -25,7 +25,7 @@ namespace IngameScript {
         protected readonly GyroModule mGyro;
         protected readonly CameraModule mCamera;
         
-        protected readonly LogModule mLog;
+        
         protected IMyTerminalBlock NavBlock;
 
         public Action onCancel;
@@ -35,7 +35,6 @@ namespace IngameScript {
             aManager.GetModule(out mThrust);
             aManager.GetModule(out mGyro);
             aManager.GetModule(out mCamera);
-            mLog = mThrust.mLog;
         }
         protected Vector3D BaseVelocity {
             get {

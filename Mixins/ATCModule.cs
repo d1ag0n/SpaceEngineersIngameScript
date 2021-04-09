@@ -36,7 +36,7 @@ namespace IngameScript
             }
         }
 
-        public bool SendDrill(ThyDetectedEntityInfo.Ore ore) {
+        public bool SendDrill(Ore ore) {
             mLog.persist($"Drill count = {mDrills.Count}");
             if (mDrills.Count > 0) {
                 var id = mDrills.FirstElement();

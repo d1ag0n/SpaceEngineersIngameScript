@@ -6,8 +6,8 @@ namespace IngameScript {
     // todo make a mission?
     public class OreListMenu : Menu {
         readonly ThyDetectedEntityInfo mEntity;
-        readonly List<MenuItem> mItems = new List<MenuItem>();
-        public OreMenu(MenuModule aMenuModule, ThyDetectedEntityInfo aEntity) : base(aMenuModule) {
+        
+        public OreListMenu(MenuModule aMenuModule, ThyDetectedEntityInfo aEntity) : base(aMenuModule) {
             mEntity = aEntity;
         }
 
@@ -17,13 +17,13 @@ namespace IngameScript {
             int count = 0;
             while (pageIndex < mEntity.mOres.Count && count < 6) {
                 var ore = mEntity.mOres[pageIndex];
-                mItems.Add(new MenuItem($"{o.Name} - Altitude: {(mEntity.Position - ore.Location).Length()}", o, (m, state) => {
-                }
+                mItems.Add(new MenuItem($"{ore.Name} - Altitude: {(mEntity.Position - ore.Location).Length()}", OreMenuGen(ore)));
                 pageIndex++;
                 count++;
             }
+            return mItems;
         }
 
-        Func<Menu> OreMenuGen(Ore aOre) => () => new OreMenu(aOre);
+        Func<Menu> OreMenuGen(Ore aOre) => () => new OreMenu(mMenuModule, aOre);
     }
 }

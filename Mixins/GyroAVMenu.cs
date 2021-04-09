@@ -5,8 +5,6 @@ namespace IngameScript {
     public class GyroAVMenu : Menu {
         const double min = 0.001;
 
-        readonly List<MenuItem> mItems = new List<MenuItem>();
-
         readonly GyroModule mGyro;
 
         // todo make properties that point to GyroModule
@@ -18,8 +16,8 @@ namespace IngameScript {
 
 
 
-        public GyroAVMenu(MenuModule aModule, Menu aPrevious) : base(aModule, aPrevious) {
-            aModule.mManager.GetModule(out mGyro);
+        public GyroAVMenu(MenuModule aMenuModule, Menu aPrevious) : base(aMenuModule) {
+            mManager.GetModule(out mGyro);
             mItems.Add(MenuItem.CreateItem(strRaiseDifMax, raiseDifMax));
             mItems.Add(MenuItem.CreateItem(strLowerDifMax, lowerDifMax));
             mItems.Add(MenuItem.CreateItem(strRaiseFastFact, raiseFastFact));

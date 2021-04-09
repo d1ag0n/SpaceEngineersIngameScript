@@ -7,12 +7,17 @@ using VRage.Game.ModAPI.Ingame;
 namespace IngameScript
 {
     public class GyroModule : Module<IMyGyro> {
+
         
         double difMax = 0.09;   // angular velocity difference threshold
         double slowFact = 20.0; // slow down factor how quickly the ship tries to slow down toward the end of a turn
         double fastFact = 2.0;  // speed up factor
         double smallMax = 0.4;  // angle remaining in turn when smallFactor is applied
         double smallFact = 1.9; // factor applied when within smallMax
+
+        Vector3D mTargetPosition;
+        Vector3D mTargetDirection;
+        bool calcDirection = false;
 
         public new bool Active {
             get { return base.Active; }
@@ -23,21 +28,11 @@ namespace IngameScript
                 }
             }
         }
-
-        Vector3D mTargetPosition;
-        Vector3D mTargetDirection;
-        bool calcDirection = false;
-
         
         public GyroModule(ModuleManager aManager) : base(aManager) {
-            MenuName = "Gyroscope";
             onUpdate = UpdateAction;
-            //onSave = SaveAction;
-            //onLoad = LoadAction;
             Active = true;
-            
             init();
-            
         }
 
         /*void SaveAction(Serialize s) {
@@ -123,13 +118,12 @@ namespace IngameScript
             if (!Active) {
                 return;
             }
-            var sc = controller.Remote;
+            var sc = mController.Remote;
             if (sc == null) {
                 init();
                 return;
             }
-            mLog.log($"Remote {sc.CustomName}");
-            var m = NavBlock == null ? controller.Remote.WorldMatrix : NavBlock.WorldMatrix;
+            var m = NavBlock == null ? mController.Remote.WorldMatrix : NavBlock.WorldMatrix;
             if (calcDirection) {
                 if (mTargetPosition.IsZero()) {
                     mTargetDirection = Vector3D.Zero;
@@ -144,7 +138,7 @@ namespace IngameScript
 
             double pitch, yaw;
 
-            var sv = controller.ShipVelocities;
+            var sv = mController.ShipVelocities;
             var av = MAF.world2dir(sv.AngularVelocity, m);
 
             
