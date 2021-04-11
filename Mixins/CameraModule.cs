@@ -133,14 +133,14 @@ namespace IngameScript
             return null;
         }*/
         
-        Menu AimGyro(MenuModule aMain, object aState) {
+        /*Menu AimGyro(MenuModule aMain, object aState) {
             GyroModule mod;
             if (GetModule(out mod)) {
                 mod.SetTargetPosition((Vector3D)aState);
             }
             return null;
             
-        }
+        }*/
 
 
         public override bool Accept(IMyTerminalBlock aBlock) {

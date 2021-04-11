@@ -1,38 +1,14 @@
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
-using VRage;
 using VRage.Game;
 using VRageMath;
 
 namespace IngameScript {
-    public struct Ore {
-        public readonly ThyDetectedEntityInfo Thy;
-        public readonly string Name;
-        public readonly Vector3D Location;
-        const long grid = 4;
-        public Vector3L Index => new Vector3L(
-            MAF.round((long)Location.X + (Location.X > 0L ? grid : -grid), grid * 2L),
-            MAF.round((long)Location.Y + (Location.Y > 0L ? grid : -grid), grid * 2L),
-            MAF.round((long)Location.Z + (Location.Z > 0L ? grid : -grid), grid * 2L)
-        );
 
-
-
-        public Ore(ThyDetectedEntityInfo aThy, string aName, Vector3D aLocation) {
-            Thy = aThy;
-            Name = aName;
-            Location = aLocation;
-        }
-        public MyTuple<Vector3D, BoundingSphereD> Box() => MyTuple.Create(Location, Thy.WorldVolume);
-        public static MyTuple<Vector3D, BoundingSphereD> Unbox(object data) => (MyTuple<Vector3D, BoundingSphereD>)data;
-    }
     public class ThyDetectedEntityInfo {
-
         
-
-        static HashSet<string> names = new HashSet<string>();
-        static readonly NameGen _namer = new NameGen();
+        
         public readonly HashSet<string> mOreTypes = new HashSet<string>();
         readonly HashSet<Vector3L> mOreRegistry = new HashSet<Vector3L>();
         public readonly List<Ore> mOres = new List<Ore>();
@@ -51,14 +27,9 @@ namespace IngameScript {
             }
             return false;
         }
-        public static string GenerateName() {
-            string result;
-            do { result = _namer.Next(MAF.random.Next(2, 4)); } while (names.Contains(result));
-            names.Add(result);
-            return result;
-        }
+        
         public readonly long EntityId;
-        public string Name { get; private set; }
+        public string Name;
         public ThyDetectedEntityType Type { get; private set; }
         public Vector3D? HitPosition { get; private set; }
         public MatrixD Orientation { get; private set; }
@@ -93,7 +64,7 @@ namespace IngameScript {
         }
         public ThyDetectedEntityInfo(long aEntityId, string aName, ThyDetectedEntityType aType, Vector3D? aHitPosition, MatrixD aOrientation, Vector3 aVelocity, MyRelationsBetweenPlayerAndBlock aRelationship, DateTime aDateTime, BoundingSphereD aSphere) {
             EntityId = aEntityId;
-            names.Add(aName);
+
             Name = aName;
             Type = aType;
             HitPosition = aHitPosition;
@@ -106,12 +77,7 @@ namespace IngameScript {
 
         public  ThyDetectedEntityInfo(MyDetectedEntityInfo aEntity) {
             EntityId = aEntity.EntityId;
-            if (aEntity.Type == MyDetectedEntityType.Asteroid) {
-                Name = GenerateName();
-            } else {
-                Name = aEntity.Name;
-            }
-            
+            Name = aEntity.Name;
             Type = (ThyDetectedEntityType)aEntity.Type;
             HitPosition = aEntity.HitPosition;
             Orientation = aEntity.Orientation;

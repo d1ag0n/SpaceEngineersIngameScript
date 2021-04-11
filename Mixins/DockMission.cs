@@ -17,7 +17,7 @@ namespace IngameScript {
         int emptyScans = 0;
         MyDetectedEntityInfo drillTarget;
         Action onUpdate;
-        public DockMission(ModuleManager aManager) : base(aManager) {
+        public DockMission(ModuleManager aManager) : base(aManager, default(BoundingSphereD)) {
             aManager.GetModule(out mATC);
             onUpdate = reserve;
         }

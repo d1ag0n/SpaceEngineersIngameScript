@@ -36,7 +36,7 @@ namespace IngameScript {
 
         //Mission = new DockMission(this, ATClient, Volume);
 
-        public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget) : base(aManager) {
+        public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget) : base(aManager, aAsteroid) {
             aManager.GetModule(out mATC);
             if (mATC.connected) {
                 mThrust.Damp = false;
@@ -68,6 +68,7 @@ namespace IngameScript {
         double MaxAltitudeSq => (mMissionAsteroid.Radius + mController.Volume.Radius) * (mMissionAsteroid.Radius + mController.Volume.Radius);
         double MaxAltitude => Math.Sqrt(MaxAltitudeSq);
         void approach() {
+
             mLog.log($"approach, Alt={Altitude}, Max={MaxAltitude}");
             if (mController.cargoLevel() > 0f) {
                 onUpdate = alignDock;

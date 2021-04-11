@@ -37,6 +37,12 @@ namespace IngameScript {
             aManager.GetModule(out mGyro);
             aManager.GetModule(out mCamera);
         }
+        public APMission(ModuleManager aManager, BoundingSphereD aSphere) : base(aManager) {
+            mDestination = aSphere;
+            aManager.GetModule(out mThrust);
+            aManager.GetModule(out mGyro);
+            aManager.GetModule(out mCamera);
+        }
         protected Vector3D BaseVelocity {
             get {
                 return _BaseVelocity;

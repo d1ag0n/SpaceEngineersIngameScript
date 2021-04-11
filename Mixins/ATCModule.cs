@@ -62,7 +62,7 @@ namespace IngameScript
             if (aBlock.CustomData.Contains("#dock")) {
                 result = base.Accept(aBlock);
                 if (result) {
-                    mConnectors.Add(new Connector(this, aBlock as IMyShipConnector));
+                    mConnectors.Add(new Connector(aBlock as IMyShipConnector));
                 }
             }
             return result;
@@ -72,12 +72,12 @@ namespace IngameScript
             var src = e.Message.Source;
             mLog.persist("Received ATC message from " + src);
             
-            var msg = ATCMsg.Unbox(e.Message.Data);
+            var msg = ATCMessage.Unbox(e.Message.Data);
             switch (msg.Subject) {
-                case enATC.Drop:
+                case ATCSubject.Drop:
                     msg.Info = map.dropReservation(src, msg.Info.Position);
                     break;
-                case enATC.Reserve:
+                case ATCSubject.Reserve:
                     msg.Info = map.setReservation(src, msg.Info.Position);
                     break;
             }
@@ -107,7 +107,7 @@ namespace IngameScript
             }
         }
         void doReserveDock(Connector c, MyIGCMessage m) {
-            var msg = DockMsg.Unbox(m.Data);
+            var msg = DockMessage.Unbox(m.Data);
             msg.theConnector = c.Dock.Position;
             msg.ConnectorFace = c.Dock.Orientation.Forward;
             if (mManager.mProgram.IGC.SendUnicastMessage(m.Source, "Dock", msg.Box())) {
@@ -118,41 +118,7 @@ namespace IngameScript
         }
     }
 
-    struct DockMsg {
-        public Vector3I theConnector;
-        public Base6Directions.Direction ConnectorFace;
-        public DateTime Reserved;
-        public Vector3D ConnectorDir => Base6Directions.GetVector(ConnectorFace);
+    
 
-        public bool isReserved => (MAF.Now - Reserved).TotalMinutes < Connector.reserveTime;
-        public static DockMsg Unbox(object data) {
-            var msg = (MyTuple<Vector3I, int>)data;
-            var result = new DockMsg();
-            result.theConnector = msg.Item1;
-            result.ConnectorFace = (Base6Directions.Direction)msg.Item2;
-            return result;
-        }
-        public MyTuple<Vector3I, int> Box() =>
-            MyTuple.Create(theConnector, (int)ConnectorFace);
-    }
-    struct ATCMsg {
-        public enATC Subject;
-        public BoxInfo Info;
-        
-        public MyTuple<int, MyTuple<long, long, bool, Vector3D>>  Box() => MyTuple.Create((int)Subject, Info.Box());
-        public static ATCMsg Unbox(object data) {
-            var t = (MyTuple<int, object>)data;
-            var result = new ATCMsg();
-            result.Subject = (enATC)t.Item1;
-            result.Info = BoxInfo.Unbox(t.Item2);
-            return result;
-        }
-    }
-    enum enATC
-    {
-        Info,
-        Reserve,
-        Drop,
-        Dock
-    }
+    
 }

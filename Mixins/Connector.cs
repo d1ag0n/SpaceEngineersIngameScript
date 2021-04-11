@@ -14,7 +14,7 @@ namespace IngameScript {
         bool _Reserved;
         public long ReservedBy;
         DateTime ReserveSet;
-        readonly ATCModule mATC;
+        
         public bool Reserved {
             get {
                 return _Reserved;
@@ -26,8 +26,7 @@ namespace IngameScript {
                 ReserveSet = MAF.Now;
             }
         }
-        public Connector(ATCModule aATC, IMyShipConnector aDock) {
-            mATC = aATC;
+        public Connector(IMyShipConnector aDock) {
             Dock = aDock;
             Reserved = connected;
         }

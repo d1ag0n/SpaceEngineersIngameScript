@@ -13,7 +13,7 @@ namespace IngameScript {
 
         DateTime reserveRequest;
         
-        public DockMsg Dock;
+        public DockMessage Dock;
 
         public bool connected => Connector.Status == MyShipConnectorStatus.Connected;
         public readonly MotherState Mother;
@@ -74,19 +74,19 @@ namespace IngameScript {
             mController.NewMission(m);
         }
         void onDockMessage(Envelope e) {
-            Dock = DockMsg.Unbox(e.Message.Data);
+            Dock = DockMessage.Unbox(e.Message.Data);
             Dock.Reserved = MAF.Now;
         }
         void onATCMessage(Envelope e) {
-            var msg = ATCMsg.Unbox(e.Message.Data);
+            var msg = ATCMessage.Unbox(e.Message.Data);
             var c = BOX.GetCBox(msg.Info.Position);
             var i = BOX.CVectorToIndex(c.Center);
             mLog.persist("Incoming ATC message " + msg.Subject);
             switch (msg.Subject) {
-                case enATC.Reserve:
+                case ATCSubject.Reserve:
                     mBoxes[i] = msg.Info;
                     break;
-                case enATC.Drop:
+                case ATCSubject.Drop:
                     mBoxes.Remove(i);
                     break;
             }
@@ -101,9 +101,9 @@ namespace IngameScript {
         public void ReserveCBox(BoxInfo b) {
             
             if ((MAF.Now - reserveRequest).TotalSeconds > reserveInterval) {
-                var msg = new ATCMsg();
+                var msg = new ATCMessage();
                 msg.Info = b;
-                msg.Subject = enATC.Reserve;
+                msg.Subject = ATCSubject.Reserve;
                 var result = mManager.mProgram.IGC.SendUnicastMessage(Mother.Id, "ATC", msg.Box());
                 reserveRequest = MAF.Now;
                 mLog.log("Reservation send result ", result);
