@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using VRageMath;
 
@@ -7,6 +8,7 @@ namespace IngameScript {
         readonly List<MenuItem> mMenuItems = new List<MenuItem>();
         readonly CameraModule mCamera;
         public CameraMenu(MenuModule aMenuModule) : base(aMenuModule) {
+            Title = "Camera Records";
             aMenuModule.mManager.GetModule(out mCamera);
         }
         public override List<MenuItem> GetPage() {
@@ -21,15 +23,13 @@ namespace IngameScript {
                 } else if (thy.Type == ThyDetectedEntityType.AsteroidCluster) {
                     name = $"{thy.Name} Cluster";
                 }
-                mMenuItems.Add(new MenuItem(name, DetectedEntityMenu));
+                mMenuItems.Add(new MenuItem(name, EntityMenuGen(thy)));
+                pageIndex++;
             }
             return mMenuItems;
         }
 
-        Menu DetectedEntityMenu() {
-            // todo 
-            return null;
-        }
+        Func<Menu> EntityMenuGen(ThyDetectedEntityInfo aEntity) => () => new ThyDetectedEntityMenu(mMenuModule, aEntity);
     }
 }
 

@@ -13,8 +13,9 @@ namespace IngameScript {
 
         bool mUpdateRequired = true;
 
-        public MenuModule(ModuleManager aManager, Menu aMainMain) : base(aManager) {
+        public MenuModule(ModuleManager aManager) : base(aManager) {
             onUpdate = UpdateAction;
+            onInput = Input;
         }
         public override bool Accept(IMyTerminalBlock b) {
             var result = false;
@@ -39,7 +40,7 @@ namespace IngameScript {
                 mUpdateRequired = true;
             }
         }
-        void SetMenu(Menu aMenu) {
+        public void SetMenu(Menu aMenu) {
             if (mCurrent != null) {
                 mStack.Push(mCurrent);
             }
@@ -49,6 +50,7 @@ namespace IngameScript {
             int selection;
             if (int.TryParse(argument, out selection)) {
                 selection = MathHelper.Clamp(selection, 0, 8);
+                
                 if (selection == 6) {
                     GoPrevious();
                 } else if (selection == 7) {
@@ -56,27 +58,36 @@ namespace IngameScript {
                 } else if (selection == 8) {
                     mCurrent.mPage++;
                 } else {
-                    var mi = mPage[selection];
-                    var runResult = mi.Run();
-                    if (runResult == null) {
-                        GoPrevious();
-                    } else if (runResult == mCurrent) {
-                        
-                    } else {
-                        SetMenu(runResult);
+                    if (mPage.Count > selection) {
+
+                        var mi = mPage[selection];
+                        var runResult = mi.Run();
+                        if (runResult == null) {
+                            GoPrevious();
+                        } else if (runResult == mCurrent) {
+
+                        } else {
+                            SetMenu(runResult);
+                        }
                     }
                 }
                 mUpdateRequired = true;
+            } else {
+                mLog.persist($"Failed to parse '{argument}'");
             }
         }
 
         void UpdateAction() {
-            if (mUpdateRequired && mCurrent != null) {
-                mPage =  mCurrent.GetPage();
-                var str = GetText();
+            string str = "Menu Not Loaded";
+            if (mUpdateRequired) {
+                if (mCurrent != null) {
+                    mPage = mCurrent.GetPage();
+                    str = GetText();
+                }
                 foreach (var tp in Blocks) {
                     tp.WriteText(str);
                 }
+                mUpdateRequired = false;
             }
         }
 
@@ -89,7 +100,8 @@ namespace IngameScript {
                 foreach (var mi in mPage) {
                     mWork.Append(count);
                     mWork.Append(' ');
-                    mWork.Append(mi.mName);
+                    mWork.AppendLine(mi.mName);
+
                     if (count == 6) {
                         break;
                     }

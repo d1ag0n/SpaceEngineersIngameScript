@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)BlockDirList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CruiseMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IModuleBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />

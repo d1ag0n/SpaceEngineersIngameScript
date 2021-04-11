@@ -14,8 +14,8 @@ namespace IngameScript {
         public PeriscopeModule(ModuleManager aManager) : base(aManager) {
             //aManager.GetModule(out mCamera);
             onUpdate = UpdateAction;
-            onSave = SaveDel;
-            onLoad = LoadDel;
+            //onSave = SaveDel;
+            //onLoad = LoadDel;
         }
         void LoadDel(Serialize s, string aData) {
             var ar = aData.Split(Serialize.RECSEP);

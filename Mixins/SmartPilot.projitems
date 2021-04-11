@@ -40,7 +40,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)MissionBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ModuleBlock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IModuleBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MotherState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />

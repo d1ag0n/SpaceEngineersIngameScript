@@ -1,6 +1,7 @@
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;
 
@@ -10,6 +11,7 @@ namespace IngameScript {
         readonly List<IMyTerminalBlock> mBlocks = new List<IMyTerminalBlock>();
         readonly List<ModuleBase> mModules = new List<ModuleBase>();
         readonly List<ModuleBase> mInputModules = new List<ModuleBase>();
+        readonly List<ModuleBase> mUpdateModules = new List<ModuleBase>();
         readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
         readonly Lag mLag = new Lag(18);
@@ -56,90 +58,41 @@ namespace IngameScript {
         //public Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
 
         public void Update(string arg, UpdateType aType) {
-            Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;
-            mLag.Update(mProgram.Runtime.LastRunTimeMs);
-            if ((aType & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
-                if (arg.Length > 0) {
-                    if (mController.OnMission) {
-                        mController.mMission.Input(arg);
-                    }
-                    foreach (var m in mInputModules) {
-                        m.onInput(arg);
-                    }
-                    /* todo menu module
-                    MenuModule menu;
-                    if (GetModule(out menu)) {
-                        try {
-
-                            menu.Input(arg);
-                        } catch (Exception ex) {
-                            logger.persist(ex.ToString());
-                            mProgram.Echo(ex.ToString());
+            try {
+                
+                Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;
+                mLag.Update(mProgram.Runtime.LastRunTimeMs);
+                if ((aType & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
+                    if (arg.Length > 0) {
+                        if (mController.OnMission) {
+                            mController.mMission.Input(arg);
+                        }
+                        foreach (var m in mInputModules) {
+                            m.onInput(arg);
                         }
                     }
-                    */
                 }
-            }
-
-            if ((aType & UpdateType.Update10) != 0) {
-                // todo modularize GridCom(IGC)
-                // mIGC.Update();
-                mLog.log(mLag.Value, " - ", DateTime.Now.ToString());
-                foreach (var m in mModules) {
-                    if (m != mLog) {
+                if ((aType & UpdateType.Update10) != 0) {
+                    mLog.log(mLag.Value, " - ", DateTime.Now.ToString());
+                    for (int i = 0; i < mUpdateModules.Count; i++) {
+                        var m = mUpdateModules[i];
                         try {
                             m.onUpdate?.Invoke();
                         } catch (Exception ex) {
-                            mLog.persist(ex.ToString());
-                            //mProgram.Echo(ex.ToString());
+                            mLog.persist(m.ToString() + ex.ToString());
                         }
                     }
+                    mLog.onUpdate();
                 }
-                mLog.onUpdate();
+            } catch (Exception ex) {
+                mLog.persist(ex.ToString());
             }
         }
         // todo Persistence Class
         /*
-        public string Save() {
-            var s = new Serialize();
-            var one = false;
-            foreach (var m in mModules) {
-
-                var mb = m as ModuleBase;
-                if (mb.onSave != null) {
-                    if (one) {
-                        s.mod();
-                    }
-                    s.grp(mb.GetType().ToString());
-                    mb.onSave(s);
-                    one = true;
-                }
-
-            }
-            return s.Clear();
-        }*/
+        */
         // todo persistence class
-        public void Load(string aStorage) {
-            var s = new Serialize();
-            var moduleEntries = new Dictionary<string, List<string>>();
-            List<string> work;
-            var mods = aStorage.Split(Serialize.MODSEP);
-            foreach (var mod in mods) {
-                var grps = mod.Split(Serialize.GRPSEP);
-                if (!moduleEntries.TryGetValue(grps[0], out work)) {
-                    work = new List<string>();
-                    moduleEntries.Add(grps[0], work);
-                }
-                work.Add(grps[1]);
-            }
-            foreach (var m in mModules) {
-                if (moduleEntries.TryGetValue(m.GetType().ToString(), out work)) {
-                    foreach (var data in work) {
-                        m.onLoad(s, data);
-                    }
-                }
-            }
-        }
+
         
         public void Initialize() {
             foreach (var list in mTags.Values) {
@@ -158,18 +111,28 @@ namespace IngameScript {
                     mBlocks.Add(block);
                     initTags(block);
                     foreach (var module in mModules) {
-                        module.Accept(block);
+                        if (module is IModuleBlock) {
+                            module.Accept(block);
+                        }
                     }
                 }
                 return false;
             });
-
             
+            for (int i = 1; i < mModules.Count; i++) {
+                var module = mModules[i];
+                if (module.onInput != null) {
+                    mInputModules.Add(module);
+                }
+                if (module.onUpdate != null) {
+                    mUpdateModules.Add(module);
+                }
+            }
 
             // todo move up into GTS loop, need to change module initialization behavior first,
             // because modules may look for additionals that mey not yet be loaded
             // when reinitialization is implemented this should be addressed
-            
+
         }
         public void Add(ModuleBase aModule) {
             List<ModuleBase> list;
@@ -191,9 +154,7 @@ namespace IngameScript {
                 }
             }
             
-            if (aModule.onInput != null) {
-                mInputModules.Add(aModule);
-            }
+            
             mModules.Add(aModule);
         }
         public void getByType<T>(List<T> blocks) {

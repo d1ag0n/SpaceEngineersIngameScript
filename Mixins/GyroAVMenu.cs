@@ -18,17 +18,17 @@ namespace IngameScript {
 
         public GyroAVMenu(MenuModule aMenuModule, Menu aPrevious) : base(aMenuModule) {
             mManager.GetModule(out mGyro);
-            mItems.Add(MenuItem.CreateItem(strRaiseDifMax, raiseDifMax));
-            mItems.Add(MenuItem.CreateItem(strLowerDifMax, lowerDifMax));
-            mItems.Add(MenuItem.CreateItem(strRaiseFastFact, raiseFastFact));
-            mItems.Add(MenuItem.CreateItem(strLowerFastFact, lowerFastFact));
-            mItems.Add(MenuItem.CreateItem(strRaiseSlowFact, raiseSlowFact));
-            mItems.Add(MenuItem.CreateItem(strLowerSlowFact, lowerSlowFact));
-            mItems.Add(MenuItem.CreateItem(strRaiseSmallMax, raiseSmallMax));
-            mItems.Add(MenuItem.CreateItem(strLowerSmallMax, lowerSmallMax));
-            mItems.Add(MenuItem.CreateItem(strRaiseSmallFact, raiseSmallFact));
-            mItems.Add(MenuItem.CreateItem(strLowerSmallFact, lowerSmallFact));
-            mItems.Add(MenuItem.CreateItem("Set Default Values", defaults));
+            mItems.Add(MenuItem.CreateItem(strRaiseDifMax, raiseDifMax, this));
+            mItems.Add(MenuItem.CreateItem(strLowerDifMax, lowerDifMax, this));
+            mItems.Add(MenuItem.CreateItem(strRaiseFastFact, raiseFastFact, this));
+            mItems.Add(MenuItem.CreateItem(strLowerFastFact, lowerFastFact, this));
+            mItems.Add(MenuItem.CreateItem(strRaiseSlowFact, raiseSlowFact, this));
+            mItems.Add(MenuItem.CreateItem(strLowerSlowFact, lowerSlowFact, this));
+            mItems.Add(MenuItem.CreateItem(strRaiseSmallMax, raiseSmallMax, this));
+            mItems.Add(MenuItem.CreateItem(strLowerSmallMax, lowerSmallMax, this));
+            mItems.Add(MenuItem.CreateItem(strRaiseSmallFact, raiseSmallFact, this));
+            mItems.Add(MenuItem.CreateItem(strLowerSmallFact, lowerSmallFact, this));
+            mItems.Add(MenuItem.CreateItem("Set Default Values", defaults, this));
         }
         public override List<MenuItem> GetPage() => mItems;
         

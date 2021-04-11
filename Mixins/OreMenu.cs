@@ -10,7 +10,7 @@ namespace IngameScript {
         public OreMenu(MenuModule aMenuModule, Ore aOre) : base(aMenuModule) {
             mOre = aOre;
             mItems.Add(new MenuItem("Send Drill Drone", sendDrillDrone));
-            mItems.Add(new MenuItem(mLog.gps(mOre.Name,mOre.Location)));
+            mItems.Add(new MenuItem(mLog.gps(mOre.Name,mOre.Location), this));
             
         }
         public override List<MenuItem> GetPage() => mItems;

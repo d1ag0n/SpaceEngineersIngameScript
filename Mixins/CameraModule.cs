@@ -14,16 +14,16 @@ namespace IngameScript
         MyDetectedEntityInfo? mCurrentIncoming;
 
         CameraList mCameraList;
-        readonly Dictionary<long, long> mClusterLookup = new Dictionary<long, long>();
-        readonly Dictionary<long, ThyDetectedEntityInfo> mLookup = new Dictionary<long, ThyDetectedEntityInfo>();
+        public readonly Dictionary<long, long> mClusterLookup = new Dictionary<long, long>();
+        public readonly Dictionary<long, ThyDetectedEntityInfo> mLookup = new Dictionary<long, ThyDetectedEntityInfo>();
         public readonly List<ThyDetectedEntityInfo> mDetected = new List<ThyDetectedEntityInfo>();
         public bool hasCamera => Blocks.Count > 0;
         
 
         // todo organize camera by direction
         public CameraModule(ModuleManager aManager) : base(aManager) {
-            onSave = SaveAction;
-            onLoad = LoadAction;
+            //onSave = SaveAction;
+            //onLoad = LoadAction;
             onUpdate = ClusterAction;
         }
         public ThyDetectedEntityInfo Find(long entityId) {
@@ -89,78 +89,8 @@ namespace IngameScript
             }
         }
 
-        void SaveAction(Serialize s) {
-            var one = false;
-            foreach (var e in mDetected) {
-                if (one) {
-                    s.rec();
-                }
-                s.unt("Record");
-                s.str(e);
-                one = true;
-                foreach (var o in e.mOres) {
-                    s.rec();
-                    s.unt("Ore");
-                    s.str(e.EntityId);
-                    s.str(o.Name);
-                    s.str(o.Location);
-                }
-            }
-            foreach(var p in mClusterLookup) {
-                if (one) {
-                    s.rec();
-                }
-                s.unt("Cluster");
-                s.str(p.Key);
-                s.str(p.Value);
-                one = true;
-            }
-        }
 
-        void LoadAction(Serialize s, string aData) {
-            var ar = aData.Split(Serialize.RECSEP);
-            foreach (var record in ar) {
-                var entry = record.Split(Serialize.UNTSEP);
-                if (entry[0] == "Record") {
-                    var entries = entry[1].Split(s.NL, StringSplitOptions.None);
-                    if (entries.Length > 0) {
-                        IEnumerable<string> elements = entries;
 
-                        using (var en = elements.GetEnumerator()) {
-                            en.MoveNext();
-                            var thy = s.objThyDetectedEntityInfo(en);
-                            mDetected.Add(thy);
-                            mLookup.Add(thy.EntityId, thy);
-                        }
-                    }
-                } else if (entry[0] == "Cluster") {
-                    var entries = entry[1].Split(s.NL, StringSplitOptions.None);
-                    if (entries.Length > 0) {
-                        mClusterLookup[s.objlong(entries[0])] = s.objlong(entries[1]);
-                    }
-                } else if (entry[0] == "Ore") {
-                    var entries = entry[1].Split(s.NL, StringSplitOptions.None);
-                    if (entries.Length > 0) {
-                        IEnumerable<string> elements = entries;
-                        using (var en = elements.GetEnumerator()) {
-                            en.MoveNext();
-                            var id = s.objlong(en);
-                            var name = s.objstring(en);
-                            var pos = s.objVector3D(en);
-                            var v3l = new Vector3L((long)pos.X, (long)pos.Y, (long)pos.Z);
-                            ThyDetectedEntityInfo thy;
-                            if (mLookup.TryGetValue(id, out thy)) {
-                                thy.AddOre(new Ore(thy, name, v3l));
-                            }
-                        }
-                    }
-                }
-            }
-            if (mDetected.Count == 0) {
-                mLookup.Clear();
-                mClusterLookup.Clear();
-            }
-        }
 
 
 

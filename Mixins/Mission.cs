@@ -9,10 +9,12 @@ namespace IngameScript
     /// </summary>
     class Mission : APMission {
 
-        public Mission(ModuleManager aManager, ThyDetectedEntityInfo aDestination) :  base(aManager) { }
+        public Mission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) :  base(aManager, aEntity) { }
             
 
-        public Mission(ModuleManager aManager, Vector3D aPos) : base(aManager) { }
+        public Mission(ModuleManager aManager, Vector3D aPos) : base(aManager, null) {
+            mDestination = new BoundingSphereD(aPos, 1d);
+        }
 
         public override void Update() {
             base.Update();

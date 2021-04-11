@@ -7,6 +7,7 @@ using VRageMath;
 namespace IngameScript {
     public partial class Program : MyGridProgram {
         readonly ModuleManager mManager;
+        readonly PersistenceModule mPersistence;
         public Program() {
             mManager = new ModuleManager(this);
             if (!Me.CustomData.Contains("#mother")) {
@@ -17,18 +18,28 @@ namespace IngameScript {
             new GridComModule(mManager);
             new GyroModule(mManager);
             new ThrustModule(mManager);
-            new CameraModule(mManager);
+            var cam = new CameraModule(mManager);
             new PeriscopeModule(mManager);
             new MotherShipModule(mManager);
             new ATCModule(mManager);
-            new MenuModule(mManager, null);
+            var menu = new MenuModule(mManager);
+            menu.SetMenu(new MotherShipMenu(menu));
+
+            mPersistence = new PersistenceModule(mManager);
+            mPersistence.Add(new CameraPersistence(cam));
+
+            mPersistence.onLoad(Storage);
+
             mManager.Initialize();
             mManager.mLog.persist("I'm a Mother Ship");
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            
         }
 
 
-        public void Save() { }
+        public void Save() {
+            Storage = mPersistence.onSave();
+        }
         public void Main(string arg, UpdateType aType) => mManager.Update(arg, aType);
     }
 }

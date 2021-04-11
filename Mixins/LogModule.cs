@@ -86,6 +86,7 @@ namespace IngameScript {
             return sb.ToString();
         }
         public void log(params object[] args) {
+            
             if (null != args) {
                 for (int i = 0; i < args.Length; i++) {
                     var arg = args[i];
@@ -146,7 +147,6 @@ namespace IngameScript {
             foreach (var tp in Blocks) {
                 tp.WriteText(str);
             }
-            mManager.mProgram.Echo(str);
         }
     }
 }

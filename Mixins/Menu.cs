@@ -27,7 +27,7 @@ namespace IngameScript {
             mMenuModule = aMenuModule;
         }
 
-        protected int PageIndex(int aPage, int aCount) => aPage % PageCount(aCount);
+        protected int PageIndex(int aPage, int aCount) => aCount > 0 ? aPage % PageCount(aCount) : 0;
 
 
         /*public void Input(int arg) {

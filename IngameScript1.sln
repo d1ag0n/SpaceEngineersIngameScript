@@ -43,6 +43,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MotherShip", "MotherShip\Mo
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MotherShip", "Mixins\MotherShip.shproj", "{FC5C7969-7016-4BA5-8296-C463B88FCBF6}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DrillShip", "Mixins\DrillShip\DrillShip.shproj", "{AAB8C31A-8C89-4C52-AAA7-68E6B6D28E85}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -57,6 +59,7 @@ Global
 		Mixins\SmartPilot.projitems*{6677010c-396d-4da2-83df-e933b21a4689}*SharedItemsImports = 13
 		Mixins\OrientationInfo.projitems*{6c40d436-d4c5-4686-8c44-2179bc367042}*SharedItemsImports = 13
 		Mixins\ATests.projitems*{a6d431ac-3bf0-4e2e-8946-3b40fa2473f8}*SharedItemsImports = 4
+		Mixins\DrillShip\DrillShip.projitems*{aab8c31a-8c89-4c52-aaa7-68e6b6d28e85}*SharedItemsImports = 13
 		Mixins\CruiseControl.projitems*{b8365198-c870-45be-9bfe-d60819c4c76f}*SharedItemsImports = 4
 		Mixins\MotherShip.projitems*{de07b458-89f9-4df4-b8ed-cc1b4e91b1c5}*SharedItemsImports = 4
 		Mixins\Mission.projitems*{f1cfc2c0-6a86-477c-8065-f07745e218c4}*SharedItemsImports = 13
@@ -132,6 +135,7 @@ Global
 		{1A42ADC5-AD76-4489-9B68-32BF1DF5581F} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{59812BA8-F6A8-4F95-854D-5AEB80A651B9} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{FC5C7969-7016-4BA5-8296-C463B88FCBF6} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{AAB8C31A-8C89-4C52-AAA7-68E6B6D28E85} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}

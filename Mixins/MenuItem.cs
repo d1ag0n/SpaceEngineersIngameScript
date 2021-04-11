@@ -4,11 +4,26 @@ namespace IngameScript {
     public struct MenuItem {
         public readonly string mName;
         readonly Func<Menu> mMethod;
-        public static MenuItem CreateItem(string aName, Action aMethod) => new MenuItem(aName, () => { aMethod(); return null; });
-        public MenuItem(string aName, Func<Menu> aMethod = null) {
+        readonly Menu mMenu;
+        public static MenuItem CreateItem(string aName, Action aMethod, Menu aMenu = null) {
+
+            return new MenuItem(aName, () => { aMethod(); return aMenu; });
+        }
+        public MenuItem(string aName, Func<Menu> aMethod) {
             mName = aName;
             mMethod = aMethod;
+            mMenu = null;
         }
-        public Menu Run() => mMethod == null ? null : mMethod();
+        public MenuItem(string aName, Menu aMenu) {
+            mName = aName;
+            mMethod = null;
+            mMenu = aMenu;
+        }
+        public Menu Run() {
+            if (mMethod == null) {
+                return mMenu;
+            }
+            return mMethod();
+        }
     }
 }

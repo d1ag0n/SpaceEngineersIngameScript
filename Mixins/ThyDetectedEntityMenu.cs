@@ -16,10 +16,10 @@ namespace IngameScript {
             mItems.Clear();
             if (page == 0) {
                 var ts = (DateTime.Now - mEntity.TimeStamp).TotalHours;
-                mItems.Add(new MenuItem($"Time: {mEntity.TimeStamp} ({ts:f2} hours ago)"));
-                mItems.Add(new MenuItem($"Relationship: {mEntity.Relationship} - Type: {mEntity.Type}"));
-                mItems.Add(new MenuItem(mLog.gps($"{mEntity.Name}", mEntity.Position)));
-                mItems.Add(new MenuItem($"Distance: {(mEntity.Position - mController.MyMatrix.Translation).Length():f0} - Radius: {mEntity.WorldVolume.Radius}"));
+                mItems.Add(new MenuItem($"Time: {mEntity.TimeStamp} ({ts:f2} hours ago)", this));
+                mItems.Add(new MenuItem($"Relationship: {mEntity.Relationship} - Type: {mEntity.Type}", this));
+                mItems.Add(new MenuItem(mLog.gps($"{mEntity.Name}", mEntity.Position), this));
+                mItems.Add(new MenuItem($"Distance: {(mEntity.Position - mController.MyMatrix.Translation).Length():f0} - Radius: {mEntity.WorldVolume.Radius}", this));
                 mItems.Add(new MenuItem("Designate Target", designateTarget));
                 mItems.Add(new MenuItem("Ores: " + string.Join(", ", mEntity.mOreTypes), () => new OreListMenu(mMenuModule, mEntity)));
             } else {

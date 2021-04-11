@@ -128,23 +128,14 @@ namespace IngameScript
         // var bb = new BoundingBoxD(((Vector3D)grid.Min - Vector3D.Half) * grid.GridSize, ((Vector3D)grid.Max + Vector3D.Half) * grid.GridSize);
         // var obb = new MyOrientedBoundingBoxD(bb, grid.WorldMatrix);
         public static MyOrientedBoundingBoxD obb(IMyCubeGrid aGrid, double aInflate = 0) {
-
-
-
             var bb = new BoundingBoxD(
                 ((Vector3D)aGrid.Min - Vector3D.Half) * aGrid.GridSize,
                 ((Vector3D)aGrid.Max + Vector3D.Half) * aGrid.GridSize
             );
-
-            
             if (aInflate > 0) {
                 bb = bb.Inflate(aInflate);
             }
-
-            
-
             return new MyOrientedBoundingBoxD(bb, aGrid.WorldMatrix);
-            
         }
 
         /*

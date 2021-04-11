@@ -31,7 +31,8 @@ namespace IngameScript {
         public Action onCancel;
 
         protected BoundingSphereD Volume => mEntity == null ? mDestination : mEntity.WorldVolume;
-        public APMission(ModuleManager aManager) : base(aManager) {
+        public APMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager) {
+            mEntity = aEntity;
             aManager.GetModule(out mThrust);
             aManager.GetModule(out mGyro);
             aManager.GetModule(out mCamera);

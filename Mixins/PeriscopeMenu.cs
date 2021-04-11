@@ -9,6 +9,7 @@ namespace IngameScript {
         readonly PeriscopeModule mPeriscope;
         readonly CameraModule mCamera;
         public PeriscopeMenu(MenuModule aMenuModule) : base(aMenuModule) {
+            Title = "Periscope";
             mManager.GetModule(out mPeriscope);
             mManager.GetModule(out mCamera);
         }
@@ -24,8 +25,8 @@ namespace IngameScript {
             }));
             mItems.Add(new MenuItem("Camera Module Scan", moduleScan));
             //mMenuMethods.Add(new MenuItem("Planetary Scan", null, PlanetScan));
-            mItems.Add(new MenuItem($"Increase Range {mPeriscope.Range:f0}", range(1.1)));
-            mItems.Add(new MenuItem($"Decrease Range {mPeriscope.Range:f0}", range(0.9)));
+            mItems.Add(new MenuItem($"Increase Range {mPeriscope.Range:f0}", range(1.25)));
+            mItems.Add(new MenuItem($"Decrease Range {mPeriscope.Range:f0}", range(0.75)));
             return mItems;
         }
         Menu Nactivate() {
@@ -86,6 +87,10 @@ namespace IngameScript {
             }
             return this;
         }
-        Func<Menu> range(double fact) => () => { mPeriscope.Range *= fact; if (mPeriscope.Range < 100) mPeriscope.Range = 100; return this; };
+        Func<Menu> range(double fact) => () => { 
+            mPeriscope.Range *= fact; 
+            if (mPeriscope.Range < 1000) mPeriscope.Range = 1000; 
+            return this;
+        };
     }
 }

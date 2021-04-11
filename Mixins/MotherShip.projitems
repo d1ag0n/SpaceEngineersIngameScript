@@ -17,12 +17,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)CameraList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CameraPersistence.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GridComModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroAVMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroAVMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IModuleBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
@@ -33,8 +35,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)MissionBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ModuleBlock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MotherShipMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MotherShipModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MotherState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)NameGen.cs" />
@@ -44,6 +46,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)OreMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Persistence.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PersistenceModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />

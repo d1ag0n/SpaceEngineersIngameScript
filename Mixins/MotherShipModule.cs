@@ -26,6 +26,7 @@ namespace IngameScript {
             var time = DateTime.Now;
             if ((time - lastUpdate).TotalSeconds > 1.0) {
                 var v = mController.ShipVelocities.LinearVelocity;
+                return;
                 var s = 0.0;
                 if (!v.IsZero()) {
                     s = v.Normalize();

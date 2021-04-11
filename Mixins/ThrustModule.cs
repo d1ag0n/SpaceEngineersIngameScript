@@ -24,7 +24,7 @@ namespace IngameScript {
                 if (_Damp != value) {
                     _Acceleration = Vector3D.Zero;
                     _Damp = value;
-                    updateRequired = true;
+                    Active = updateRequired = true;
                 }
             }
         }
@@ -117,7 +117,7 @@ namespace IngameScript {
             set {
                 if (_Acceleration != value) {
                     _Acceleration = value;
-                    updateRequired = true;
+                    Active = updateRequired = true;
                 }
             }
         }

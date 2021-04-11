@@ -31,7 +31,7 @@ namespace IngameScript {
                 mManager.mLog.persist("I'm a Mother Ship");
                 mManager.Mother = true;
                 new PeriscopeModule(mManager);
-                mMenu = new MenuModule(mManager, null);
+                mMenu = new MenuModule(mManager);
                 new MotherShipModule(mManager);
                 new ATCModule(mManager);
             } else if (Me.CustomData.Contains("#probe")) {
