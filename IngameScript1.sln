@@ -55,6 +55,7 @@ Global
 		Mixins\Finger.projitems*{0629d3b7-3a06-48ab-b1a7-32b5513c406d}*SharedItemsImports = 13
 		Mixins\SmartPilot.projitems*{141c66b8-dc4e-4706-a0d8-5782573812f4}*SharedItemsImports = 4
 		Mixins\ATests.projitems*{1a42adc5-ad76-4489-9b68-32bf1df5581f}*SharedItemsImports = 13
+		Mixins\DrillShip\DrillShip.projitems*{22ced295-35f9-46b5-86f6-bbc722daea0e}*SharedItemsImports = 4
 		Mixins\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9}*SharedItemsImports = 13
 		Mixins\AutoPilot.projitems*{4941e846-35f4-421b-b602-9d4766f96bdb}*SharedItemsImports = 13
