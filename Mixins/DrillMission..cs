@@ -36,7 +36,7 @@ namespace IngameScript {
 
         //Mission = new DockMission(this, ATClient, Volume);
 
-        public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget) : base(aManager, aAsteroid) {
+        public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget, Vector3D aBestApproach) : base(aManager, aAsteroid) {
             aManager.GetModule(out mATC);
             if (mATC.connected) {
                 mThrust.Damp = false;
@@ -44,9 +44,11 @@ namespace IngameScript {
 
             mMissionAsteroid = aAsteroid;
             mMissionTarget = aTarget;
-            mMissionDirection = mMissionAsteroid.Center - mMissionTarget;
+            // mMissionDirection = mMissionAsteroid.Center - mMissionTarget;
+            mMissionDirection = mMissionTarget - aBestApproach;
             mMissionDirection.Normalize();
-            mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
+            // mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
+            mMissionStart = mMissionTarget + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
             mController.mLog.persist(mController.mLog.gps("MissionStart", mMissionStart));
             mATC.Connector.Enabled = false;
             
@@ -157,7 +159,6 @@ namespace IngameScript {
             var dist = followLine(speed);
 
             if (cargo > cargoPercent) {
-                
                 onUpdate = extract;
                 deepestDepth -= 1d;
                 slow = false;
@@ -241,14 +242,14 @@ namespace IngameScript {
             var com = r.CenterOfMass;
             var disp = com - mMissionStart;
             var dir = disp;
-            var dist = dir.Normalize() + 1.0;
+            var dist = dir.Normalize() + 3.0;
 
             Vector3D pos;
 
             if (reverse) {
-                pos = mMissionStart + mMissionDirection * (dist + -1d);
+                pos = mMissionStart + -mMissionDirection * dist;
             } else {
-                pos = mMissionStart + mMissionDirection * (dist + 1d);
+                pos = mMissionStart + mMissionDirection * dist;
             }
             
             var m = mController.MyMatrix;

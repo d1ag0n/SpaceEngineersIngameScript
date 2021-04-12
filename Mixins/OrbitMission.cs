@@ -3,6 +3,7 @@ using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
 using Sandbox.ModAPI.Interfaces;
+using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public  class OrbitMission : APMission {
@@ -112,6 +113,21 @@ namespace IngameScript {
             if (mEntity.mOres.Count > updateIndex) {
                 var ore = mEntity.mOres[updateIndex];
                 MyDetectedEntityInfo info;
+                MyDetectedEntityInfo entity;
+                ThyDetectedEntityInfo thy;
+                if (mCamera.Scan(ore.Location, out entity, out thy)) {
+                    var hit = entity.HitPosition.Value;
+                    if (ore.BestApproach.IsZero()) {
+                        ore.BestApproach = hit;
+                    } else {
+                        var curApp = (ore.BestApproach - ore.Location).LengthSquared();
+                        var newApp = (ore.Location - hit).LengthSquared();
+                        if (newApp < curApp) {
+                            ore.BestApproach = hit;
+                        }
+                    }
+                }
+                
                 var scanResult = oreScan(mEntity, ore.Location, out info, true);
                 if (scanResult == 1) {
                     ATCModule atc;

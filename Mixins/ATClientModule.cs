@@ -70,8 +70,8 @@ namespace IngameScript {
         }
         void onCancelMessage(Envelope e) => mController.CancelMission();
         void onDrillMessage(Envelope e) {
-            var ore = Ore.Unbox(e.Message.Data);
-            var m = new DrillMission(mManager, ore.Item2, ore.Item1);
+            var ore = Ore.Unpack(e.Message.Data);
+            var m = new DrillMission(mManager, ore.Item3, ore.Item1, ore.Item2);
             mController.NewMission(m);
         }
         void onDockMessage(Envelope e) {

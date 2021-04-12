@@ -43,10 +43,13 @@ namespace IngameScript {
                             var id = s.objlong(en);
                             var name = s.objstring(en);
                             var pos = s.objVector3D(en);
+                            var ba = s.objVector3D(en);
                             var v3l = new Vector3L((long)pos.X, (long)pos.Y, (long)pos.Z);
                             ThyDetectedEntityInfo thy;
                             if (mCamera.mLookup.TryGetValue(id, out thy)) {
-                                thy.AddOre(new Ore(thy, name, v3l));
+                                var o = new Ore(thy, name, v3l);
+                                o.BestApproach = ba;
+                                thy.AddOre(o);
                             }
                         }
                     }
@@ -73,6 +76,7 @@ namespace IngameScript {
                     s.str(e.EntityId);
                     s.str(o.Name);
                     s.str(o.Location);
+                    s.str(o.BestApproach);
                 }
             }
             foreach (var p in mCamera.mClusterLookup) {

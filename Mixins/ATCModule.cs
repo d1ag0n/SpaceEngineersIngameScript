@@ -49,7 +49,7 @@ namespace IngameScript
                     mDrillMissions.Add(ore.Index, id);
                 }
 
-                if (mManager.mProgram.IGC.SendUnicastMessage(id, "Drill", ore.Box())) {
+                if (mManager.mProgram.IGC.SendUnicastMessage(id, "Drill", ore.Pack())) {
                     mDrills.Remove(id);
                     
                     return true;

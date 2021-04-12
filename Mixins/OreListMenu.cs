@@ -13,6 +13,7 @@ namespace IngameScript {
 
         public override List<MenuItem> GetPage() {
             var pageIndex = PageIndex(mPage, mEntity.mOres.Count);
+            mLog.persist($"pageIndex={pageIndex}, mPage={mPage}, ores={mEntity.mOres.Count}");
             mItems.Clear();
             int count = 0;
             while (pageIndex < mEntity.mOres.Count && count < 6) {
