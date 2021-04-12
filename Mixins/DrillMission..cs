@@ -44,11 +44,17 @@ namespace IngameScript {
 
             mMissionAsteroid = aAsteroid;
             mMissionTarget = aTarget;
-            // mMissionDirection = mMissionAsteroid.Center - mMissionTarget;
-            mMissionDirection = mMissionTarget - aBestApproach;
+            if (aBestApproach.IsZero()) {
+                mMissionDirection = mMissionAsteroid.Center - mMissionTarget;
+            } else {
+                mMissionDirection = mMissionTarget - aBestApproach;
+            }
             mMissionDirection.Normalize();
-            // mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
-            mMissionStart = mMissionTarget + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
+            if (aBestApproach.IsZero()) {
+                mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
+            } else {
+                mMissionStart = mMissionTarget + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
+            }
             mController.mLog.persist(mController.mLog.gps("MissionStart", mMissionStart));
             mATC.Connector.Enabled = false;
             

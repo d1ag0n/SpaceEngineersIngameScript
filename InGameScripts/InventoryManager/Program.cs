@@ -166,7 +166,6 @@ namespace IngameScript
             mToTag["MyObjectBuilder_AmmoMagazine/NATO_5p56x45mm"] = "nato556";
             mToTag["MyObjectBuilder_AmmoMagazine/NATO_25x184mm"] = "nato25";
             mToTag["MyObjectBuilder_AmmoMagazine/Missile200mm"] = "missile";
-
             mToTag["MyObjectBuilder_Component/SteelPlate"] = "plate";
             mToTag["MyObjectBuilder_Component/SolarCell"] = "solar";
             mToTag["MyObjectBuilder_Component/Girder"] = "girder";
@@ -188,11 +187,8 @@ namespace IngameScript
             mToTag["MyObjectBuilder_Component/Thrust"] = "thrust";
             mToTag["MyObjectBuilder_Component/Medical"] = "medical";
             mToTag["MyObjectBuilder_Component/Motor"] = "motor";
-
             mToTag["MyObjectBuilder_ConsumableItem/Powerkit"] = "power";
-
             mToTag["MyObjectBuilder_Datapad/Datapad"] = "data";
-
             mToTag["MyObjectBuilder_Ingot/Uranium"] = "uranium";
             mToTag["MyObjectBuilder_Ingot/Nickel"] = "nickel";
             mToTag["MyObjectBuilder_Ingot/Platinum"] = "platinum";
@@ -203,9 +199,7 @@ namespace IngameScript
             mToTag["MyObjectBuilder_Ingot/Silicon"] = "silicon";
             mToTag["MyObjectBuilder_Ingot/Cobalt"] = "cobalt";
             mToTag["MyObjectBuilder_Ingot/Stone"] = "gravel";
-
             mToTag["MyObjectBuilder_PhysicalGunObject/Welder2Item"] = "junk";
-
             mToTag["MyObjectBuilder_PhysicalGunObject/HandDrill4Item"] = "drill";
             mToTag["MyObjectBuilder_PhysicalGunObject/AngleGrinderItem"] = "junk";
 

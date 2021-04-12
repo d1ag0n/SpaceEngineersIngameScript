@@ -54,7 +54,7 @@ namespace IngameScript {
         void incOrbit() {
             if (onScan == analyzeScan) {
                 incrementsSince++;
-                if (incrementsSince > 15) {
+                if (incrementsSince > 5) {
                     onScan = updateScan;
                 }
             }
@@ -115,17 +115,30 @@ namespace IngameScript {
                 MyDetectedEntityInfo info;
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
+                mLog.log(mLog.gps("Testing", ore.Location));
                 if (mCamera.Scan(ore.Location, out entity, out thy)) {
-                    var hit = entity.HitPosition.Value;
-                    if (ore.BestApproach.IsZero()) {
-                        ore.BestApproach = hit;
-                    } else {
-                        var curApp = (ore.BestApproach - ore.Location).LengthSquared();
-                        var newApp = (ore.Location - hit).LengthSquared();
-                        if (newApp < curApp) {
+                    if (entity.HitPosition.HasValue) {
+                        var hit = entity.HitPosition.Value;
+                        if (ore.BestApproach.IsZero()) {
                             ore.BestApproach = hit;
+                            mEntity.mOres[updateIndex] = ore;
+                            mLog.log(mLog.gps("FirstApproach", hit));
+                        } else {
+                            var curApp = (ore.BestApproach - ore.Location).LengthSquared();
+                            var newApp = (ore.Location - hit).LengthSquared();
+                            if (newApp < curApp) {
+                                ore.BestApproach = hit;
+                                mEntity.mOres[updateIndex] = ore;
+                                mLog.log(mLog.gps("NewApproach", hit));
+                            } else {
+                                mLog.log(mLog.gps("OriginalApproach", ore.BestApproach));
+                            }
                         }
+                    } else {
+                        mLog.persist(mLog.gps("ExpectedHit", ore.Location));
                     }
+                } else {
+                    mLog.persist(mLog.gps("ExpectedSuccess", ore.Location));
                 }
                 
                 var scanResult = oreScan(mEntity, ore.Location, out info, true);
