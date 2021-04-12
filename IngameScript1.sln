@@ -23,10 +23,6 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "OrientationInfo", "Mixins\O
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "AutoPilot", "Mixins\AutoPilot.shproj", "{4941E846-35F4-421B-B602-9D4766F96BDB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPilot", "SmartPilot\SmartPilot.csproj", "{141C66B8-DC4E-4706-A0D8-5782573812F4}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SmartPilot", "Mixins\SmartPilot.shproj", "{6677010C-396D-4DA2-83DF-E933B21A4689}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Programs\Console\Console.csproj", "{53ECE70B-9576-43FF-9432-C30BBF8C55F4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ATests", "ATests\ATests.csproj", "{A6D431AC-3BF0-4E2E-8946-3B40FA2473F8}"
@@ -51,7 +47,6 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
 		Mixins\Finger.projitems*{0629d3b7-3a06-48ab-b1a7-32b5513c406d}*SharedItemsImports = 13
-		Mixins\SmartPilot.projitems*{141c66b8-dc4e-4706-a0d8-5782573812f4}*SharedItemsImports = 4
 		Mixins\ATests.projitems*{1a42adc5-ad76-4489-9b68-32bf1df5581f}*SharedItemsImports = 13
 		Mixins\DrillShip.projitems*{22ced295-35f9-46b5-86f6-bbc722daea0e}*SharedItemsImports = 4
 		Mixins\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
@@ -59,7 +54,6 @@ Global
 		Mixins\AutoPilot.projitems*{4941e846-35f4-421b-b602-9d4766f96bdb}*SharedItemsImports = 13
 		Mixins\CruiseControl.projitems*{59812ba8-f6a8-4f95-854d-5aeb80a651b9}*SharedItemsImports = 13
 		Mixins\Stator.projitems*{5f82ad74-3d6b-47fe-a9e0-a057ff01556f}*SharedItemsImports = 13
-		Mixins\SmartPilot.projitems*{6677010c-396d-4da2-83df-e933b21a4689}*SharedItemsImports = 13
 		Mixins\OrientationInfo.projitems*{6c40d436-d4c5-4686-8c44-2179bc367042}*SharedItemsImports = 13
 		Mixins\ATests.projitems*{a6d431ac-3bf0-4e2e-8946-3b40fa2473f8}*SharedItemsImports = 4
 		Mixins\CruiseControl.projitems*{b8365198-c870-45be-9bfe-d60819c4c76f}*SharedItemsImports = 4
@@ -76,13 +70,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Debug|x64.ActiveCfg = Debug|x64
-		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Debug|x64.Build.0 = Debug|x64
-		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|Any CPU.ActiveCfg = Debug|x64
-		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|Any CPU.Build.0 = Debug|x64
-		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|x64.ActiveCfg = Debug|x64
-		{141C66B8-DC4E-4706-A0D8-5782573812F4}.Release|x64.Build.0 = Debug|x64
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53ECE70B-9576-43FF-9432-C30BBF8C55F4}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -141,7 +128,6 @@ Global
 		{41AAEBE1-73A6-4D0D-9C89-C3A4BCAB6EC9} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{6C40D436-D4C5-4686-8C44-2179BC367042} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{4941E846-35F4-421B-B602-9D4766F96BDB} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
-		{6677010C-396D-4DA2-83DF-E933B21A4689} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{1A42ADC5-AD76-4489-9B68-32BF1DF5581F} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{59812BA8-F6A8-4F95-854D-5AEB80A651B9} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{FC5C7969-7016-4BA5-8296-C463B88FCBF6} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}

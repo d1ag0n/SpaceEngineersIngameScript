@@ -22,12 +22,16 @@ namespace IngameScript {
     public partial class Program : MyGridProgram {
         readonly ModuleManager mManager;
         public Program() {
+            mManager = new ModuleManager(this);
+            mManager.Drill = true;
+            new GridComModule(mManager);
+            new GyroModule(mManager);
+            new ThrustModule(mManager);
+            new CameraModule(mManager);
+            new ATClientModule(mManager);
+            mManager.Initialize();
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
-
-        public void Save() {
-        }
-
-        public void Main(string argument, UpdateType updateSource) {
-        }
+        public void Main(string arg, UpdateType aType) => mManager.Update(arg, aType);
     }
 }

@@ -85,6 +85,7 @@ namespace IngameScript
             mLog.persist("Respose result " + result);
         }
         void registrationMessage(Envelope e) {
+            mLog.persist($"Received Registration {e.Message.Tag}");
             if (e.Message.Data != null) {
                 var data = e.Message.Data.ToString();
                 if (data == "Drill") {

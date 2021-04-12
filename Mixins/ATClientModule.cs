@@ -19,12 +19,6 @@ namespace IngameScript {
         public readonly MotherState Mother;
         public IMyShipConnector Connector { get; private set; }
 
-        
-        void onMotherState(Envelope e) {
-
-        }
-
-
         public ATClientModule(ModuleManager aManager) : base(aManager) {
             Mother = new MotherState(aManager);
             //aManager.GetModule(out mController);
@@ -33,7 +27,7 @@ namespace IngameScript {
             onUpdate = UpdateAction;
             lastRegistration = -60d;
 
-            mCom.SubscribeBroadcast("MotherState", onMotherState);
+            mCom.SubscribeBroadcast("MotherState", Mother.Update);
             mCom.SubscribeUnicast("ATC", onATCMessage);
             mCom.SubscribeUnicast("Dock", onDockMessage);
             mCom.SubscribeUnicast("Cancel", onCancelMessage);
@@ -57,15 +51,22 @@ namespace IngameScript {
             var cbox = BOX.GetCBox(Volume.Center);
             var dif = mManager.Runtime - lastRegistration;
             mLog.log($"controller.OnMission={mController.OnMission}");
-            
+
             if (mManager.Drill && !mController.OnMission && dif > 60d) {
                 if (Mother.Id != 0) {
                     if (mManager.mProgram.IGC.SendUnicastMessage(Mother.Id, "Registration", "Drill")) {
                         lastRegistration = mManager.Runtime;
+                        mLog.persist("Reg sent");
+                    } else {
+                        mLog.log("IGC fail");
                     }
+                } else {
+                    mLog.log("No mother");
                 }
+            } else {
+                mLog.log("Not sent yet");
             }
-
+            mLog.log($"ATClient Updated - lastRegistration={lastRegistration}");
         }
         void onCancelMessage(Envelope e) => mController.CancelMission();
         void onDrillMessage(Envelope e) {

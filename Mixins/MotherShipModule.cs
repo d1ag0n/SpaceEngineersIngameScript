@@ -26,7 +26,6 @@ namespace IngameScript {
             var time = DateTime.Now;
             if ((time - lastUpdate).TotalSeconds > 1.0) {
                 var v = mController.ShipVelocities.LinearVelocity;
-                return;
                 var s = 0.0;
                 if (!v.IsZero()) {
                     s = v.Normalize();
@@ -34,6 +33,9 @@ namespace IngameScript {
                 var m = Grid.WorldMatrix;
                 var t = MotherState.Pack(Grid.WorldAABB, v, s, mController.ShipVelocities.AngularVelocity, Grid.WorldMatrix, mController.Remote.CenterOfMass);
                 mManager.mProgram.IGC.SendBroadcastMessage("MotherState", t);
+                mLog.log("Sent");
+            } else {
+                mLog.log("Waiting to send");
             }
         }
 

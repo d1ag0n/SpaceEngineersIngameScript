@@ -15,7 +15,7 @@ namespace IngameScript {
         public readonly ShipControllerModule mController;
 
         public bool Active;
-
+        public Action<double> onIGC { get; protected set; }
         public Action onUpdate { get; protected set; }
         public Action<string> onInput { get; protected set; }
         public Func<string> onSave { get; protected set; }

@@ -20,10 +20,11 @@ namespace IngameScript {
 
         bool mUpdateNeeded;
         public GridComModule(ModuleManager aManager) :base(aManager) {
-            mIGC = aManager.mProgram.IGC;
-            
+            mIGC = aManager.mProgram.IGC;            
             mUnicastMgr = new SubscriptionManager(this);
             mBroadcastMgr = new SubscriptionManager(this);
+            onIGC = MailCall;
+            onUpdate = Update;
         }
         public void SubscribeUnicast(string tag, IGCHandler h) {
             if (mUnicastMgr.Subscribe(tag, h))
@@ -36,7 +37,7 @@ namespace IngameScript {
                 mListeners.Add(listener);
             }
         }
-        public void Update() {
+        void Update() {
             if (mUpdateNeeded) {
                 mUnicastMgr.Update();
                 mBroadcastMgr.Update();

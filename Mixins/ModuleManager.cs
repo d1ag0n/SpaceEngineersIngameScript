@@ -12,6 +12,8 @@ namespace IngameScript {
         readonly List<ModuleBase> mModules = new List<ModuleBase>();
         readonly List<ModuleBase> mInputModules = new List<ModuleBase>();
         readonly List<ModuleBase> mUpdateModules = new List<ModuleBase>();
+        readonly List<ModuleBase> mIGCModules  = new List<ModuleBase>();
+        
         readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
         readonly Lag mLag = new Lag(18);
@@ -59,16 +61,28 @@ namespace IngameScript {
 
         public void Update(string arg, UpdateType aType) {
             try {
-                
                 Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;
                 mLag.Update(mProgram.Runtime.LastRunTimeMs);
+                if ((aType & UpdateType.IGC) != 0) {
+                    foreach (var m in mIGCModules) {
+                        try {
+                            m.onIGC?.Invoke(Runtime);
+                        } catch (Exception ex) {
+                            mLog.persist(m.ToString() + ex.ToString());
+                        }
+                    }
+                }
                 if ((aType & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                     if (arg.Length > 0) {
                         if (mController.OnMission) {
                             mController.mMission.Input(arg);
                         }
                         foreach (var m in mInputModules) {
-                            m.onInput(arg);
+                            try {
+                                m.onInput?.Invoke(arg);
+                            } catch (Exception ex) {
+                                mLog.persist(m.ToString() + ex.ToString());
+                            }
                         }
                     }
                 }
@@ -126,6 +140,9 @@ namespace IngameScript {
                 }
                 if (module.onUpdate != null) {
                     mUpdateModules.Add(module);
+                }
+                if (module.onIGC != null) {
+                    mIGCModules.Add(module);
                 }
             }
 

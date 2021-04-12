@@ -61,6 +61,7 @@ namespace IngameScript {
             return AngularVelo.Cross(MAF.local2pos(aPos, _Matrix) - CoM);
         }
         public MotherState(ModuleManager aManager) {
+            mManager = aManager;
             aManager.GetModule(out mLog);
         }
         public void Update(Envelope aMessage) {

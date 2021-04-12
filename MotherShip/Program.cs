@@ -10,10 +10,6 @@ namespace IngameScript {
         readonly PersistenceModule mPersistence;
         public Program() {
             mManager = new ModuleManager(this);
-            if (!Me.CustomData.Contains("#mother")) {
-                Runtime.UpdateFrequency = UpdateFrequency.None;
-                return;
-            }
             mManager.Mother = true;
             new GridComModule(mManager);
             new GyroModule(mManager);
