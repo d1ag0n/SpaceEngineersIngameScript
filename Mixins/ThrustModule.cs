@@ -16,8 +16,8 @@ namespace IngameScript {
         public Vector3D Stop(Vector3D aMaxAccel) {
             return stop(mController.LocalLinearVelo, aMaxAccel);
         }
-
-        bool _Damp = false;
+        bool updateRequired = true;
+        bool _Damp = true;
         public bool Damp {
             get { return _Damp; }
             set {
@@ -158,7 +158,7 @@ namespace IngameScript {
             }
             onUpdate = UpdateAction;
         }
-        bool updateRequired = false;
+        
         void UpdateAction() {
             if (!Active)
                 return;

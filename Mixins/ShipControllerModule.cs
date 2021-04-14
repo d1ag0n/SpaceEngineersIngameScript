@@ -42,11 +42,14 @@ namespace IngameScript {
             }
             mMission = m;
         }
-        public void CancelMission() {
+        public bool CancelMission() {
             if (mMission != null) {
-                mMission.Cancel();
-                mMission = null;
+                if (mMission.Cancel()) {
+                    mMission = null;
+                    return true;
+                }
             }
+            return false;
         }
         public void ReplaceMission(MissionBase m) {
             mMission = m;
@@ -89,10 +92,13 @@ namespace IngameScript {
             if (result) {
                 
             } else {
-                var inv = aBlock.GetInventory();
+                if (!(aBlock is IMyPowerProducer)) {
 
-                if (inv != null && (float)inv.MaxVolume > 0f) {
-                    mInventory.Add(inv);
+                    var inv = aBlock.GetInventory();
+
+                    if (inv != null && (float)inv.MaxVolume > 0f) {
+                        mInventory.Add(inv);
+                    }
                 }
             }
             
@@ -133,12 +139,10 @@ namespace IngameScript {
             return v;
         }
         void InitializeAction() {
-            if (mManager.Drill) {
-                
+            foreach (var sc in Blocks) {
+                sc.DampenersOverride = false;
             }
-             
             onUpdate = UpdateGlobal;
-            onUpdate();
         }
         
         public bool OnMission => mMission != null;

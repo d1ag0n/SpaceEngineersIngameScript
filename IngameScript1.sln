@@ -43,6 +43,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DrillShip", "DrillShip\Dril
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "DrillShip", "Mixins\DrillShip.shproj", "{C53F78B8-857B-4259-A079-73AD0D285E1F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PistonAutoLevel", "PistonAutoLevel\PistonAutoLevel.csproj", "{1C74E9A3-F446-4342-BCB5-1E824E04CA81}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PistonSuspension", "PistonSuspension\PistonSuspension.csproj", "{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -114,6 +118,20 @@ Global
 		{22CED295-35F9-46B5-86F6-BBC722DAEA0E}.Release|Any CPU.Build.0 = Debug|x64
 		{22CED295-35F9-46B5-86F6-BBC722DAEA0E}.Release|x64.ActiveCfg = Debug|x64
 		{22CED295-35F9-46B5-86F6-BBC722DAEA0E}.Release|x64.Build.0 = Debug|x64
+		{1C74E9A3-F446-4342-BCB5-1E824E04CA81}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{1C74E9A3-F446-4342-BCB5-1E824E04CA81}.Debug|x64.ActiveCfg = Debug|x64
+		{1C74E9A3-F446-4342-BCB5-1E824E04CA81}.Debug|x64.Build.0 = Debug|x64
+		{1C74E9A3-F446-4342-BCB5-1E824E04CA81}.Release|Any CPU.ActiveCfg = Debug|x64
+		{1C74E9A3-F446-4342-BCB5-1E824E04CA81}.Release|Any CPU.Build.0 = Debug|x64
+		{1C74E9A3-F446-4342-BCB5-1E824E04CA81}.Release|x64.ActiveCfg = Debug|x64
+		{1C74E9A3-F446-4342-BCB5-1E824E04CA81}.Release|x64.Build.0 = Debug|x64
+		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Debug|x64.ActiveCfg = Debug|x64
+		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Debug|x64.Build.0 = Debug|x64
+		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Release|Any CPU.ActiveCfg = Debug|x64
+		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Release|Any CPU.Build.0 = Debug|x64
+		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Release|x64.ActiveCfg = Debug|x64
+		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

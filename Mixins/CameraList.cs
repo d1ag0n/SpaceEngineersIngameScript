@@ -40,8 +40,18 @@ namespace IngameScript {
         }
         public bool Scan(Vector3D aTargetWorld, out MyDetectedEntityInfo aEntity, double aAddDist = 0) {
             //ModuleManager.Program.Me.CustomData = aTargetWorld.ToString() + Environment.NewLine;
+            if (!aTargetWorld.IsValid()) {
+                mCamera.mLog.persist("CameraList.Scan invalid aTargetWorld.");
+                aEntity = default(MyDetectedEntityInfo);
+                return false;
+            }
             var targetLocal = MAF.world2pos(aTargetWorld, mCamera.MyMatrix);
             var targetNormal = Vector3D.Normalize(targetLocal);
+            if (!targetNormal.IsValid()) {
+                mCamera.mLog.persist("CameraList.Scan invalid targetNormal.");
+                aEntity = default(MyDetectedEntityInfo);
+                return false;
+            }
             var cd = Base6Directions.GetClosestDirection(targetNormal);
             //ModuleManager.logger.persist("vanilla " + cd);
             //cd = GetClosestDirection(targetNormal);

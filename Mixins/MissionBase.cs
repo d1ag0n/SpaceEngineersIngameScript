@@ -28,7 +28,7 @@ namespace IngameScript {
             mController = mManager.mController;
         }
         public abstract void Update();
-        public virtual void Cancel() { }
+        public virtual bool Cancel() => true;
         public virtual void Input(string arg) { }
     }
 }

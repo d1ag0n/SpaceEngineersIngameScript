@@ -28,7 +28,6 @@ namespace IngameScript {
         
         protected IMyTerminalBlock NavBlock;
 
-        public Action onCancel;
 
         protected BoundingSphereD Volume => mEntity == null ? mDestination : mEntity.WorldVolume;
         public APMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager) {
@@ -172,6 +171,7 @@ namespace IngameScript {
 
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
+                
                 if (mCamera.Scan(scanPoint, out entity, out thy)) {
                     if (
                         (thy != null && thy != mEntity) ||

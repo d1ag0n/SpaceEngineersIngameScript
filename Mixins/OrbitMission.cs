@@ -10,30 +10,53 @@ namespace IngameScript {
         
         readonly List<IMyOreDetector> mDetectors = new List<IMyOreDetector>();
 
-        int incrementsSince = 0;
-        Vector3D orbit;
-        Vector3D orbitAxis;
-        MatrixD orbitMatrix;
-        int orbitIncrements = 0;
-        int matrixCalculations = 0;
-        int updateIndex = 0;
+        readonly Vector3D mOriginalOrbit;
+        readonly Vector3D mOriginalPerp;
+        
+        MatrixD mRotOrbit;
+        Vector3D mOrbit;
+        Vector3D mPerp;
+        int updateIndex;
+        int orbitIncrements;
+        int incrementsSince;
         Action onScan;
+        int mMatrixCalculations;
+
+        // create a matrix for rotating the orbit
+        // rotate the perpendicular 
+        void calculateOrbitMatrix() {
+            MatrixD m;
+            orbitIncrements = 0;
+            if (mMatrixCalculations > 0) {
+                var axis = mOriginalOrbit.Cross(mOriginalPerp);
+                var angle = mMatrixCalculations * (MathHelper.Pi / 9f);
+                MathHelper.LimitRadians(ref angle);
+                m = MatrixD.CreateFromAxisAngle(axis, angle);
+                mOrbit = Vector3D.Rotate(mOriginalOrbit, m);
+                mPerp = Vector3D.Rotate(mOriginalPerp, m);
+            }
+            mMatrixCalculations++;
+            MatrixD.CreateFromAxisAngle(ref mPerp, -0.1, out mRotOrbit);
+        }
+
+
 
         /// <summary>space to keep between us and thing</summary>
         double space => mController.Volume.Radius + PADDING + mEntity.WorldVolume.Radius;
-        /// <summary>
-        /// 
-        /// </summary>
+
         Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - mController.Volume.Center);
-        /// <summary>position on the far side of the thing
-        /// </summary>
-        Vector3D orbitPos => mEntity.WorldVolume.Center + orbit * space;
+
+        /// <summary>position on the far side of the thing</summary>
+        Vector3D mOrbitPos => mEntity.WorldVolume.Center + mOrbit * space;
 
         // this orbit is okayish I hope testing now
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
         public OrbitMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager, aEntity) {
-            orbit = Vector3D.Normalize(mController.Volume.Center - mEntity.Position);
+            mOrbit = mOriginalOrbit = Vector3D.Normalize(mController.Volume.Center - mEntity.Position);
+            mOriginalOrbit.CalculatePerpendicularVector(out mOriginalPerp);
+            mPerp = mOriginalPerp;
+            
             calculateOrbitMatrix();
             onScan = analyzeScan;
             mController.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
@@ -41,14 +64,6 @@ namespace IngameScript {
             foreach (var detector in mDetectors) {
                 detector.SetValue("OreBlacklist", blackList);
             }
-        }
-        
-        void calculateOrbitMatrix() {
-            orbitIncrements = 0;
-            orbit.CalculatePerpendicularVector(out orbitAxis);
-            MatrixD.CreateFromAxisAngle(ref orbitAxis, -0.1, out orbitMatrix);
-            Vector3D.Transform(orbitAxis, orbitMatrix);
-            matrixCalculations++;
         }
         
         void incOrbit() {
@@ -59,21 +74,19 @@ namespace IngameScript {
                 }
             }
             orbitIncrements++;
-            var tot = orbitIncrements * 0.1;
-            if (tot > MathHelperD.TwoPi) {
+            if (orbitIncrements >= 62) {
                 calculateOrbitMatrix();
             }
-            Vector3D.TransformNormal(ref orbit, ref orbitMatrix, out orbit);
+            Vector3D.TransformNormal(ref mOrbit, ref mRotOrbit, out mOrbit);
         }
-
 
         /// <summary>position that we want to fly at</summary>
         /// <returns></returns>
         Vector3D orbitProj() {
             var dir = dirToThing;
-            return MAF.orthoProject(orbitPos, mEntity.WorldVolume.Center + -dir * space, dir);
+            return MAF.orthoProject(mOrbitPos, mEntity.WorldVolume.Center + -dir * space, dir);
         }
-        
+        readonly V3DLag lag = new V3DLag(48);
         public override void Update() {
             mThrust.Damp = false;
  
@@ -82,16 +95,17 @@ namespace IngameScript {
             var dist = disp.LengthSquared();
             if (mDistToDest < 100) {
                 mLog.log($"orbitIncrements={orbitIncrements}");
-                mLog.log($"matrixCalculations={matrixCalculations}");
+                mLog.log($"matrixCalculations={mMatrixCalculations}");
                 var dir = disp;
                 var mag = dir.Normalize();
                 dir = MAF.world2dir(dir, mController.MyMatrix);
                 var desiredVelo = dir * 5.0;
                 mThrust.Acceleration = (desiredVelo - mController.LocalLinearVelo);
-                mGyro.SetTargetDirection(mController.LinearVelocityDirection);
+                
+                mGyro.SetTargetDirection(lag.update(mController.LinearVelocityDirection));
                 mGyro.SetRollTarget(mEntity.Position);
                 onScan();
-                disp = orbitPos - mController.Volume.Center;
+                disp = mOrbitPos - mController.Volume.Center;
                 dist = disp.LengthSquared();
                 if (dist < 10000) {
                     incOrbit();
@@ -119,6 +133,7 @@ namespace IngameScript {
                 if (mCamera.Scan(ore.Location, out entity, out thy)) {
                     if (entity.HitPosition.HasValue) {
                         var hit = entity.HitPosition.Value;
+                        // todo DP of approach to make sure it's on the correct side
                         if (ore.BestApproach.IsZero()) {
                             ore.BestApproach = hit;
                             mEntity.mOres[updateIndex] = ore;
@@ -129,13 +144,13 @@ namespace IngameScript {
                             if (newApp < curApp) {
                                 ore.BestApproach = hit;
                                 mEntity.mOres[updateIndex] = ore;
-                                mLog.log(mLog.gps("NewApproach", hit));
+                                mLog.persist(mLog.gps("NewApproach", hit));
                             } else {
                                 mLog.log(mLog.gps("OriginalApproach", ore.BestApproach));
                             }
                         }
                     } else {
-                        mLog.persist(mLog.gps("ExpectedHit", ore.Location));
+                        //mLog.persist(mLog.gps("ExpectedHit", ore.Location));
                     }
                 } else {
                     mLog.persist(mLog.gps("ExpectedSuccess", ore.Location));
@@ -143,10 +158,6 @@ namespace IngameScript {
                 
                 var scanResult = oreScan(mEntity, ore.Location, out info, true);
                 if (scanResult == 1) {
-                    ATCModule atc;
-                    if (mManager.GetModule(out atc)) {
-                        atc.CancelDrill(ore.Index);
-                    }
                     mEntity.mOres.RemoveAtFast(updateIndex);
                     mLog.persist(mLog.gps("removed", ore.Location));
                 } else if (scanResult > 1) {

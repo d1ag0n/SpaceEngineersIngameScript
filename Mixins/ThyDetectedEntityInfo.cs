@@ -46,7 +46,7 @@ namespace IngameScript {
             switch (Type) {
                 case ThyDetectedEntityType.Asteroid:
                 case ThyDetectedEntityType.AsteroidCluster:
-                    WorldVolume = WorldVolume.Include(new BoundingSphereD(entity.HitPosition.Value, 1.0));
+                    WorldVolume = WorldVolume.Include(new BoundingSphereD(entity.HitPosition.Value, 10.0));
                     break;
                 default:
                     WorldVolume = BoundingSphereD.CreateFromBoundingBox(entity.BoundingBox);

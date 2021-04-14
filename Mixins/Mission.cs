@@ -19,6 +19,7 @@ namespace IngameScript
         public override void Update() {
             base.Update();
             if (mDistToDest < mController.Volume.Radius) {
+                mThrust.Damp = true;
                 Complete = true;
             } else {
                 collisionDetectTo();

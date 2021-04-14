@@ -13,7 +13,7 @@ namespace IngameScript {
         bool xneg = false;
         public PeriscopeModule(ModuleManager aManager) : base(aManager) {
             //aManager.GetModule(out mCamera);
-            onUpdate = UpdateAction;
+            onUpdate = InitAction;
             //onSave = SaveDel;
             //onLoad = LoadDel;
         }
@@ -33,35 +33,41 @@ namespace IngameScript {
             s.str(Range);
         }
 
+        void InitAction() {
+            if (first != null && first.TopGrid != null) {
+                first.ShowInTerminal = false;
+                mManager.GetByGrid(first.TopGrid.EntityId, ref second);
+                if (second != null && second.TopGrid != null) {
+                    second.ShowInTerminal = false;
+                    mManager.GetByGrid(second.TopGrid.EntityId, ref _mCamera);
+                    if (mCamera != null) {
+                        mCamera.CustomName = $"!Periscope {first.CustomName} - Camera";
+                        mCamera.Enabled =
+                        mCamera.EnableRaycast = true;
+                        if (mCamera.Orientation.Left == second.Top.Orientation.Up) {
+                            xneg = true;
+                        }
+                        Okay = true;
+                        Active = true;
+                        Nactivate();
+                        onUpdate = UpdateAction;
+                        return;
+                    }
+                }
+            }
+            onUpdate = null;
+            mLog.persist("Periscope Initialization Failed");
+        }
         public override bool Accept(IMyTerminalBlock b) {
             bool result = false;
 
             if (first == null) {
-
                 if (b.CustomData.Contains("#periscope")) {
                     result = base.Accept(b);
                     if (result) {
                         first = b as IMyMotorStator;
-                        first.ShowInTerminal = false;
-                        if (first != null && first.TopGrid != null) {
-                            mManager.GetByGrid(first.TopGrid.EntityId, ref second);
-                            if (second != null && second.TopGrid != null) {
-                                second.ShowInTerminal = false;
-                                mManager.GetByGrid(second.TopGrid.EntityId, ref _mCamera);
-                                if (mCamera != null) {
-                                    mCamera.CustomName = $"!Periscope {first.CustomName} - Camera";
-                                    mCamera.Enabled =
-                                    mCamera.EnableRaycast = true;
-                                    if (mCamera.Orientation.Left == second.Top.Orientation.Up) {
-                                        xneg = true;
-                                    }
-                                    Okay = true;
-
-                                    Active = true;
-                                    Nactivate();
-                                }
-                            }
-                        }
+                        
+                        
                     }
                 }
                     

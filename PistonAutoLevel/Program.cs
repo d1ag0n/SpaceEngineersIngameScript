@@ -1,21 +1,8 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
+﻿using Sandbox.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
-using VRage;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI.Ingame;
-using VRage.Game.ModAPI.Ingame.Utilities;
-using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
 namespace IngameScript {
@@ -29,15 +16,14 @@ namespace IngameScript {
         }
         Modes mMode = Modes.stop;
         public class Leg {
-            static int count = 1;
             Program mProgram;
+            static int count = 1;
             IMyPistonBase mPiston;
             IMyLandingGear mGear;
-            float mTouch;
             public Leg(Program p, IMyPistonBase b) {
+                mProgram = p;
                 b.CustomName = $"Leg {count}";
                 count++;
-                mProgram = p;
                 mPiston = b;
                 List<IMyTerminalBlock> list;
                 if (p.mGrids.TryGetValue(b.TopGrid.EntityId, out list)) {
@@ -62,16 +48,14 @@ namespace IngameScript {
                 }
             }
             public bool Retract() {
-                
+
                 unlock();
                 mPiston.Velocity = -1f;
                 return nearEqual(mPiston.CurrentPosition, mPiston.MinLimit);
             }
             public bool Touch() {
                 unlock();
-                mTouch = 0;
                 if (mGear.LockMode == LandingGearMode.ReadyToLock) {
-                    mTouch = mPiston.CurrentPosition;
                     mPiston.Velocity = 0f;
                     return true;
                 } else {
@@ -88,23 +72,25 @@ namespace IngameScript {
             }
             public bool Level(IMyShipController sc) {
                 var gearPos = mGear.WorldMatrix.Translation;
-                var scPos = sc.WorldMatrix.Translation;
+                var scPos = sc.CenterOfMass;
                 var gravNormal = Vector3D.Normalize(sc.GetNaturalGravity());
                 var posOnSCPlane = orthoProject(gearPos, scPos, sc.WorldMatrix.Down);
                 var posOnGPlane = orthoProject(gearPos, scPos, gravNormal);
-                var dist = (float)(posOnGPlane - posOnSCPlane).LengthSquared();
-                if (dist <= 0.25f) {
-                    mPiston.Velocity = 0f;
-                    return true;
-                }
+                var dist = (float)(posOnGPlane - posOnSCPlane).Length();
                 
+
                 var gear2gp = (posOnGPlane - gearPos).Length();
                 var gear2scp = (posOnSCPlane - gearPos).Length();
-                mProgram.sb.AppendLine($"{mPiston.CustomName}: dist={dist:f2}, gear2gp={gear2gp:f1},gear2scp={gear2scp:f1}");
+
                 if (gear2gp > gear2scp) {
-                    mPiston.Velocity = 1.0f;
+                    
                 } else {
-                    mPiston.Velocity = 0.1f;
+                    //mPiston.Velocity = -0.05f;
+                }
+                mPiston.Velocity = (float)(gear2gp - gear2scp);
+                mProgram.sb.AppendLine($"{mPiston.CustomName}: dist={dist:f2}, gear2gp={gear2gp:f2},gear2scp={gear2scp:f2}, velo={mPiston.Velocity}");
+                if (dist <= 0.26f) {
+                    return true;
                 }
                 return false;
             }
@@ -126,7 +112,7 @@ namespace IngameScript {
                 int i = 0;
                 bg.GetBlocks(null, b => {
                     i++;
-                    
+
                     if (b is IMyPistonBase) {
                         mLegs.Add(new Leg(this, b as IMyPistonBase));
                     } else {
@@ -159,10 +145,9 @@ namespace IngameScript {
             return true;
         }
         bool level() {
-            if (touch()) {
-                if (doLevel()) {
-                    return touch();
-                }
+            if (doLevel()) {
+                stop();
+                return touch();
             }
             return false;
         }
@@ -244,7 +229,10 @@ namespace IngameScript {
             } else {
                 Echo("working");
             }
-            mLCD.WriteText(sb.ToString());
+            var str = sb.ToString();
+            if (str.Length > 0) {
+                //mLCD.WriteText(str);
+            }
             sb.Clear();
         }
     }

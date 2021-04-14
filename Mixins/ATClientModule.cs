@@ -7,7 +7,7 @@ namespace IngameScript {
     class ATClientModule : Module<IMyShipConnector> {
         
         const double reserveInterval = 1.0;
-
+        readonly ThrustModule mThrust;
         readonly GridComModule mCom;
         readonly Dictionary<int, BoxInfo> mBoxes = new Dictionary<int, BoxInfo>();
 
@@ -23,6 +23,7 @@ namespace IngameScript {
             Mother = new MotherState(aManager);
             //aManager.GetModule(out mController);
             aManager.GetModule(out mCom);
+            aManager.GetModule(out mThrust);
 
             onUpdate = UpdateAction;
             lastRegistration = -60d;
@@ -50,7 +51,7 @@ namespace IngameScript {
         void UpdateAction() {
             var cbox = BOX.GetCBox(Volume.Center);
             var dif = mManager.Runtime - lastRegistration;
-            mLog.log($"controller.OnMission={mController.OnMission}");
+            mLog.log($"controller.OnMission={mController.OnMission}, mThrust.Damp={mThrust.Damp}");
 
             if (mManager.Drill && !mController.OnMission && dif > 60d) {
                 if (Mother.Id != 0) {
@@ -64,7 +65,7 @@ namespace IngameScript {
                     mLog.log("No mother");
                 }
             } else {
-                mLog.log("Not sent yet");
+                mLog.log($"Not sent yet - drill={mManager.Drill}, dif={dif}");
             }
             mLog.log($"ATClient Updated - lastRegistration={lastRegistration}");
         }

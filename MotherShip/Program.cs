@@ -23,8 +23,11 @@ namespace IngameScript {
 
             mPersistence = new PersistenceModule(mManager);
             mPersistence.Add(new CameraPersistence(cam));
-
-            mPersistence.onLoad(Storage);
+            try {
+                mPersistence.onLoad(Storage);
+            }catch(Exception ex) {
+                mManager.mLog.persist(ex.ToString());
+            }
 
             mManager.Initialize();
             mManager.mLog.persist("I'm a Mother Ship");

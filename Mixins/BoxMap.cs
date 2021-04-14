@@ -32,12 +32,13 @@ namespace IngameScript
             
             return result;
         }
+        string key(Vector3D v) => $"{v.X:f0}.{v.Y:f0}.{v.Z:f0}";
         Dictionary<int, BoxInfo> getKMap(Vector3D aPosition, out Vector3D aKBox) {
 
             Dictionary<int, BoxInfo> result;
 
             aKBox = BOX.WorldToK(aPosition);
-            var kkey = aKBox.ToString();
+            var kkey = key(aKBox);
 
             if (!map.TryGetValue(kkey, out result)) {
                 result = new Dictionary<int, BoxInfo>();

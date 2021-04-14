@@ -65,7 +65,7 @@ namespace IngameScript {
                 Vector3D pos = mATC.Dock.theConnector * 2.5;
                 Vector3D face = Base6Directions.GetVector(mATC.Dock.ConnectorFace);
                 var mm = ms.Matrix;
-                pos += face * MathHelperD.Clamp((mDistToDest) - 0.0, 2.5, 50.0);
+                pos += face * MathHelperD.Clamp((mDistToDest) - 0.0, 2.0, 50.0);
                 var veloAtPos = ms.VeloAt(pos);
                 pos = MAF.local2pos(pos, mm);
                 mDestination.Center = pos;
@@ -82,19 +82,16 @@ namespace IngameScript {
                     mLog.log($"atc.Connector.Status={mATC.Connector.Status}");
                     if (mATC.Connector.Status == MyShipConnectorStatus.Connectable) {
                         mATC.Connector.Connect();
+                    } else if (mATC.Connector.Status == MyShipConnectorStatus.Connected) {
                         mThrust.Acceleration = Vector3D.Zero;
                         mGyro.SetTargetDirection(Vector3D.Zero);
-                        return;
-                    } else if (mATC.Connector.Status == MyShipConnectorStatus.Connected) {
                         mGyro.setGyrosEnabled(false);
                         var cargoLevel = mController.cargoLevel();
                         mLog.log($"cargoLevel={cargoLevel}");
                         if (cargoLevel == 0f) {
-                            mLog.log("Completing mission");
-                            mGyro.SetTargetDirection(Vector3D.Zero);
+                            mLog.log("Completing mission");                        
                             mGyro.NavBlock = null;
                             Complete = true;
-                            return;
                         } else {
                             mLog.log("Draining cargo");
                         }
