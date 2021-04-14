@@ -40,9 +40,9 @@ namespace IngameScript {
         }
 
 
-
+        
         /// <summary>space to keep between us and thing</summary>
-        double space => mController.Volume.Radius + PADDING + mEntity.WorldVolume.Radius;
+        double space => mEntity.WorldVolume.Radius + mController.Volume.Radius * 2d;
 
         Vector3D dirToThing => Vector3D.Normalize(mEntity.Position - mController.Volume.Center);
 

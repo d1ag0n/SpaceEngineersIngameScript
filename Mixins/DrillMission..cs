@@ -2,13 +2,12 @@ using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace IngameScript {
     
     public class DrillMission : APMission {
         const float cargoPercent = 0.90f;
-        const double drillSpeed = 0.06;
+        const double drillSpeed = 0.1;
 
         readonly List<IMyShipDrill> mDrill = new List<IMyShipDrill>();
 
@@ -32,7 +31,7 @@ namespace IngameScript {
 
         public override void Update() => onUpdate();
 
-        
+
         
 
         //Mission = new DockMission(this, ATClient, Volume);
@@ -45,17 +44,21 @@ namespace IngameScript {
 
             mMissionAsteroid = aAsteroid;
             mMissionTarget = aTarget;
-            if (aBestApproach.IsZero()) {
-                mMissionDirection = mMissionAsteroid.Center - mMissionTarget;
+            var disp2center = mMissionAsteroid.Center - mMissionTarget;
+            /*var disp2target = mMissionTarget - aBestApproach;
+            if (aBestApproach.IsZero() || disp2center.Dot(disp2target) < 0) {
+                
             } else {
-                mMissionDirection = mMissionTarget - aBestApproach;
-            }
+                mMissionDirection = disp2target;
+            }*/
+            mMissionDirection = disp2center;
             mMissionDirection.Normalize();
-            if (aBestApproach.IsZero()) {
-                mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
+            /*if (aBestApproach.IsZero()) {
+                
             } else {
                 mMissionStart = mMissionTarget + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
-            }
+            }*/
+            mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
             mATC.Connector.Enabled = false;
             
 
@@ -77,11 +80,18 @@ namespace IngameScript {
             mCancel = true;
             return false;
         }
-        
-        double AltitudeSq => (mMissionAsteroid.Center - mController.Remote.CenterOfMass).LengthSquared();
+        Vector3D orbitPlane(out Vector3D dir, out double dif) {
+            var disp2ship = mController.Volume.Center - mMissionAsteroid.Center;
+            dir = disp2ship;
+            var shipAltitude = dir.Normalize();
+            var oa = mMissionAsteroid.Radius + mATC.Mother.Sphere.Radius;
+            dif = oa - shipAltitude;
+            return mMissionAsteroid.Center + dir * (oa + dif);
+        }
+        /*double AltitudeSq => (mMissionAsteroid.Center - mController.Volume.Center).LengthSquared();
         double Altitude => Math.Sqrt(AltitudeSq);
         double MaxAltitudeSq => (mMissionAsteroid.Radius + mController.Volume.Radius) * (mMissionAsteroid.Radius + mController.Volume.Radius);
-        double MaxAltitude => Math.Sqrt(MaxAltitudeSq);
+        double MaxAltitude => Math.Sqrt(MaxAltitudeSq);*/
         void scanRoid() {
             MyDetectedEntityInfo entity;
             ThyDetectedEntityInfo thy;
@@ -93,11 +103,15 @@ namespace IngameScript {
         }
         Vector3D mEscape;
         void escape() {
-            mLog.log($"escape, Alt={Altitude}, Max={MaxAltitude}");
+            double dif;
+            Vector3D dir;
+            orbitPlane(out dir, out dif);
+            mLog.log($"escape, dif={dif}");
             info();
             scanRoid();
 
-            if (AltitudeSq < MaxAltitudeSq) {
+ 
+            if (dif > mController.Volume.Radius) {
                 mGyro.SetTargetDirection(mEscape);
                 mThrust.Acceleration = (MAF.world2dir(mController.Remote.WorldMatrix.Backward, mController.MyMatrix) * 4d) - mController.LocalLinearVelo;
             } else {
@@ -106,23 +120,26 @@ namespace IngameScript {
             }
         }
         void approach() {
-            mLog.log($"approach, Alt={Altitude}, Max={MaxAltitude}");
+            Vector3D dir;
+            double dif;
+            var plane = orbitPlane(out dir, out dif);
+            mLog.log($"approach, dif={dif}");
             info();
             scanRoid();
             
             if (mController.cargoLevel() > 0f) {
                 onUpdate = alignDock;
+                return;
             }
             mATC.Connector.Enabled = false;
-            var com = mController.Remote.CenterOfMass;
-            var norm = Vector3D.Normalize(com - mMissionAsteroid.Center);
-            var plane = mMissionAsteroid.Center + norm * mMissionAsteroid.Radius;
-            if (AltitudeSq > MaxAltitudeSq) {
-                mDestination = new BoundingSphereD(MAF.orthoProject(mMissionAsteroid.Center, plane, norm), 0);
-            } else {
+            
+            
+            
+            
+            
 
-                mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, norm), 0);
-            }
+            mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, dir), 0);
+            
             //var disp = com - mMissionStart;
             //var distSq = disp.LengthSquared();
             base.Update();
@@ -139,7 +156,7 @@ namespace IngameScript {
         }
         
         void enter() {
-            mLog.log($"enter, Alt={Altitude}, Max={MaxAltitude}");
+            mLog.log($"enter");
             info();
             if (mCancel) {
                 stopDrill();
@@ -177,7 +194,7 @@ namespace IngameScript {
         }
         bool slow;
         void drill() {
-            mLog.log($"drilling, Alt={Altitude}, Max={MaxAltitude}");
+            mLog.log($"drilling");
             info();
             if (mCancel) {
                 stopDrill();
@@ -219,7 +236,7 @@ namespace IngameScript {
         }
         
         void extract() {
-            mLog.log($"extract, Alt={Altitude}, Max={MaxAltitude}");
+            mLog.log($"extract");
             info();
             mDestination = new BoundingSphereD(mMissionStart, 0);
             //var disp = com - mMissionStart;
@@ -236,7 +253,7 @@ namespace IngameScript {
             }
         }
         void alignDock() {
-            mLog.log($"alignDock, Alt={Altitude}, Max={MaxAltitude}");
+            mLog.log($"alignDock");
             info();
             scanRoid();
             mATC.ReserveDock();
@@ -245,19 +262,12 @@ namespace IngameScript {
                 var wv = mController.Volume;
                 var com = mController.Remote.CenterOfMass;
                 var ms = mATC.Mother;
-                var dockPos = MAF.local2pos(
-                    (mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * 50d, ms.Matrix
-                    );
-                var dir = Vector3D.Normalize(com - mMissionAsteroid.Center);
-                var plane = mMissionAsteroid.Center + dir * MaxAltitude;
+                var dockPos = MAF.local2pos((mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * (mController.Volume.Radius * 2d), ms.Matrix);
+                Vector3D dir;
+                double dif;
+                var plane = orbitPlane(out dir, out dif);
                 var targetProjection = MAF.orthoProject(dockPos, plane, dir);
-                if (AltitudeSq > MaxAltitudeSq) {
-                    //mDestination = new BoundingSphereD(mMissionAsteroid.Center, 0);
-                    mLog.log($"correcting altitude");
-                } else {
-                    
-                    mLog.log($"altitude okay");
-                }
+                
                 mDestination = new BoundingSphereD(targetProjection, 0);
                 BaseVelocity = ms.VeloDir * ms.Speed;
                 base.Update();
@@ -270,14 +280,14 @@ namespace IngameScript {
                 //ctr.Thrust.Acceleration = accel * 6d;
                 //ctr.logger.log($"len={len}");
                 // todo measure dist to dockPos
-                var dist2dock = (dockPos - wv.Center).Normalize();
+                
                 
                 var dispToProj = (targetProjection - mMissionAsteroid.Center);
                 var dispToDock = (dockPos - mMissionAsteroid.Center);
                 var dot = dispToProj.Dot(dispToDock);
                 mLog.log($"dot={dot}, mDistToDest={mDistToDest}, wv.Radius={wv.Radius}");
                 if (dot > 0d) {
-                    if (mDistToDest < wv.Radius) {
+                    if (mDistToDest < wv.Radius * 2d) {
                         onUpdate = approach;
                         if (mCancel) {
                             mController.NewMission(new DockMission(mManager));
