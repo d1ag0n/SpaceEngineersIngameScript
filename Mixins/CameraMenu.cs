@@ -23,9 +23,15 @@ namespace IngameScript {
         }
         public override List<MenuItem> GetPage() {
             var detected = mCamera.mDetected;
+            if (mPage < 0) {
+                mCamera.Sort();
+            }
             var pageIndex = PageIndex(mPage, detected.Count);
+
+            //mLog.persist($"detected.count={detected.Count}, pageIndex={pageIndex}");
             mMenuItems.Clear();
-            while (pageIndex < 6 && pageIndex < detected.Count) {
+            int count = 0;
+            while (count < 6 && pageIndex < detected.Count) {
                 var thy = detected[pageIndex];
                 var name = thy.Name;
                 if (name == "Asteroid") {
@@ -38,6 +44,7 @@ namespace IngameScript {
                 }
                 mMenuItems.Add(new MenuItem(name, EntityMenuGen(thy)));
                 pageIndex++;
+                count++;
             }
             return mMenuItems;
         }

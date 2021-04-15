@@ -8,13 +8,16 @@ using VRageMath;
 
 namespace IngameScript {
     public class LogModule : Module<IMyTextPanel> {
+        readonly string mConsoleTag;
         int pcount = 0;
+        public int PersistentMax = 15;
         string nl => Environment.NewLine;
         readonly StringBuilder mSBWork = new StringBuilder();
         readonly StringBuilder mSBLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>(25);
 
-        public LogModule(ModuleManager aManager) : base(aManager) {
+        public LogModule(ModuleManager aManager, string aConsoleTag) : base(aManager) {
+            mConsoleTag = aConsoleTag;
             onUpdate = UpdateAction;
         }
         public void log(MyDetectedEntityInfo e) => log(string4(e));
@@ -54,13 +57,13 @@ namespace IngameScript {
 
         public override bool Accept(IMyTerminalBlock b) {
             var result = false;
-            if (b.CustomData.Contains("#logconsole")) {
+            if (mManager.hasTag(b, mConsoleTag)) {
                 result = base.Accept(b);
                 if (result) {
                     var p = b as IMyTextPanel;
                     p.ContentType = ContentType.TEXT_AND_IMAGE;
                     p.Font = "Monospace";
-                    p.CustomName = "Log Console - " + Blocks.Count;
+                    p.CustomName = $"Log {mConsoleTag} - {Blocks.Count}";
                     if (p.FontColor == Color.White) {
                         p.FontColor = new Color(255, 176, 0);
                     }
@@ -109,18 +112,14 @@ namespace IngameScript {
             mSBLog.Clear();
             return result;
         }
-        public void removeP(int index) {
-            if (mPersistent.Count > index) {
-                mPersistent.RemoveAt(index);
-            }
-        }
+
 
         public void persist(Vector3D v) => persist(string4(v));
         public void persist(BoundingBoxD b) => persist(string4(b));
         public void persist(MyDetectedEntityInfo e) => persist(string4(e));
         public void persist(string aMessage) {
             var c = mPersistent.Count;
-            if (c > 15) {
+            if (c > PersistentMax) {
                 mPersistent.RemoveAt(0);
             } else if (c == 0) {
                 pcount = 0;

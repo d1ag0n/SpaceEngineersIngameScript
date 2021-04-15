@@ -47,11 +47,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PistonAutoLevel", "PistonAu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PistonSuspension", "PistonSuspension\PistonSuspension.csproj", "{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InventoryManager", "InventoryManager\InventoryManager.csproj", "{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "InventoryManager", "Mixins\InventoryManager.shproj", "{2204EA25-7BB9-4FD6-A663-99C934859B7E}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
 		Mixins\Finger.projitems*{0629d3b7-3a06-48ab-b1a7-32b5513c406d}*SharedItemsImports = 13
 		Mixins\ATests.projitems*{1a42adc5-ad76-4489-9b68-32bf1df5581f}*SharedItemsImports = 13
+		Mixins\InventoryManager.projitems*{2204ea25-7bb9-4fd6-a663-99c934859b7e}*SharedItemsImports = 13
 		Mixins\DrillShip.projitems*{22ced295-35f9-46b5-86f6-bbc722daea0e}*SharedItemsImports = 4
 		Mixins\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9}*SharedItemsImports = 13
@@ -60,6 +65,7 @@ Global
 		Mixins\Stator.projitems*{5f82ad74-3d6b-47fe-a9e0-a057ff01556f}*SharedItemsImports = 13
 		Mixins\OrientationInfo.projitems*{6c40d436-d4c5-4686-8c44-2179bc367042}*SharedItemsImports = 13
 		Mixins\ATests.projitems*{a6d431ac-3bf0-4e2e-8946-3b40fa2473f8}*SharedItemsImports = 4
+		Mixins\InventoryManager.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
 		Mixins\CruiseControl.projitems*{b8365198-c870-45be-9bfe-d60819c4c76f}*SharedItemsImports = 4
 		Mixins\DrillShip.projitems*{c53f78b8-857b-4259-a079-73ad0d285e1f}*SharedItemsImports = 13
 		Mixins\MotherShip.projitems*{de07b458-89f9-4df4-b8ed-cc1b4e91b1c5}*SharedItemsImports = 4
@@ -132,6 +138,13 @@ Global
 		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Release|Any CPU.Build.0 = Debug|x64
 		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Release|x64.ActiveCfg = Debug|x64
 		{4C332976-49AC-4081-9CDF-9B1BB13A7FD6}.Release|x64.Build.0 = Debug|x64
+		{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}.Debug|x64.ActiveCfg = Debug|x64
+		{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}.Debug|x64.Build.0 = Debug|x64
+		{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}.Release|Any CPU.ActiveCfg = Debug|x64
+		{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}.Release|Any CPU.Build.0 = Debug|x64
+		{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}.Release|x64.ActiveCfg = Debug|x64
+		{ACBC1545-3539-45E0-9AEB-09DCDC6DE473}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -150,6 +163,7 @@ Global
 		{59812BA8-F6A8-4F95-854D-5AEB80A651B9} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{FC5C7969-7016-4BA5-8296-C463B88FCBF6} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{C53F78B8-857B-4259-A079-73AD0D285E1F} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{2204EA25-7BB9-4FD6-A663-99C934859B7E} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}

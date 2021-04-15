@@ -20,7 +20,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    partial class Program : MyGridProgram
+    public partial class Program : MyGridProgram
     {
         const string tagInventory = "inventory";
         const string tagAnything = "anything";
@@ -36,7 +36,7 @@ namespace IngameScript
         const long gold         = 10000000;
         const long magnesium    = 3000000;
         const long platinum     = 4000000;
-        const long uranium      = 100000;
+        const long uranium      = 1000000;
 
         enum Steps {
             refinerySort = 0,   // sort refinery output into correct locations 
@@ -56,8 +56,8 @@ namespace IngameScript
             done
         }
 
-        readonly Logger g;
-        readonly GTS mGTS;
+        readonly LogModule mLog;
+        readonly ModuleManager mManager;
 
         IMyTextPanel mLCD;
         IMyTextPanel mDisplay;
@@ -71,18 +71,18 @@ namespace IngameScript
         readonly List<IMyAssembler> mAssemblers = new List<IMyAssembler>();
 
         readonly List<IMyTerminalBlock> mWorkList = new List<IMyTerminalBlock>();
-        readonly Inventory inventory = new Inventory();
-        readonly Dictionary<long, ForeignOrder> foreignOrders = new Dictionary<long, ForeignOrder>();
+        //readonly Inventory inventory = new Inventory();
+        //readonly Dictionary<long, ForeignOrder> foreignOrders = new Dictionary<long, ForeignOrder>();
         //readonly Dictionary<string, long> mInventoryAvailable = new Dictionary<string, long>();
         //readonly Dictionary<string, long> mInventoryRequired = new Dictionary<string, long>();
 
-        readonly Dictionary<long, InventoryOrder> unconfirmedOutgoing = new Dictionary<long, InventoryOrder>();
-        readonly Dictionary<string, List<InventoryOrder>> confirmedOutgoing = new Dictionary<string, List<InventoryOrder>>();
+        //readonly Dictionary<long, InventoryOrder> unconfirmedOutgoing = new Dictionary<long, InventoryOrder>();
+        //readonly Dictionary<string, List<InventoryOrder>> confirmedOutgoing = new Dictionary<string, List<InventoryOrder>>();
         
-        readonly List<InventoryOrder> unconfirmedIncoming = new List<InventoryOrder>();        
-        readonly Dictionary<string, List<InventoryOrder>> confirmedIncoming = new Dictionary<string, List<InventoryOrder>>();
+        //readonly List<InventoryOrder> unconfirmedIncoming = new List<InventoryOrder>();        
+        //readonly Dictionary<string, List<InventoryOrder>> confirmedIncoming = new Dictionary<string, List<InventoryOrder>>();
         readonly SortedDictionary<string, MyFixedPoint> mInventory = new SortedDictionary<string, MyFixedPoint>();
-        const int broadcastInterval = 10;
+        //const int broadcastInterval = 10;
 
         readonly SortedDictionary<string, string> mToTag = new SortedDictionary<string, string>();
 
@@ -93,23 +93,21 @@ namespace IngameScript
         int index = 0;
         int subIndex = 0;
         
-        double lastBroadcast = 0;
-        double lastShipment = 0;
+        //double lastBroadcast = 0;
+        //double lastShipment = 0;
 
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
-            g = new Logger();
-            mGTS = new GTS(this, g);
-            
+            mManager = new ModuleManager(this, "Inventory Manager", "inventoryLogConsole");
+            mLog = mManager.mLog;
+            mLog.PersistentMax = 50;
             listener = IGC.RegisterBroadcastListener(tagInventory);
             listener.SetMessageCallback(tagInventory);
+            mManager.Initialize();
             init();
         }
 
-        void reinit() {
-            mGTS.init();
-            init();
-        }
+
         void showHelp() {
             foreach(var p in mToTag) {
                 var key = p.Key;
@@ -128,9 +126,9 @@ namespace IngameScript
             index =
             subIndex = 0;
             mLCD = null;
-            mGTS.getByTag("inventoryConsole", ref mLCD);
-            mGTS.getByTag("inventoryDisplay", ref mDisplay);
-            mGTS.getByTag("inventoryHelp", ref mHelp);
+            mManager.getByTag("inventoryConsole", ref mLCD);
+            mManager.getByTag("inventoryDisplay", ref mDisplay);
+            mManager.getByTag("inventoryHelp", ref mHelp);
 
             initTags();
 
@@ -138,19 +136,17 @@ namespace IngameScript
                 showHelp();
             }
 
-            
-
             mCargo.Clear();
-            mGTS.initListByTag(tagInventory, mCargo);
+            mManager.getByTag(tagInventory, mCargo);
+            mLog.persist($"Found {mCargo.Count} inventory container.");
 
-            
-            mGTS.initList(mRefineries);
+            mManager.getByType(mRefineries);
             foreach(var r in mRefineries) {
                 r.Enabled = true;
                 r.UseConveyorSystem = false;
             }
 
-            mGTS.initList(mAssemblers);
+            mManager.getByType(mAssemblers);
             foreach(var a in mAssemblers) {
                 a.Enabled = true;
                 a.UseConveyorSystem = false;
@@ -170,7 +166,7 @@ namespace IngameScript
             mToTag["MyObjectBuilder_Component/SolarCell"] = "solar";
             mToTag["MyObjectBuilder_Component/Girder"] = "girder";
             mToTag["MyObjectBuilder_Component/SmallTube"] = "tube";
-            mToTag["MyObjectBuilder_Component/Detector"] = "pipe";
+            mToTag["MyObjectBuilder_Component/Detector"] = "detector";
             mToTag["MyObjectBuilder_Component/Reactor"] = "reactor";
             mToTag["MyObjectBuilder_Component/Computer"] = "computer";
             mToTag["MyObjectBuilder_Component/Canvas"] = "canvas";
@@ -225,21 +221,29 @@ namespace IngameScript
 
 
         }
+        bool getTag4Item(string aItem, out string tag) {
+            tag = aItem;
+            return mToTag.TryGetValue(aItem, out tag);
+        }
         bool getTag4Item(MyInventoryItem aItem, out string tag/*, out string category*/) {
             bool result = mToTag.TryGetValue(aItem.Type.ToString(), out tag);
             if (!result) {
                 tag = null;
-                g.log("Tag not found for ", aItem.Type);
+                mLog.persist($"Tag not found for {aItem.Type}");
             }
             return result;
         }
         void sort(IMyTerminalBlock aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag) {
-            
+
             //g.log("sorting #", aTag, " from ", aSourceCargo.CustomName);
+
+            mWorkList.Clear();
+            mManager.getByTag(aTag, mWorkList);
             
-            mGTS.initListByTag(aTag, mWorkList);
-            if (mWorkList.Count == 0 && !mGTS.hasTag(aSourceCargo, tagAnything)) {
-                mGTS.initListByTag(tagAnything, mWorkList, false);
+            if (mWorkList.Count == 0 && !mManager.hasTag(aSourceCargo, tagAnything)) {
+                mLog.persist("Getting anything containers");
+                mManager.getByTag(tagAnything, mWorkList);
+            } else {
             }
             MyItemInfo itemInfo;
             if (mWorkList.Count != 0) {
@@ -287,7 +291,7 @@ namespace IngameScript
                                 aSourceInventory.TransferItemTo(inv, aItem, amt);
                             }
                         } else {
-                            g.log("cannot transfer");
+                            mLog.persist("cannot transfer");
                         }
                         
                         //g.log("           Max Volume: ", max);
@@ -304,13 +308,13 @@ namespace IngameScript
                     }
                 }
             } else {
-                //g.log("no destinations found");
+                //mLog.persist($"no destinations found for {aTag}");
             }
         }
         void sort(IMyTerminalBlock aSource, IMyInventory aSourceInventory, MyInventoryItem aItem) {
             string tag;
             if (getTag4Item(aItem, out tag)) {
-                if (!mGTS.hasTag(aSource, tag)) {
+                if (!mManager.hasTag(aSource, tag)) {
                     sort(aSource, aSourceInventory, aItem, tag);
                 }
             }
@@ -340,8 +344,7 @@ namespace IngameScript
             if (mRefineries.Count > 0 && index < mRefineries.Count) {
                 stepProductionSort(mRefineries[index]);
             } else {
-                g.log("Refineries sorted ", mRefineries.Count);
-                g.log("Refinery sort complete");
+                mLog.persist($"Refineries sort completed {mRefineries.Count} refineries.");
                 index = 0;
                 step++;
             }
@@ -350,7 +353,7 @@ namespace IngameScript
             if (mAssemblers.Count > 0 && index < mAssemblers.Count) {
                 stepProductionSort(mAssemblers[index]);
             } else {
-                g.log("Assemblers sorted ", mAssemblers.Count);
+                mLog.persist($"Assemblers sorted {mAssemblers.Count}");
                 index = 0;
                 step++;
             }
@@ -465,11 +468,7 @@ namespace IngameScript
                 step++;
             }
         }*/
-        void flush() {
-            var str = g.clear();
-            Echo(str);
-            if (null != mLCD) mLCD.WriteText(str);
-        }
+
         /*void receiveMessages() {
             while (listener.HasPendingMessage) {
                 var msg = listener.AcceptMessage();
@@ -629,9 +628,8 @@ namespace IngameScript
                         key = key.Substring(16);
                     }
                     long amount = (long)p.Value;
-                    mBuilder.AppendFormat("{0,-34}", key);
-                    mBuilder.AppendFormat("{0,10}-", amount);
-                    mBuilder.Append(p.Value.RawValue);
+                    mBuilder.AppendFormat("{0,-40}", key);
+                    mBuilder.AppendFormat("{0,10}", amount);
                     mBuilder.AppendLine();
                 }
                 mDisplay.WriteText(mBuilder.ToString());
@@ -648,6 +646,7 @@ namespace IngameScript
             }
             mInventory[key] = amount + aItem.Amount;
         }
+
         void stepCount(IMyInventory aInventory, bool register) {
             var okay = aInventory != null;
             if (okay) {
@@ -700,17 +699,17 @@ namespace IngameScript
                         // todo ensure volume
                         index++;
                     } else {
-                        g.log("gotTag=", gotTag);
-                        g.log("tag=", tag);
-                        g.log("makeResourceTag=", makeResourceTag);
+                        mLog.persist($"gotTag={gotTag}");
+                        mLog.persist($"tag={tag}");
+                        mLog.persist($"makeResourceTag={makeResourceTag}");
                         sort(aRefinery, inv, item.Value, tag);
                     }
                 } else {
                     List<InventoryRegister> list;
-                    g.log("make resource tag ", makeResourceTag);
+                    mLog.persist($"make resource tag {makeResourceTag}");
                     
                     if (mInventoryRegister.TryGetValue(makeResourceTag, out list)) {
-                        g.log("IR List count ", list.Count);
+                        mLog.persist($"IR List count {list.Count}");
                         float transfer = 7; // volume to transfer m^3
 
                         foreach (var ir in list) {
@@ -721,26 +720,26 @@ namespace IngameScript
                             if (mcavail > transfer) {
                                 MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
                                 if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                    g.log("full transfer success");
+                                    mLog.persist("full transfer success");
                                     break;
                                 }
                             } else {
                                 MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
                                 if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                    g.log("partial transfer success");
+                                    mLog.persist("partial transfer success");
                                     transfer -= mcavail;
                                 } else {
-                                    g.log("partial transfer failure");
+                                    mLog.persist("partial transfer failure");
                                 }
                             }
-                            g.log(makeResourceTag, " item amount ", ir.Item.Amount);
-                            g.log(makeResourceTag, " item info volume ", info.Volume);
-                            g.log(makeResourceTag, " item available volume ", mcavail);
+                            mLog.persist($"{makeResourceTag} item amount {ir.Item.Amount}");
+                            mLog.persist($"{makeResourceTag} item info volume {info.Volume}");
+                            mLog.persist($"{makeResourceTag} item available volume {mcavail}");
 
                         }
                         
                     } else {
-                        g.log("Could not get IR List");
+                        mLog.persist("Could not get IR List");
                     }
                     index++;
                 }
@@ -769,13 +768,16 @@ namespace IngameScript
 
         void calcResourceRatio(string ingot, string ore, long div, ref long ratio, ref string make) {
             MyFixedPoint value;
-            bool assign = false;
+            bool assign;
             long r = -1;
             if (mInventory.TryGetValue(ingot, out value)) {
                 r = value.RawValue / div;
-                g.log(ingot, " ratio ", r);
+                string tag;
+                getTag4Item(ingot, out tag);
+                mLog.persist($"{tag} ratio {r}");
                 assign = r < ratio;
             } else {
+                //mLog.persist($"failed to get inventory for {ingot}");
                 assign = true;
             }
 
@@ -787,6 +789,8 @@ namespace IngameScript
                             ratio = r;
                         }
                     }
+                } else {
+                    //mLog.persist($"failed to get inventory for {ore}");
                 }
             }
         }
@@ -810,30 +814,25 @@ namespace IngameScript
 
             if (makeResource == null) {
                 makeResourceTag = null;
-                g.log("Break out the drill it's mining time.");
+                mLog.persist("Break out the drill it's mining time.");
             } else {
                 makeResourceTag = mToTag[makeResource];
-                g.log("Want to refine ", makeResourceTag);
+                mLog.persist($"Want to refine {makeResourceTag}");
             }
 
             
         }
-        public void Main(string argument, UpdateType aUpdate) {
-            bool doFlush = false;
+        public void Main(string arg, UpdateType update) {
             try {
                 // ordering receiveMessages();
-                if ((aUpdate & (UpdateType.Terminal)) != 0) {
-                    Echo("Processing argument: " + argument);
-                    switch (argument) {
-                        case "reinit":
-                            reinit();
-                            break;
+                if ((update & (UpdateType.Terminal)) != 0) {
+                    mLog.persist("Processing argument: " + arg);
+                    switch (arg) {
                         case "status":
-                            g.log("step     ", step);
-                            g.log("supIndex ", index);
-                            g.log("index    ", index);
-                            g.log("subIndex ", subIndex);
-                            flush();
+                            mLog.persist($"step     {step}");
+                            mLog.persist($"supIndex {supIndex}");
+                            mLog.persist($"index    {index}");
+                            mLog.persist($"subIndex {subIndex}");
                             break;
                         default:
                             Echo("I'm sorry Dave, I'm afraid I can't do that.");
@@ -842,7 +841,7 @@ namespace IngameScript
                     return;
                 }
 
-                if ((aUpdate & (UpdateType.Update10)) != 0) {
+                if ((update & (UpdateType.Update10)) != 0) {
                     //Echo($"index {index} subindex {subIndex}");
                     switch (step) {
                         case Steps.refinerySort:
@@ -916,15 +915,12 @@ namespace IngameScript
                         }*/
                         logInventory();
                         step = 0;
-                        doFlush = true;
                     }
                 }
             } catch (Exception ex) {
-                g.persist(ex.ToString());
+                mLog.persist(ex.ToString());
             }
-            if (doFlush) {
-                flush();
-            }
+            mManager.Update(arg, update);
         }
     }
 }

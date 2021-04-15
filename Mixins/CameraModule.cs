@@ -35,6 +35,10 @@ namespace IngameScript
             mLookup.TryGetValue(entityId, out result);
             return result;
         }
+        public void Sort() {
+            mDetected.Sort((a, b) => b.TimeStamp.CompareTo(a.TimeStamp));
+            mLog.persist("Camera list sorted.");
+        }
         void ClusterAction() {
             if (mCurrentIncoming == null) {
                 if (mIncoming.Count > 0) {
@@ -49,6 +53,7 @@ namespace IngameScript
                     }
                 } else {
                     //logger.persist("ClusterAction nulling onUpdate");
+                    Sort();
                     onUpdate = null;
                 }
             } else {
@@ -69,6 +74,7 @@ namespace IngameScript
             //logger.persist($"incoming is clusterable {incomingIsClusterable}");
             if (incomingIsClusterable && mDetected.Count > 0) {
                 var target = mDetected[mClusterI];
+                //logger.persist($"target is clusterable {target.IsClusterable}");
                 //logger.persist($"target is clusterable {target.IsClusterable}");
                 if (target.IsClusterable) {
                     var incomingWV = new BoundingSphereD(mCurrentIncoming.Value.HitPosition.Value, 1.0);
@@ -147,7 +153,7 @@ namespace IngameScript
             bool result = false; 
             if (aBlock is IMyMotorStator) {
                 var rotor = aBlock as IMyMotorStator;
-                if (mManager.HasTag(rotor, "camera")) {
+                if (mManager.hasTag(rotor, "camera")) {
                     rotor.Enabled = true;
                     rotor.RotorLock = false;
                     rotor.BrakingTorque = 0;

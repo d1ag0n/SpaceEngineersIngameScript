@@ -212,7 +212,7 @@ namespace IngameScript {
                 mPreferredVelocityFactor -= 0.01;
             } else {
                 mPreferredVelocityFactor += 0.01;
-                mObstacle.Radius *= 0.99;
+                mObstacle.Radius *= 0.999;
                 if (mObstacle.Radius < 1) {
                     mObstacle.Radius = 0;
                 }

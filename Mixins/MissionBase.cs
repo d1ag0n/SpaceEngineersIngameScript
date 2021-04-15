@@ -25,10 +25,11 @@ namespace IngameScript {
         public MissionBase(ModuleManager aManager) {
             mManager = aManager;
             mLog = mManager.mLog;
-            mController = mManager.mController;
+            aManager.GetModule(out mController);
         }
         public abstract void Update();
         public virtual bool Cancel() => true;
         public virtual void Input(string arg) { }
+
     }
 }

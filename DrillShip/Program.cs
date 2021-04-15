@@ -5,7 +5,6 @@ using SpaceEngineers.Game.ModAPI.Ingame;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using VRage;
@@ -22,8 +21,9 @@ namespace IngameScript {
     public partial class Program : MyGridProgram {
         readonly ModuleManager mManager;
         public Program() {
-            mManager = new ModuleManager(this);
+            mManager = new ModuleManager(this, "Drill Ship", "logConsole");
             mManager.Drill = true;
+            new ShipControllerModule(mManager);
             new GridComModule(mManager);
             new GyroModule(mManager);
             new ThrustModule(mManager);

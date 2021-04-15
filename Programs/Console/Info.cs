@@ -7,10 +7,25 @@ using VRageMath;
 using IngameScript;
 
 namespace commandline {
+    public abstract class foo {
+        public string fooProp;
+        public static T Factory<T>(string aFooProp) where T : foo, new() {
+
+            var result = new T();
+            result.fooProp = aFooProp;
+            return result;
+
+        }
+    }
+    public class bar : foo { }
+    
     class Info {
+        
         static void Main() => round();
 
         public static void round() {
+            var bah = foo.Factory<bar>("Foo!");
+            
             var v = 15L;
 
             List<long> lst = new List<long>();

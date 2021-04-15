@@ -8,6 +8,7 @@ namespace IngameScript {
         
         const double reserveInterval = 1.0;
         readonly ThrustModule mThrust;
+        readonly ShipControllerModule mController;
         readonly GridComModule mCom;
         readonly Dictionary<int, BoxInfo> mBoxes = new Dictionary<int, BoxInfo>();
 
@@ -21,7 +22,7 @@ namespace IngameScript {
 
         public ATClientModule(ModuleManager aManager) : base(aManager) {
             Mother = new MotherState(aManager);
-            //aManager.GetModule(out mController);
+            aManager.GetModule(out mController);
             aManager.GetModule(out mCom);
             aManager.GetModule(out mThrust);
 

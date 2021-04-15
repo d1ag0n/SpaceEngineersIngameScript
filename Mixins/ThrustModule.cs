@@ -8,6 +8,7 @@ using VRageMath;
 namespace IngameScript {
     public class ThrustModule : Module<IMyThrust> {
         public readonly ThrustList mThrust;
+        readonly ShipControllerModule mController;
         readonly List<IMyParachute> mParachutes = new List<IMyParachute>();
         //readonly ThrustList mHydro;
         public Vector3D FullStop(Vector3D aLocalDirection, Vector3D aMaxAccel) {
@@ -31,6 +32,7 @@ namespace IngameScript {
 
         enum enGroup { Hydro, Ion, Atmos, Not }
         public ThrustModule(ModuleManager aManager):base(aManager) {
+            aManager.GetModule(out mController);
             mThrust = new ThrustList(this);
             //mHydro = new ThrustList(this);
             onUpdate = InitAction;

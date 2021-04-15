@@ -8,6 +8,7 @@ namespace IngameScript
 {
     public class GyroModule : Module<IMyGyro> {
 
+        readonly ShipControllerModule mController;
         
         double difMax = 0.09;   // angular velocity difference threshold
         double slowFact = 20.0; // slow down factor how quickly the ship tries to slow down toward the end of a turn
@@ -18,6 +19,7 @@ namespace IngameScript
         Vector3D mTargetPosition;
         Vector3D mTargetDirection;
         bool calcDirection = false;
+        
 
         public new bool Active {
             get { return base.Active; }
@@ -30,6 +32,7 @@ namespace IngameScript
         }
         
         public GyroModule(ModuleManager aManager) : base(aManager) {
+            aManager.GetModule(out mController);
             onUpdate = UpdateAction;
             Active = true;
             init();
@@ -115,12 +118,15 @@ namespace IngameScript
         }
 
         void UpdateAction() {
+            mLog.log("Gyro Update");
             if (!Active) {
+                mLog.log("Gyro not active");
                 return;
             }
             var sc = mController.Remote;
             if (sc == null) {
                 init();
+                mLog.log("Gyro no remote");
                 return;
             }
             var m = NavBlock == null ? mController.Remote.WorldMatrix : NavBlock.WorldMatrix;
@@ -133,9 +139,10 @@ namespace IngameScript
             }
             if (mTargetDirection.IsZero()) {
                 init();
+                mLog.log("Gyro dir zip");
                 return;
             }
-
+            mLog.log("Gyro Working");
             double pitch, yaw;
 
             var sv = mController.ShipVelocities;

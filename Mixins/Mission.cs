@@ -14,6 +14,10 @@ namespace IngameScript
 
         public Mission(ModuleManager aManager, Vector3D aPos) : base(aManager, null) {
             mDestination = new BoundingSphereD(aPos, 1d);
+            var disp = aPos - mController.Volume.Center;
+            var dir = disp;
+            dir.Normalize();
+            mGyro.SetTargetDirection(dir);
         }
 
         public override void Update() {

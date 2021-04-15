@@ -137,16 +137,16 @@ namespace IngameScript {
                         if (ore.BestApproach.IsZero()) {
                             ore.BestApproach = hit;
                             mEntity.mOres[updateIndex] = ore;
-                            mLog.log(mLog.gps("FirstApproach", hit));
+                            //mLog.log(mLog.gps("FirstApproach", hit));
                         } else {
                             var curApp = (ore.BestApproach - ore.Location).LengthSquared();
                             var newApp = (ore.Location - hit).LengthSquared();
                             if (newApp < curApp) {
                                 ore.BestApproach = hit;
                                 mEntity.mOres[updateIndex] = ore;
-                                mLog.persist(mLog.gps("NewApproach", hit));
+                                //mLog.persist(mLog.gps("NewApproach", hit));
                             } else {
-                                mLog.log(mLog.gps("OriginalApproach", ore.BestApproach));
+                                //mLog.log(mLog.gps("OriginalApproach", ore.BestApproach));
                             }
                         }
                     } else {
@@ -171,17 +171,9 @@ namespace IngameScript {
         void analyzeScan() {
             mLog.log($"analyzeScan - ore count {mEntity.mOres.Count}");
             var wv = mController.Volume;
-            var dir = MAF.ranDir() * (mEntity.WorldVolume.Radius * MAF.random.NextDouble());
-            Vector3D scanPos;
-
-            var dispToShip = wv.Center - mEntity.Position;
+            var dir = MAF.ranDir() * 100d;
+            var scanPos = mEntity.Position + dir;
             
-            var dot = dispToShip.Dot(dir);
-            if (dot > 0) {
-                scanPos = mEntity.Position + -dir;
-            } else {
-                scanPos = mEntity.Position + dir;
-            }
             MyDetectedEntityInfo entity;
             ThyDetectedEntityInfo thy;
             mCamera.Scan(scanPos, out entity, out thy);
@@ -189,8 +181,8 @@ namespace IngameScript {
                 MyDetectedEntityInfo info;
                 oreScan(thy, scanPos, out info, false);
             }
-            scanPos = wv.Center + mController.LinearVelocityDirection * wv.Radius * 2.0;
-            scanPos += MAF.ranDir() * wv.Radius * 2.0;
+            scanPos = wv.Center + mController.LinearVelocityDirection * wv.Radius * 3.0;
+            scanPos += MAF.ranDir() * wv.Radius * 1.5;
             mCamera.Scan(scanPos, out entity, out thy);
         }
         int oreScan(ThyDetectedEntityInfo thy, Vector3D aPos, out MyDetectedEntityInfo info, bool update) {

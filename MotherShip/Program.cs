@@ -9,8 +9,9 @@ namespace IngameScript {
         readonly ModuleManager mManager;
         readonly PersistenceModule mPersistence;
         public Program() {
-            mManager = new ModuleManager(this);
+            mManager = new ModuleManager(this, "Mother Ship", "logConsole");
             mManager.Mother = true;
+            new ShipControllerModule(mManager);
             new GridComModule(mManager);
             new GyroModule(mManager);
             new ThrustModule(mManager);

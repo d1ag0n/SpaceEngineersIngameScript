@@ -4,7 +4,7 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     class PeriscopeModule : Module<IMyMotorStator> {
-        //readonly CameraModule mCamera;
+        readonly ShipControllerModule mController;
         IMyMotorStator first, second;
         IMyCameraBlock _mCamera;
         public IMyCameraBlock mCamera => _mCamera;
@@ -12,7 +12,7 @@ namespace IngameScript {
         public double Range = 20000;
         bool xneg = false;
         public PeriscopeModule(ModuleManager aManager) : base(aManager) {
-            //aManager.GetModule(out mCamera);
+            aManager.GetModule(out mController);
             onUpdate = InitAction;
             //onSave = SaveDel;
             //onLoad = LoadDel;

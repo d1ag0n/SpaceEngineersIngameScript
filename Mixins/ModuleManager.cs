@@ -21,7 +21,7 @@ namespace IngameScript {
 
         public readonly bool LargeGrid;
         public readonly Program mProgram;
-        public readonly ShipControllerModule mController;
+        //public readonly ShipControllerModule mController;
         public readonly LogModule mLog;
 
         public bool Mother;
@@ -33,12 +33,12 @@ namespace IngameScript {
         public double Lag => mLag.Value;
         public double Runtime { get; private set; }
 
-        public ModuleManager(Program aProgram) {
+        public ModuleManager(Program aProgram, string aProgramName, string logTag) {
             mProgram = aProgram;
-            mLog = new LogModule(this);
+            mLog = new LogModule(this, logTag);
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
-            mProgram.Me.CustomName = "!Smart Pilot";
-            mController = new ShipControllerModule(this);
+            mProgram.Me.CustomName = $"!{aProgramName}";
+            //mController = new ShipControllerModule(this);
         }
         /// <summary>
         /// https://discord.com/channels/125011928711036928/216219467959500800/755140967517913148
@@ -74,9 +74,9 @@ namespace IngameScript {
                 }
                 if ((aType & (UpdateType.Terminal | UpdateType.Trigger)) != 0) {
                     if (arg.Length > 0) {
-                        if (mController.OnMission) {
+                        /*if (mController.OnMission) {
                             mController.mMission.Input(arg);
-                        }
+                        }*/
                         foreach (var m in mInputModules) {
                             try {
                                 m.onInput?.Invoke(arg);
@@ -174,25 +174,40 @@ namespace IngameScript {
             
             mModules.Add(aModule);
         }
-        public void getByType<T>(List<T> blocks) {
-            foreach (var block in mBlocks) {
-                if (block is T) {
-                    blocks.Add((T)block);
+        public void getByType<T>(List<T> blocks) where T : class {
+            foreach (var b in mBlocks) {
+                var t = b as T;
+                if (t != null) {
+                    blocks.Add(t);
                 }
             }
         }
-        public void getByTag<T>(string aTag, ref T aBlock) {
+        public void getByTag<T>(string aTag, ref T aBlock) where T : class {
+            T t;
             List<IMyTerminalBlock> list;
-            if (mTags.TryGetValue(aTag.ToLower(), out list)) {
+            if (mTags.TryGetValue(aTag, out list)) {
                 foreach (var b in list) {
-                    if (b is T) {
-                        aBlock = (T)b;
+                    t = b as T;
+                    if (t != null) {
+                        aBlock = t;
                         return;
                     }
                 }
             }
         }
-
+        public void getByTag<T>(string aTag, List<T> aList) where T : class {
+            T t;
+            List<IMyTerminalBlock> list;
+            if (mTags.TryGetValue(aTag, out list)) {
+                foreach (var b in list) {
+                    t = b as T;
+                    if (t != null) {
+                        aList.Add(t);
+                    }
+                }
+            }
+        }
+   
         void addByGrid(IMyTerminalBlock aBlock) {
             List<IMyTerminalBlock> list;
             if (aBlock != null) {
@@ -207,7 +222,7 @@ namespace IngameScript {
             if (null != aBlock) {
                 var tags = getTags(aBlock);
                 for (int i = 0; i < tags.Length; i++) {
-                    var tag = tags[i].Trim().ToLower();
+                    var tag = tags[i].Trim();
                     List<IMyTerminalBlock> list;
                     if (mTags.ContainsKey(tag)) {
                         list = mTags[tag];
@@ -220,12 +235,13 @@ namespace IngameScript {
                 }
             }
         }
+        char[] tagSplit = "#".ToCharArray();
         string[] getTags(IMyTerminalBlock aBlock) =>
-           aBlock.CustomData.Split("#".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+           aBlock.CustomData.Split(tagSplit, StringSplitOptions.RemoveEmptyEntries);
 
-        public bool HasTag(IMyTerminalBlock aBlock, string aTag) {
+        public bool hasTag(IMyTerminalBlock aBlock, string aTag) {
             var tags = getTags(aBlock);
-            for (int i = 0; i < tags.Length; i++) if (tags[i] == aTag) return true;
+            for (int i = 0; i < tags.Length; i++) if (tags[i].Trim() == aTag) return true;
             return false;
         }
 

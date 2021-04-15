@@ -228,9 +228,9 @@ namespace IngameScript {
                 deepestDepth = dist;
             }
             lastDepth = dist;
-            var targDist = (mMissionTarget - mController.Remote.CenterOfMass).LengthSquared();
+            var targDist = (mMissionTarget - mController.Volume.Center).LengthSquared();
             mLog.log($"targDist={targDist}");
-            if (targDist < 25d) {
+            if (targDist < 5d) {
                 mCancel = true;
             }
         }

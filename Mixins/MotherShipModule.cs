@@ -9,13 +9,13 @@ using VRage;
 namespace IngameScript {
     public class MotherShipModule : Module<IMyTerminalBlock> {
         readonly GridComModule mCom;
-        
+        readonly ShipControllerModule mController;
 
         
         public MotherShipModule(ModuleManager aManager) : base(aManager) {
             //mListener = ModuleManager.Program.IGC.RegisterBroadcastListener("Register");
             aManager.GetModule(out mCom);
-            
+            aManager.GetModule(out mController);
             onUpdate = UpdateAction;
         }
 

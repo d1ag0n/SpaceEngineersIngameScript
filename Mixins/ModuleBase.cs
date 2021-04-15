@@ -12,7 +12,7 @@ namespace IngameScript {
 
         public readonly ModuleManager mManager;
         public readonly LogModule mLog;
-        public readonly ShipControllerModule mController;
+        //public readonly ShipControllerModule mController;
 
         public bool Active;
         public Action<double> onIGC { get; protected set; }
@@ -24,7 +24,7 @@ namespace IngameScript {
         public ModuleBase(ModuleManager aManager) {
             mManager = aManager;
             mLog = aManager.mLog;
-            mController = aManager.mController;
+            //mController = aManager.mController;
             mManager.Add(this);
         }
         /*public void MenuData(List<object> aList) {

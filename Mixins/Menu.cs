@@ -17,7 +17,7 @@ namespace IngameScript {
         public readonly MenuModule mMenuModule;
         protected ModuleManager mManager => mMenuModule.mManager;
         protected LogModule mLog => mManager.mLog;
-        protected ShipControllerModule mController => mManager.mController;
+        protected readonly ShipControllerModule mController;
 
         public int mPage;
 
@@ -25,9 +25,15 @@ namespace IngameScript {
 
         public Menu(MenuModule aMenuModule) {
             mMenuModule = aMenuModule;
+            mManager.GetModule(out mController);
         }
 
-        protected int PageIndex(int aPage, int aCount) => aCount > 0 ? (aPage % PageCount(aCount)) * 6 : 0;
+        protected int PageIndex(int aPage, int aCount) {
+            if (aPage < 0) {
+                return mPage = 0;
+            }
+            return aCount > 0 ? (aPage % PageCount(aCount)) * 6 : 0;
+        }
 
 
         /*public void Input(int arg) {
