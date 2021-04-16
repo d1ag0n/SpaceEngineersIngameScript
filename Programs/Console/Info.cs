@@ -18,10 +18,49 @@ namespace commandline {
         }
     }
     public class bar : foo { }
-    
+
     class Info {
-        
-        static void Main() => round();
+
+
+        static void Main() => coroutine();
+
+        public static IEnumerator<bool> cor() {
+            while (true) {
+                for (int i = 0; i < 6; i++) {
+                    yield return true;
+                }
+                yield return false;
+            }
+        }
+        public static void coroutine() {
+            var work = cor();
+            while (work.MoveNext() && work.Current) {
+                Console.WriteLine("Okay");
+            }
+            Console.WriteLine("Done but reusable");
+            while (work.MoveNext() && work.Current) {
+                Console.WriteLine("Okay");
+            }
+        }
+        public static void CoMShift() {
+            var physicalMass = 1000d;
+            var CoM = Vector3D.Zero;
+            var massTarget = new Vector3D(10, 0, 0);
+            var disp2tgt = CoM - massTarget;
+            var dir2tgt = disp2tgt;
+            var len2tgt = dir2tgt.Normalize();
+            var desiredCoM = new Vector3D(5, 0, 0);
+            var disp = desiredCoM - CoM;
+            var dir = disp;
+            var len = dir.Normalize();
+            var r = len / len2tgt;
+            var m = physicalMass * r;
+            var newMass = m;
+            physicalMass -= m;
+            var newCoM = ((CoM * physicalMass) + (massTarget * newMass)) / (physicalMass + newMass);
+            var F1x = new Vector3D(0.2, 0.3, 0.5) * 10000d;
+            return;
+        }
 
         public static void round() {
             var bah = foo.Factory<bar>("Foo!");

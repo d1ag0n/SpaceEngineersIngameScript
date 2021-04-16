@@ -1,27 +1,22 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
-using Sandbox.ModAPI.Interfaces;
-using SpaceEngineers.Game.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 using VRage;
-using VRage.Collections;
-using VRage.Game;
-using VRage.Game.Components;
-using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
-using VRage.Game.ModAPI.Ingame.Utilities;
-using VRage.Game.ObjectBuilders.Definitions;
-using VRageMath;
 
 namespace IngameScript
 {
     public partial class Program : MyGridProgram
     {
+        struct InventoryRegister {
+            public IMyInventory Inventory;
+            public MyInventoryItem Item;
+            public InventoryRegister(IMyInventory aInventory, MyInventoryItem aItem) {
+                Inventory = aInventory;
+                Item = aItem;
+            }
+        }
         const string tagInventory = "inventory";
         const string tagAnything = "anything";
         const string tagShip = "ship";
@@ -63,7 +58,7 @@ namespace IngameScript
         IMyTextPanel mDisplay;
         IMyTextPanel mHelp;
 
-        readonly IMyBroadcastListener listener;
+        //readonly IMyBroadcastListener listener;
 
         readonly List<IMyCargoContainer> mCargo = new List<IMyCargoContainer>();
         //readonly List<IMyProductionBlock> mProduction = new List<IMyProductionBlock>();
@@ -88,23 +83,37 @@ namespace IngameScript
 
         readonly Dictionary<string, List<InventoryRegister>> mInventoryRegister = new Dictionary<string, List<InventoryRegister>>();
 
-        Steps step;
-        int supIndex = 0;
-        int index = 0;
-        int subIndex = 0;
+        // Steps step;
+        // int supIndex = 0;
+        // int index = 0;
+        // int subIndex = 0;
         
-        //double lastBroadcast = 0;
-        //double lastShipment = 0;
+        // double lastBroadcast = 0;
+        // double lastShipment = 0;
 
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
             mManager = new ModuleManager(this, "Inventory Manager", "inventoryLogConsole");
             mLog = mManager.mLog;
-            mLog.PersistentMax = 50;
-            listener = IGC.RegisterBroadcastListener(tagInventory);
-            listener.SetMessageCallback(tagInventory);
+            mLog.PersistentMax = 25;
+            //listener = IGC.RegisterBroadcastListener(tagInventory);
+            //listener.SetMessageCallback(tagInventory);
             mManager.Initialize();
             init();
+
+            processMachine = process();
+            preSortMachine = preSort();
+            sortMachine = sort();
+            stepProductionSortMachine = stepProductionSort();
+            stepRefinerySortMachine = stepRefinerySort();
+            stepAssemblerSortMachine = stepAssemblerSort();
+            stepCargoSortContainerMachine = stepCargoSortContainer();
+            stepCargoSortMachine = stepCargoSort();
+            stepCountMachine = stepCount();
+            stepRefineryCountMachine = stepRefineryCount();
+            stepAssemblerCountMachine = stepAssemblerCount();
+            stepCargoCountMachine = stepCargoCount();
+            stepRefineMachine = stepRefine();
         }
 
 
@@ -122,9 +131,6 @@ namespace IngameScript
             mBuilder.Clear();
         }
         void init() {
-            step = 0;
-            index =
-            subIndex = 0;
             mLCD = null;
             mManager.getByTag("inventoryConsole", ref mLCD);
             mManager.getByTag("inventoryDisplay", ref mDisplay);
@@ -157,7 +163,6 @@ namespace IngameScript
             }
 
         }
-        public void Save() { }
         void initTags() {
             mToTag["MyObjectBuilder_AmmoMagazine/NATO_5p56x45mm"] = "nato556";
             mToTag["MyObjectBuilder_AmmoMagazine/NATO_25x184mm"] = "nato25";
@@ -198,9 +203,7 @@ namespace IngameScript
             mToTag["MyObjectBuilder_PhysicalGunObject/Welder2Item"] = "junk";
             mToTag["MyObjectBuilder_PhysicalGunObject/HandDrill4Item"] = "drill";
             mToTag["MyObjectBuilder_PhysicalGunObject/AngleGrinderItem"] = "junk";
-
             mToTag["MyObjectBuilder_PhysicalObject/SpaceCredit"] = "credit";
-
             mToTag["MyObjectBuilder_Ore/Organic"] = "organic";
             mToTag["MyObjectBuilder_Ore/Magnesium"] = "magnesiumore";
             mToTag["MyObjectBuilder_Ore/Nickel"] = "nickelore";
@@ -215,14 +218,10 @@ namespace IngameScript
             mToTag["MyObjectBuilder_Ore/Ice"] = "ice";
             mToTag["MyObjectBuilder_Ore/Scrap"] = "scrap";
             mToTag["MyObjectBuilder_Ore/Stone"] = "stone";
-
             mToTag["MyObjectBuilder_GasContainerObject/HydrogenBottle"] = "hydrogen";
             mToTag["MyObjectBuilder_OxygenContainerObject/OxygenBottle"] = "oxygen";
-
-
         }
         bool getTag4Item(string aItem, out string tag) {
-            tag = aItem;
             return mToTag.TryGetValue(aItem, out tag);
         }
         bool getTag4Item(MyInventoryItem aItem, out string tag/*, out string category*/) {
@@ -231,141 +230,132 @@ namespace IngameScript
                 tag = null;
                 mLog.persist($"Tag not found for {aItem.Type}");
             }
+            
             return result;
         }
-        void sort(IMyTerminalBlock aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag) {
-
-            //g.log("sorting #", aTag, " from ", aSourceCargo.CustomName);
-
-            mWorkList.Clear();
-            mManager.getByTag(aTag, mWorkList);
-            
-            if (mWorkList.Count == 0 && !mManager.hasTag(aSourceCargo, tagAnything)) {
-                mLog.persist("Getting anything containers");
-                mManager.getByTag(tagAnything, mWorkList);
-            } else {
-            }
+        readonly IEnumerator<bool> sortMachine;
+        IMyTerminalBlock sortBlock;
+        IMyInventory sortInventory;
+        MyInventoryItem sortItem;
+        string sortTag;
+        IEnumerator<bool> sort(/*IMyTerminalBlock aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag*/) {
             MyItemInfo itemInfo;
-            if (mWorkList.Count != 0) {
-                itemInfo = aItem.Type.GetItemInfo();
-                //g.log(mWorkList.Count, " destinations found");
-                foreach (var c in mWorkList) {
-                    
-                    if (c.EntityId != aSourceCargo.EntityId) {
-                        //g.log("trying ", c.CustomName);
-                        var inv = c.GetInventory();
-                        // todo remove this check and just check return value of TransferItemTo
-                        if (aSourceInventory.CanTransferItemTo(inv, aItem.Type)) {
+            while (true) {
+                mWorkList.Clear();
+                mManager.getByTag(sortTag, mWorkList);
+                if (mWorkList.Count == 0 && !mManager.hasTag(sortBlock, tagAnything)) {
+                    mManager.getByTag(tagAnything, mWorkList);
+                }
+                if (mWorkList.Count != 0) {
+                    itemInfo = sortItem.Type.GetItemInfo();
+                    foreach (var c in mWorkList) {
+                        if (c.EntityId != sortBlock.EntityId) {
+                            var inv = c.GetInventory();
                             var max = (float)inv.MaxVolume;
                             var cur = (float)inv.CurrentVolume;
                             var free = max - cur;
-                            var volume = (float)aItem.Amount * itemInfo.Volume;
-                            /*
-                            if ("missile" == aTag) {
-                                g.log("           Max Volume: ", max);
-                                g.log("       Current Volume: ", cur);
-                                g.log("          Free Volume: ", free);
-                                g.log("          Item Volume: ", volume);
-                                Me.Enabled = false;
-                                Echo(g.clear());
-                            }*/
+                            var volume = (float)sortItem.Amount * itemInfo.Volume;
                             if (free > volume) {
-                                //g.log("transferring whole chunk");
-                                aSourceInventory.TransferItemTo(inv, aItem);
+                                if (sortInventory.TransferItemTo(inv, sortItem)) {
+                                    yield return false;
+                                }
                             } else {
-                                //g.log("transferring partial chunk");
-                                var amt = aItem.Amount;
+                                var amt = sortItem.Amount;
                                 // todo use aItem.Type.GetItemInfo().Volume ??
-                                // aSourceInventory.TransferItemTo()
-                                //g.log("Cannot transfer #", aTag, " volume ", volume, " cargo free ", free);
-                                //g.log("raw amount ", amt.RawValue);
-                                
                                 if (itemInfo.UsesFractions) {
-                                    //g.log("fractional");
                                     amt.RawValue = (long)(free / itemInfo.Volume);
                                 } else {
                                     amt.RawValue = (int)(free / itemInfo.Volume);
                                 }
                                 amt.RawValue *= 1000000;
-                                //g.log("plan to transfer ", amt.RawValue);
-                                aSourceInventory.TransferItemTo(inv, aItem, amt);
+                                if (sortInventory.TransferItemTo(inv, sortItem, amt)) {
+                                    yield return false;
+                                }
                             }
-                        } else {
-                            mLog.persist("cannot transfer");
                         }
-                        
-                        //g.log("           Max Volume: ", max);
-                        //g.log("       Raw Max Volume: ", max.RawValue);
-                        //g.log("       Current Volume: ", cur);
-                        //g.log("   Raw Current Volume: ", cur.RawValue);
-                        //g.log("          Free Volume: ", free);
-                        //g.log("      Raw Free Volume: ", free.RawValue);
-                        //g.log("          Item amount: ", aItem.Amount);
-                        //g.log("      Raw item amount: ", aItem.Amount.RawValue);
-                        //g.log("Raw Calculated Volume: ", aItem.Amount.RawValue * volume(aTag));
-                    } else {
-                        //g.log("source was same as destination");
+                        yield return true;
                     }
                 }
-            } else {
-                //mLog.persist($"no destinations found for {aTag}");
+                yield return false;
             }
         }
-        void sort(IMyTerminalBlock aSource, IMyInventory aSourceInventory, MyInventoryItem aItem) {
+        IEnumerator<bool> preSortMachine;
+        IMyTerminalBlock preSortBlock;
+        IMyInventory preSortInventory;
+        MyInventoryItem preSortItem;
+        IEnumerator<bool> preSort(/*IMyTerminalBlock aSource, IMyInventory aSourceInventory, MyInventoryItem aItem*/) {
             string tag;
-            if (getTag4Item(aItem, out tag)) {
-                if (!mManager.hasTag(aSource, tag)) {
-                    sort(aSource, aSourceInventory, aItem, tag);
+            while (true) {
+                if (getTag4Item(preSortItem, out tag)) {
+                    if (!mManager.hasTag(preSortBlock, tag)) {
+                        sortBlock = preSortBlock;
+                        sortInventory = preSortInventory;
+                        sortItem = preSortItem;
+                        sortTag = tag;
+                        while (sortMachine.MoveNext() && sortMachine.Current) {
+                            mLog.log("preSort");
+                            yield return true;
+                        }
+                    }
                 }
+                yield return false;
             }
         }
-        /// <summary>
-        /// sort assemblers and refineries
-        /// </summary>
-        /// <param name="aProduction"></param>
-        void stepProductionSort(IMyProductionBlock aProduction) {
-            var inv = aProduction.OutputInventory;
-            var okay = inv != null;
 
-            if (okay) {
-                var item = inv.GetItemAt(subIndex);
-                okay = item.HasValue;
-                if (okay) { 
-                    sort(aProduction, inv, item.Value);
-                    subIndex++;
+        readonly IEnumerator<bool> stepProductionSortMachine;
+        IMyProductionBlock stepProductionSortBlock;
+        IEnumerator<bool> stepProductionSort() {
+            while (true) {
+                var inv = stepProductionSortBlock.OutputInventory;
+                for (int i = 0; true; i++) {
+                    var item = inv.GetItemAt(i);
+                    if (item.HasValue) {
+                        preSortBlock = stepProductionSortBlock;
+                        preSortInventory = inv;
+                        preSortItem = item.Value;
+                        while (preSortMachine.MoveNext() && sortMachine.Current) {
+                            mLog.log("stepProductionSort - yielding true");
+                            yield return true;
+                        }
+                        yield return true;
+                    } else {
+                        mLog.log("stepProductionSort - break");
+                        break;
+                    }
                 }
-            }
-            if (!okay) {
-                subIndex = 0;
-                index++;
+                mLog.log("stepProductionSort - yielding false");
+                yield return false;
             }
         }
-        void stepRefinerySort() {
-            if (mRefineries.Count > 0 && index < mRefineries.Count) {
-                stepProductionSort(mRefineries[index]);
-            } else {
-                mLog.persist($"Refineries sort completed {mRefineries.Count} refineries.");
-                index = 0;
-                step++;
+        readonly IEnumerator<bool> stepAssemblerSortMachine;
+        IEnumerator<bool> stepAssemblerSort() {
+            while (true) {
+                foreach (var a in mAssemblers) {
+                    stepProductionSortBlock = a;
+                    while (stepProductionSortMachine.MoveNext() && sortMachine.Current) {
+                        mLog.log("stepAssemblerSort");
+                        yield return true;
+                    }
+                    yield return true;
+                }
+                yield return false;
             }
         }
-        void stepAssemblerSort() {
-            if (mAssemblers.Count > 0 && index < mAssemblers.Count) {
-                stepProductionSort(mAssemblers[index]);
-            } else {
-                mLog.persist($"Assemblers sorted {mAssemblers.Count}");
-                index = 0;
-                step++;
+        readonly IEnumerator<bool> stepRefinerySortMachine;
+        IEnumerator<bool> stepRefinerySort() {
+            while (true) {
+                foreach (var r in mRefineries) {
+                    stepProductionSortBlock = r;
+                    while (stepProductionSortMachine.MoveNext() && stepProductionSortMachine.Current) {
+                        mLog.log("stepRefinerySort - yielding true");
+                        yield return true;
+                    }
+                }
+                mLog.log("stepRefinerySort - yielding false");
+                yield return false;
             }
         }
-        struct InventoryRegister {
-            public IMyInventory Inventory;
-            public MyInventoryItem Item;
-            public InventoryRegister(IMyInventory aInventory, MyInventoryItem aItem) {
-                Inventory = aInventory;
-                Item = aItem;
-            }
-        }
+
         void registerInventory(IMyInventory aInventory, MyInventoryItem aItem) {
             List<InventoryRegister> list;
             string tag;
@@ -379,29 +369,40 @@ namespace IngameScript
             }
 
         }
-        void stepCargoSort(IMyCargoContainer aCargo) {
-            var inv = aCargo.GetInventory();
-            var okay = inv != null;
-            if (okay) {
-                var item = inv.GetItemAt(subIndex);
-                okay = item.HasValue;
-                if (okay) {
-                    
-                    sort(aCargo, inv, item.Value);
-                    subIndex++;
+        IMyCargoContainer stepCargoSortBlock;
+        readonly IEnumerator<bool> stepCargoSortContainerMachine;
+        IEnumerator<bool> stepCargoSortContainer() {
+            while (true) {
+                var inv = stepCargoSortBlock.GetInventory();
+                if (inv != null) {
+                    for (int i = 0; true; i++) {
+                        var item = inv.GetItemAt(i);
+                        if (item.HasValue) {
+                            preSortBlock = stepCargoSortBlock;
+                            preSortInventory = inv;
+                            preSortItem = item.Value;
+                            while (preSortMachine.MoveNext() && preSortMachine.Current) {
+                                yield return true;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
                 }
-            }
-            if (!okay) {
-                subIndex = 0;
-                index++;
+                yield return false;
             }
         }
-        void stepCargoSort() {
-            if (mCargo.Count > 0 && index < mCargo.Count) {
-                stepCargoSort(mCargo[index]);
-            } else {
-                index = 0;
-                step++;
+        readonly IEnumerator<bool> stepCargoSortMachine;
+        IEnumerator<bool> stepCargoSort() {
+            while (true) {
+                foreach (var c in mCargo) {
+                    stepCargoSortBlock = c;
+                    while (stepCargoSortContainerMachine.MoveNext() && stepCargoSortContainerMachine.Current) {
+                        mLog.log("stepCargoSort");
+                        yield return true;
+                    }
+                }
+                yield return false;
             }
         }
         /*bool canOrder(string aTag) {
@@ -646,40 +647,54 @@ namespace IngameScript
             }
             mInventory[key] = amount + aItem.Amount;
         }
-
-        void stepCount(IMyInventory aInventory, bool register) {
-            var okay = aInventory != null;
-            if (okay) {
-                var item = aInventory.GetItemAt(subIndex);
-                okay = item.HasValue;
-                if (okay) {
-                    if (register) {
-                        registerInventory(aInventory, item.Value);
+        readonly IEnumerator<bool> stepCountMachine;
+        IMyInventory stepCountInventory;
+        bool stepCountRegister;
+        IEnumerator<bool> stepCount(/*IMyInventory aInventory, bool register*/) {
+            while (true) {
+                for (int i = 0; true; i++) {
+                    var item = stepCountInventory.GetItemAt(i);
+                    if (item.HasValue) {
+                        if (stepCountRegister) {
+                            registerInventory(stepCountInventory, item.Value);
+                        }
+                        stepCount(item.Value);
+                        yield return true;
+                    } else {
+                        break;
                     }
-                    stepCount(item.Value);
-                    subIndex++;
                 }
-            }
-            if (!okay) {
-                subIndex = 0;
-                index++;
+                yield return false;
             }
         }
-
-        void stepRefineryCount() {
-            if (mRefineries.Count > 0 && index < mRefineries.Count) {
-                stepCount(mRefineries[index].InputInventory, false);
-            } else {
-                index = 0;
-                step++;
+        IEnumerator<bool> stepRefineryCountMachine;
+        IEnumerator<bool> stepRefineryCount() {
+            while (true) {
+                foreach (var r in mRefineries) {
+                    stepCountInventory = r.InputInventory;
+                    stepCountRegister = false;
+                    while (stepCountMachine.MoveNext() && stepCountMachine.Current) {
+                        mLog.log("stepRefineryCount");
+                        yield return true;
+                    }
+                    yield return true;
+                }
+                yield return false;
             }
         }
-        void stepAssemblerCount() {
-            if (mAssemblers.Count > 0 && index < mAssemblers.Count) {
-                stepCount(mAssemblers[index].InputInventory, false);
-            } else {
-                index = 0;
-                step++;
+        IEnumerator<bool> stepAssemblerCountMachine;
+        IEnumerator<bool> stepAssemblerCount() {
+            while (true) {
+                foreach (var a in mAssemblers) {
+                    stepCountInventory = a.InputInventory;
+                    stepCountRegister = false;
+                    while (stepCountMachine.MoveNext() && stepCountMachine.Current) {
+                        mLog.log("stepRefineryCount");
+                        yield return true;
+                    }
+                    yield return true;
+                }
+                yield return false;
             }
         }
         void clearLists() {
@@ -687,82 +702,78 @@ namespace IngameScript
                 list.Clear();
             }
         }
-
-        void stepRefine(IMyRefinery aRefinery) {
-            if (subIndex == 0) {
-                var inv = aRefinery.InputInventory;
-                var item = inv.GetItemAt(0);
-                if (item.HasValue) {
-                    string tag;
-                    var gotTag = getTag4Item(item.Value, out tag);
-                    if (gotTag && tag == makeResourceTag) {
-                        // todo ensure volume
-                        index++;
-                    } else {
-                        mLog.persist($"gotTag={gotTag}");
-                        mLog.persist($"tag={tag}");
-                        mLog.persist($"makeResourceTag={makeResourceTag}");
-                        sort(aRefinery, inv, item.Value, tag);
-                    }
-                } else {
-                    List<InventoryRegister> list;
-                    mLog.persist($"make resource tag {makeResourceTag}");
-                    
-                    if (mInventoryRegister.TryGetValue(makeResourceTag, out list)) {
-                        mLog.persist($"IR List count {list.Count}");
-                        float transfer = 7; // volume to transfer m^3
-
-                        foreach (var ir in list) {
-                            var info = ir.Item.Type.GetItemInfo();
-                            var kgvol = (float)info.Volume;
-                            var kgamt = (float)ir.Item.Amount;
-                            var mcavail = kgamt * kgvol;
-                            if (mcavail > transfer) {
-                                MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
-                                if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                    mLog.persist("full transfer success");
-                                    break;
-                                }
-                            } else {
-                                MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
-                                if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                    mLog.persist("partial transfer success");
-                                    transfer -= mcavail;
-                                } else {
-                                    mLog.persist("partial transfer failure");
-                                }
+        IEnumerator<bool> stepRefineMachine;
+        IEnumerator<bool> stepRefine(/*IMyRefinery aRefinery*/) {
+            while (true) {
+                foreach (var r in mRefineries) {
+                    var inv = r.InputInventory;
+                    var item = inv.GetItemAt(0);
+                    if (item.HasValue) {
+                        string tag;
+                        var gotTag = getTag4Item(item.Value, out tag);
+                        if (gotTag && tag == makeResourceTag) {
+                            // todo ensure volume
+                        } else {
+                            sortBlock = r;
+                            sortInventory = inv;
+                            sortItem = item.Value;
+                            sortTag = tag;
+                            while (sortMachine.MoveNext() && sortMachine.Current) {
+                                yield return true;
                             }
-                            mLog.persist($"{makeResourceTag} item amount {ir.Item.Amount}");
-                            mLog.persist($"{makeResourceTag} item info volume {info.Volume}");
-                            mLog.persist($"{makeResourceTag} item available volume {mcavail}");
-
                         }
-                        
                     } else {
-                        mLog.persist("Could not get IR List");
+                        List<InventoryRegister> list;
+
+                        if (mInventoryRegister.TryGetValue(makeResourceTag, out list)) {
+                            var transfer = 7f; // volume to transfer m^3
+
+                            foreach (var ir in list) {
+                                var info = ir.Item.Type.GetItemInfo();
+                                var kgvol = info.Volume;
+                                var kgamt = (float)ir.Item.Amount;
+                                var mcavail = kgamt * kgvol;
+                                if (mcavail > transfer) {
+                                    MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
+                                    if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
+                                        break;
+                                    } else {
+                                        mLog.persist("full transfer failure");
+                                    }
+                                } else {
+                                    MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
+                                    if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
+                                        transfer -= mcavail;
+                                    } else {
+                                        mLog.persist("partial transfer failure");
+                                    }
+                                }
+                                yield return true;
+                            }
+
+                        } else {
+                            mLog.persist("Could not get IR List");
+                        }
                     }
-                    index++;
+                    yield return true;
                 }
-            }
-        }
-        void stepRefine() {
-            if (makeResourceTag != null && mRefineries.Count > 0 && index < mRefineries.Count) {
-                stepRefine(mRefineries[index]);
-            } else {
-                index = 0;
-                step++;
+                yield return false;
             }
         }
 
-        void stepCargoCount() {
-            if (index == 0 && subIndex == 0) {
+        IEnumerator<bool> stepCargoCountMachine;
+        IEnumerator<bool> stepCargoCount() {
+            while (true) {
                 clearLists();
-            }
-            if (mCargo.Count > 0 && index < mCargo.Count) {
-                stepCount(mCargo[index].GetInventory(), true);
-            } else {
-                index = 0;
-                step++;
+                foreach (var c in mCargo) {
+                    stepCountInventory = c.GetInventory();
+                    stepCountRegister = true;
+                    while (stepCountMachine.MoveNext() && stepCountMachine.Current) {
+                        mLog.log("stepCargoCount");
+                        yield return true;
+                    }
+                }
+                yield return false;
             }
         }
 
@@ -774,7 +785,6 @@ namespace IngameScript
                 r = value.RawValue / div;
                 string tag;
                 getTag4Item(ingot, out tag);
-                mLog.persist($"{tag} ratio {r}");
                 assign = r < ratio;
             } else {
                 //mLog.persist($"failed to get inventory for {ingot}");
@@ -817,110 +827,63 @@ namespace IngameScript
                 mLog.persist("Break out the drill it's mining time.");
             } else {
                 makeResourceTag = mToTag[makeResource];
-                mLog.persist($"Want to refine {makeResourceTag}");
             }
 
             
         }
-        public void Main(string arg, UpdateType update) {
-            try {
-                // ordering receiveMessages();
-                if ((update & (UpdateType.Terminal)) != 0) {
-                    mLog.persist("Processing argument: " + arg);
-                    switch (arg) {
-                        case "status":
-                            mLog.persist($"step     {step}");
-                            mLog.persist($"supIndex {supIndex}");
-                            mLog.persist($"index    {index}");
-                            mLog.persist($"subIndex {subIndex}");
-                            break;
-                        default:
-                            Echo("I'm sorry Dave, I'm afraid I can't do that.");
-                            break;
-                    }
-                    return;
+        IEnumerator<bool> processMachine;
+        IEnumerator<bool> process() {
+            while (true) {
+
+                mLog.log("Process step to stepRefinerySortMachine");
+                while (stepRefinerySortMachine.MoveNext() && stepRefinerySortMachine.Current) {
+                    mLog.log("Process step to stepRefinerySortMachine yielding");
+                    yield return true;
                 }
 
-                if ((update & (UpdateType.Update10)) != 0) {
-                    //Echo($"index {index} subindex {subIndex}");
-                    switch (step) {
-                        case Steps.refinerySort:
-                            stepRefinerySort();
-                            break;
-                        case Steps.assemblerSort:
-                            stepAssemblerSort();
-                            break;
-                        case Steps.cargoSort:
-                            stepCargoSort();
-                            break;
-                        case Steps.refineryCount:
-                            stepRefineryCount();
-                            break;
-                        case Steps.assemblerCount:
-                            stepAssemblerCount();
-                            break;
-                        case Steps.cargoCount:
-                            stepCargoCount();
-                            break;
-                        case Steps.resourceRatio:
-                            calcResourceRatios();
-                            step++;
-                            break;
-                        case Steps.refine:
-                            stepRefine();
-                            break;
-                            /*case Steps.shipping:
-                                stepShipping();
-                                break;
-                            case Steps.receiving:
-                                stepReceiving();
-                                break;*/
-                    }
-                    if (Steps.done == step) {
-                        /*
-                        broadcastOrders();
-                        g.log("sorting complete");
-                        g.log("index ", index);
-                        g.log("subIndex ", subIndex);
-                        g.log("ORDERING");
-                        foreach (var i in inventory.Ordering) {
-                            g.log($"{i.Key} {getRequired(i.Key)}");
-                        }
-                        g.log("SHIPPING");
-                        foreach (var i in inventory.Shipping) {
-
-                            g.log($"{i.Key} {getAvailable(i.Key)}");
-                        }
-                        g.log("UNCONFIRMED INCOMING");
-                        foreach (var o in unconfirmedIncoming) {
-                            g.log(o);
-                        }
-                        g.log("CONFIRMED INCOMING");
-                        foreach (var l in confirmedIncoming) {
-                            g.log(l.Key);
-                            foreach (var o in l.Value) {
-                                g.log(o);
-                            }
-                        }
-                        g.log("UNCONFIRMED OUTGOING");
-                        foreach (var o in unconfirmedOutgoing) {
-                            g.log(o.Value);
-                        }
-                        g.log("CONFIRMED OUTGOING");
-                        foreach (var l in confirmedOutgoing) {
-                            g.log(l.Key);
-                            foreach (var o in l.Value) {
-                                g.log(o);
-                            }
-                        }*/
-                        logInventory();
-                        step = 0;
-                    }
+                mLog.log("Process step to stepAssemblerSortMachine");
+                while (stepAssemblerSortMachine.MoveNext() && stepAssemblerSortMachine.Current) {
+                    mLog.log("Process step to stepAssemblerSortMachine yielding");
+                    yield return true;
                 }
-            } catch (Exception ex) {
-                mLog.persist(ex.ToString());
+
+                mLog.log("Process step to stepCargoSortMachine");
+                while (stepCargoSortMachine.MoveNext() && stepCargoSortMachine.Current) {
+                    mLog.log("Process step to stepCargoSortMachine yielding");
+                    yield return true;
+                }
+
+                mLog.log("Process step to stepRefineryCountMachine");
+                while (stepRefineryCountMachine.MoveNext() && stepRefineryCountMachine.Current) yield return true;
+
+                mLog.log("Process step to stepAssemblerCountMachine");
+                while (stepAssemblerCountMachine.MoveNext() && stepAssemblerCountMachine.Current) yield return true;
+
+                mLog.log("Process step to stepCargoCountMachine");
+                while (stepCargoCountMachine.MoveNext() && stepCargoCountMachine.Current) yield return true;
+
+                mLog.log("Process step to calcResourceRatios");
+                calcResourceRatios();
+                yield return true;
+
+                mLog.log("Process step to stepRefineMachine");
+                while (stepRefineMachine.MoveNext() && stepRefineMachine.Current) yield return true;
+
+                mLog.log("Process step to logInventory");
+                logInventory();
+                yield return true;
             }
-            mManager.Update(arg, update);
+        }
+        public void Main(string arg, UpdateType update) {
+            if ((update & (UpdateType.Update10)) != 0) {
+                mLog.log("Main");
+                try {
+                    processMachine.MoveNext();
+                } catch (Exception ex) {
+                    mLog.persist(ex.ToString());
+                }
+                mManager.Update(arg, update);
+            }
         }
     }
 }

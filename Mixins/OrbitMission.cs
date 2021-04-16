@@ -146,6 +146,7 @@ namespace IngameScript {
                                 mEntity.mOres[updateIndex] = ore;
                                 //mLog.persist(mLog.gps("NewApproach", hit));
                             } else {
+
                                 //mLog.log(mLog.gps("OriginalApproach", ore.BestApproach));
                             }
                         }

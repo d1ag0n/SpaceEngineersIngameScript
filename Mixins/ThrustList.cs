@@ -77,6 +77,27 @@ namespace IngameScript {
             if (aAccel.Y < 0) {
                 applied.Y *= -1.0;
             }
+            
+        }
+        Vector3D[] mCoT = new Vector3D[6];
+        public void calculateCoT() {
+            for (int i = 0; i < 6; i++) {
+                Vector3D weightedCoT = Vector3D.Zero;
+                double totalForce = 0;
+                var list = mLists[i];
+                foreach (var t in mLists[i]) {
+                    var force = t.MaxEffectiveThrust;
+                    weightedCoT += force * t.WorldMatrix.Translation;
+                    totalForce += force;
+                    if (i == 1) {
+                        mThrust.mLog.log(mThrust.mLog.gps($"T{(Base6Directions.Direction)i}", t.WorldMatrix.Translation));
+                    }
+                }
+                mCoT[i] = weightedCoT / totalForce;
+                
+                mThrust.mLog.log(mThrust.mLog.gps($"CoT{(Base6Directions.Direction)i}", mCoT[i]));
+            }
+
         }
         public void AllStop() {
             foreach (var list in mLists) {

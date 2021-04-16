@@ -162,6 +162,7 @@ namespace IngameScript {
         }
         
         void UpdateAction() {
+            mThrust.calculateCoT();
             if (!Active)
                 return;
             if (_Damp) {

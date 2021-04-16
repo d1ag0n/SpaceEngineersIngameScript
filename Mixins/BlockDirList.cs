@@ -23,6 +23,8 @@ namespace IngameScript {
         public void Add(T aBlock) {
             aBlock.CustomName = aBlock.Orientation.Forward.ToString();
             mLists[(int)aBlock.Orientation.Forward].Add(aBlock);
+            
         }
+     
     }
 }
