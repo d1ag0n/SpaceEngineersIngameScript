@@ -7,22 +7,38 @@ using VRageMath;
 using IngameScript;
 
 namespace commandline {
+
+
+    public delegate foo CreateDel(string name);
     public abstract class foo {
         public string fooProp;
         public static T Factory<T>(string aFooProp) where T : foo, new() {
-
             var result = new T();
             result.fooProp = aFooProp;
             return result;
 
         }
+        public static CreateDel FactoryFactory<T>() where T: foo, new() => (s) => Factory<T>(s);
+
+        public abstract void doFoo();
     }
-    public class bar : foo { }
+    public class bar : foo {
+        public override void doFoo() {
+            Console.WriteLine($"I am bar and my fooProp is {fooProp}");
+        }
+    }
 
     class Info {
 
+        static void factory() {
+            Dictionary<int, CreateDel> dict = new Dictionary<int, CreateDel>();
+            dict.Add(0, foo.FactoryFactory<bar>());
 
-        static void Main() => coroutine();
+            foo abar = dict[0]("baz");
+            abar.doFoo();
+            return;
+        }
+        static void Main() => factory();
 
         public static IEnumerator<bool> cor() {
             while (true) {

@@ -79,6 +79,7 @@ namespace commandline
             foreach (var key in d.Keys) {
                 d.Remove(key);
             }
+            
             Console.WriteLine("dicTestCOmplete");
         }
         static Random r = new Random(7);

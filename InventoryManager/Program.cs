@@ -1,4 +1,5 @@
-﻿using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.Game.EntityComponents;
+using Sandbox.ModAPI.Ingame;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -73,10 +74,11 @@ namespace IngameScript
 
         //readonly Dictionary<long, InventoryOrder> unconfirmedOutgoing = new Dictionary<long, InventoryOrder>();
         //readonly Dictionary<string, List<InventoryOrder>> confirmedOutgoing = new Dictionary<string, List<InventoryOrder>>();
-        
+
         //readonly List<InventoryOrder> unconfirmedIncoming = new List<InventoryOrder>();        
         //readonly Dictionary<string, List<InventoryOrder>> confirmedIncoming = new Dictionary<string, List<InventoryOrder>>();
-        readonly SortedDictionary<string, MyFixedPoint> mInventory = new SortedDictionary<string, MyFixedPoint>();
+        //readonly SortedDictionary<string, MyFixedPoint> mInventory = new SortedDictionary<string, MyFixedPoint>();
+        readonly Dictionary<string, MyFixedPoint> mInventory = new Dictionary<string, MyFixedPoint>();
         //const int broadcastInterval = 10;
 
         readonly SortedDictionary<string, string> mToTag = new SortedDictionary<string, string>();
@@ -87,7 +89,7 @@ namespace IngameScript
         // int supIndex = 0;
         // int index = 0;
         // int subIndex = 0;
-        
+
         // double lastBroadcast = 0;
         // double lastShipment = 0;
 
@@ -114,6 +116,7 @@ namespace IngameScript
             stepAssemblerCountMachine = stepAssemblerCount();
             stepCargoCountMachine = stepCargoCount();
             stepRefineMachine = stepRefine();
+            calcResourceRatiosMachine = calcResourceRatios();
         }
 
 
@@ -144,7 +147,6 @@ namespace IngameScript
 
             mCargo.Clear();
             mManager.getByTag(tagInventory, mCargo);
-            mLog.persist($"Found {mCargo.Count} inventory container.");
 
             mManager.getByType(mRefineries);
             foreach(var r in mRefineries) {
@@ -241,23 +243,33 @@ namespace IngameScript
         IEnumerator<bool> sort(/*IMyTerminalBlock aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag*/) {
             MyItemInfo itemInfo;
             while (true) {
+                mLog.persist("sort");
                 mWorkList.Clear();
                 mManager.getByTag(sortTag, mWorkList);
+                mLog.persist($"initial worklist has {mWorkList.Count} items");
                 if (mWorkList.Count == 0 && !mManager.hasTag(sortBlock, tagAnything)) {
                     mManager.getByTag(tagAnything, mWorkList);
+                    mLog.persist($"second worklist has {mWorkList.Count} items");
                 }
+                yield return true;
                 if (mWorkList.Count != 0) {
                     itemInfo = sortItem.Type.GetItemInfo();
+                    yield return true;
                     foreach (var c in mWorkList) {
                         if (c.EntityId != sortBlock.EntityId) {
                             var inv = c.GetInventory();
+                            yield return true;
                             var max = (float)inv.MaxVolume;
                             var cur = (float)inv.CurrentVolume;
                             var free = max - cur;
                             var volume = (float)sortItem.Amount * itemInfo.Volume;
                             if (free > volume) {
+                                mLog.persist($"full transfer {sortItem.Type.TypeId}/{sortItem.Type.SubtypeId}#{sortTag} from {sortBlock.CustomName} to {c.CustomName}");
                                 if (sortInventory.TransferItemTo(inv, sortItem)) {
+                                    mLog.persist("Full xfer success");
                                     yield return false;
+                                } else {
+                                    mLog.persist("Full xfer fail");
                                 }
                             } else {
                                 var amt = sortItem.Amount;
@@ -269,7 +281,10 @@ namespace IngameScript
                                 }
                                 amt.RawValue *= 1000000;
                                 if (sortInventory.TransferItemTo(inv, sortItem, amt)) {
+                                    mLog.persist("Partial xfer success");
                                     yield return false;
+                                } else {
+                                    mLog.persist("Partial xfer fail");
                                 }
                             }
                         }
@@ -292,8 +307,8 @@ namespace IngameScript
                         sortInventory = preSortInventory;
                         sortItem = preSortItem;
                         sortTag = tag;
+                        yield return true;
                         while (sortMachine.MoveNext() && sortMachine.Current) {
-                            mLog.log("preSort");
                             yield return true;
                         }
                     }
@@ -305,38 +320,42 @@ namespace IngameScript
         readonly IEnumerator<bool> stepProductionSortMachine;
         IMyProductionBlock stepProductionSortBlock;
         IEnumerator<bool> stepProductionSort() {
+            
             while (true) {
                 var inv = stepProductionSortBlock.OutputInventory;
-                for (int i = 0; true; i++) {
-                    var item = inv.GetItemAt(i);
+                yield return true;
+                while (true) {
+                    var item = inv.GetItemAt(0);
+                    yield return true;
                     if (item.HasValue) {
                         preSortBlock = stepProductionSortBlock;
                         preSortInventory = inv;
                         preSortItem = item.Value;
-                        while (preSortMachine.MoveNext() && sortMachine.Current) {
-                            mLog.log("stepProductionSort - yielding true");
+                        yield return true;
+                        while (preSortMachine.MoveNext() && preSortMachine.Current) {
                             yield return true;
                         }
                         yield return true;
                     } else {
-                        mLog.log("stepProductionSort - break");
                         break;
                     }
                 }
-                mLog.log("stepProductionSort - yielding false");
                 yield return false;
             }
         }
         readonly IEnumerator<bool> stepAssemblerSortMachine;
         IEnumerator<bool> stepAssemblerSort() {
             while (true) {
-                foreach (var a in mAssemblers) {
-                    stepProductionSortBlock = a;
-                    while (stepProductionSortMachine.MoveNext() && sortMachine.Current) {
-                        mLog.log("stepAssemblerSort");
+                int count = mAssemblers.Count;
+                int last = count - 1;
+                for (int i = 0; i < count; i++) {
+                    stepProductionSortBlock = mAssemblers[i];
+                    while (stepProductionSortMachine.MoveNext() && stepProductionSortMachine.Current) {
                         yield return true;
                     }
-                    yield return true;
+                    if (i < last) {
+                        yield return true;
+                    }
                 }
                 yield return false;
             }
@@ -344,14 +363,18 @@ namespace IngameScript
         readonly IEnumerator<bool> stepRefinerySortMachine;
         IEnumerator<bool> stepRefinerySort() {
             while (true) {
-                foreach (var r in mRefineries) {
-                    stepProductionSortBlock = r;
+                int count = mRefineries.Count;
+                int last = count - 1;
+                for (int i = 0; i < count; i++) {
+                    stepProductionSortBlock = mRefineries[i];
+                    yield return true;
                     while (stepProductionSortMachine.MoveNext() && stepProductionSortMachine.Current) {
-                        mLog.log("stepRefinerySort - yielding true");
+                        yield return true;
+                    }
+                    if (i < last) {
                         yield return true;
                     }
                 }
-                mLog.log("stepRefinerySort - yielding false");
                 yield return false;
             }
         }
@@ -374,9 +397,12 @@ namespace IngameScript
         IEnumerator<bool> stepCargoSortContainer() {
             while (true) {
                 var inv = stepCargoSortBlock.GetInventory();
+                yield return true;
                 if (inv != null) {
                     for (int i = 0; true; i++) {
                         var item = inv.GetItemAt(i);
+                        yield return true;
+                        // todo check here if item is allowed?
                         if (item.HasValue) {
                             preSortBlock = stepCargoSortBlock;
                             preSortInventory = inv;
@@ -395,10 +421,14 @@ namespace IngameScript
         readonly IEnumerator<bool> stepCargoSortMachine;
         IEnumerator<bool> stepCargoSort() {
             while (true) {
-                foreach (var c in mCargo) {
-                    stepCargoSortBlock = c;
+                int count = mCargo.Count;
+                int last = count - 1;
+                for (int i = 0; i < count; i++) {
+                    stepCargoSortBlock = mCargo[i];
                     while (stepCargoSortContainerMachine.MoveNext() && stepCargoSortContainerMachine.Current) {
-                        mLog.log("stepCargoSort");
+                        yield return true;
+                    }
+                    if (i < last) {
                         yield return true;
                     }
                 }
@@ -653,10 +683,13 @@ namespace IngameScript
         IEnumerator<bool> stepCount(/*IMyInventory aInventory, bool register*/) {
             while (true) {
                 for (int i = 0; true; i++) {
+                    mLog.persist("stepCount");
                     var item = stepCountInventory.GetItemAt(i);
+                    yield return true;
                     if (item.HasValue) {
                         if (stepCountRegister) {
                             registerInventory(stepCountInventory, item.Value);
+                            yield return true;
                         }
                         stepCount(item.Value);
                         yield return true;
@@ -670,14 +703,18 @@ namespace IngameScript
         IEnumerator<bool> stepRefineryCountMachine;
         IEnumerator<bool> stepRefineryCount() {
             while (true) {
-                foreach (var r in mRefineries) {
-                    stepCountInventory = r.InputInventory;
+                int count = mRefineries.Count;
+                int last = count - 1;
+                for (int i = 0; i < count; i++) {
+                    stepCountInventory = mRefineries[i].InputInventory;
+                    yield return true;
                     stepCountRegister = false;
                     while (stepCountMachine.MoveNext() && stepCountMachine.Current) {
-                        mLog.log("stepRefineryCount");
                         yield return true;
                     }
-                    yield return true;
+                    if (i < last) {
+                        yield return true;
+                    }
                 }
                 yield return false;
             }
@@ -685,14 +722,18 @@ namespace IngameScript
         IEnumerator<bool> stepAssemblerCountMachine;
         IEnumerator<bool> stepAssemblerCount() {
             while (true) {
-                foreach (var a in mAssemblers) {
-                    stepCountInventory = a.InputInventory;
+                int count = mAssemblers.Count;
+                int last = count - 1;
+                for (int i = 0; i < count; i++) {
+                    stepCountInventory = mAssemblers[i].InputInventory;
                     stepCountRegister = false;
+                    yield return true;
                     while (stepCountMachine.MoveNext() && stepCountMachine.Current) {
-                        mLog.log("stepRefineryCount");
                         yield return true;
                     }
-                    yield return true;
+                    if (i < last) {
+                        yield return true;
+                    }
                 }
                 yield return false;
             }
@@ -705,9 +746,13 @@ namespace IngameScript
         IEnumerator<bool> stepRefineMachine;
         IEnumerator<bool> stepRefine(/*IMyRefinery aRefinery*/) {
             while (true) {
-                foreach (var r in mRefineries) {
+                int count = mRefineries.Count;
+                int last = count - 1;
+                for (int i = 0; i < count; i++) {
+                    var r = mRefineries[i];
                     var inv = r.InputInventory;
                     var item = inv.GetItemAt(0);
+                    yield return true;
                     if (item.HasValue) {
                         string tag;
                         var gotTag = getTag4Item(item.Value, out tag);
@@ -727,8 +772,10 @@ namespace IngameScript
 
                         if (mInventoryRegister.TryGetValue(makeResourceTag, out list)) {
                             var transfer = 7f; // volume to transfer m^3
-
-                            foreach (var ir in list) {
+                            int listCount = list.Count;
+                            int listLast = listCount - 1;
+                            for (int j = 0; j < listCount; j++) {
+                                var ir = list[j];
                                 var info = ir.Item.Type.GetItemInfo();
                                 var kgvol = info.Volume;
                                 var kgamt = (float)ir.Item.Amount;
@@ -748,14 +795,17 @@ namespace IngameScript
                                         mLog.persist("partial transfer failure");
                                     }
                                 }
-                                yield return true;
+                                if (j < listLast) {
+                                    yield return true;
+                                }
                             }
-
                         } else {
                             mLog.persist("Could not get IR List");
                         }
                     }
-                    yield return true;
+                    if (i < last) {
+                        yield return true;
+                    }
                 }
                 yield return false;
             }
@@ -765,11 +815,16 @@ namespace IngameScript
         IEnumerator<bool> stepCargoCount() {
             while (true) {
                 clearLists();
-                foreach (var c in mCargo) {
-                    stepCountInventory = c.GetInventory();
+                int count = mCargo.Count;
+                int last = count - 1;
+                for (int i = 0; i < count; i++) {
+                    stepCountInventory = mCargo[i].GetInventory();
                     stepCountRegister = true;
+                    yield return true;
                     while (stepCountMachine.MoveNext() && stepCountMachine.Current) {
-                        mLog.log("stepCargoCount");
+                        yield return true;
+                    }
+                    if (i < last) {
                         yield return true;
                     }
                 }
@@ -807,82 +862,92 @@ namespace IngameScript
 
         string makeResource;
         string makeResourceTag;
-        void calcResourceRatios() {
-            long ratio = long.MaxValue;
-            makeResource = null;
-            calcResourceRatio("MyObjectBuilder_Ingot/Iron", "MyObjectBuilder_Ore/Iron", iron, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Cobalt", "MyObjectBuilder_Ore/Cobalt", cobalt,ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Nickel", "MyObjectBuilder_Ore/Nickel", nickel, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Silicon", "MyObjectBuilder_Ore/Silicon", silicon, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Stone", "MyObjectBuilder_Ore/Stone", stone, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Silver", "MyObjectBuilder_Ore/Silver", silver, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Gold", "MyObjectBuilder_Ore/Gold", gold, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Magnesium", "MyObjectBuilder_Ore/Magnesium", magnesium, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Platinum", "MyObjectBuilder_Ore/Platinum", platinum, ref ratio, ref makeResource);
-            calcResourceRatio("MyObjectBuilder_Ingot/Uranium", "MyObjectBuilder_Ore/Uranium", uranium, ref ratio, ref makeResource);
+        IEnumerator<bool> calcResourceRatiosMachine;
+        IEnumerator<bool> calcResourceRatios() {
+            while (true) {
+
+                long ratio = long.MaxValue;
+                makeResource = null;
+                calcResourceRatio("MyObjectBuilder_Ingot/Iron", "MyObjectBuilder_Ore/Iron", iron, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Cobalt", "MyObjectBuilder_Ore/Cobalt", cobalt, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Nickel", "MyObjectBuilder_Ore/Nickel", nickel, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Silicon", "MyObjectBuilder_Ore/Silicon", silicon, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Stone", "MyObjectBuilder_Ore/Stone", stone, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Silver", "MyObjectBuilder_Ore/Silver", silver, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Gold", "MyObjectBuilder_Ore/Gold", gold, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Magnesium", "MyObjectBuilder_Ore/Magnesium", magnesium, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Platinum", "MyObjectBuilder_Ore/Platinum", platinum, ref ratio, ref makeResource);
+                yield return true;
+                calcResourceRatio("MyObjectBuilder_Ingot/Uranium", "MyObjectBuilder_Ore/Uranium", uranium, ref ratio, ref makeResource);
 
 
-            if (makeResource == null) {
-                makeResourceTag = null;
-                mLog.persist("Break out the drill it's mining time.");
-            } else {
-                makeResourceTag = mToTag[makeResource];
+                if (makeResource == null) {
+                    makeResourceTag = null;
+                    mLog.persist("Break out the drill it's mining time.");
+                } else {
+                    makeResourceTag = mToTag[makeResource];
+                }
+                yield return false;
             }
-
             
         }
         IEnumerator<bool> processMachine;
         IEnumerator<bool> process() {
             while (true) {
-
-                mLog.log("Process step to stepRefinerySortMachine");
-                while (stepRefinerySortMachine.MoveNext() && stepRefinerySortMachine.Current) {
-                    mLog.log("Process step to stepRefinerySortMachine yielding");
-                    yield return true;
-                }
-
-                mLog.log("Process step to stepAssemblerSortMachine");
-                while (stepAssemblerSortMachine.MoveNext() && stepAssemblerSortMachine.Current) {
-                    mLog.log("Process step to stepAssemblerSortMachine yielding");
-                    yield return true;
-                }
-
-                mLog.log("Process step to stepCargoSortMachine");
-                while (stepCargoSortMachine.MoveNext() && stepCargoSortMachine.Current) {
-                    mLog.log("Process step to stepCargoSortMachine yielding");
-                    yield return true;
-                }
-
-                mLog.log("Process step to stepRefineryCountMachine");
-                while (stepRefineryCountMachine.MoveNext() && stepRefineryCountMachine.Current) yield return true;
-
-                mLog.log("Process step to stepAssemblerCountMachine");
-                while (stepAssemblerCountMachine.MoveNext() && stepAssemblerCountMachine.Current) yield return true;
-
-                mLog.log("Process step to stepCargoCountMachine");
-                while (stepCargoCountMachine.MoveNext() && stepCargoCountMachine.Current) yield return true;
-
-                mLog.log("Process step to calcResourceRatios");
-                calcResourceRatios();
+                var start = DateTime.Now;
+                while (stepRefinerySortMachine.MoveNext() && stepRefinerySortMachine.Current) yield return true;
+                mLog.persist("stepRefinerySortMachine");
+                yield return true;
+                
+                while (stepAssemblerSortMachine.MoveNext() && stepAssemblerSortMachine.Current) yield return true;
+                mLog.persist("stepAssemblerSortMachine");
                 yield return true;
 
-                mLog.log("Process step to stepRefineMachine");
-                while (stepRefineMachine.MoveNext() && stepRefineMachine.Current) yield return true;
+                while (stepCargoSortMachine.MoveNext() && stepCargoSortMachine.Current) yield return true;
+                mLog.persist("stepCargoSortMachine");
+                yield return true;
 
-                mLog.log("Process step to logInventory");
-                logInventory();
+                while (stepRefineryCountMachine.MoveNext() && stepRefineryCountMachine.Current) yield return true;
+                mLog.persist("stepRefineryCountMachine");
+                yield return true;
+
+                while (stepAssemblerCountMachine.MoveNext() && stepAssemblerCountMachine.Current) yield return true;
+                mLog.persist("stepAssemblerCountMachine");
+                yield return true;
+
+                while (stepCargoCountMachine.MoveNext() && stepCargoCountMachine.Current) yield return true;
+                mLog.persist("stepCargoCountMachine");
+                yield return true;
+
+                while (calcResourceRatiosMachine.MoveNext() && calcResourceRatiosMachine.Current) yield return true;
+                mLog.persist("calcResourceRatiosMachine");
+                yield return true;
+
+                while (stepRefineMachine.MoveNext() && stepRefineMachine.Current) yield return true;
+                mLog.persist("stepRefineMachine");
+                yield return true;
+
+                logInventory();                
+                mLog.persist($"Process completed in {(DateTime.Now - start).TotalSeconds:f2} seconds.");
                 yield return true;
             }
         }
         public void Main(string arg, UpdateType update) {
             if ((update & (UpdateType.Update10)) != 0) {
-                mLog.log("Main");
+                mManager.Update(arg, update);
                 try {
                     processMachine.MoveNext();
                 } catch (Exception ex) {
                     mLog.persist(ex.ToString());
                 }
-                mManager.Update(arg, update);
             }
         }
     }

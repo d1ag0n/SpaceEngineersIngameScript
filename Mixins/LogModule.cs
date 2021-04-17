@@ -92,6 +92,7 @@ namespace IngameScript {
             
             if (null != args) {
                 for (int i = 0; i < args.Length; i++) {
+
                     var arg = args[i];
                     if (null == arg) {
                         mSBLog.AppendLine();
@@ -124,7 +125,7 @@ namespace IngameScript {
             } else if (c == 0) {
                 pcount = 0;
             }
-            mPersistent.Add(aMessage);
+            mPersistent.Add($"c{mManager.mLag.Current:f4} a{mManager.mLag.Value:f4} - {aMessage}");
         }
         public string get() {
             for (int i = 0; i < mPersistent.Count; i++) {
@@ -136,7 +137,7 @@ namespace IngameScript {
         
         void UpdateAction() {
             pcount++;
-            if (pcount == 90) {
+            if (pcount == 180) {
                 pcount = 0;
                 if (mPersistent.Count > 0) {
                     mPersistent.RemoveAt(0);

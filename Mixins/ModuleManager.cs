@@ -16,7 +16,7 @@ namespace IngameScript {
         
         readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
-        readonly Lag mLag = new Lag(18);
+        public readonly Lag mLag = new Lag(6);
         readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
 
         public readonly bool LargeGrid;
@@ -30,7 +30,7 @@ namespace IngameScript {
         public string UserInput = "DEFAULT";
         
 
-        public double Lag => mLag.Value;
+        //public double Lag => mLag.Value;
         public double Runtime { get; private set; }
 
         public ModuleManager(Program aProgram, string aProgramName, string logTag) {
@@ -60,6 +60,8 @@ namespace IngameScript {
         //public Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
 
         public void Update(string arg, UpdateType aType) {
+            IMyPistonBase p;
+            
             try {
                 Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;
                 mLag.Update(mProgram.Runtime.LastRunTimeMs);

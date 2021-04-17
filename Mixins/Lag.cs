@@ -6,8 +6,10 @@ using VRageMath;
 
 namespace IngameScript
 {
-    class Lag {
+    public class Lag {
         public double Value { get; private set; }
+        public double Current { get; private set; }
+
         bool accurate;
         double[] times;
         double sum = 0;
@@ -18,6 +20,7 @@ namespace IngameScript
         }
         
         public void Update(double time) {
+            Current = time;
             sum -= times[pos];
             times[pos] = time;
             sum += time;            
