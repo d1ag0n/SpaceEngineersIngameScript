@@ -63,7 +63,8 @@ namespace IngameScript
 
         readonly List<IMyCargoContainer> mCargo = new List<IMyCargoContainer>();
         //readonly List<IMyProductionBlock> mProduction = new List<IMyProductionBlock>();
-        readonly List<IMyRefinery> mRefineries = new List<IMyRefinery>();
+        readonly List<IMyRefinery> _mRefineries = new List<IMyRefinery>();
+        IMyRefinery[] mRefineries;
         readonly List<IMyAssembler> mAssemblers = new List<IMyAssembler>();
 
         readonly List<IMyTerminalBlock> mWorkList = new List<IMyTerminalBlock>();
@@ -148,7 +149,8 @@ namespace IngameScript
             mCargo.Clear();
             mManager.getByTag(tagInventory, mCargo);
 
-            mManager.getByType(mRefineries);
+            mManager.getByType(_mRefineries);
+            mRefineries = _mRefineries.ToArray();
             foreach(var r in mRefineries) {
                 r.Enabled = true;
                 r.UseConveyorSystem = false;
@@ -323,9 +325,8 @@ namespace IngameScript
             
             while (true) {
                 var inv = stepProductionSortBlock.OutputInventory;
-                yield return true;
-                while (true) {
-                    var item = inv.GetItemAt(0);
+                for (int count = inv.ItemCount - 1; count > -1; count--) {
+                    var item = inv.GetItemAt(count);
                     yield return true;
                     if (item.HasValue) {
                         preSortBlock = stepProductionSortBlock;
@@ -336,8 +337,6 @@ namespace IngameScript
                             yield return true;
                         }
                         yield return true;
-                    } else {
-                        break;
                     }
                 }
                 yield return false;
@@ -363,7 +362,7 @@ namespace IngameScript
         readonly IEnumerator<bool> stepRefinerySortMachine;
         IEnumerator<bool> stepRefinerySort() {
             while (true) {
-                int count = mRefineries.Count;
+                int count = mRefineries.Length;
                 int last = count - 1;
                 for (int i = 0; i < count; i++) {
                     stepProductionSortBlock = mRefineries[i];
@@ -399,8 +398,11 @@ namespace IngameScript
                 var inv = stepCargoSortBlock.GetInventory();
                 yield return true;
                 if (inv != null) {
-                    for (int i = 0; true; i++) {
-                        var item = inv.GetItemAt(i);
+                    int count = inv.ItemCount - 1;
+                    yield return true;
+                    for (; count > -1; count --) {
+                        
+                        var item = inv.GetItemAt(count);
                         yield return true;
                         // todo check here if item is allowed?
                         if (item.HasValue) {
@@ -682,9 +684,11 @@ namespace IngameScript
         bool stepCountRegister;
         IEnumerator<bool> stepCount(/*IMyInventory aInventory, bool register*/) {
             while (true) {
-                for (int i = 0; true; i++) {
+                int count = stepCountInventory.ItemCount - 1;
+                yield return true;
+                for (; count > -1; count--) {
                     mLog.persist("stepCount");
-                    var item = stepCountInventory.GetItemAt(i);
+                    var item = stepCountInventory.GetItemAt(count);
                     yield return true;
                     if (item.HasValue) {
                         if (stepCountRegister) {
@@ -693,8 +697,6 @@ namespace IngameScript
                         }
                         stepCount(item.Value);
                         yield return true;
-                    } else {
-                        break;
                     }
                 }
                 yield return false;
@@ -702,12 +704,34 @@ namespace IngameScript
         }
         IEnumerator<bool> stepRefineryCountMachine;
         IEnumerator<bool> stepRefineryCount() {
+            IMyRefinery r;
+            int count;
+            int last;
             while (true) {
-                int count = mRefineries.Count;
-                int last = count - 1;
+                mLog.persist("stepRefineryCount pre assign");
+                yield return true;
+
+                count = mRefineries.Length;
+                mLog.persist("stepRefineryCount assigned count");
+                yield return true;
+
+                last = count - 1;
+                mLog.persist("stepRefineryCount assigned last");
+                yield return true;
                 for (int i = 0; i < count; i++) {
-                    stepCountInventory = mRefineries[i].InputInventory;
+                    r = mRefineries[i];
+                    mLog.persist("stepRefineryCount assigned refinery local");
                     yield return true;
+
+                    var inv = r.InputInventory; 
+                    mLog.persist("stepRefineryCount assigned inventory local");
+                    yield return true;
+
+                    stepCountInventory = inv;
+                    mLog.persist("stepRefineryCount assigned inventory class");
+                    yield return true;
+                    
+                    mLog.persist("stepRefineryCount running machine");
                     stepCountRegister = false;
                     while (stepCountMachine.MoveNext() && stepCountMachine.Current) {
                         yield return true;
@@ -739,68 +763,72 @@ namespace IngameScript
             }
         }
         void clearLists() {
-            foreach (var list in mInventoryRegister.Values) {
-                list.Clear();
-            }
+            
         }
         IEnumerator<bool> stepRefineMachine;
         IEnumerator<bool> stepRefine(/*IMyRefinery aRefinery*/) {
             while (true) {
-                int count = mRefineries.Count;
+                int count = mRefineries.Length;
                 int last = count - 1;
                 for (int i = 0; i < count; i++) {
                     var r = mRefineries[i];
                     var inv = r.InputInventory;
-                    var item = inv.GetItemAt(0);
                     yield return true;
-                    if (item.HasValue) {
-                        string tag;
-                        var gotTag = getTag4Item(item.Value, out tag);
-                        if (gotTag && tag == makeResourceTag) {
-                            // todo ensure volume
-                        } else {
-                            sortBlock = r;
-                            sortInventory = inv;
-                            sortItem = item.Value;
-                            sortTag = tag;
-                            while (sortMachine.MoveNext() && sortMachine.Current) {
-                                yield return true;
-                            }
-                        }
-                    } else {
-                        List<InventoryRegister> list;
-
-                        if (mInventoryRegister.TryGetValue(makeResourceTag, out list)) {
-                            var transfer = 7f; // volume to transfer m^3
-                            int listCount = list.Count;
-                            int listLast = listCount - 1;
-                            for (int j = 0; j < listCount; j++) {
-                                var ir = list[j];
-                                var info = ir.Item.Type.GetItemInfo();
-                                var kgvol = info.Volume;
-                                var kgamt = (float)ir.Item.Amount;
-                                var mcavail = kgamt * kgvol;
-                                if (mcavail > transfer) {
-                                    MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
-                                    if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                        break;
-                                    } else {
-                                        mLog.persist("full transfer failure");
-                                    }
-                                } else {
-                                    MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
-                                    if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                        transfer -= mcavail;
-                                    } else {
-                                        mLog.persist("partial transfer failure");
-                                    }
-                                }
-                                if (j < listLast) {
+                    for (int itemCount = inv.ItemCount - 1; itemCount > -1; itemCount--) {
+                        var item = inv.GetItemAt(itemCount);
+                        yield return true;
+                        if (item.HasValue) {
+                            string tag;
+                            var gotTag = getTag4Item(item.Value, out tag);
+                            if (gotTag && tag == makeResourceTag) {
+                                // todo ensure volume
+                            } else {
+                                sortBlock = r;
+                                sortInventory = inv;
+                                sortItem = item.Value;
+                                sortTag = tag;
+                                while (sortMachine.MoveNext() && sortMachine.Current) {
                                     yield return true;
                                 }
                             }
                         } else {
-                            mLog.persist("Could not get IR List");
+                            List<InventoryRegister> list;
+
+                            if (mInventoryRegister.TryGetValue(makeResourceTag, out list)) {
+                                var transfer = 7f; // volume to transfer m^3
+                                int listCount = list.Count;
+                                int listLast = listCount - 1;
+                                for (int j = 0; j < listCount; j++) {
+                                    var ir = list[j];
+                                    var info = ir.Item.Type.GetItemInfo();
+                                    var kgvol = info.Volume;
+                                    var kgamt = (float)ir.Item.Amount;
+                                    var mcavail = kgamt * kgvol;
+                                    if (mcavail > transfer) {
+                                        MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
+                                        if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
+                                            break;
+                                        } else {
+                                            mLog.persist("full transfer failure");
+                                        }
+                                    } else {
+                                        MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
+                                        if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
+                                            transfer -= mcavail;
+                                        } else {
+                                            mLog.persist("partial transfer failure");
+                                        }
+                                    }
+                                    if (j < listLast) {
+                                        yield return true;
+                                    }
+                                }
+                            } else {
+                                mLog.persist("Could not get IR List");
+                            }
+                        }
+                        if (itemCount > 0) {
+                            yield return true;
                         }
                     }
                     if (i < last) {
@@ -814,7 +842,10 @@ namespace IngameScript
         IEnumerator<bool> stepCargoCountMachine;
         IEnumerator<bool> stepCargoCount() {
             while (true) {
-                clearLists();
+                foreach (var list in mInventoryRegister.Values) {
+                    list.Clear();
+                    yield return true;
+                }
                 int count = mCargo.Count;
                 int last = count - 1;
                 for (int i = 0; i < count; i++) {
