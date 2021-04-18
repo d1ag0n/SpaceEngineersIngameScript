@@ -10,13 +10,14 @@ namespace IngameScript {
     public class LogModule : Module<IMyTextPanel> {
         readonly string mConsoleTag;
         int pcount = 0;
-        public int PersistentMax = 15;
+        readonly int mPersistentMax;
         string nl => Environment.NewLine;
         readonly StringBuilder mSBWork = new StringBuilder();
         readonly StringBuilder mSBLog = new StringBuilder();
         readonly List<string> mPersistent = new List<string>(25);
 
-        public LogModule(ModuleManager aManager, string aConsoleTag) : base(aManager) {
+        public LogModule(ModuleManager aManager, string aConsoleTag, int aPersistentMax = 15) : base(aManager) {
+            mPersistentMax = aPersistentMax;
             mConsoleTag = aConsoleTag;
             onUpdate = UpdateAction;
         }
@@ -120,7 +121,7 @@ namespace IngameScript {
         public void persist(MyDetectedEntityInfo e) => persist(string4(e));
         public void persist(string aMessage) {
             var c = mPersistent.Count;
-            if (c > PersistentMax) {
+            if (c > mPersistentMax) {
                 mPersistent.RemoveAt(0);
             } else if (c == 0) {
                 pcount = 0;

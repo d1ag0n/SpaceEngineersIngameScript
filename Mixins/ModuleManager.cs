@@ -16,7 +16,7 @@ namespace IngameScript {
         
         readonly Dictionary<int, List<ModuleBase>> mModuleList = new Dictionary<int, List<ModuleBase>>();
         readonly Dictionary<long, List<IMyTerminalBlock>> mGridBlocks = new Dictionary<long, List<IMyTerminalBlock>>();
-        public readonly Lag mLag = new Lag(6);
+        public readonly Lag mLag = new Lag(12);
         readonly Dictionary<string, List<IMyTerminalBlock>> mTags = new Dictionary<string, List<IMyTerminalBlock>>();
 
         public readonly bool LargeGrid;
@@ -35,7 +35,7 @@ namespace IngameScript {
 
         public ModuleManager(Program aProgram, string aProgramName, string logTag) {
             mProgram = aProgram;
-            mLog = new LogModule(this, logTag);
+            mLog = new LogModule(this, logTag, 25);
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             mProgram.Me.CustomName = $"!{aProgramName}";
             //mController = new ShipControllerModule(this);

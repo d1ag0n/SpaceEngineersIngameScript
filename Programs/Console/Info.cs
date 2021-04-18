@@ -29,7 +29,27 @@ namespace commandline {
     }
 
     class Info {
+        public static double angleBetween(Vector3D a, Vector3D b) {
+            double result = 0;
+            if (!Vector3D.IsZero(a) && !Vector3D.IsZero(b))
+                result = Math.Acos(MathHelperD.Clamp(a.Dot(b) / Math.Sqrt(a.LengthSquared() * b.LengthSquared()), -1, 1));
 
+            return result;
+        }
+        static Random r = new Random();
+        static Vector3D ranDir() => Vector3D.Normalize(new Vector3D(r.NextDouble(), r.NextDouble(), r.NextDouble()));
+        static void rantan() {
+            var f = Vector3D.Forward;
+            List<Vector3D> listv = new List<Vector3D>();
+            List<double> listd = new List<double>();
+            for (int i = 0; i < 10; i++) {
+                var rp = f.Cross(ranDir());
+                listd.Add(angleBetween(f, rp));
+                listv.Add(rp);
+            }
+
+            return;
+        }
         static void factory() {
             Dictionary<int, CreateDel> dict = new Dictionary<int, CreateDel>();
             dict.Add(0, foo.FactoryFactory<bar>());
@@ -38,7 +58,7 @@ namespace commandline {
             abar.doFoo();
             return;
         }
-        static void Main() => factory();
+        static void Main() => rantan();
 
         public static IEnumerator<bool> cor() {
             while (true) {
