@@ -127,13 +127,11 @@ namespace IngameScript {
         }
         
         void updateScan() {
-            mLog.log($"updateScan - ore count {mEntity.mOres.Count}");
             if (mEntity.mOres.Count > updateIndex) {
                 var ore = mEntity.mOres[updateIndex];
                 MyDetectedEntityInfo info;
                 MyDetectedEntityInfo entity;
                 ThyDetectedEntityInfo thy;
-                mLog.log(mLog.gps("Testing", ore.Location));
                 if (mCamera.Scan(ore.Location, out entity, out thy)) {
                     if (entity.HitPosition.HasValue) {
                         var hit = entity.HitPosition.Value;
@@ -141,21 +139,14 @@ namespace IngameScript {
                         if (ore.BestApproach.IsZero()) {
                             ore.BestApproach = hit;
                             mEntity.mOres[updateIndex] = ore;
-                            //mLog.log(mLog.gps("FirstApproach", hit));
                         } else {
                             var curApp = (ore.BestApproach - ore.Location).LengthSquared();
                             var newApp = (ore.Location - hit).LengthSquared();
                             if (newApp < curApp) {
                                 ore.BestApproach = hit;
                                 mEntity.mOres[updateIndex] = ore;
-                                //mLog.persist(mLog.gps("NewApproach", hit));
-                            } else {
-
-                                //mLog.log(mLog.gps("OriginalApproach", ore.BestApproach));
                             }
                         }
-                    } else {
-                        //mLog.persist(mLog.gps("ExpectedHit", ore.Location));
                     }
                 } else {
                     mLog.persist(mLog.gps("ExpectedSuccess", ore.Location));

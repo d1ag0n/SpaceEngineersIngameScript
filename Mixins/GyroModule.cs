@@ -6,7 +6,7 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript
 {
-    public class GyroModule : Module<IMyGyro> {
+    public partial class GyroModule : Module<IMyGyro> {
 
         readonly ShipControllerModule mController;
         

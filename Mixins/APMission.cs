@@ -22,7 +22,6 @@ namespace IngameScript {
         
         protected readonly ThyDetectedEntityInfo mEntity;
         protected readonly ThrustModule mThrust;
-        protected readonly GyroModule mGyro;
         protected readonly CameraModule mCamera;
         
         
@@ -33,13 +32,11 @@ namespace IngameScript {
         public APMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager) {
             mEntity = aEntity;
             aManager.GetModule(out mThrust);
-            aManager.GetModule(out mGyro);
             aManager.GetModule(out mCamera);
         }
         public APMission(ModuleManager aManager, BoundingSphereD aSphere) : base(aManager) {
             mDestination = aSphere;
             aManager.GetModule(out mThrust);
-            aManager.GetModule(out mGyro);
             aManager.GetModule(out mCamera);
         }
         protected Vector3D BaseVelocity {

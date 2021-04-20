@@ -53,6 +53,10 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "InventoryManager", "Mixins\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PBExtra", "PBExtra\PBExtra.csproj", "{9D7018E8-06A4-45DB-BBBE-0FE24BB64A23}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GravityDrive", "GravityDrive\GravityDrive.csproj", "{96550CD7-5076-4A17-93F3-7684F64B23B3}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "GravityDrive", "Mixins\GravityDrive.shproj", "{3BA81220-3131-4FC8-A786-837801338A9C}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -61,11 +65,13 @@ Global
 		Mixins\InventoryManager.projitems*{2204ea25-7bb9-4fd6-a663-99c934859b7e}*SharedItemsImports = 13
 		Mixins\DrillShip.projitems*{22ced295-35f9-46b5-86f6-bbc722daea0e}*SharedItemsImports = 4
 		Mixins\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
+		Mixins\GravityDrive.projitems*{3ba81220-3131-4fc8-a786-837801338a9c}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9}*SharedItemsImports = 13
 		Mixins\AutoPilot.projitems*{4941e846-35f4-421b-b602-9d4766f96bdb}*SharedItemsImports = 13
 		Mixins\CruiseControl.projitems*{59812ba8-f6a8-4f95-854d-5aeb80a651b9}*SharedItemsImports = 13
 		Mixins\Stator.projitems*{5f82ad74-3d6b-47fe-a9e0-a057ff01556f}*SharedItemsImports = 13
 		Mixins\OrientationInfo.projitems*{6c40d436-d4c5-4686-8c44-2179bc367042}*SharedItemsImports = 13
+		Mixins\GravityDrive.projitems*{96550cd7-5076-4a17-93f3-7684f64b23b3}*SharedItemsImports = 4
 		Mixins\ATests.projitems*{a6d431ac-3bf0-4e2e-8946-3b40fa2473f8}*SharedItemsImports = 4
 		Mixins\InventoryManager.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
 		Mixins\CruiseControl.projitems*{b8365198-c870-45be-9bfe-d60819c4c76f}*SharedItemsImports = 4
@@ -155,6 +161,13 @@ Global
 		{9D7018E8-06A4-45DB-BBBE-0FE24BB64A23}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9D7018E8-06A4-45DB-BBBE-0FE24BB64A23}.Release|x64.ActiveCfg = Release|Any CPU
 		{9D7018E8-06A4-45DB-BBBE-0FE24BB64A23}.Release|x64.Build.0 = Release|Any CPU
+		{96550CD7-5076-4A17-93F3-7684F64B23B3}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{96550CD7-5076-4A17-93F3-7684F64B23B3}.Debug|x64.ActiveCfg = Debug|x64
+		{96550CD7-5076-4A17-93F3-7684F64B23B3}.Debug|x64.Build.0 = Debug|x64
+		{96550CD7-5076-4A17-93F3-7684F64B23B3}.Release|Any CPU.ActiveCfg = Debug|x64
+		{96550CD7-5076-4A17-93F3-7684F64B23B3}.Release|Any CPU.Build.0 = Debug|x64
+		{96550CD7-5076-4A17-93F3-7684F64B23B3}.Release|x64.ActiveCfg = Debug|x64
+		{96550CD7-5076-4A17-93F3-7684F64B23B3}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -174,6 +187,7 @@ Global
 		{FC5C7969-7016-4BA5-8296-C463B88FCBF6} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{C53F78B8-857B-4259-A079-73AD0D285E1F} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{2204EA25-7BB9-4FD6-A663-99C934859B7E} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{3BA81220-3131-4FC8-A786-837801338A9C} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}

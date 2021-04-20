@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>3ba81220-3131-4fc8-a786-837801338a9c</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>GravityDrive</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BlockDirList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GravDrive.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GravDriveModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IModuleBlock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
+  </ItemGroup>
+</Project>

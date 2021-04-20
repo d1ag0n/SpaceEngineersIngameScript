@@ -21,8 +21,13 @@ namespace IngameScript {
                 mItems.Add(new MenuItem(mLog.gps($"{mEntity.Name}", mEntity.Position), this));
                 mItems.Add(new MenuItem($"Distance: {(mEntity.Position - mController.MyMatrix.Translation).Length():f0} - Radius: {mEntity.WorldVolume.Radius}", this));
                 mItems.Add(new MenuItem("Designate Target", designateTarget));
-                mItems.Add(new MenuItem("Ores: " + string.Join(", ", mEntity.mOreTypes), () => new OreListMenu(mMenuModule, mEntity)));
+                if (mEntity.Type == ThyDetectedEntityType.Asteroid || mEntity.Type == ThyDetectedEntityType.AsteroidCluster) {
+                    mItems.Add(new MenuItem("Ores: " + string.Join(", ", mEntity.mOreTypes), () => new OreListMenu(mMenuModule, mEntity)));
+                }
             } else {
+                if (mEntity.Type == ThyDetectedEntityType.Asteroid || mEntity.Type == ThyDetectedEntityType.AsteroidCluster) {
+                    mItems.Add(new MenuItem("Check Ores"));
+                }
                 mItems.Add(new MenuItem("Delete", () => new OreDeleteMenu(mMenuModule, mEntity)));
             }
             return mItems;
