@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Sandbox;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using VRage.Plugins;
 using VRage.Scripting;
-
+using Sandbox.Game.Gui;
 namespace PBExtra {
     public class Plugin : IPlugin {
         public void Init(object gameInstance) {
@@ -23,9 +24,11 @@ namespace PBExtra {
             var whitelist = (Dictionary<string, MyWhitelistTarget>)whitelistField.GetValue(MyScriptCompiler.Static.Whitelist);
 
             whitelist[whitelistKey] = MyWhitelistTarget.Both;
+            MethodInfo method = typeof(MyGuiScreenEditor).GetMethod("TextTooLong", BindingFlags.Instance | BindingFlags.Public);
+            MethodUtil.ReplaceMethod(typeof(Plugin).GetMethod("TextTooLong", BindingFlags.Instance | BindingFlags.Public), method);
 
         }
-
+        public bool TextTooLong() => false;
         public void Dispose() {
         }
 

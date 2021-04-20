@@ -18,7 +18,7 @@ namespace IngameScript {
             return stop(mController.LocalLinearVelo, aMaxAccel);
         }
         bool updateRequired = true;
-        bool _Damp = true;
+        bool _Damp = false;
         public bool Damp {
             get { return _Damp; }
             set {
@@ -36,7 +36,7 @@ namespace IngameScript {
             mThrust = new ThrustList(this);
             //mHydro = new ThrustList(this);
             onUpdate = InitAction;
-            
+            Damp = true;
             /*
             MenuName = "Thrust Controller";
             onPage = (p) => {
@@ -162,7 +162,7 @@ namespace IngameScript {
         }
         
         void UpdateAction() {
-            mThrust.calculateCoT();
+            //mThrust.calculateCoT();
             if (!Active)
                 return;
             if (_Damp) {

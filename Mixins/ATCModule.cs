@@ -37,7 +37,6 @@ namespace IngameScript
         }
 
         public bool SendDrill(Ore ore) {
-            mLog.persist($"Drill count = {mDrills.Count}");
             if (mDrills.Count > 0) {
                 var id = mDrills.FirstElement();
                 long existing;
@@ -85,7 +84,6 @@ namespace IngameScript
             mLog.persist("Respose result " + result);
         }
         void registrationMessage(Envelope e) {
-            mLog.persist($"Received Registration {e.Message.Tag}");
             if (e.Message.Data != null) {
                 var data = e.Message.Data.ToString();
                 if (data == "Drill") {

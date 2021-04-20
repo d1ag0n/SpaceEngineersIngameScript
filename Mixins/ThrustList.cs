@@ -20,12 +20,12 @@ namespace IngameScript {
 
         // todo index based acceleration modification, track how many thrusters currently powered to full
 
-        // Forward = 0,
-        // Backward = 1,
-        // Left = 2,
-        // Right = 3,
-        // Up = 4,
-        // Down = 5
+        // Forward = 0 provides backward acceleration
+        // Backward = 1 provides forward acceleration
+        // Left = 2 provides right acceleration
+        // Right = 3 provides left acceleration
+        // Up = 4 provides down acceleration
+        // Down = 5 provides up acceleration
         public void Update(Vector3D aAccel, double aMass, bool emergency = false) {
             Vector3D original = aAccel;
             //ModuleManager.logger.log("original", original);
@@ -95,7 +95,7 @@ namespace IngameScript {
                 }
                 mCoT[i] = weightedCoT / totalForce;
                 
-                mThrust.mLog.log(mThrust.mLog.gps($"CoT{(Base6Directions.Direction)i}", mCoT[i]));
+                //mThrust.mLog.log(mThrust.mLog.gps($"CoT{(Base6Directions.Direction)i}", mCoT[i]));
             }
 
         }
@@ -107,17 +107,21 @@ namespace IngameScript {
                 }
             }
         }
+        // Forward = 0 provides backward acceleration
+        // Backward = 1 provides forward acceleration
+        // Left = 2 provides right acceleration
+        // Right = 3 provides left acceleration
+        // Up = 4 provides down acceleration
+        // Down = 5 provides up acceleration
         public Vector3D MaxAccel(Vector3D aLocalVec, double aMass) {
-            //ModuleManager.logger.log("aLocalVec", aLocalVec);
-            //ModuleManager.logger.log("aMass ", aMass);
-            int f = 0, l = 2, u = 4;
+            int f = 1, l = 3, u = 4;
             if (aLocalVec.Z < 0) {
-                f = 1;
+                f = 0;
             }
             if (aLocalVec.X < 0) {
-                l = 3;
+                l = 2;
             }
-            if (aLocalVec.Y > 0) {
+            if (aLocalVec.Y < 0) {
                 u = 5;
             }
 

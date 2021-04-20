@@ -26,16 +26,16 @@ namespace IngameScript
         const string tagShip = "ship";
         const string tagOrder = "order";
         // ratios - each on hand ingot rawvalue is divided by the ratio, higher values mean lower priority
-        readonly ResourceInfo iron = new ResourceInfo("ironore", "iron", 600000000);
-        readonly ResourceInfo cobalt = new ResourceInfo("cobaltore", "cobalt", 220000000);
-        readonly ResourceInfo nickel = new ResourceInfo("nickelore", "nickel", 70000000);
-        readonly ResourceInfo silicon = new ResourceInfo("siliconore", "silicon", 35000000);
-        readonly ResourceInfo stone = new ResourceInfo("stone", "gravel", 20000000);
-        readonly ResourceInfo silver = new ResourceInfo("silverore", "silver", 20000000);
-        readonly ResourceInfo gold = new ResourceInfo("goldore", "gold", 10000000);
-        readonly ResourceInfo magnesium = new ResourceInfo("magnesiumore", "iron", 3000000);
-        readonly ResourceInfo platinum = new ResourceInfo("ironore", "iron", 4000000);
-        readonly ResourceInfo uranium = new ResourceInfo("uraniumore", "uranium", 1000000);
+        readonly ResourceInfo iron      = new ResourceInfo("ironore",       "iron",         600000000, MyItemType.MakeIngot("Iron"));
+        readonly ResourceInfo cobalt    = new ResourceInfo("cobaltore",     "cobalt",       220000000, MyItemType.MakeIngot("Iron"));
+        readonly ResourceInfo nickel    = new ResourceInfo("nickelore",     "nickel",       70000000, MyItemType.MakeIngot("Nickel"));
+        readonly ResourceInfo silicon   = new ResourceInfo("siliconore",    "silicon",      35000000, MyItemType.MakeIngot("Silicon"));
+        readonly ResourceInfo stone     = new ResourceInfo("stone",         "gravel",       20000000, MyItemType.MakeIngot("Stone"));
+        readonly ResourceInfo silver    = new ResourceInfo("silverore",     "silver",       20000000, MyItemType.MakeIngot("Silver"));
+        readonly ResourceInfo gold      = new ResourceInfo("goldore",       "gold",         10000000, MyItemType.MakeIngot("Gold"));
+        readonly ResourceInfo magnesium = new ResourceInfo("magnesiumore",  "magnesium",    3000000, MyItemType.MakeIngot("Magnesium"));
+        readonly ResourceInfo platinum  = new ResourceInfo("platinumore",   "platinum",     4000000, MyItemType.MakeIngot("Platinum"));
+        readonly ResourceInfo uranium   = new ResourceInfo("uraniumore",    "uranium",      1000000, MyItemType.MakeIngot("Uranium"));
         
         class ResourceInfo {
             static double Total = 0;
@@ -43,13 +43,15 @@ namespace IngameScript
             public readonly string Ingot;
             public readonly long lRatio;
             public double dRatio => lRatio / Total;
+            public readonly MyItemInfo IngotInfo;
 
-            public ResourceInfo(string aOre, string aIngot, long alRatio) {
+            public ResourceInfo(string aOre, string aIngot, long alRatio, MyItemType aType) {
                 Ore = aOre;
                 Ingot = aIngot;
                 lRatio = alRatio;
                 Total += lRatio;
-                var foo = lRatio / Total;
+
+                IngotInfo = aType.GetItemInfo();
             }
         }
         enum Steps {
@@ -85,7 +87,7 @@ namespace IngameScript
         IMyRefinery[] mRefineries;
         readonly List<IMyAssembler> mAssemblers = new List<IMyAssembler>();
 
-        readonly List<IMyTerminalBlock> mWorkList = new List<IMyTerminalBlock>();
+        
         //readonly Inventory inventory = new Inventory();
         //readonly Dictionary<long, ForeignOrder> foreignOrders = new Dictionary<long, ForeignOrder>();
         //readonly Dictionary<string, long> mInventoryAvailable = new Dictionary<string, long>();
@@ -129,6 +131,8 @@ namespace IngameScript
                 { platinum.Ingot, platinum },
                 { uranium.Ingot, uranium }
             }).ToImmutableDictionary();
+
+            
 
             //listener = IGC.RegisterBroadcastListener(tagInventory);
             //listener.SetMessageCallback(tagInventory);
@@ -176,6 +180,9 @@ namespace IngameScript
 
             calcResourceRatiosMachine = calcResourceRatios();
             calcResourceRatiosMachine.MoveNext();
+
+            stepAssemblerStockMachine = stepAssemblerStock();
+            stepAssemblerStockMachine.MoveNext();
         }
 
 
@@ -302,39 +309,29 @@ namespace IngameScript
         string sortTag;
         IEnumerator<bool> sort(/*IMyTerminalBlock aSourceCargo, IMyInventory aSourceInventory, MyInventoryItem aItem, string aTag*/) {
             MyItemInfo itemInfo;
+            List<IMyTerminalBlock> workList = new List<IMyTerminalBlock>();
             yield return true;
             while (true) {
-                mWorkList.Clear();
-                yield return true;
-                mManager.getByTag(sortTag, mWorkList);
-                yield return true;
-                if (mWorkList.Count == 0 && !mManager.hasTag(sortBlock, tagAnything)) {
-                    mManager.getByTag(tagAnything, mWorkList);
-                    yield return true;
+                
+                mManager.getByTag(sortTag, workList);
+                if (workList.Count == 0 && !mManager.hasTag(sortBlock, tagAnything)) {
+                    mManager.getByTag(tagAnything, workList);
                 }
-                yield return true;
-                if (mWorkList.Count != 0) {
+                if (workList.Count != 0) {
                     itemInfo = sortItem.Type.GetItemInfo();
-                    yield return true;
-                    foreach (var c in mWorkList) {
+                    foreach (var c in workList) {
                         if (c.EntityId != sortBlock.EntityId) {
                             var inv = c.GetInventory();
-                            yield return true;
                             var max = (float)inv.MaxVolume;
                             var cur = (float)inv.CurrentVolume;
                             var free = max - cur;
                             var volume = (float)sortItem.Amount * itemInfo.Volume;
                             if (free > volume) {
-                                //mLog.persist($"full transfer {sortItem.Type.TypeId}/{sortItem.Type.SubtypeId}#{sortTag} from {sortBlock.CustomName} to {c.CustomName}");
                                 if (sortInventory.TransferItemTo(inv, sortItem)) {
-                                    //mLog.persist("Full xfer success");
-                                    yield return false;
-                                } else {
-                                    //mLog.persist("Full xfer fail");
+                                    break;
                                 }
                             } else {
                                 var amt = sortItem.Amount;
-                                // todo use aItem.Type.GetItemInfo().Volume ??
                                 if (itemInfo.UsesFractions) {
                                     amt.RawValue = (long)(free / itemInfo.Volume);
                                 } else {
@@ -342,15 +339,13 @@ namespace IngameScript
                                 }
                                 amt.RawValue *= 1000000;
                                 if (sortInventory.TransferItemTo(inv, sortItem, amt)) {
-                                    //mLog.persist("Partial xfer success");
-                                    yield return false;
-                                } else {
-                                    //mLog.persist("Partial xfer fail");
+                                    break;
                                 }
                             }
                         }
                         yield return true;
                     }
+                    workList.Clear();
                 }
                 yield return false;
             }
@@ -382,23 +377,19 @@ namespace IngameScript
         readonly IEnumerator<bool> stepProductionSortMachine;
         IMyProductionBlock stepProductionSortBlock;
         IEnumerator<bool> stepProductionSort() {
+            List<MyInventoryItem> list = new List<MyInventoryItem>();
             yield return true;
             while (true) {
-                var inv = stepProductionSortBlock.OutputInventory;
-                for (int count = inv.ItemCount - 1; count > -1; count--) {
-                    var item = inv.GetItemAt(count);
-                    yield return true;
-                    if (item.HasValue) {
-                        preSortBlock = stepProductionSortBlock;
-                        preSortInventory = inv;
-                        preSortItem = item.Value;
-                        yield return true;
-                        while (preSortMachine.MoveNext() && preSortMachine.Current) {
-                            yield return true;
-                        }
+                preSortBlock = stepProductionSortBlock;
+                preSortInventory = stepProductionSortBlock.OutputInventory;
+                preSortInventory.GetItems(list);
+                foreach (var item in list) {
+                    preSortItem = item;
+                    while (preSortMachine.MoveNext() && preSortMachine.Current) {
                         yield return true;
                     }
                 }
+                list.Clear();
                 yield return false;
             }
         }
@@ -424,15 +415,9 @@ namespace IngameScript
         IEnumerator<bool> stepRefinerySort() {
             yield return true;
             while (true) {
-                int count = mRefineries.Length;
-                int last = count - 1;
-                for (int i = 0; i < count; i++) {
-                    stepProductionSortBlock = mRefineries[i];
-                    yield return true;
+                foreach (var r in mRefineries) {
+                    stepProductionSortBlock = r;
                     while (stepProductionSortMachine.MoveNext() && stepProductionSortMachine.Current) {
-                        yield return true;
-                    }
-                    if (i < last) {
                         yield return true;
                     }
                 }
@@ -855,32 +840,69 @@ namespace IngameScript
             while (true) {
                 foreach (var a in mAssemblers) {
                     var inv = a.InputInventory;
-                    var vol = (double)inv.MaxVolume * 0.99;
-                    int pos = 0;
-                    while (true) {
-                        var item = inv.GetItemAt(pos);
-
+                    var maxVolume = (double)inv.MaxVolume * 0.9;
+                    mLog.persist($"Volume for assembler is {maxVolume}");
+                    int pos = -1;
+                    foreach (var res in mResource.Values) {
+                        double volumeFactor = res.IngotInfo.Volume;
+                        //mLog.persist($"{res.Ingot}.volumeFactor={volumeFactor}");
+                        var item = inv.GetItemAt(++pos);
                         string tag;
+                        
+                        double missingMass = 0;
                         if (item.HasValue) {
                             
                             if (getTag4Item(item.Value, out tag)) {
-                                // todo make item info part of ResourceInfo
-                                var v = (double)item.Value.Amount * item.Value.Type.GetItemInfo().Volume;
-                                var r = v / vol;
-                                var res = mResource[tag];
-                                var move = res.dRatio - r;
-                                if (move > 0) {
-                                    move *= vol;
-                                    List<InventoryRegister> list;
-                                    if (mInventoryRegister.TryGetValue(res.Ingot, out list)) {
-                                        foreach (var ir in list) {
-                                            if ((double)ir.Item.Amount > move) {
-                                            } else {
+                                if (tag == res.Ingot) {
+                                    // todo make item info part of ResourceInfo
+                                    var currentMass = (double)item.Value.Amount;
+                                    double currentVolume = currentMass * volumeFactor;                                    
+                                    // .5 = 1 * .5
+
+                                    var currentRatio = currentVolume / maxVolume;
+                                    // .05 = .5 / 10
+
+                                    var missingRatio = res.dRatio - currentRatio;
+                                    // .15 = .2 - .05
+
+                                    if (missingRatio > 0) {
+                                        var missingVolume = missingRatio * maxVolume;
+                                        // 1.5 = .15 * 10
+                                        missingMass = missingVolume / volumeFactor;
+                                        mLog.persist($"{tag} currentMass={currentMass}, currentVolume={currentVolume}, currentRatio={currentRatio}, missingRatio={missingRatio}, missingVolume={missingVolume}, missingMass={missingMass} ");
+                                    }
+                                    
+                                    //mLog.persist($"{tag} is {v}(raw:{item.Value.Amount.RawValue}) over total is {r} target {res.dRatio} move {v2move}");
+                                } else {
+                                    // todo sort out
+                                    mLog.persist($"remove {tag} pos {pos} want {res.Ingot}");
+                                }
+                            }
+                            //v2move = -1;
+                        } else {
+                            var missingVolume = res.dRatio * maxVolume;
+                            missingMass = missingVolume / volumeFactor;
+                        }
+                        if (missingMass > 0.1) {
+                            List<InventoryRegister> list;
+                            if (mInventoryRegister.TryGetValue(res.Ingot, out list)) {
+                                if (list.Count > 0) {
+                                    double iv = list[0].Item.Type.GetItemInfo().Volume;
+                                    var mfp = (MyFixedPoint)missingMass;
+                                    foreach (var ir in list) {
+                                        if (ir.Item.Amount > mfp) {
+                                            //mLog.persist($"{res.Ingot} {ir.Item.Amount} > {a2move}");
+                                            if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
+                                                break;
+                                            }
+                                        } else {
+                                            //mLog.persist($"{res.Ingot} {ir.Item.Amount} < {a2move}");
+                                            if (ir.Inventory.TransferItemTo(inv, ir.Item)) {
+                                                mfp -= ir.Item.Amount;
                                             }
                                         }
                                     }
                                 }
-
                             }
                         }
                     }
@@ -1057,6 +1079,14 @@ namespace IngameScript
                 yield return true;
 
                 mProcessStep = 0;
+                mProcessState = "stepAssemblerStockMachine";
+                while (stepAssemblerStockMachine.MoveNext() && stepAssemblerStockMachine.Current) {
+                    mProcessStep++;
+                    yield return true;
+                }
+                yield return true;
+
+                mProcessStep = 0;
                 mProcessState = "logInventory";
                 if (mDisplay != null) {
                     foreach (var p in mInventory) {
@@ -1089,13 +1119,15 @@ namespace IngameScript
             runcount++;
             
             if (runcount > 12) {
-                if (mManager.mLag.Current < 0.9) {
-                    mProcStepsPerUpdate++;
+                /*if (mManager.mLag.Current < 0.9) {
+                    if (mProcStepsPerUpdate < 10) {
+                        mProcStepsPerUpdate++;
+                    }
                 } else if (mManager.mLag.Current > 1.0) {
                     mProcStepsPerUpdate = 1;
                 } else if (mProcStepsPerUpdate > 1) {
                     mProcStepsPerUpdate--;
-                }
+                }*/
                 if (ms > maxEver) {
                     mWorstProcess = mProcessState;
                     maxEver = ms;

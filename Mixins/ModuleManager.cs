@@ -32,10 +32,11 @@ namespace IngameScript {
 
         //public double Lag => mLag.Value;
         public double Runtime { get; private set; }
-
+        public readonly Queue<IEnumerator<bool>> mMachines = new Queue<IEnumerator<bool>>();
+        IEnumerator<bool> mMachine;
         public ModuleManager(Program aProgram, string aProgramName, string logTag) {
             mProgram = aProgram;
-            mLog = new LogModule(this, logTag, 25);
+            mLog = new LogModule(this, logTag, 15);
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             mProgram.Me.CustomName = $"!{aProgramName}";
             //mController = new ShipControllerModule(this);
@@ -90,6 +91,20 @@ namespace IngameScript {
                 }
                 if ((aType & UpdateType.Update10) != 0) {
                     mLog.log(mLag.Value, " - ", DateTime.Now.ToString());
+                    if (mMachine == null) {
+                        if (mMachines.Count > 0) {
+                            mMachine = mMachines.Dequeue();
+                        }
+                    } else {
+                        mLog.log("Running Machine");
+                        mMachine.MoveNext();
+                        if (!mMachine.Current) {
+                            mMachine.Dispose();
+                            mMachine = null;
+                            mLog.persist("Machine Completed");
+                        }
+                    }
+                    
                     for (int i = 0; i < mUpdateModules.Count; i++) {
                         var m = mUpdateModules[i];
                         try {

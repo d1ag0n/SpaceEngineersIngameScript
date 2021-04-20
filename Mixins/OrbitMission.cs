@@ -93,9 +93,11 @@ namespace IngameScript {
             var dest = orbitProj();
             var disp = dest - mController.Volume.Center;
             var dist = disp.LengthSquared();
-            if (mDistToDest < 100) {
-                mLog.log($"orbitIncrements={orbitIncrements}");
-                mLog.log($"matrixCalculations={mMatrixCalculations}");
+
+            mLog.log($"orbitIncrements={orbitIncrements}");
+            mLog.log($"matrixCalculations={mMatrixCalculations}");
+            if (dist < 250000) {
+                
                 var dir = disp;
                 var mag = dir.Normalize();
                 dir = MAF.world2dir(dir, mController.MyMatrix);
@@ -110,9 +112,11 @@ namespace IngameScript {
                 if (dist < 10000) {
                     incOrbit();
                 }
+                
             } else {
-                mLog.persist("Out of orbit");
                 base.Update();
+                mLog.log(mLog.gps("mDestination", mDestination.Center));
+                mLog.log($"Out of orbit: {mDistToDest}");
                 collisionDetectTo();
             }
             //ctr.logger.log("Orbit Mission Distance ", mDistToDest);
@@ -172,18 +176,28 @@ namespace IngameScript {
         void analyzeScan() {
             mLog.log($"analyzeScan - ore count {mEntity.mOres.Count}");
             var wv = mController.Volume;
-            var dir = MAF.ranDir() * 100d;
+            var dir = MAF.ranDir() * mEntity.WorldVolume.Radius;
             var scanPos = mEntity.Position + dir;
+
+            var dispToShip = wv.Center - mEntity.Position;
+
+            var dispToPos = scanPos - mEntity.Position;
+
+            if (dispToPos.Dot(dispToShip) > 0) {
+                scanPos = mEntity.Position + -dir;
+            }
             
             MyDetectedEntityInfo entity;
             ThyDetectedEntityInfo thy;
+            mLog.log(mLog.gps("scan", scanPos));
+            mLog.log(mLog.gps("pos", wv.Center));
             mCamera.Scan(scanPos, out entity, out thy);
             if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
                 MyDetectedEntityInfo info;
                 oreScan(thy, scanPos, out info, false);
             }
-            scanPos = wv.Center + mController.LinearVelocityDirection * wv.Radius * 3.0;
-            scanPos += MAF.ranDir() * wv.Radius * 1.5;
+            scanPos = wv.Center + mController.LinearVelocityDirection * wv.Radius * 4d;
+            scanPos += MAF.ranDir() * wv.Radius * 2d;
             mCamera.Scan(scanPos, out entity, out thy);
         }
         int oreScan(ThyDetectedEntityInfo thy, Vector3D aPos, out MyDetectedEntityInfo info, bool update) {

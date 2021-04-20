@@ -77,7 +77,7 @@ namespace IngameScript {
             var dispToDest = Volume.Center - wv.Center;
             mDirToDest = dispToDest;
             mDistToDest = mDirToDest.Normalize();
-            //ctr.logger.log("mDistToDest ", mDistToDest);
+            
             if (Volume.Radius > 0) {
                 Altitude = wv.Radius + Volume.Radius + PADDING;
                 Target = Volume.Center + -mDirToDest * Altitude;
@@ -85,6 +85,10 @@ namespace IngameScript {
                 mDirToDest = dispToDest;
                 mDistToDest = mDirToDest.Normalize();
             }
+            mLog.log("mDistToDest=", mDistToDest);
+            mLog.log(mLog.gps("wv", wv.Center));
+            mLog.log($"Altitude={Altitude}");
+
             //ctr.logger.log("BaseVelocityLength ", BaseVelocityLength);
 
             mPrefVelo = mThrust.PreferredVelocity(mMaxAccelLength, mDistToDest);

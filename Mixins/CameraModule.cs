@@ -36,8 +36,9 @@ namespace IngameScript
             return result;
         }
         public void Sort() {
-            mDetected.Sort((a, b) => b.TimeStamp.CompareTo(a.TimeStamp));
-            mLog.persist("Camera list sorted.");
+            if (onUpdate == null) {
+                mDetected.Sort((a, b) => b.TimeStamp.CompareTo(a.TimeStamp));
+            }
         }
         void ClusterAction() {
             if (mCurrentIncoming == null) {
@@ -53,13 +54,16 @@ namespace IngameScript
                     }
                 } else {
                     //logger.persist("ClusterAction nulling onUpdate");
-                    Sort();
                     onUpdate = null;
+                    Sort();
                 }
             } else {
                 mClusterI--;
                 if (mClusterI < 0) {
                     var thy = new ThyDetectedEntityInfo(mCurrentIncoming.Value);
+                    if (mCurrentIncoming.Value.Type == MyDetectedEntityType.Asteroid) {
+                        mManager.mMachines.Enqueue(thy.asteroidIdentifier(this));
+                    }
                     mDetected.Add(thy);
                     mLookup.Add(mCurrentIncoming.Value.EntityId, thy);
                     mCurrentIncoming = null;
@@ -80,7 +84,7 @@ namespace IngameScript
                     var incomingWV = new BoundingSphereD(mCurrentIncoming.Value.HitPosition.Value, 1.0);
                     var sqdist = (target.WorldVolume.Center - incomingWV.Center).LengthSquared();
                     //logger.persist($"sqdist {sqdist}");
-                    if (sqdist < 1048576) {
+                    if (sqdist < 2359296) {
                         //logger.persist($"adding to cluster");
                         target.Cluster(incomingWV);
                         mClusterLookup[mCurrentIncoming.Value.EntityId] = target.EntityId;
@@ -89,6 +93,9 @@ namespace IngameScript
                 }
             } else {
                 var thy = new ThyDetectedEntityInfo(mCurrentIncoming.Value);
+                if (mCurrentIncoming.Value.Type == MyDetectedEntityType.Asteroid) {
+                    mManager.mMachines.Enqueue(thy.asteroidIdentifier(this));
+                }
                 mDetected.Add(thy);
                 mLookup.Add(thy.EntityId, thy);
                 mCurrentIncoming = null;
@@ -124,13 +131,13 @@ namespace IngameScript
 
         
         public void DeleteRecord(ThyDetectedEntityInfo aEntity) {
-            if (mIncoming.Count > 0) {
-                mLog.persist($"Clustering in process please wait to delete."); 
-            } else {
+            if (onUpdate == null) {
                 mDetected.Remove(aEntity);
                 mLookup.Remove(aEntity.EntityId);
                 mClusterLookup.Remove(aEntity.EntityId);
                 mLog.persist("Deleted");
+            } else {
+                mLog.persist($"Clustering in process please wait to delete.");
             }
         }
         /*Menu EntityGPS(MenuModule aMain, object aState) {

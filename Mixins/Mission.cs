@@ -8,24 +8,31 @@ namespace IngameScript
     /// Clustering Orbital Collision Mitigation
     /// </summary>
     class Mission : APMission {
-
+        Vector3D mStart;
+        Vector3D mDest;
         public Mission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) :  base(aManager, aEntity) { }
             
 
         public Mission(ModuleManager aManager, Vector3D aPos) : base(aManager, null) {
+            mStart = mController.Volume.Center;
+            mDest = aPos;
             mDestination = new BoundingSphereD(aPos, 1d);
             var disp = aPos - mController.Volume.Center;
             var dir = disp;
             dir.Normalize();
-            mGyro.SetTargetDirection(dir);
+            //mGyro.SetTargetDirection(dir);
+            mGyro.SetTargetDirection(Vector3D.Zero);
         }
 
         public override void Update() {
             base.Update();
+            mLog.log(mLog.gps("mDestination", mDestination.Center));
+            mLog.log(mLog.gps("mStart", mStart));
+            mLog.log(mLog.gps("mDest", mDest));
             if (mDistToDest < mController.Volume.Radius) {
                 mThrust.Damp = true;
-                Complete = true;
             } else {
+                //FlyTo();
                 collisionDetectTo();
             }
         }

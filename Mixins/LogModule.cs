@@ -126,7 +126,7 @@ namespace IngameScript {
             } else if (c == 0) {
                 pcount = 0;
             }
-            mPersistent.Add($"c{mManager.mLag.Current:f4} a{mManager.mLag.Value:f4} - {aMessage}");
+            mPersistent.Add(aMessage);
         }
         public string get() {
             for (int i = 0; i < mPersistent.Count; i++) {

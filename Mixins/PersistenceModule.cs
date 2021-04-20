@@ -18,7 +18,7 @@ namespace IngameScript {
             var s = new Serialize();
             var one = false;
             foreach (var p in mKeys) {
-                mLog.persist("Saving " + p.Key);
+                //mLog.persist("Saving " + p.Key);
                 if (one) {
                     s.mod();
                 }

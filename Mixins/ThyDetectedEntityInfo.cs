@@ -38,10 +38,10 @@ namespace IngameScript {
         public BoundingSphereD WorldVolume { get; private set; }
         public DateTime TimeStamp { get; private set; }
         public Vector3D Position => WorldVolume.Center;
-        public ThyDetectedEntityInfo() { }
-        public ThyDetectedEntityInfo(Vector3D aTarget) {
+        //public ThyDetectedEntityInfo() { }
+        /*public ThyDetectedEntityInfo(Vector3D aTarget) {
             WorldVolume = new BoundingSphereD(aTarget, 100);
-        }
+        }*/
         public void Seen(MyDetectedEntityInfo entity) {
             switch (Type) {
                 case ThyDetectedEntityType.Asteroid:
@@ -75,6 +75,48 @@ namespace IngameScript {
             WorldVolume = aSphere;
         }
 
+        public IEnumerator<bool> asteroidIdentifier(CameraModule aCam) {
+            var radiusInc = 10d;
+            var radius = radiusInc;
+            var angleInc = MathHelperD.Pi / 9d;
+            var angle = 0d;
+            int hits = 0;
+            MatrixD m;
+            Vector3D dir2rock;
+            Vector3D perp;
+            Vector3D scan;
+            MyDetectedEntityInfo entity;
+            ThyDetectedEntityInfo thy;
+            while (true) {
+                angle += angleInc;
+                
+                if (angle > MathHelperD.TwoPi) {
+                    angle = 0;
+                    radius += radiusInc;
+                    if (hits == 0) {
+                        yield return false;
+                    }
+                    if (radius > 1000) {
+                        yield return false;
+                    }
+                    hits = 0;
+                }
+                dir2rock = WorldVolume.Center - aCam.Volume.Center;
+                Vector3D.Normalize(ref dir2rock, out dir2rock);
+                dir2rock.CalculatePerpendicularVector(out perp);
+                MatrixD.CreateFromAxisAngle(ref dir2rock, angle, out m);
+                Vector3D.Rotate(ref perp, ref m, out perp);
+                scan = WorldVolume.Center + perp * radius;
+                while (!aCam.Scan(scan, out entity, out thy, 250d)) {
+                    yield return true;
+                }
+                if (entity.HitPosition.HasValue) {
+                    hits++;
+                }
+                yield return true;
+            }
+        }
+
         public  ThyDetectedEntityInfo(MyDetectedEntityInfo aEntity) {
             EntityId = aEntity.EntityId;
             Name = aEntity.Name;
@@ -84,7 +126,8 @@ namespace IngameScript {
             Velocity = aEntity.Velocity;
             Relationship = aEntity.Relationship;
             TimeStamp = DateTime.Now;
-            WorldVolume = new BoundingSphereD(aEntity.HitPosition.Value, 1.0);
+            WorldVolume = new BoundingSphereD(aEntity.HitPosition.Value, 10.0);
+            WorldVolume = WorldVolume.Include(new BoundingSphereD(aEntity.BoundingBox.Center, 10.0));
         }
 
         public void SetName(string aName) {

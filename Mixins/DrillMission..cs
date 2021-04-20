@@ -41,7 +41,6 @@ namespace IngameScript {
             if (mATC.connected) {
                 mThrust.Damp = false;
             }
-
             mMissionAsteroid = aAsteroid;
             mMissionTarget = aTarget;
             var disp2center = mMissionAsteroid.Center - mMissionTarget;
@@ -262,7 +261,7 @@ namespace IngameScript {
                 var wv = mController.Volume;
                 var com = mController.Remote.CenterOfMass;
                 var ms = mATC.Mother;
-                var dockPos = MAF.local2pos((mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * (mController.Volume.Radius * 2d), ms.Matrix);
+                var dockPos = MAF.local2pos((mATC.Dock.theConnector * 2.5) + mATC.Dock.ConnectorDir * ms.Sphere.Radius, ms.Matrix);
                 Vector3D dir;
                 double dif;
                 var plane = orbitPlane(out dir, out dif);

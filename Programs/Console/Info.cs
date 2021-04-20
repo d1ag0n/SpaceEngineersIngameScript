@@ -8,6 +8,26 @@ using IngameScript;
 
 namespace commandline {
 
+    interface IFastCallback {
+        void Run();
+    }
+    static class FastCaller {
+        public static void Run<T>(ref T callback) where T : IFastCallback {
+            callback.Run();
+        }
+    }
+    struct DoThing : IFastCallback {
+        public void Run() {
+            // do yo thing
+        }
+    }
+    class fooo {
+        public void doIt() {
+            // ...
+            var doit = new DoThing();
+            FastCaller.Run(ref doit);
+        }
+    }
 
     public delegate foo CreateDel(string name);
     public abstract class foo {
