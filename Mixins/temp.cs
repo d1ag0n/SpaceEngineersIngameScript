@@ -9,7 +9,8 @@ namespace IngameScript {
         }
         public class foo {
             public foo(GyroModule g) {
-                
+
             }
+        }
     }
 }

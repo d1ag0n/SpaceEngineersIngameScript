@@ -2,7 +2,6 @@ using System;
 using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System.Collections.Generic;
-using VRage.Game.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 
 namespace IngameScript {
@@ -10,9 +9,10 @@ namespace IngameScript {
 
         readonly Dictionary<long, GravDrive> mAM2GD = new Dictionary<long, GravDrive>();
         readonly List<GravDrive> mDrives = new List<GravDrive>();
-
+        readonly ShipControllerModule mController;
         public GravDriveModule(ModuleManager aManager) : base(aManager) {
-            onUpdate = update;
+            onUpdate = init;
+            aManager.GetModule(out mController);
         }
 
         public override bool Accept(IMyTerminalBlock aBlock) {
@@ -66,38 +66,10 @@ namespace IngameScript {
                 pos += d;
 
             }
-            var end = pos;
-
-            mLog.persist($"end={end}");
-            /*
-            var top = start;
-            var bottom = end;
-
-            if (end.X > top.X) {
-                top.X = end.X;
-            }
-            if (end.Y > top.Y) {
-                top.Y = end.Y;
-            }
-            if (end.Z > top.Z) {
-                top.Z = end.Z;
-            }
-            if (start.X < bottom.X) {
-                bottom.X = start.X;
-            }
-            if (start.Y < bottom.Y) {
-                bottom.Y = start.Y;
-            }
-            if (start.Z < bottom.Z) {
-                bottom.Z = start.Z;
-            }*/
-            var points = new Vector3I[2] { start, end };
-            var bb = BoundingBoxI.CreateFromPoints(points);
-            var ri = new Vector3I_RangeIterator(ref bb.Min, ref bb.Max);
             
-
-
-            drive = new GravDrive(this);
+            var bb = BoundingBoxI.CreateFromPoints(new Vector3I[2] { start, pos });
+            var ri = new Vector3I_RangeIterator(ref bb.Min, ref bb.Max);
+            drive = new GravDrive(this, bb.Size.X + 1);
             drive.AddGenerator(gg);
             while (ri.IsValid()) {
                 mAM2GD.Add(identifyAM(drive, ri.Current).EntityId, drive);
@@ -128,11 +100,68 @@ namespace IngameScript {
                 pos += dir;
             }
         }
-
-        void update() {
-            for (int i = 0; i < mDrives.Count; i++) {
-                mLog.log($"{i + 1}: {mDrives[i].info}");
+        void init() {
+            foreach (var d in mDrives) {
+                d.init();
             }
+            onUpdate = update;
+        }
+        void update() {
+            if (mController == null) {
+                mLog.log("no controller");
+                return;
+            }
+            if (mController.Remote == null) {
+                mLog.log("no remote");
+                return;
+            }
+            
+            var m = mController.Remote.CalculateShipMass().PhysicalMass;
+            var com = MAF.world2pos(mController.Remote.CenterOfMass, Grid.WorldMatrix);
+
+            GravDrive weakest, d0, d1;
+            weakest = d0 = d1 = null;
+            Vector3D accel;
+            var t = double.MaxValue;
+            var dir = Vector3D.Up;
+
+            for (int i = 0; i < mDrives.Count; i++) {
+                var d = mDrives[i];
+                d.prep(dir, com, m);
+                if (d.mTorque < t) {
+                    t = d.mTorque;
+                    if (weakest != null) {
+                        if (d0 == null) {
+                            d0 = weakest;
+                        } else {
+                            d1 = weakest;
+                        }
+                    }
+                    weakest = d;
+                } else {
+                    if (d0 == null) {
+                        d0 = d;
+                    } else {
+                        d1 = d;
+                    }
+                }
+            }
+            
+            // virtual artificial center of mass
+            var vACoM = d1.mACoM + (d0.mACoM - d1.mACoM) / 2d;
+            var pvACoM = MAF.orthoProject(vACoM, com, dir);
+            var vMoment = Vector3D.Distance(pvACoM, com);
+            var vAccel = 2d * (d0.mMaxAccelLen < d1.mMaxAccelLen ? d0.mMaxAccelLen : d1.mMaxAccelLen);
+            var vTorque = vMoment * vAccel;
+
+            if (vTorque > weakest.mTorque) {
+                weakest.accel(dir);
+
+            } else {
+
+            }
+            
+
         }
     }
 }

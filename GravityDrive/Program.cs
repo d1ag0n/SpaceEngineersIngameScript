@@ -21,9 +21,12 @@ using VRageMath;
 namespace IngameScript {
     public partial class Program : MyGridProgram {
         ModuleManager mManager;
+        
         public Program() {
             mManager = new ModuleManager(this, "Gravity Drive", "logConsole");
+            new ShipControllerModule(mManager);
             new GravDriveModule(mManager);
+            
             mManager.Initialize();
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }

@@ -20,9 +20,12 @@ namespace IngameScript {
         public BlockDirList() {
             for (int i = 0; i < 6; i++) mLists[i] = new List<T>();
         }
-        public void Add(T aBlock) {
-            aBlock.CustomName = aBlock.Orientation.Forward.ToString();
-            mLists[(int)aBlock.Orientation.Forward].Add(aBlock);
+        public void Add(T aBlock, Base6Directions.Direction direction = Base6Directions.Direction.Forward) {
+            if (direction != Base6Directions.Direction.Forward) {
+                direction = aBlock.Orientation.TransformDirection(direction);
+            }
+            aBlock.CustomName = direction.ToString();
+            mLists[(int)direction].Add(aBlock);
             
         }
      

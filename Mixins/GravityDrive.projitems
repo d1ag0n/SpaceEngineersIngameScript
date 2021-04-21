@@ -16,8 +16,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MissionBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />
   </ItemGroup>
 </Project>

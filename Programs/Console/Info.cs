@@ -59,6 +59,7 @@ namespace commandline {
         static Random r = new Random();
         static Vector3D ranDir() => Vector3D.Normalize(new Vector3D(r.NextDouble(), r.NextDouble(), r.NextDouble()));
         static void rantan() {
+            var spot = Math.Sin(MathHelperD.PiOver4);
             var f = Vector3D.Forward;
             List<Vector3D> listv = new List<Vector3D>();
             List<double> listd = new List<double>();
