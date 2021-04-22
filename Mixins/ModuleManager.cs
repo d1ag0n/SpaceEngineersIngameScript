@@ -97,11 +97,17 @@ namespace IngameScript {
                         }
                     } else {
                         mLog.log("Running Machine");
-                        
-                        if (!mMachine.MoveNext() || !mMachine.Current) {
+                        try {
+
+                            if (!mMachine.MoveNext() || !mMachine.Current) {
+                                mMachine.Dispose();
+                                mMachine = null;
+                                mLog.persist("Machine Completed");
+                            }
+                        } catch (Exception ex) {
+                            mLog.persist(ex.ToString());
                             mMachine.Dispose();
                             mMachine = null;
-                            mLog.persist("Machine Completed");
                         }
                     }
                     
@@ -110,6 +116,8 @@ namespace IngameScript {
                         try {
                             if (m.Active) {
                                 m.onUpdate?.Invoke();
+                            } else {
+                                mLog.log($"{m} inactive.");
                             }
                         } catch (Exception ex) {
                             mLog.persist(m.ToString() + ex.ToString());

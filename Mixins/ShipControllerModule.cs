@@ -67,9 +67,7 @@ namespace IngameScript {
 
 
         public ShipControllerModule(ModuleManager aManager) :base (aManager) {
-            if (!aManager.Mother) {
-                
-            }
+            Active = true;
 
             
             

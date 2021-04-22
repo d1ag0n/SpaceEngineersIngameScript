@@ -57,7 +57,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Serialize.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)temp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThyDetectedEntityInfo.cs" />

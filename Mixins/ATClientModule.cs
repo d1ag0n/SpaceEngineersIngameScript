@@ -25,7 +25,7 @@ namespace IngameScript {
             aManager.GetModule(out mController);
             aManager.GetModule(out mCom);
             aManager.GetModule(out mThrust);
-
+            Active = true;
             onUpdate = UpdateAction;
             lastRegistration = -60d;
 

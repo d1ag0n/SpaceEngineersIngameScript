@@ -9,6 +9,7 @@ namespace IngameScript {
         public Envelope(double aTime, MyIGCMessage aMessage) {
             Time = aTime;
             Message = aMessage;
+            
         }
     }
     public class GridComModule : Module<IMyRadioAntenna> {
@@ -25,6 +26,7 @@ namespace IngameScript {
             mBroadcastMgr = new SubscriptionManager(this);
             onIGC = MailCall;
             onUpdate = Update;
+            Active = true;
         }
         public void SubscribeUnicast(string tag, IGCHandler h) {
             if (mUnicastMgr.Subscribe(tag, h))

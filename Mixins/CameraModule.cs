@@ -25,6 +25,7 @@ namespace IngameScript
             //onSave = SaveAction;
             //onLoad = LoadAction;
             onUpdate = ClusterAction;
+            Active = true;
         }
         public ThyDetectedEntityInfo Find(long entityId) {
             ThyDetectedEntityInfo result;

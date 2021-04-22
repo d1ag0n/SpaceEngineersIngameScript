@@ -17,12 +17,15 @@ namespace IngameScript {
             aManager.GetModule(out mCom);
             aManager.GetModule(out mController);
             onUpdate = UpdateAction;
+            Active = true;
         }
 
         public override bool Accept(IMyTerminalBlock aBlock) => false;
         DateTime lastUpdate = DateTime.MinValue;
         void UpdateAction() {
-
+            if (mController.Remote == null) {
+                return;
+            }
             var time = DateTime.Now;
             if ((time - lastUpdate).TotalSeconds > 1.0) {
                 var v = mController.ShipVelocities.LinearVelocity;

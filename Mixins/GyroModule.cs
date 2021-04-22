@@ -119,14 +119,9 @@ namespace IngameScript
 
         void UpdateAction() {
             mLog.log("Gyro Update");
-            if (!Active) {
-                mLog.log("Gyro not active");
-                return;
-            }
             var sc = mController.Remote;
             if (sc == null) {
                 init();
-                mLog.log("Gyro no remote");
                 return;
             }
             var m = NavBlock == null ? mController.Remote.WorldMatrix : NavBlock.WorldMatrix;
@@ -139,10 +134,8 @@ namespace IngameScript
             }
             if (mTargetDirection.IsZero()) {
                 init();
-                mLog.log("Gyro dir zip");
                 return;
             }
-            mLog.log("Gyro Working");
             double pitch, yaw;
 
             var sv = mController.ShipVelocities;

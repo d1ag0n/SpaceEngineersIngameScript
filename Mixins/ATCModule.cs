@@ -20,6 +20,7 @@ namespace IngameScript
             mCom.SubscribeUnicast("Dock", dockMessage);
             mCom.SubscribeUnicast("Registration", registrationMessage);
             onUpdate = UpdateAction;
+            Active = true;
         }
         void UpdateAction() {
             foreach (var c in mConnectors) {
