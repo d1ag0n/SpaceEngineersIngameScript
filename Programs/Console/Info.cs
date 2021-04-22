@@ -58,7 +58,39 @@ namespace commandline {
         }
         static Random r = new Random();
         static Vector3D ranDir() => Vector3D.Normalize(new Vector3D(r.NextDouble(), r.NextDouble(), r.NextDouble()));
+        static string powerValue = " kMGTPEZY";
+        static string displayLargeNumber(float number) {
+            if (float.IsNaN(number))
+                return "NaN";
+            if (float.IsInfinity(number))
+                return "Infinity";
+            int mag = (int)MathHelperD.Clamp(Math.Floor(Math.Log10(number)) / 3, 0, powerValue.Length - 1);
+            double divisor = Math.Pow(10, mag * 3);            
+            return $"{number / divisor:f0}{powerValue[mag]}";
+        }
+        static string DisplayLargeNumber(float number) {
+            if (float.IsNaN(number))
+                return "NaN";
+            if (float.IsInfinity(number))
+                return "Infinity";
+            string powerValue = " kMGTPEZY";
+            float result = number;
+            int ordinal = 0;
+            while (ordinal < powerValue.Length - 1 && result >= 1000) {
+                result /= 1000;
+                ordinal++;
+            }
+            string resultString = Math.Round(result, 1, MidpointRounding.AwayFromZero).ToString();
+            if (ordinal > 0) {
+                resultString += " " + powerValue[ordinal];
+            }
+            return resultString;
+        }
         static void rantan() {
+            var d1 = displayLargeNumber(1000000000000000000000000000000f);
+            var ew = DisplayLargeNumber(1000000000000000000000000000000f);
+            var inf = displayLargeNumber(float.PositiveInfinity);
+            return;
             var spot = Math.Sin(MathHelperD.PiOver4);
             var f = Vector3D.Forward;
             List<Vector3D> listv = new List<Vector3D>();

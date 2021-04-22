@@ -51,7 +51,6 @@ namespace IngameScript {
                 // cursor is now at "front right"
                 if (start == Vector3I.Zero) {
                     start = pos;
-                    mLog.persist($"start={start}");
                 }
                 // move all the way to the "left"
                 identifyMove(ref pos, -r);
@@ -70,6 +69,8 @@ namespace IngameScript {
             var bb = BoundingBoxI.CreateFromPoints(new Vector3I[2] { start, pos });
             var ri = new Vector3I_RangeIterator(ref bb.Min, ref bb.Max);
             drive = new GravDrive(this, bb.Size.X + 1);
+            mDrives.Add(drive);
+            drive.index = mDrives.Count;
             drive.AddGenerator(gg);
             while (ri.IsValid()) {
                 mAM2GD.Add(identifyAM(drive, ri.Current).EntityId, drive);
@@ -77,7 +78,7 @@ namespace IngameScript {
             }
 
             
-            mDrives.Add(drive);
+            
         }
         IMyArtificialMassBlock identifyAM(GravDrive drive, Vector3I pos) {
             var sb = Grid.GetCubeBlock(pos);
@@ -106,6 +107,8 @@ namespace IngameScript {
             }
             onUpdate = update;
         }
+        //Vector3D dir = MAF.ranDir();
+        Vector3D dir = Vector3D.Forward;
         void update() {
             if (mController == null) {
                 mLog.log("no controller");
@@ -121,9 +124,9 @@ namespace IngameScript {
 
             GravDrive weakest, d0, d1;
             weakest = d0 = d1 = null;
-            Vector3D accel;
+            //Vector3D accel;
             var t = double.MaxValue;
-            var dir = Vector3D.Up;
+            //var dir = Vector3D.Backward;
 
             for (int i = 0; i < mDrives.Count; i++) {
                 var d = mDrives[i];
@@ -146,19 +149,49 @@ namespace IngameScript {
                     }
                 }
             }
+
+            mLog.log(mLog.gps("weakest", MAF.local2pos(weakest.mACoM, Grid.WorldMatrix)));
+            mLog.log(mLog.gps("d0", MAF.local2pos(d0.mACoM, Grid.WorldMatrix)));
+            mLog.log(mLog.gps("d1", MAF.local2pos(d1.mACoM, Grid.WorldMatrix)));
+
+            var weakest2com = com - weakest.mACoM;
+            var weakest2d0 = d0.mACoM - weakest.mACoM;
+            var d02d1 = d1.mACoM - d0.mACoM;
+
+            var C = MAF.angleBetween(weakest2com, weakest2d0);
+            mLog.log($"C={C:f3}");
+            var A = MAF.angleBetween(-weakest2d0, d02d1);
+            mLog.log($"A={A:f3}");
+            var b = weakest2d0.Length();
+            mLog.log($"b={b:f3}");
+            var B = MathHelperD.Pi - A - C;
+            mLog.log($"B={B:f3}");
+            var c = (b * Math.Sin(C)) / Math.Sin(B);
+            mLog.log($"c={c:f3}");
+            // virtual artificial center of mass 
+            //var vACoM = d1.mACoM + (d0.mACoM - d1.mACoM) / 2d;
+            d02d1.Normalize();
+            // virtual artificial center of mass modified
             
-            // virtual artificial center of mass
-            var vACoM = d1.mACoM + (d0.mACoM - d1.mACoM) / 2d;
+            var vACoM = d0.mACoM + d02d1 * c;
+            mLog.log(mLog.gps("vACoM", MAF.local2pos(vACoM, Grid.WorldMatrix)));
             var pvACoM = MAF.orthoProject(vACoM, com, dir);
             var vMoment = Vector3D.Distance(pvACoM, com);
             var vAccel = 2d * (d0.mMaxAccelLen < d1.mMaxAccelLen ? d0.mMaxAccelLen : d1.mMaxAccelLen);
             var vTorque = vMoment * vAccel;
 
             if (vTorque > weakest.mTorque) {
-                weakest.accel(dir);
+                mLog.log("expected");
+                
+                var accel = weakest.mTorque / vMoment;
 
+                var d0accel = accel / c;
+                var d1accel = accel - d0accel;
+                weakest.accel(dir, m);
+                d0.accel(dir * d0accel, m);
+                d1.accel(dir * d1accel, m);
             } else {
-
+                mLog.log("unexpected");
             }
             
 

@@ -25,11 +25,19 @@ namespace IngameScript {
             mManager.Drill = true;
             new ShipControllerModule(mManager);
             new GridComModule(mManager);
-            new GyroModule(mManager);
-            new ThrustModule(mManager);
+            var g = new GyroModule(mManager);
+            var t = new ThrustModule(mManager);
             new CameraModule(mManager);
-            new ATClientModule(mManager);
+            var c = new ATClientModule(mManager);
             mManager.Initialize();
+            var list = new List<IMyShipDrill>();
+            mManager.getByType(list);
+            foreach (var d in list) {
+                d.Enabled = false;
+            }
+            if (c.connected) {
+                t.Damp = false;
+            }
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
         public void Main(string arg, UpdateType aType) => mManager.Update(arg, aType);

@@ -47,6 +47,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)OrbitMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Ore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OreDeleteMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OreDetectorModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OreListMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OreMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PeriscopeMenu.cs" />

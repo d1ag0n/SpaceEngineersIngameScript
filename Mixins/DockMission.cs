@@ -9,7 +9,8 @@ namespace IngameScript {
     class DockMission : APMission {
 
         protected readonly ATClientModule mATC;
-        
+        protected readonly GyroModule mGyro;
+
         BoxInfo BoxCurrent;
         bool needTarget = true;
         Vector3D drillStart;
@@ -19,6 +20,7 @@ namespace IngameScript {
         Action onUpdate;
         public DockMission(ModuleManager aManager) : base(aManager, default(BoundingSphereD)) {
             aManager.GetModule(out mATC);
+            aManager.GetModule(out mGyro);
             onUpdate = reserve;
         }
 

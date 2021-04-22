@@ -10,10 +10,12 @@ namespace IngameScript
     class Mission : APMission {
         Vector3D mStart;
         Vector3D mDest;
+        protected readonly GyroModule mGyro;
         public Mission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) :  base(aManager, aEntity) { }
             
 
         public Mission(ModuleManager aManager, Vector3D aPos) : base(aManager, null) {
+            aManager.GetModule(out mGyro);
             mStart = mController.Volume.Center;
             mDest = aPos;
             mDestination = new BoundingSphereD(aPos, 1d);

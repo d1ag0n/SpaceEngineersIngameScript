@@ -97,8 +97,8 @@ namespace IngameScript {
                         }
                     } else {
                         mLog.log("Running Machine");
-                        mMachine.MoveNext();
-                        if (!mMachine.Current) {
+                        
+                        if (!mMachine.MoveNext() || !mMachine.Current) {
                             mMachine.Dispose();
                             mMachine = null;
                             mLog.persist("Machine Completed");
@@ -108,7 +108,9 @@ namespace IngameScript {
                     for (int i = 0; i < mUpdateModules.Count; i++) {
                         var m = mUpdateModules[i];
                         try {
-                            m.onUpdate?.Invoke();
+                            if (m.Active) {
+                                m.onUpdate?.Invoke();
+                            }
                         } catch (Exception ex) {
                             mLog.persist(m.ToString() + ex.ToString());
                         }

@@ -35,7 +35,7 @@ namespace IngameScript {
             var mods = aStorage.Split(Serialize.MODSEP);
             foreach (var mod in mods) {
                 var grps = mod.Split(Serialize.GRPSEP);
-                mLog.persist("loaded data key " + grps[0]);
+                //mLog.persist("loaded data key " + grps[0]);
                 if (!moduleEntries.TryGetValue(grps[0], out work)) {
                     work = new List<string>();
                     moduleEntries.Add(grps[0], work);
@@ -45,7 +45,7 @@ namespace IngameScript {
             foreach (var p in mKeys) {
                 if (moduleEntries.TryGetValue(p.Key, out work)) {
                     foreach (var data in work) {
-                        mLog.persist("passing data to " + p.Key);
+                        //mLog.persist("passing data to " + p.Key);
                         p.Value.Load(s, data);
                     }
                 }

@@ -9,14 +9,13 @@ namespace IngameScript {
     public  class OrbitMission : APMission {
         
         readonly List<IMyOreDetector> mDetectors = new List<IMyOreDetector>();
-
+        protected readonly GyroModule mGyro;
         readonly Vector3D mOriginalOrbit;
         readonly Vector3D mOriginalPerp;
-        
+        readonly OreDetectorModule mOre;
         MatrixD mRotOrbit;
         Vector3D mOrbit;
         Vector3D mPerp;
-        int updateIndex;
         int orbitIncrements;
         int incrementsSince;
         Action onScan;
@@ -49,10 +48,11 @@ namespace IngameScript {
         /// <summary>position on the far side of the thing</summary>
         Vector3D mOrbitPos => mEntity.WorldVolume.Center + mOrbit * space;
 
-        // this orbit is okayish I hope testing now
+        // this orbit is okayish
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
         public OrbitMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager, aEntity) {
+            aManager.GetModule(out mGyro);
             mOrbit = mOriginalOrbit = Vector3D.Normalize(mController.Volume.Center - mEntity.Position);
             mOriginalOrbit.CalculatePerpendicularVector(out mOriginalPerp);
             mPerp = mOriginalPerp;
@@ -70,7 +70,8 @@ namespace IngameScript {
             if (onScan == analyzeScan) {
                 incrementsSince++;
                 if (incrementsSince > 5) {
-                    onScan = updateScan;
+                    incrementsSince = 0;
+                    OreDetectorModule.UpdateScan(mManager, mEntity);
                 }
             }
             orbitIncrements++;
@@ -126,44 +127,7 @@ namespace IngameScript {
             
         }
         
-        void updateScan() {
-            if (mEntity.mOres.Count > updateIndex) {
-                var ore = mEntity.mOres[updateIndex];
-                MyDetectedEntityInfo info;
-                MyDetectedEntityInfo entity;
-                ThyDetectedEntityInfo thy;
-                if (mCamera.Scan(ore.Location, out entity, out thy)) {
-                    if (entity.HitPosition.HasValue) {
-                        var hit = entity.HitPosition.Value;
-                        // todo DP of approach to make sure it's on the correct side
-                        if (ore.BestApproach.IsZero()) {
-                            ore.BestApproach = hit;
-                            mEntity.mOres[updateIndex] = ore;
-                        } else {
-                            var curApp = (ore.BestApproach - ore.Location).LengthSquared();
-                            var newApp = (ore.Location - hit).LengthSquared();
-                            if (newApp < curApp) {
-                                ore.BestApproach = hit;
-                                mEntity.mOres[updateIndex] = ore;
-                            }
-                        }
-                    }
-                } else {
-                    mLog.persist(mLog.gps("ExpectedSuccess", ore.Location));
-                }
-                
-                var scanResult = oreScan(mEntity, ore.Location, out info, true);
-                if (scanResult == 1) {
-                    mEntity.mOres.RemoveAtFast(updateIndex);
-                    mLog.persist(mLog.gps("removed", ore.Location));
-                } else if (scanResult > 1) {
-                    updateIndex++;
-                }
-            } else {
-                incrementsSince = updateIndex = 0;
-                onScan = analyzeScan;
-            }
-        }
+        
         void analyzeScan() {
             mLog.log($"analyzeScan - ore count {mEntity.mOres.Count}");
             var wv = mController.Volume;
@@ -185,44 +149,12 @@ namespace IngameScript {
             mCamera.Scan(scanPos, out entity, out thy);
             if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
                 MyDetectedEntityInfo info;
-                oreScan(thy, scanPos, out info, false);
+                mOre.Scan(thy, scanPos, out info, false);
             }
             scanPos = wv.Center + mController.LinearVelocityDirection * wv.Radius * 4d;
             scanPos += MAF.ranDir() * wv.Radius * 2d;
             mCamera.Scan(scanPos, out entity, out thy);
         }
-        int oreScan(ThyDetectedEntityInfo thy, Vector3D aPos, out MyDetectedEntityInfo info, bool update) {
-            int result = 0;
-            info = default(MyDetectedEntityInfo);
-            foreach (var detector in mDetectors) {
-                var range = detector.GetValue<double>("AvailableScanRange");
-                range *= range;
-                var disp = detector.WorldMatrix.Translation - aPos;
-                var dist = disp.LengthSquared();
-                if (dist >= range) {
-                    continue;
-                }
-                
-                detector.SetValue("RaycastTarget", aPos);
-                info = detector.GetValue<MyDetectedEntityInfo>(update ? "DirectResult" : "RaycastResult");
-
-                if (info.TimeStamp != 0) {
-                    result = 1;
-                    if (info.Name != "") {
-                        result = 2;
-                        if (thy.AddOre(info)) {
-                            result = 3;
-                            mLog.persist($"New {info.Name} Deposit found!");
-                        }
-                    }
-                    break;
-                } else {
-                    mLog.persist("ORE Timestamp Zero");
-                }
-                //detector.SetValue("ScanEpoch", 0L);
-                //throw new Exception("shouldnt be able to write ScanEpoch");
-            }
-            return result;
-        }
+        
     }
 }

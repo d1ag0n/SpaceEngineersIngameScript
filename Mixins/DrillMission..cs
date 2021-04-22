@@ -17,7 +17,7 @@ namespace IngameScript {
         //readonly Vector3D mMissionApproach;
         readonly Vector3D mMissionDirection;
         readonly ATClientModule mATC;
-        
+        readonly GyroModule mGyro;
 
         bool mCancel = false;
         Action onUpdate;
@@ -38,6 +38,8 @@ namespace IngameScript {
 
         public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget, Vector3D aBestApproach) : base(aManager, aAsteroid) {
             aManager.GetModule(out mATC);
+            aManager.GetModule(out mGyro);
+
             if (mATC.connected) {
                 mThrust.Damp = false;
             }
@@ -329,13 +331,13 @@ namespace IngameScript {
             mThrust.Acceleration = dir - mController.LocalLinearVelo;
             return dist;
         }
-        void startDrill() {
+        public void startDrill() {
             foreach (var d in mDrill) {
                 d.Enabled = true;
             }
             mGyro.Roll = 0.19f;
         }
-        void stopDrill() {
+        public void stopDrill() {
             foreach (var d in mDrill) {
                 d.Enabled = false;
             }

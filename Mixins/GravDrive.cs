@@ -16,6 +16,7 @@ namespace IngameScript {
         double mMass;
         readonly ShipControllerModule mController;
         double[] forces = new double[6];
+        public int index;
         public GravDrive(GravDriveModule aGrav, int aSize) {
             mModule = aGrav;
             mSize = aSize;
@@ -25,12 +26,12 @@ namespace IngameScript {
             if (mMasses.Contains(am)) {
                 throw new Exception("Artificial mass already a member of this drive.");
             }
-            am.Enabled =
+            am.Enabled = true;
             am.ShowInTerminal = false;
             mMasses.Add(am);
-            
-
-            if (mMasses.Count == 1) {
+            var cnt = mMasses.Count;
+            am.CustomName = $"Drive {index} AM {cnt}";
+            if (cnt == 1) {
                 mBBMass = getBB(am);
             } else {
                 mBBMass = mBBMass.Include(getBB(am));
@@ -46,6 +47,8 @@ namespace IngameScript {
             gg.ShowOnHUD = false;
             gg.ShowInTerminal = false;
             gg.GravityAcceleration = 0f;
+            gg.Enabled = true;
+            gg.CustomName = $"Drive {index} GG " + gg.CustomName;
         }
         public void init() {
             mMass = 50000d * mSize;
@@ -136,7 +139,83 @@ namespace IngameScript {
             mMaxAccelLen = mMaxAccel.Length();
             mTorque = mMaxAccelLen * mMomentArm;
         }
-        public void accel(Vector3D accel) {
+        // Forward = 0,
+        // Backward = 1,
+        // Left = 2,
+        // Right = 3,
+        // Up = 4,
+        // Down = 5
+        public void accel(Vector3D accel, double mass) {
+            
+            var fr = 1d;
+            var f = 0;
+            if (accel.Z > 0) {
+                f = 1;
+            }
+
+            var lr = 1d;
+            var l = 2;
+            if (accel.X > 0) {
+                l = 3;
+            }
+            
+            var ur = 1d;
+            var u = 4;
+            if (accel.Y < 0) {
+                u = 5;
+            }
+
+            if (forces[f] == 0) {
+                fr = -1d;
+                if (f == 1) {
+                    f = 0;
+                } else {
+                    f = 1;
+                }
+            }
+
+            if (forces[l] == 0) {
+                lr = -1d;
+                if (l == 2) {
+                    l = 3;
+                } else {
+                    l = 2;
+                }
+            }
+
+            if (forces[u] == 0) {
+                ur = -1d;
+                if (u == 4) {
+                    u = 5;
+                } else {
+                    u = 4;
+                }
+            }
+
+            for (int i = 0; i < 6; i++) {
+                var list = mLists[i];
+                if (list.Count > 0) {
+
+                    var d = list[0];
+                    double F;
+                    double fact = 0;
+                    if (i == f) {
+                        F = mass * Math.Abs(accel.Z);
+                        fact = fr;
+                    } else if (i == l) {
+                        F = mass * Math.Abs(accel.X);
+                        fact = lr;
+                    } else if (i == u) {
+                        F = mass * Math.Abs(accel.Y);
+                        fact = ur;
+                    } else {
+                        d.GravityAcceleration = 0f;
+                        continue;
+                    }
+                    d.GravityAcceleration = (float)(F / mMass) * (float)fact;
+                }
+            }
+            
 
         }
     }

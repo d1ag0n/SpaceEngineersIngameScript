@@ -26,7 +26,10 @@ namespace IngameScript {
                 }
             } else {
                 if (mEntity.Type == ThyDetectedEntityType.Asteroid || mEntity.Type == ThyDetectedEntityType.AsteroidCluster) {
-                    mItems.Add(new MenuItem("Check Ores"));
+                    mItems.Add(new MenuItem("Check Ores", () => {
+                        OreDetectorModule.UpdateScan(mManager, mEntity);
+                        return this;
+                    }));
                 }
                 mItems.Add(new MenuItem("Delete", () => new OreDeleteMenu(mMenuModule, mEntity)));
             }
