@@ -15,6 +15,14 @@ namespace IngameScript {
         }
 
         public override List<MenuItem> GetPage() {
+            if (mPeriscope == null) {
+                mLog.persist("mPeriscope=null");
+            } else {
+                if (mPeriscope.mCamera == null) {
+                    mLog.persist("mPeriscope.mCamera=null");
+                }
+            }
+            
             mItems.Clear();
             mItems.Add(new MenuItem(mPeriscope.Active ? "Deactivate" : "Activate", Nactivate));
             mItems.Add(new MenuItem($"Periscope Scan {mPeriscope.mCamera.AvailableScanRange:f0}m Available", scan));

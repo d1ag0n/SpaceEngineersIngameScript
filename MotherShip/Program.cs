@@ -19,6 +19,7 @@ namespace IngameScript {
             new PeriscopeModule(mManager);
             new MotherShipModule(mManager);
             new ATCModule(mManager);
+            new OreDetectorModule(mManager);
             var menu = new MenuModule(mManager);
             menu.SetMenu(new MotherShipMenu(menu));
 

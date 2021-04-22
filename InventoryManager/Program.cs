@@ -33,9 +33,10 @@ namespace IngameScript
         readonly ResourceInfo stone     = new ResourceInfo("stone",         "gravel",       20000000, MyItemType.MakeIngot("Stone"));
         readonly ResourceInfo silver    = new ResourceInfo("silverore",     "silver",       20000000, MyItemType.MakeIngot("Silver"));
         readonly ResourceInfo gold      = new ResourceInfo("goldore",       "gold",         10000000, MyItemType.MakeIngot("Gold"));
+        readonly ResourceInfo uranium   = new ResourceInfo("uraniumore",    "uranium",      10000000, MyItemType.MakeIngot("Uranium"));
         readonly ResourceInfo magnesium = new ResourceInfo("magnesiumore",  "magnesium",    3000000, MyItemType.MakeIngot("Magnesium"));
         readonly ResourceInfo platinum  = new ResourceInfo("platinumore",   "platinum",     4000000, MyItemType.MakeIngot("Platinum"));
-        readonly ResourceInfo uranium   = new ResourceInfo("uraniumore",    "uranium",      1000000, MyItemType.MakeIngot("Uranium"));
+        
         
         class ResourceInfo {
             static double Total = 0;
@@ -1046,13 +1047,13 @@ namespace IngameScript
                 }
                 yield return true;
 
-                mProcessStep = 0;
+                /*mProcessStep = 0;
                 mProcessState = "stepAssemblerCountMachine";
                 while (stepAssemblerCountMachine.MoveNext() && stepAssemblerCountMachine.Current) {
                     mProcessStep++;
                     yield return true;
                 }
-                yield return true;
+                yield return true;*/
 
                 mProcessStep = 0;
                 mProcessState = "stepCargoCountMachine";

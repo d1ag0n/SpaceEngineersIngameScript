@@ -114,11 +114,7 @@ namespace IngameScript {
                     for (int i = 0; i < mUpdateModules.Count; i++) {
                         var m = mUpdateModules[i];
                         try {
-                            if (m.Active) {
-                                m.onUpdate?.Invoke();
-                            } else {
-                                mLog.log($"{m} inactive.");
-                            }
+                            m.onUpdate?.Invoke();
                         } catch (Exception ex) {
                             mLog.persist(m.ToString() + ex.ToString());
                         }

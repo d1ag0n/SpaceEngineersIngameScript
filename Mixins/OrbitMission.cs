@@ -21,6 +21,22 @@ namespace IngameScript {
         Action onScan;
         int mMatrixCalculations;
 
+        public OrbitMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager, aEntity) {
+            aManager.GetModule(out mGyro);
+            aManager.GetModule(out mOre);
+            mOrbit = mOriginalOrbit = Vector3D.Normalize(mController.Volume.Center - mEntity.Position);
+            mOriginalOrbit.CalculatePerpendicularVector(out mOriginalPerp);
+            mPerp = mOriginalPerp;
+
+            calculateOrbitMatrix();
+            onScan = analyzeScan;
+            mController.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
+            var blackList = "Stone";
+            foreach (var detector in mDetectors) {
+                detector.SetValue("OreBlacklist", blackList);
+            }
+        }
+
         // create a matrix for rotating the orbit
         // rotate the perpendicular 
         void calculateOrbitMatrix() {
@@ -51,20 +67,7 @@ namespace IngameScript {
         // this orbit is okayish
         // this should be updated to begin an arbitrary orbit in any direction based on the approach
         // I just wanted to get something going quickly and move on to drill docking
-        public OrbitMission(ModuleManager aManager, ThyDetectedEntityInfo aEntity) : base(aManager, aEntity) {
-            aManager.GetModule(out mGyro);
-            mOrbit = mOriginalOrbit = Vector3D.Normalize(mController.Volume.Center - mEntity.Position);
-            mOriginalOrbit.CalculatePerpendicularVector(out mOriginalPerp);
-            mPerp = mOriginalPerp;
-            
-            calculateOrbitMatrix();
-            onScan = analyzeScan;
-            mController.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
-            var blackList = "Stone";
-            foreach (var detector in mDetectors) {
-                detector.SetValue("OreBlacklist", blackList);
-            }
-        }
+
         
         void incOrbit() {
             if (onScan == analyzeScan) {

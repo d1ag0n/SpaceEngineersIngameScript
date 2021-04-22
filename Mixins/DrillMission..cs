@@ -7,7 +7,7 @@ namespace IngameScript {
     
     public class DrillMission : APMission {
         const float cargoPercent = 0.90f;
-        const double drillSpeed = 0.1;
+        const double drillSpeed = 0.19;
 
         readonly List<IMyShipDrill> mDrill = new List<IMyShipDrill>();
 

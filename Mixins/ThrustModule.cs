@@ -25,7 +25,7 @@ namespace IngameScript {
                 if (_Damp != value) {
                     _Acceleration = Vector3D.Zero;
                     _Damp = value;
-                    Active = updateRequired = true;
+                    updateRequired = true;
                 }
             }
         }
@@ -37,6 +37,7 @@ namespace IngameScript {
             //mHydro = new ThrustList(this);
             onUpdate = InitAction;
             Damp = true;
+            Active = true;
             /*
             MenuName = "Thrust Controller";
             onPage = (p) => {
@@ -117,10 +118,8 @@ namespace IngameScript {
         public Vector3D Acceleration {
             get { return _Acceleration; }
             set {
-                if (_Acceleration != value) {
-                    _Acceleration = value;
-                    Active = updateRequired = true;
-                }
+                _Acceleration = value;
+                updateRequired = true;
             }
         }
         enGroup GetGroup(IMyThrust aThrust) {
@@ -163,9 +162,12 @@ namespace IngameScript {
         
         void UpdateAction() {
             //mThrust.calculateCoT();
-            if (!Active)
+            if (!Active) {
+                mLog.log("Thrust module not active.");
                 return;
+            }
             if (_Damp) {
+                mLog.log("Thrust module damping.");
                 var localVelo = mController.LocalLinearVelo;
                 var localVeloSq = localVelo.LengthSquared();
                 if (localVeloSq <= 0.000025) {
@@ -174,14 +176,17 @@ namespace IngameScript {
                 Acceleration = localVelo * -6.0;
             }
             if (updateRequired) {
+                mLog.log("Thrust module updating.");
                 var a = Acceleration;
                 if (a.IsZero()) {
-                    updateRequired = false;
-                    mThrust.AllStop();
+                    mThrust.AllStop();                    
                 } else {
                     var m = mController.Mass;
                     mThrust.Update(a, m, Emergency);
                 }
+                updateRequired = false;
+            } else {
+                mLog.log("Thrust module idle.");
             }
         }
         public void AllStop() => mThrust.AllStop();
