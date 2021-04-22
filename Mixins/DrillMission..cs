@@ -7,7 +7,7 @@ namespace IngameScript {
     
     public class DrillMission : APMission {
         const float cargoPercent = 0.90f;
-        const double drillSpeed = 0.19;
+        const double drillSpeed = 0.2;
 
         readonly List<IMyShipDrill> mDrill = new List<IMyShipDrill>();
 
@@ -308,28 +308,33 @@ namespace IngameScript {
         
 
         double followLine(double aSpeed = drillSpeed, bool reverse = false) {
-            
-            var r = mController.Remote;
-            var com = r.CenterOfMass;
-            var disp = com - mMissionStart;
-            var dir = disp;
-            var dist = dir.Normalize() + 2.5;
-
             Vector3D pos;
 
+            var com = mController.Remote.CenterOfMass;
+            var start2com = com - mMissionStart;
+            var dir2com = start2com;
+            var dist2com = dir2com.Normalize();
+
+            var position = mMissionStart + mMissionDirection * dist2com;
+
+            if (Vector3D.DistanceSquared(com, position) < 0.625) {
+                dist2com += 2.5;
+            }
+
+
             if (reverse) {
-                pos = mMissionStart + -mMissionDirection * dist;
+                pos = mMissionStart + mMissionDirection * -dist2com;
             } else {
-                pos = mMissionStart + mMissionDirection * dist;
+                pos = mMissionStart + mMissionDirection * dist2com;
             }
             
             var m = mController.MyMatrix;
             pos = MAF.world2pos(pos, m);
-            dir = pos;
+            var dir = pos;
             dir.Normalize();
             dir *= aSpeed;
             mThrust.Acceleration = dir - mController.LocalLinearVelo;
-            return dist;
+            return dist2com;
         }
         public void startDrill() {
             foreach (var d in mDrill) {
