@@ -14,6 +14,7 @@ namespace IngameScript {
         public PeriscopeModule(ModuleManager aManager) : base(aManager) {
             aManager.GetModule(out mController);
             onUpdate = InitAction;
+            
             //onSave = SaveDel;
             //onLoad = LoadDel;
         }

@@ -170,10 +170,10 @@ namespace IngameScript {
 
                 scanPoint += rd * scanRadius;
 
-                MyDetectedEntityInfo entity;
+                var entity = new MyDetectedEntityInfo();
                 ThyDetectedEntityInfo thy;
                 
-                if (mCamera.Scan(scanPoint, out entity, out thy)) {
+                if (mCamera.Scan(ref scanPoint, ref entity, out thy)) {
                     if (
                         (thy != null && thy != mEntity) ||
                         (

@@ -144,19 +144,19 @@ namespace IngameScript {
             if (dispToPos.Dot(dispToShip) > 0) {
                 scanPos = mEntity.Position + -dir;
             }
-            
-            MyDetectedEntityInfo entity;
+
+            var entity = new MyDetectedEntityInfo();
             ThyDetectedEntityInfo thy;
             mLog.log(mLog.gps("scan", scanPos));
             mLog.log(mLog.gps("pos", wv.Center));
-            mCamera.Scan(scanPos, out entity, out thy);
+            mCamera.Scan(ref scanPos, ref entity, out thy);
             if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
                 MyDetectedEntityInfo info;
                 mOre.Scan(thy, scanPos, out info, false);
             }
             scanPos = wv.Center + mController.LinearVelocityDirection * wv.Radius * 4d;
             scanPos += MAF.ranDir() * wv.Radius * 2d;
-            mCamera.Scan(scanPos, out entity, out thy);
+            mCamera.Scan(ref scanPos, ref entity, out thy);
         }
         
     }

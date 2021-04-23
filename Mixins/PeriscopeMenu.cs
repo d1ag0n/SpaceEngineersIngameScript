@@ -43,9 +43,10 @@ namespace IngameScript {
         }
         Menu moduleScan() {
 
-            MyDetectedEntityInfo entity;
+            var entity = new MyDetectedEntityInfo();
             ThyDetectedEntityInfo thy;
-            if (mCamera.Scan(mPeriscope.mCamera.WorldMatrix.Translation + mPeriscope.mCamera.WorldMatrix.Forward * mPeriscope.Range, out entity, out thy)) {
+            var pos = mPeriscope.mCamera.WorldMatrix.Translation + mPeriscope.mCamera.WorldMatrix.Forward * mPeriscope.Range;
+            if (mCamera.Scan(ref pos, ref entity, out thy)) {
                 if (entity.Type == MyDetectedEntityType.None) {
                     mLog.persist("Module scan empty.");
                 } else {

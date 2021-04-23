@@ -958,6 +958,7 @@ namespace IngameScript
             } else {
                 mLog.persist($"failed to get inventory for {ingot}");
                 assign = true;
+                r = 0;
             }
 
             if (assign) {
@@ -969,7 +970,7 @@ namespace IngameScript
                         }
                     }
                 } else {
-                    //mLog.persist($"failed to get inventory for {ore}");
+                    mLog.persist($"failed to get inventory for {ore}");
                 }
             }
         }

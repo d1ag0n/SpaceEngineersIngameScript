@@ -13,30 +13,31 @@ namespace IngameScript {
         public CameraList(CameraModule aMod) {
             mCamera = aMod;
         }
-        bool scanWith(IMyCameraBlock aCamera, ref Vector3D aWorldPosition, ref MyDetectedEntityInfo aEntity) {
+        bool scanWith(IMyCameraBlock aCamera, ref Vector3D aWorldPosition, ref MyDetectedEntityInfo aEntity, double aAddDistance) {
+            if (!aCamera.EnableRaycast) {
+                throw new Exception("Raycast disabled.");
+            }
             var worldDisplacement = aWorldPosition - aCamera.WorldMatrix.Translation;
             var worldNormal = worldDisplacement;
             var dist = worldNormal.Normalize();
-            var result = aCamera.AvailableScanRange > dist;
+            var result = aCamera.CanScan(dist + aAddDistance, worldNormal);
             if (result) {
-                result = testCameraAngles(aCamera, worldNormal);
-                if (result) {
-                    aEntity = aCamera.Raycast(dist, worldNormal);
-                    if (aEntity.Type != MyDetectedEntityType.None) {
-                        if (aEntity.EntityId == mCamera.Grid.EntityId || mCamera.mManager.ConnectedGrid(aEntity.EntityId)) {
-                            result = false;
-                        }
+                aEntity = aCamera.Raycast(dist + aAddDistance, MAF.world2dir(worldNormal, aCamera.WorldMatrix));
+                if (aEntity.HitPosition.HasValue) {
+                    if (aEntity.Type != MyDetectedEntityType.None && (aEntity.EntityId == mCamera.Grid.EntityId || mCamera.mManager.ConnectedGrid(aEntity.EntityId))) {
+                        result = false;
                     }
                 }
             }
             return result;
         }
         // whiplash141 - https://discord.com/channels/125011928711036928/216219467959500800/810367147489361960
-        bool testCameraAngles(IMyCameraBlock camera, Vector3D aWorldNormal) {
-            aWorldNormal = Vector3D.Rotate(aWorldNormal, MatrixD.Transpose(camera.WorldMatrix));
-            if (aWorldNormal.Z < 0) {
-                if (Math.Abs(aWorldNormal.X / aWorldNormal.Z) <= 1) {
-                    return aWorldNormal.Y * aWorldNormal.Y / (aWorldNormal.X * aWorldNormal.X + aWorldNormal.Z * aWorldNormal.Z) <= 1;
+        bool testCameraAngles(IMyCameraBlock camera, ref Vector3D aWorldNormal, out Vector3D aLocalNormal) {
+            var m = MatrixD.Transpose(camera.WorldMatrix);
+            Vector3D.Rotate(ref aWorldNormal, ref m, out aLocalNormal);
+            if (aLocalNormal.Z < 0) {
+                if (Math.Abs(aLocalNormal.X / aLocalNormal.Z) <= 1) {
+                    return aLocalNormal.Y * aLocalNormal.Y / (aLocalNormal.X * aLocalNormal.X + aLocalNormal.Z * aLocalNormal.Z) <= 1;
                 }
             }
             return false;
@@ -57,11 +58,12 @@ namespace IngameScript {
             }
             var cd = Base6Directions.GetClosestDirection(targetNormal);
             var list = mLists[(int)cd];
-            foreach (var c in list) {
-                if (scanWith(c, ref aWorldPosition, ref aEntity)) {
+            foreach (var c in mCamera.Blocks) {
+                if (scanWith(c, ref aWorldPosition, ref aEntity, aAddDist)) {
                     return true;
                 }
             }
+            //mCamera.mLog.persist(mCamera.mLog.gps("SCANFAIL", aWorldPosition));
             aEntity = new MyDetectedEntityInfo();
             return false;
         }

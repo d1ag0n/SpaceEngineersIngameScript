@@ -72,19 +72,16 @@ namespace IngameScript {
                 pos = MAF.local2pos(pos, mm);
                 mDestination.Center = pos;
                 mDestination.Radius = 0;
-                mGyro.NavBlock = NavBlock = mATC.Connector;
-                var dir = MAF.world2dir(mATC.Connector.WorldMatrix.Forward, mController.Remote.WorldMatrix);
+                mGyro.NavBlock = NavBlock = mATC.mConnector;
+                var dir = MAF.world2dir(mATC.mConnector.WorldMatrix.Forward, mController.Remote.WorldMatrix);
                 mGyro.SetTargetDirection(MAF.local2dir(-face, mm));
                 BaseVelocity = ms.VeloDir * ms.Speed;
                 BaseVelocity += veloAtPos;
                 base.Update();
                 mLog.log($"mDistToDest={mDistToDest}");
                 if (mDistToDest < 1.0) {
-                    mATC.Connector.Enabled = true;
-                    mLog.log($"atc.Connector.Status={mATC.Connector.Status}");
-                    if (mATC.Connector.Status == MyShipConnectorStatus.Connectable) {
-                        mATC.Connector.Connect();
-                    } else if (mATC.Connector.Status == MyShipConnectorStatus.Connected) {
+                    mATC.Connect();
+                    if (mATC.connected) {
                         mThrust.Acceleration = Vector3D.Zero;
                         mGyro.SetTargetDirection(Vector3D.Zero);
                         mGyro.setGyrosEnabled(false);
@@ -99,8 +96,6 @@ namespace IngameScript {
                         }
                         return;
                     }
-                } else {
-                    mATC.Connector.Enabled = false;
                 }
                 FlyTo(20.0);
             } else {
@@ -119,9 +114,10 @@ namespace IngameScript {
         }
 
         void scan() {
-            MyDetectedEntityInfo entity;
+            var entity = new MyDetectedEntityInfo();
             ThyDetectedEntityInfo thy;
-            mCamera.Scan(mController.Volume.Center + MAF.ranDir() + 174.0, out entity, out thy);
+            var target = mController.Volume.Center + MAF.ranDir() + 174.0;
+            mCamera.Scan(ref target, ref entity, out thy);
             if (entity.EntityId == 0) {
                 emptyScans++;
                 if (emptyScans > 60) {

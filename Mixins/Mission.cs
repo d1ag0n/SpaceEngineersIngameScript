@@ -22,8 +22,8 @@ namespace IngameScript
             var disp = aPos - mController.Volume.Center;
             var dir = disp;
             dir.Normalize();
-            //mGyro.SetTargetDirection(dir);
-            mGyro.SetTargetDirection(Vector3D.Zero);
+            mGyro.SetTargetDirection(dir);
+            //mGyro.SetTargetDirection(Vector3D.Zero);
         }
 
         public override void Update() {

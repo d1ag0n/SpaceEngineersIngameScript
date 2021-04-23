@@ -9,7 +9,7 @@ namespace IngameScript {
     public struct Ore {
         public readonly ThyDetectedEntityInfo Thy;
         public readonly string Name;
-        public readonly Vector3D Location;
+        public Vector3D Location;
         public Vector3D BestApproach;
         const long grid = 4;
         public Vector3L Index => new Vector3L(

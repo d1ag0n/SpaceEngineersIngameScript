@@ -8,7 +8,7 @@ namespace IngameScript {
     public class Module<T> : ModuleBase, IModuleBlock {
         readonly HashSet<long> mRegistry = new HashSet<long>();
 
-        protected readonly List<T> Blocks;
+        public readonly List<T> Blocks;
         
         public IMyCubeGrid Grid => mManager.mProgram.Me.CubeGrid;
         public BoundingSphereD Volume => Grid.WorldVolume;

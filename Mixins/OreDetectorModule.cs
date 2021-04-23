@@ -47,7 +47,7 @@ namespace IngameScript {
             CameraModule cam;
             OreDetectorModule detector;
             MyDetectedEntityInfo info;
-            MyDetectedEntityInfo entity;
+            var entity = new MyDetectedEntityInfo();
             ThyDetectedEntityInfo thy;
             int index = aEntity.mOres.Count - 1;
             aManager.GetModule(out cam);
@@ -55,7 +55,7 @@ namespace IngameScript {
 
             for (; index > -1; index--) {
                 var ore = aEntity.mOres[index];
-                if (cam.Scan(ore.Location, out entity, out thy)) {
+                if (cam.Scan(ref ore.Location, ref entity, out thy)) {
                     if (entity.HitPosition.HasValue) {
                         var hit = entity.HitPosition.Value;
                         // todo DP of approach to make sure it's on the correct side
@@ -82,6 +82,7 @@ namespace IngameScript {
                 }
                 yield return true;
             }
+            aEntity.mOres.Sort((a, b) => (aEntity.Position - b.Location).LengthSquared() > (aEntity.Position - a.Location).LengthSquared() ? -1 : 1);
         }
     }
 }

@@ -85,7 +85,7 @@ namespace IngameScript {
             Vector3D dir2rock;
             Vector3D perp;
             Vector3D scan;
-            MyDetectedEntityInfo entity;
+            var entity = new MyDetectedEntityInfo();
             ThyDetectedEntityInfo thy;
             while (true) {
                 angle += angleInc;
@@ -107,7 +107,7 @@ namespace IngameScript {
                 MatrixD.CreateFromAxisAngle(ref dir2rock, angle, out m);
                 Vector3D.Rotate(ref perp, ref m, out perp);
                 scan = WorldVolume.Center + perp * radius;
-                while (!aCam.Scan(scan, out entity, out thy, 250d)) {
+                while (!aCam.Scan(ref scan, ref entity, out thy, 250d)) {
                     yield return true;
                 }
                 if (entity.HitPosition.HasValue) {

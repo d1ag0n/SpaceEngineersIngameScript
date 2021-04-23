@@ -60,7 +60,7 @@ namespace IngameScript {
                 mMissionStart = mMissionTarget + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
             }*/
             mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
-            mATC.Connector.Enabled = false;
+            mATC.Disconnect();
             
 
             mManager.getByType(mDrill);
@@ -94,9 +94,9 @@ namespace IngameScript {
         double MaxAltitudeSq => (mMissionAsteroid.Radius + mController.Volume.Radius) * (mMissionAsteroid.Radius + mController.Volume.Radius);
         double MaxAltitude => Math.Sqrt(MaxAltitudeSq);*/
         void scanRoid() {
-            MyDetectedEntityInfo entity;
+            var entity = new MyDetectedEntityInfo();
             ThyDetectedEntityInfo thy;
-            if (mCamera.Scan(mMissionAsteroid.Center, out entity, out thy)) {
+            if (mCamera.Scan(ref mMissionAsteroid.Center, ref entity, out thy)) {
                 if (entity.Type == MyDetectedEntityType.Asteroid) {
                     mMissionAsteroid = mMissionAsteroid.Include(new BoundingSphereD(entity.HitPosition.Value, 10d));
                 }
@@ -132,7 +132,7 @@ namespace IngameScript {
                 onUpdate = alignDock;
                 return;
             }
-            mATC.Connector.Enabled = false;
+            
             
             
             
@@ -171,9 +171,9 @@ namespace IngameScript {
                 var wv = mController.Volume;
                 var scanPos = wv.Center + mMissionDirection * wv.Radius * 2.0;
                 scanPos += MAF.ranDir() * wv.Radius;
-                MyDetectedEntityInfo entity;
+                var entity = new MyDetectedEntityInfo();
                 ThyDetectedEntityInfo thy;
-                mCamera.Scan(scanPos, out entity, out thy);
+                mCamera.Scan(ref scanPos, ref entity, out thy);
                 if (entity.Type == MyDetectedEntityType.Asteroid) {
                     //var ct = wv.Contains(entity.HitPosition.Value);
                     var disp = wv.Center - entity.HitPosition.Value;
@@ -302,7 +302,7 @@ namespace IngameScript {
             }
         }
         void undock() {
-            mATC.Connector.Enabled = false;
+            mATC.Disconnect();
             onUpdate = enter;
         }
         

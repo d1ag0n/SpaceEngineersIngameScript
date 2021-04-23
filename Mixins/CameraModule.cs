@@ -194,8 +194,8 @@ namespace IngameScript
         /// <param name="aAddDistance"></param>
         /// <param name="e"></param>
         /// <returns></returns>
-        public bool Scan(Vector3D aTarget, out MyDetectedEntityInfo entity, out ThyDetectedEntityInfo thy, double aAddDist = 0) {
-            if (mCameraList.Scan(aTarget, out entity, aAddDist)) {
+        public bool Scan(ref Vector3D aTarget, ref MyDetectedEntityInfo entity, out ThyDetectedEntityInfo thy, double aAddDist = 0) {
+            if (mCameraList.Scan(ref aTarget, ref entity, aAddDist)) {
                 if (entity.EntityId != 0) {
                     AddNew(entity, out thy);
                 } else {
@@ -204,7 +204,6 @@ namespace IngameScript
                 return true;
             }
             thy = null;
-            entity = default(MyDetectedEntityInfo);
             return false;
         }
 

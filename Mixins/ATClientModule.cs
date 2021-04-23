@@ -11,14 +11,17 @@ namespace IngameScript {
         readonly ShipControllerModule mController;
         readonly GridComModule mCom;
         readonly Dictionary<int, BoxInfo> mBoxes = new Dictionary<int, BoxInfo>();
+        readonly List<IMyBatteryBlock> mBatteries = new List<IMyBatteryBlock>();
 
         DateTime reserveRequest;
         
         public DockMessage Dock;
 
-        public bool connected => Connector.Status == MyShipConnectorStatus.Connected;
+        public bool connected => mConnector.Status == MyShipConnectorStatus.Connected;
         public readonly MotherState Mother;
-        public IMyShipConnector Connector { get; private set; }
+        public IMyShipConnector mConnector { get; private set; }
+
+
 
         public ATClientModule(ModuleManager aManager) : base(aManager) {
             Mother = new MotherState(aManager);
@@ -26,7 +29,8 @@ namespace IngameScript {
             aManager.GetModule(out mCom);
             aManager.GetModule(out mThrust);
             Active = true;
-            onUpdate = UpdateAction;
+            onUpdate = initAction;
+            
             lastRegistration = -60d;
 
             mCom.SubscribeBroadcast("MotherState", Mother.Update);
@@ -38,10 +42,40 @@ namespace IngameScript {
             }
             
         }
+        public void Connect() {
+            mConnector.Enabled = true;
+            mConnector.Connect();
+            if (connected) {
+                setBatteries(ChargeMode.Recharge);
+            }
+        }
+        public void Disconnect() {
+            setBatteries(ChargeMode.Discharge);
+            mConnector.Disconnect();
+            if (connected) {
+                setBatteries(ChargeMode.Recharge);
+            } else {
+                mConnector.Enabled = false;
+            }
+        }
+        void initAction() {
+            setBatteries(connected ? ChargeMode.Recharge : ChargeMode.Discharge);
+            onUpdate = UpdateAction;
+            
+        }
+        void setBatteries(ChargeMode aMode) {
+            foreach (var b in mBatteries) {
+                b.ChargeMode = aMode;
+            }
+        }
         public override bool Accept(IMyTerminalBlock aBlock) {
-            if (Connector == null) {
+            var b = aBlock as IMyBatteryBlock;
+            if (b != null) {
+                mBatteries.Add(b);
+            }
+            if (mConnector == null) {
                 if (base.Accept(aBlock)) {
-                    Connector = aBlock as IMyShipConnector;
+                    mConnector = aBlock as IMyShipConnector;
                     return true;
                 }
             }
