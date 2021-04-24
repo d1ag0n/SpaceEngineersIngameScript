@@ -6,7 +6,7 @@ using System;
 
 namespace IngameScript {
     public class Module<T> : ModuleBase, IModuleBlock {
-        readonly HashSet<long> mRegistry = new HashSet<long>();
+        protected readonly HashSet<long> mRegistry = new HashSet<long>();
 
         public readonly List<T> Blocks;
         

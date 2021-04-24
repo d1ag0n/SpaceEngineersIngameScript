@@ -7,7 +7,7 @@ namespace IngameScript {
     
     public class DrillMission : APMission {
         const float cargoPercent = 0.90f;
-        const double drillSpeed = 0.2;
+        const double drillSpeed = 0.3;
 
         readonly List<IMyShipDrill> mDrill = new List<IMyShipDrill>();
 
@@ -39,7 +39,7 @@ namespace IngameScript {
         public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget, Vector3D aBestApproach) : base(aManager, aAsteroid) {
             aManager.GetModule(out mATC);
             aManager.GetModule(out mGyro);
-
+            mController.mManual = false;
             if (mATC.connected) {
                 mThrust.Damp = false;
             }
@@ -127,17 +127,11 @@ namespace IngameScript {
             mLog.log($"approach, dif={dif}");
             info();
             scanRoid();
-            
+            mATC.Disconnect();
             if (mController.cargoLevel() > 0f) {
                 onUpdate = alignDock;
                 return;
             }
-            
-            
-            
-            
-            
-            
 
             mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, dir), 0);
             
@@ -146,7 +140,7 @@ namespace IngameScript {
             base.Update();
             FlyTo(10d);
             var r = mController.Volume.Radius;
-            if (mDistToDest < 1d) {
+            if (mDistToDest < 25d) {
                 onUpdate = enter;
             }
         }
@@ -317,8 +311,16 @@ namespace IngameScript {
 
             var position = mMissionStart + mMissionDirection * dist2com;
 
-            if (Vector3D.DistanceSquared(com, position) < 0.625) {
+            var dispToPos = position - com;
+            var dirToPos = dispToPos;
+            var off = dirToPos.Normalize();
+
+
+
+            if (off > 0.75) {
                 dist2com += 2.5;
+            } else {
+                dist2com -= off * 0.5;
             }
 
 

@@ -103,6 +103,7 @@ namespace IngameScript {
             foreach (var list in mLists) {
                 foreach (var t in list) {
                     t.ThrustOverridePercentage = 0f;
+                    t.Enabled = false;
                 }
             }
         }
@@ -161,7 +162,7 @@ namespace IngameScript {
         double handleLists(double aForce, int aUse, int aDisable) {
             var forceSum = 0.0;
             foreach (var t in mLists[aDisable]) {
-                t.ThrustOverride = 0;
+                t.Enabled = false;
                 forceSum += t.MaxEffectiveThrust;
             }
             forces[aDisable] = forceSum;
@@ -178,8 +179,7 @@ namespace IngameScript {
                 forceSum += met;
                 if (aForce > 0) {
                     if (t.IsFunctional) {
-                        if (!t.Enabled)
-                            t.Enabled = true;
+                        t.Enabled = true;
                         if (met < aForce) {
                             t.ThrustOverridePercentage = 1;
                             applied += met;
@@ -193,7 +193,7 @@ namespace IngameScript {
                         }
                     }
                 } else {
-                    t.ThrustOverride = 0;
+                    t.Enabled = false;
                 }
             }
             forces[aList] = forceSum;

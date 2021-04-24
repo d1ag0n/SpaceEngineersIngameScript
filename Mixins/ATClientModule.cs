@@ -71,7 +71,9 @@ namespace IngameScript {
         public override bool Accept(IMyTerminalBlock aBlock) {
             var b = aBlock as IMyBatteryBlock;
             if (b != null) {
-                mBatteries.Add(b);
+                if (mRegistry.Add(b.EntityId)) {
+                    mBatteries.Add(b);
+                }
             }
             if (mConnector == null) {
                 if (base.Accept(aBlock)) {

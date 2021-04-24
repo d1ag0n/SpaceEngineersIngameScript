@@ -158,17 +158,20 @@ namespace IngameScript
 
 
         public override bool Accept(IMyTerminalBlock aBlock) {
-            bool result = false; 
-            if (aBlock is IMyMotorStator) {
-                var rotor = aBlock as IMyMotorStator;
+            bool result = false;
+            var rotor = aBlock as IMyMotorStator;
+            if (rotor != null) {                
                 if (mManager.hasTag(rotor, "camera")) {
-                    rotor.Enabled = true;
-                    rotor.RotorLock = false;
-                    rotor.BrakingTorque = 0;
-                    rotor.Torque = 1000.0f;
-                    rotor.TargetVelocityRad = 1.0f;
+                    if (mRegistry.Add(rotor.EntityId)) {
+                        rotor.Enabled = true;
+                        rotor.RotorLock = false;
+                        rotor.BrakingTorque = 0;
+                        rotor.Torque = 1000.0f;
+                        rotor.TargetVelocityRad = 1.0f;
+                        result = true;
+                    }
                 }
-                result = true;
+                
             } else if (aBlock.CubeGrid == mManager.mProgram.Me.CubeGrid) {
                 result = base.Accept(aBlock);
                 if (result) {

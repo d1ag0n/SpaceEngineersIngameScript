@@ -17,6 +17,25 @@ namespace IngameScript {
         public Vector3D Stop(Vector3D aMaxAccel) {
             return stop(mController.LocalLinearVelo, aMaxAccel);
         }
+
+        public new bool Active {
+            get {
+                return base.Active;
+            }
+            set {
+                if (base.Active != value) {
+                    base.Active = value;
+                    foreach (var t in Blocks) {
+                        if (base.Active) {
+                            t.Enabled = false;
+                        } else {
+                            t.ThrustOverride = 0;
+                            t.Enabled = true;
+                        }
+                    }
+                }
+            }
+        }
         bool updateRequired = true;
         bool _Damp = false;
         public bool Damp {
@@ -145,15 +164,17 @@ namespace IngameScript {
         }
         public override bool Accept(IMyTerminalBlock b) {
             if (b is IMyParachute) {
-                mParachutes.Add(b as IMyParachute);
-                return true;
+                if (mRegistry.Add(b.EntityId)) {
+                    mParachutes.Add(b as IMyParachute);
+                    return true;
+                }
             }
             return base.Accept(b);
         }
         void InitAction() {
             foreach (var b in Blocks) {
                 //var g = GetGroup(b);
-                b.Enabled = true;
+                b.Enabled = false;
                 b.ThrustOverridePercentage = 0f;
                 mThrust.Add(b);
             }

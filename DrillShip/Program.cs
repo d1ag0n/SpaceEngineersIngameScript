@@ -21,7 +21,7 @@ namespace IngameScript {
     public partial class Program : MyGridProgram {
         readonly ModuleManager mManager;
         public Program() {
-            mManager = new ModuleManager(this, "Drill Ship", "logConsole");
+            mManager = new ModuleManager(this, "Drill Ship", "logConsole", 1);
             mManager.Drill = true;
             new ShipControllerModule(mManager);
             new GridComModule(mManager);

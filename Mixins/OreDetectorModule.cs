@@ -70,19 +70,21 @@ namespace IngameScript {
                         }
                         aEntity.mOres[index] = ore;
                     }
+                    var scanResult = detector.Scan(aEntity, ore.Location, out info, true);
+                    if (scanResult == 1) {
+                        aEntity.mOres.RemoveAtFast(index);
+                        aEntity.SortOre();
+                        aManager.mLog.persist(aManager.mLog.gps("removed", ore.Location));
+                        index++;
+                    }
                 } else {
                     aManager.mLog.persist(aManager.mLog.gps("ExpectedSuccess", ore.Location));
                 }
 
-                var scanResult = detector.Scan(aEntity, ore.Location, out info, true);
-                if (scanResult == 1) {
-                    aEntity.mOres.RemoveAtFast(index);
-                    aManager.mLog.persist(aManager.mLog.gps("removed", ore.Location));
-                    index++;
-                }
+                
                 yield return true;
             }
-            aEntity.mOres.Sort((a, b) => (aEntity.Position - b.Location).LengthSquared() > (aEntity.Position - a.Location).LengthSquared() ? -1 : 1);
+            
         }
     }
 }

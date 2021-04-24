@@ -9,7 +9,7 @@ namespace IngameScript {
         readonly ModuleManager mManager;
         readonly PersistenceModule mPersistence;
         public Program() {
-            mManager = new ModuleManager(this, "Mother Ship", "logConsole");
+            mManager = new ModuleManager(this, "Mother Ship", "logConsole", 15);
             mManager.Mother = true;
             new ShipControllerModule(mManager);
             new GridComModule(mManager);
@@ -41,6 +41,8 @@ namespace IngameScript {
         public void Save() {
             Storage = mPersistence.onSave();
         }
-        public void Main(string arg, UpdateType aType) => mManager.Update(arg, aType);
+        public void Main(string arg, UpdateType aType) {
+            mManager.Update(arg, aType);
+        }
     }
 }

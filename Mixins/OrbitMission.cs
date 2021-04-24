@@ -35,6 +35,7 @@ namespace IngameScript {
             foreach (var detector in mDetectors) {
                 detector.SetValue("OreBlacklist", blackList);
             }
+            
         }
 
         // create a matrix for rotating the orbit
@@ -72,7 +73,7 @@ namespace IngameScript {
         void incOrbit() {
             if (onScan == analyzeScan) {
                 incrementsSince++;
-                if (incrementsSince > 5) {
+                if (incrementsSince > 15) {
                     incrementsSince = 0;
                     OreDetectorModule.UpdateScan(mManager, mEntity);
                 }
@@ -122,6 +123,7 @@ namespace IngameScript {
                 mLog.log(mLog.gps("mDestination", mDestination.Center));
                 mLog.log($"Out of orbit: {mDistToDest}");
                 collisionDetectTo();
+                mGyro.SetTargetDirection(mDirToDest);
             }
             //ctr.logger.log("Orbit Mission Distance ", mDistToDest);
             //var ops = new OPS(Volume.Center, Volume.Radius, mController.Grid.WorldVolume.Center);
@@ -134,7 +136,7 @@ namespace IngameScript {
         void analyzeScan() {
             mLog.log($"analyzeScan - ore count {mEntity.mOres.Count}");
             var wv = mController.Volume;
-            var dir = MAF.ranDir() * mEntity.WorldVolume.Radius;
+            var dir = MAF.ranDir() * (mEntity.WorldVolume.Radius * 0.9);
             var scanPos = mEntity.Position + dir;
 
             var dispToShip = wv.Center - mEntity.Position;
@@ -147,8 +149,6 @@ namespace IngameScript {
 
             var entity = new MyDetectedEntityInfo();
             ThyDetectedEntityInfo thy;
-            mLog.log(mLog.gps("scan", scanPos));
-            mLog.log(mLog.gps("pos", wv.Center));
             mCamera.Scan(ref scanPos, ref entity, out thy);
             if (thy != null && (thy.Type == ThyDetectedEntityType.Asteroid || thy.Type == ThyDetectedEntityType.AsteroidCluster)) {
                 MyDetectedEntityInfo info;

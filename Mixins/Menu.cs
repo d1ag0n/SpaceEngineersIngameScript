@@ -10,7 +10,7 @@ namespace IngameScript {
         protected readonly List<MenuItem> mItems = new List<MenuItem>();
         readonly StringBuilder mWork = new StringBuilder();
 
-        string mText;
+        //string mText;
 
         public string Title;
 

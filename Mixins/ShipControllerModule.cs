@@ -9,9 +9,27 @@ using System.Xml.Serialization;
 namespace IngameScript {
     
     public class ShipControllerModule : Module<IMyShipController> {
+
+        bool _mManual;
+        public bool mManual {
+            get {
+                return _mManual;
+            }
+            set {
+                if (OnMission)
+                    throw new Exception();
+                _mManual = value;
+                mGyro.Active = !mManual;
+                mThrust.Active = !mManual;
+                mThrust.Damp = !mManual;
+                AllDampers(mManual);
+            }
+        }
+        public void AbortAllMissions() => NewMission(null);
         
         public readonly float GyroSpeed;
-
+        ThrustModule mThrust;
+        GyroModule mGyro;
         readonly Stack<MissionBase> mMissionStack = new Stack<MissionBase>();
         public MissionBase mMission {
             get; private set;
@@ -39,34 +57,45 @@ namespace IngameScript {
             if (mMission != null) {
                 mMissionStack.Push(mMission);
                 mLog.persist($"Stacked {mMission}");
+            } else {
+                mManual = false;
             }
             mMission = m;
         }
-        public bool CancelMission() {
+        public void CancelMission() {
             if (mMission != null) {
-                if (mMission.Cancel()) {
-                    mMission = null;
-                    return true;
-                }
+                mMission.Cancel();
+                mMission = null;
             }
-            return false;
         }
         public void ReplaceMission(MissionBase m) {
-            mMission = m;
+            if (mMission != null) {
+                mMission.Cancel();
+                mMission = null;
+            }
+            if (m != null) {
+                mManual = false;
+                mMission = m;
+            }
         }
         public void NewMission(MissionBase m) {
             if (mMission != null) {
                 mMission.Cancel();
+                mMission = null;
             }
             while (mMissionStack.Count > 0) {
                 mMissionStack.Pop().Cancel();
             }
-            mMission = m;
+            if (m != null) {
+                mManual = false;
+                mMission = m;
+            }
         }
 
 
 
         public ShipControllerModule(ModuleManager aManager) :base (aManager) {
+            
             Active = true;
 
             
@@ -137,9 +166,9 @@ namespace IngameScript {
             return v;
         }
         void InitializeAction() {
-            foreach (var sc in Blocks) {
-                sc.DampenersOverride = false;
-            }
+            AllDampers(false);
+            mManager.GetModule(out mThrust);
+            mManager.GetModule(out mGyro);
             onUpdate = UpdateGlobal;
         }
         

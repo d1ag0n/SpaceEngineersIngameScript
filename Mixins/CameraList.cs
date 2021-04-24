@@ -13,7 +13,7 @@ namespace IngameScript {
         public CameraList(CameraModule aMod) {
             mCamera = aMod;
         }
-        bool scanWith(IMyCameraBlock aCamera, ref Vector3D aWorldPosition, ref MyDetectedEntityInfo aEntity, double aAddDistance) {
+        bool scanWith(IMyCameraBlock aCamera, ref Vector3D aWorldPosition, ref MyDetectedEntityInfo aEntity, double aAddDistance, out bool aRangeLow) {
             if (!aCamera.EnableRaycast) {
                 throw new Exception("Raycast disabled.");
             }
@@ -21,12 +21,18 @@ namespace IngameScript {
             var worldNormal = worldDisplacement;
             var dist = worldNormal.Normalize();
             var result = aCamera.CanScan(dist + aAddDistance, worldNormal);
+            aRangeLow = false;
             if (result) {
                 aEntity = aCamera.Raycast(dist + aAddDistance, MAF.world2dir(worldNormal, aCamera.WorldMatrix));
                 if (aEntity.HitPosition.HasValue) {
                     if (aEntity.Type != MyDetectedEntityType.None && (aEntity.EntityId == mCamera.Grid.EntityId || mCamera.mManager.ConnectedGrid(aEntity.EntityId))) {
                         result = false;
                     }
+                }
+                
+            } else {
+                if (aCamera.AvailableScanRange < dist + aAddDistance) {
+                    aRangeLow = true;
                 }
             }
             return result;
@@ -58,12 +64,20 @@ namespace IngameScript {
             }
             var cd = Base6Directions.GetClosestDirection(targetNormal);
             var list = mLists[(int)cd];
+            var lowRange = false;
+            bool rangeLow;
             foreach (var c in mCamera.Blocks) {
-                if (scanWith(c, ref aWorldPosition, ref aEntity, aAddDist)) {
+                if (scanWith(c, ref aWorldPosition, ref aEntity, aAddDist, out rangeLow)) {
                     return true;
+                } else {
+                    if (rangeLow) {
+                        lowRange = true;
+                    }
                 }
             }
-            //mCamera.mLog.persist(mCamera.mLog.gps("SCANFAIL", aWorldPosition));
+            if (lowRange) {
+                mCamera.mLog.persist("Camera range low.");
+            }
             aEntity = new MyDetectedEntityInfo();
             return false;
         }

@@ -8,7 +8,7 @@ namespace IngameScript {
 
         protected BoundingSphereD mDestination;
         protected double PADDING = 10.0;
-        protected double MAXVELO = 80.0;
+        protected double MAXVELO = 99.99;
         protected double mPreferredVelocityFactor = 1;
         protected double mMaxAccelLength;
         

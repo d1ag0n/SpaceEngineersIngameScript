@@ -7,11 +7,21 @@ using VRageMath;
 namespace IngameScript {
 
     public class ThyDetectedEntityInfo {
-        
-        
-        public readonly HashSet<string> mOreTypes = new HashSet<string>();
+
         readonly HashSet<Vector3L> mOreRegistry = new HashSet<Vector3L>();
+
+        public readonly HashSet<string> mOreTypes = new HashSet<string>();
         public readonly List<Ore> mOres = new List<Ore>();
+        public readonly long EntityId;
+        public string Name;
+        public ThyDetectedEntityType Type { get; private set; }
+        public Vector3D? HitPosition { get; private set; }
+        public MatrixD Orientation { get; private set; }
+        public Vector3 Velocity { get; private set; }
+        public MyRelationsBetweenPlayerAndBlock Relationship { get; private set; }
+        public BoundingSphereD WorldVolume { get; private set; }
+        public DateTime TimeStamp { get; private set; }
+        public Vector3D Position => WorldVolume.Center;
 
         // true if type of ore added is new to this asterois/cluster
         public bool AddOre(Ore o) {
@@ -28,16 +38,7 @@ namespace IngameScript {
             return false;
         }
         
-        public readonly long EntityId;
-        public string Name;
-        public ThyDetectedEntityType Type { get; private set; }
-        public Vector3D? HitPosition { get; private set; }
-        public MatrixD Orientation { get; private set; }
-        public Vector3 Velocity { get; private set; }
-        public MyRelationsBetweenPlayerAndBlock Relationship { get; private set; }
-        public BoundingSphereD WorldVolume { get; private set; }
-        public DateTime TimeStamp { get; private set; }
-        public Vector3D Position => WorldVolume.Center;
+        
         //public ThyDetectedEntityInfo() { }
         /*public ThyDetectedEntityInfo(Vector3D aTarget) {
             WorldVolume = new BoundingSphereD(aTarget, 100);
@@ -142,6 +143,28 @@ namespace IngameScript {
                 Type = ThyDetectedEntityType.AsteroidCluster;
             }
             WorldVolume = WorldVolume.Include(aSphere);
+        }
+        static readonly Dictionary<string, int> mOreWork = new Dictionary<string, int>();
+        public void SortOre() {
+            mOres.Sort((a, b) => (Position - b.Location).LengthSquared() < (Position - a.Location).LengthSquared() ? -1 : 1);
+            int count;
+            for (int i = 0; i < mOres.Count; i++) {
+                var o = mOres[i];
+                if (mOreWork.TryGetValue(o.Name, out count)) {
+                    if (count == 10) {
+                        mOres.RemoveAt(i--);
+                    } else {
+                        mOreWork[o.Name] = i + 1;
+                    }
+                } else {
+                    mOreWork[o.Name] = 1;
+                }
+            }
+            mOreTypes.Clear();
+            foreach (var o in mOreWork.Keys) {
+                mOreTypes.Add(o);
+            }
+            mOreWork.Clear();
         }
     }
 }

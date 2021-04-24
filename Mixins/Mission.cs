@@ -22,6 +22,9 @@ namespace IngameScript
             var disp = aPos - mController.Volume.Center;
             var dir = disp;
             dir.Normalize();
+            mGyro.Active = true;
+            mThrust.Active = true;
+            mThrust.Damp = false;
             mGyro.SetTargetDirection(dir);
             //mGyro.SetTargetDirection(Vector3D.Zero);
         }

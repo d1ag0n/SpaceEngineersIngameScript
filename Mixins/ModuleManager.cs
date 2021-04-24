@@ -34,9 +34,9 @@ namespace IngameScript {
         public double Runtime { get; private set; }
         public readonly Queue<IEnumerator<bool>> mMachines = new Queue<IEnumerator<bool>>();
         IEnumerator<bool> mMachine;
-        public ModuleManager(Program aProgram, string aProgramName, string logTag) {
+        public ModuleManager(Program aProgram, string aProgramName, string aLogTag, int aPersistMax) {
             mProgram = aProgram;
-            mLog = new LogModule(this, logTag, 15);
+            mLog = new LogModule(this, aLogTag, aPersistMax);
             LargeGrid = aProgram.Me.CubeGrid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
             mProgram.Me.CustomName = $"!{aProgramName}";
             //mController = new ShipControllerModule(this);
@@ -61,7 +61,7 @@ namespace IngameScript {
         //public Menu MainMenu(MenuModule aMain) => new Menu(aMain, mModules);
 
         public void Update(string arg, UpdateType aType) {
-            IMyPistonBase p;
+            //IMyPistonBase p;
             
             try {
                 Runtime += mProgram.Runtime.TimeSinceLastRun.TotalSeconds;

@@ -87,7 +87,7 @@ namespace IngameScript
             return result;
         }
         public static bool nearEqual(Vector3D a, Vector3D b, double epsilon = 0.000001) =>
-            nearEqual((a - b).LengthSquared(), 0, epsilon);
+            (a - b).LengthSquared() < epsilon;
         public static bool nearEqual(double a, double b, double epsilon = 0.000001) =>
             Math.Abs(a - b) < epsilon;
         /*

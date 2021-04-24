@@ -24,34 +24,37 @@ namespace IngameScript
         const string tagAnything = "anything";
         const string tagShip = "ship";
         const string tagOrder = "order";
-        // ratios - each on hand ingot rawvalue is divided by the ratio, higher values mean lower priority
-        readonly ResourceInfo iron = new ResourceInfo("ironore", "iron", 600000000, MyItemType.MakeIngot("Iron"));
-        readonly ResourceInfo cobalt = new ResourceInfo("cobaltore", "cobalt", 220000000, MyItemType.MakeIngot("Iron"));
-        readonly ResourceInfo nickel = new ResourceInfo("nickelore", "nickel", 70000000, MyItemType.MakeIngot("Nickel"));
-        readonly ResourceInfo silicon = new ResourceInfo("siliconore", "silicon", 35000000, MyItemType.MakeIngot("Silicon"));
-        readonly ResourceInfo stone = new ResourceInfo("stone", "gravel", 20000000, MyItemType.MakeIngot("Stone"));
-        readonly ResourceInfo silver = new ResourceInfo("silverore", "silver", 20000000, MyItemType.MakeIngot("Silver"));
-        readonly ResourceInfo gold = new ResourceInfo("goldore", "gold", 10000000, MyItemType.MakeIngot("Gold"));
-        readonly ResourceInfo uranium = new ResourceInfo("uraniumore", "uranium", 10000000, MyItemType.MakeIngot("Uranium"));
-        readonly ResourceInfo magnesium = new ResourceInfo("magnesiumore", "magnesium", 3000000, MyItemType.MakeIngot("Magnesium"));
-        readonly ResourceInfo platinum = new ResourceInfo("platinumore", "platinum", 4000000, MyItemType.MakeIngot("Platinum"));
+        // ratios - each on hand ingot rawvalue is divided by the ratio, higher values mean lower inventory
+        readonly ResourceInfo iron = new ResourceInfo("ironore", "iron", 600000000, MyItemType.MakeIngot("Iron"), 18.2f);
+        readonly ResourceInfo cobalt = new ResourceInfo("cobaltore", "cobalt", 220000000, MyItemType.MakeIngot("Cobalt"), 0.13f);
+        readonly ResourceInfo nickel = new ResourceInfo("nickelore", "nickel", 70000000, MyItemType.MakeIngot("Nickel"), 1.97f);
+        readonly ResourceInfo silicon = new ResourceInfo("siliconore", "silicon", 35000000, MyItemType.MakeIngot("Silicon"), 2.167f);
+        readonly ResourceInfo stone = new ResourceInfo("stone", "gravel", 20000000, MyItemType.MakeIngot("Stone"), 130f);
+        readonly ResourceInfo silver = new ResourceInfo("silverore", "silver", 20000000, MyItemType.MakeIngot("Silver"), 1.3f);
+        readonly ResourceInfo gold = new ResourceInfo("goldore", "gold", 10000000, MyItemType.MakeIngot("Gold"), 3.25f);
+        readonly ResourceInfo uranium = new ResourceInfo("uraniumore", "uranium", 10000000, MyItemType.MakeIngot("Uranium"), 0.325f);
+        readonly ResourceInfo magnesium = new ResourceInfo("magnesiumore", "magnesium", 3000000, MyItemType.MakeIngot("Magnesium"), 2.6f);
+        readonly ResourceInfo platinum = new ResourceInfo("platinumore", "platinum", 4000000, MyItemType.MakeIngot("Platinum"), 0.433f);
 
 
         class ResourceInfo {
+            
             static double Total = 0;
             public readonly string Ore;
             public readonly string Ingot;
             public readonly long lRatio;
+            public readonly float mKGs;
             public double dRatio => lRatio / Total;
-            public readonly MyItemInfo IngotInfo;
+            public readonly MyItemType IngotType;
+            public long TempRatio;
 
-            public ResourceInfo(string aOre, string aIngot, long alRatio, MyItemType aType) {
+            public ResourceInfo(string aOre, string aIngot, long alRatio, MyItemType aType, float aKGs) {
                 Ore = aOre;
                 Ingot = aIngot;
                 lRatio = alRatio;
                 Total += lRatio;
-
-                IngotInfo = aType.GetItemInfo();
+                IngotType = aType;
+                mKGs = aKGs;
             }
         }
         enum Steps {
@@ -102,7 +105,8 @@ namespace IngameScript
         //readonly Dictionary<string, MyFixedPoint> mInventory = new Dictionary<string, MyFixedPoint>();
         //const int broadcastInterval = 10;
 
-        readonly SortedDictionary<string, string> mToTag = new SortedDictionary<string, string>();
+        readonly ImmutableSortedDictionary<string, string> mToTag;
+        readonly ImmutableSortedDictionary<string, string> mFromTag;
 
         readonly Dictionary<string, List<InventoryRegister>> mInventoryRegister = new Dictionary<string, List<InventoryRegister>>();
 
@@ -116,7 +120,7 @@ namespace IngameScript
         readonly ImmutableDictionary<string, ResourceInfo> mResource;
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update10;
-            mManager = new ModuleManager(this, "Inventory Manager", "inventoryLogConsole");
+            mManager = new ModuleManager(this, "Inventory Manager", "inventoryLogConsole", 50);
             mLog = mManager.mLog;
 
             mResource = (new Dictionary<string, ResourceInfo>() {
@@ -137,8 +141,9 @@ namespace IngameScript
             //listener = IGC.RegisterBroadcastListener(tagInventory);
             //listener.SetMessageCallback(tagInventory);
             mManager.Initialize();
+            initTags(ref mToTag, ref mFromTag);
             init();
-
+            
             // "priming" all the machines with an initial movenext to they get JIT
             processMachine = process();
 
@@ -205,7 +210,7 @@ namespace IngameScript
             mManager.getByTag("inventoryDisplay", ref mDisplay);
             mManager.getByTag("inventoryHelp", ref mHelp);
 
-            initTags();
+           
 
             if (mHelp != null) {
                 showHelp();
@@ -232,63 +237,71 @@ namespace IngameScript
             }
 
         }
-        void initTags() {
-            mToTag["MyObjectBuilder_AmmoMagazine/NATO_5p56x45mm"] = "nato556";
-            mToTag["MyObjectBuilder_AmmoMagazine/NATO_25x184mm"] = "nato25";
-            mToTag["MyObjectBuilder_AmmoMagazine/Missile200mm"] = "missile";
-            mToTag["MyObjectBuilder_Component/SteelPlate"] = "plate";
-            mToTag["MyObjectBuilder_Component/SolarCell"] = "solar";
-            mToTag["MyObjectBuilder_Component/Girder"] = "girder";
-            mToTag["MyObjectBuilder_Component/SmallTube"] = "tube";
-            mToTag["MyObjectBuilder_Component/Detector"] = "detector";
-            mToTag["MyObjectBuilder_Component/Reactor"] = "reactor";
-            mToTag["MyObjectBuilder_Component/Computer"] = "computer";
-            mToTag["MyObjectBuilder_Component/Canvas"] = "canvas";
-            mToTag["MyObjectBuilder_Component/Construction"] = "construction";
-            mToTag["MyObjectBuilder_Component/InteriorPlate"] = "interior";
-            mToTag["MyObjectBuilder_Component/BulletproofGlass"] = "glass";
-            mToTag["MyObjectBuilder_Component/MetalGrid"] = "grid";
-            mToTag["MyObjectBuilder_Component/GravityGenerator"] = "gravity";
-            mToTag["MyObjectBuilder_Component/LargeTube"] = "pipe";
-            mToTag["MyObjectBuilder_Component/Superconductor"] = "conductor";
-            mToTag["MyObjectBuilder_Component/Display"] = "display";
-            mToTag["MyObjectBuilder_Component/RadioCommunication"] = "radio";
-            mToTag["MyObjectBuilder_Component/PowerCell"] = "cell";
-            mToTag["MyObjectBuilder_Component/Thrust"] = "thrust";
-            mToTag["MyObjectBuilder_Component/Medical"] = "medical";
-            mToTag["MyObjectBuilder_Component/Motor"] = "motor";
-            mToTag["MyObjectBuilder_ConsumableItem/Powerkit"] = "power";
-            mToTag["MyObjectBuilder_Datapad/Datapad"] = "data";
-            mToTag["MyObjectBuilder_Ingot/Uranium"] = "uranium";
-            mToTag["MyObjectBuilder_Ingot/Nickel"] = "nickel";
-            mToTag["MyObjectBuilder_Ingot/Platinum"] = "platinum";
-            mToTag["MyObjectBuilder_Ingot/Iron"] = "iron";
-            mToTag["MyObjectBuilder_Ingot/Magnesium"] = "magnesium";
-            mToTag["MyObjectBuilder_Ingot/Gold"] = "gold";
-            mToTag["MyObjectBuilder_Ingot/Silver"] = "silver";
-            mToTag["MyObjectBuilder_Ingot/Silicon"] = "silicon";
-            mToTag["MyObjectBuilder_Ingot/Cobalt"] = "cobalt";
-            mToTag["MyObjectBuilder_Ingot/Stone"] = "gravel";
-            mToTag["MyObjectBuilder_PhysicalGunObject/Welder2Item"] = "junk";
-            mToTag["MyObjectBuilder_PhysicalGunObject/HandDrill4Item"] = "drill";
-            mToTag["MyObjectBuilder_PhysicalGunObject/AngleGrinderItem"] = "junk";
-            mToTag["MyObjectBuilder_PhysicalObject/SpaceCredit"] = "credit";
-            mToTag["MyObjectBuilder_Ore/Organic"] = "organic";
-            mToTag["MyObjectBuilder_Ore/Magnesium"] = "magnesiumore";
-            mToTag["MyObjectBuilder_Ore/Nickel"] = "nickelore";
-            mToTag["MyObjectBuilder_Ore/Platinum"] = "platinumore";
-            mToTag["MyObjectBuilder_Ore/Silicon"] = "soliconore";
-            mToTag["MyObjectBuilder_Ore/Silver"] = "silverore";
-            mToTag["MyObjectBuilder_Ore/Uranium"] = "uraniumore";
-            mToTag["MyObjectBuilder_Ore/Gold"] = "goldore";
-            mToTag["MyObjectBuilder_Ore/Cobalt"] = "cobaltore";
-            mToTag["MyObjectBuilder_Ore/Iron"] = "ironore";
-            mToTag["MyObjectBuilder_Ore/Organic"] = "organic";
-            mToTag["MyObjectBuilder_Ore/Ice"] = "ice";
-            mToTag["MyObjectBuilder_Ore/Scrap"] = "scrap";
-            mToTag["MyObjectBuilder_Ore/Stone"] = "stone";
-            mToTag["MyObjectBuilder_GasContainerObject/HydrogenBottle"] = "hydrogen";
-            mToTag["MyObjectBuilder_OxygenContainerObject/OxygenBottle"] = "oxygen";
+        void initTags(ref ImmutableSortedDictionary<string, string> aToTag, ref ImmutableSortedDictionary<string, string> aFromTag) {
+            var d = new Dictionary<string, string>();
+            d["MyObjectBuilder_AmmoMagazine/NATO_5p56x45mm"] = "nato556";
+            d["MyObjectBuilder_AmmoMagazine/NATO_25x184mm"] = "nato25";
+            d["MyObjectBuilder_AmmoMagazine/Missile200mm"] = "missile";
+            d["MyObjectBuilder_Component/SteelPlate"] = "plate";
+            d["MyObjectBuilder_Component/SolarCell"] = "solar";
+            d["MyObjectBuilder_Component/Girder"] = "girder";
+            d["MyObjectBuilder_Component/SmallTube"] = "tube";
+            d["MyObjectBuilder_Component/Detector"] = "detector";
+            d["MyObjectBuilder_Component/Reactor"] = "reactor";
+            d["MyObjectBuilder_Component/Computer"] = "computer";
+            d["MyObjectBuilder_Component/Canvas"] = "canvas";
+            d["MyObjectBuilder_Component/Construction"] = "construction";
+            d["MyObjectBuilder_Component/InteriorPlate"] = "interior";
+            d["MyObjectBuilder_Component/BulletproofGlass"] = "glass";
+            d["MyObjectBuilder_Component/MetalGrid"] = "grid";
+            d["MyObjectBuilder_Component/GravityGenerator"] = "gravity";
+            d["MyObjectBuilder_Component/LargeTube"] = "pipe";
+            d["MyObjectBuilder_Component/Superconductor"] = "conductor";
+            d["MyObjectBuilder_Component/Display"] = "display";
+            d["MyObjectBuilder_Component/RadioCommunication"] = "radio";
+            d["MyObjectBuilder_Component/PowerCell"] = "cell";
+            d["MyObjectBuilder_Component/Thrust"] = "thrust";
+            d["MyObjectBuilder_Component/Medical"] = "medical";
+            d["MyObjectBuilder_Component/Motor"] = "motor";
+            d["MyObjectBuilder_ConsumableItem/Powerkit"] = "power";
+            d["MyObjectBuilder_Datapad/Datapad"] = "data";
+            d["MyObjectBuilder_Ingot/Uranium"] = "uranium";
+            d["MyObjectBuilder_Ingot/Nickel"] = "nickel";
+            d["MyObjectBuilder_Ingot/Platinum"] = "platinum";
+            d["MyObjectBuilder_Ingot/Iron"] = "iron";
+            d["MyObjectBuilder_Ingot/Magnesium"] = "magnesium";
+            d["MyObjectBuilder_Ingot/Gold"] = "gold";
+            d["MyObjectBuilder_Ingot/Silver"] = "silver";
+            d["MyObjectBuilder_Ingot/Silicon"] = "silicon";
+            d["MyObjectBuilder_Ingot/Cobalt"] = "cobalt";
+            d["MyObjectBuilder_Ingot/Stone"] = "gravel";
+            d["MyObjectBuilder_PhysicalGunObject/Welder2Item"] = "junk";
+            d["MyObjectBuilder_PhysicalGunObject/HandDrill4Item"] = "drill";
+            d["MyObjectBuilder_PhysicalGunObject/AngleGrinderItem"] = "junk";
+            d["MyObjectBuilder_PhysicalObject/SpaceCredit"] = "credit";
+            d["MyObjectBuilder_Ore/Organic"] = "organic";
+            d["MyObjectBuilder_Ore/Magnesium"] = "magnesiumore";
+            d["MyObjectBuilder_Ore/Nickel"] = "nickelore";
+            d["MyObjectBuilder_Ore/Platinum"] = "platinumore";
+            d["MyObjectBuilder_Ore/Silicon"] = "siliconore";
+            d["MyObjectBuilder_Ore/Silver"] = "silverore";
+            d["MyObjectBuilder_Ore/Uranium"] = "uraniumore";
+            d["MyObjectBuilder_Ore/Gold"] = "goldore";
+            d["MyObjectBuilder_Ore/Cobalt"] = "cobaltore";
+            d["MyObjectBuilder_Ore/Iron"] = "ironore";
+            d["MyObjectBuilder_Ore/Organic"] = "organic";
+            d["MyObjectBuilder_Ore/Ice"] = "ice";
+            d["MyObjectBuilder_Ore/Scrap"] = "scrap";
+            d["MyObjectBuilder_Ore/Stone"] = "stone";
+            d["MyObjectBuilder_GasContainerObject/HydrogenBottle"] = "hydrogen";
+            d["MyObjectBuilder_OxygenContainerObject/OxygenBottle"] = "oxygen";
+            aToTag = d.ToImmutableSortedDictionary();
+
+            d.Clear();
+            foreach (var kvp in aToTag) {
+                d[kvp.Value] = kvp.Key;
+            }
+            aFromTag = d.ToImmutableSortedDictionary();
         }
         bool getTag4Item(string aItem, out string tag) {
             return mToTag.TryGetValue(aItem, out tag);
@@ -325,30 +338,28 @@ namespace IngameScript
                             var max = (float)inv.MaxVolume;
                             var cur = (float)inv.CurrentVolume;
                             var free = max - cur;
-                            mLog.persist($"{c.CustomName} {free}m3 free");
-                            if (free < 0.001) {
-                                continue;
-                            }
+                            //mLog.persist($"{c.CustomName} {free}m3 free");
+                            
                             var volume = (float)sortItem.Amount * itemInfo.Volume;
                             if (free > volume) {
                                 if (sortInventory.TransferItemTo(inv, sortItem)) {
-                                    mLog.persist($"transferred stack of {sortTag} from {sortBlock.CustomName} to {c.CustomName}");
+                                    //mLog.persist($"transferred stack of {sortTag} from {sortBlock.CustomName} to {c.CustomName}");
                                     break;
                                 } else {
-                                    mLog.persist($"failed to transfer stack of {sortTag} from {sortBlock.CustomName} to {c.CustomName}");
+                                    //mLog.persist($"failed to transfer stack of {sortTag} from {sortBlock.CustomName} to {c.CustomName}");
                                 }
                             } else {
                                 var amt = sortItem.Amount;
                                 if (itemInfo.UsesFractions) {
                                     amt.RawValue = (long)(free / itemInfo.Volume);
                                 } else {
-                                    amt.RawValue = (int)(free / itemInfo.Volume);
+                                    continue;
                                 }
                                 amt.RawValue *= 1000000;
                                 if (sortInventory.TransferItemTo(inv, sortItem, amt)) {
                                     mLog.persist($"transferred some {sortTag} from {sortBlock.CustomName} to {c.CustomName}");
                                 } else {
-                                    mLog.persist($"failed to transfer som {sortTag} from {sortBlock.CustomName} to {c.CustomName}");
+                                    mLog.persist($"failed to transfer some {sortTag} from {sortBlock.CustomName} to {c.CustomName}");
                                 }
                             }
                         }
@@ -373,7 +384,6 @@ namespace IngameScript
                         sortInventory = preSortInventory;
                         sortItem = preSortItem;
                         sortTag = tag;
-                        yield return true;
                         while (sortMachine.MoveNext() && sortMachine.Current) {
                             yield return true;
                         }
@@ -453,14 +463,10 @@ namespace IngameScript
             yield return true;
             while (true) {
                 var inv = stepCargoSortBlock.GetInventory();
-                yield return true;
                 if (inv != null) {
                     int count = inv.ItemCount - 1;
-                    yield return true;
                     for (; count > -1; count--) {
-
                         var item = inv.GetItemAt(count);
-                        yield return true;
                         // todo check here if item is allowed?
                         if (item.HasValue) {
                             preSortBlock = stepCargoSortBlock;
@@ -483,12 +489,9 @@ namespace IngameScript
             while (true) {
                 int count = mCargo.Count;
                 int last = count - 1;
-                for (int i = 0; i < count; i++) {
-                    stepCargoSortBlock = mCargo[i];
+                foreach (var c in mCargo) {
+                    stepCargoSortBlock = c;
                     while (stepCargoSortContainerMachine.MoveNext() && stepCargoSortContainerMachine.Current) {
-                        yield return true;
-                    }
-                    if (i < last) {
                         yield return true;
                     }
                 }
@@ -779,65 +782,66 @@ namespace IngameScript
                 // todo clean this up
                 foreach (var r in mRefineries) {
                     var inv = r.InputInventory;
-                    int itemCount = inv.ItemCount;
-                    var transfer = 7f; // volume to transfer m^3
-                    while (itemCount > 0) {
-                        var item = inv.GetItemAt(--itemCount);
-                        if (item.HasValue) {
-                            string tag;
-                            var gotTag = getTag4Item(item.Value, out tag);
-                            if (gotTag && tag == makeResourceTag) {
-                                transfer -= (float)item.Value.Amount * item.Value.Type.GetItemInfo().Volume;
-                                // todo ensure volume
-                            } else {
-                                sortBlock = r;
-                                sortInventory = inv;
-                                sortItem = item.Value;
-                                sortTag = tag;
-                                mLog.persist($"moving {tag} from {r.CustomName}");
-                                while (sortMachine.MoveNext() && sortMachine.Current) {
-                                    yield return true;
-                                }
-                            }
-                        }
-                        if (itemCount > 0) {
-                            yield return true;
-                        }
-                    }
+                    var transfer = 1f; // volume to transfer m^3
                     List<InventoryRegister> list;
-                    if (transfer > 6) {
 
-                        if (mInventoryRegister.TryGetValue(makeResourceTag, out list)) {
+                    for (int i = 0; i < mRefine.Count; i++) {
+                        var res = mRefine[i];
+                        if (mInventoryRegister.TryGetValue(res.Ore, out list)) {
+                            var used = (float)r.InputInventory.CurrentVolume / (float)r.InputInventory.MaxVolume;
+                            if (used < 0.25f) {
 
-                            int listCount = list.Count;
-                            int listLast = listCount - 1;
-                            for (int j = 0; j < listCount; j++) {
-                                var ir = list[j];
-                                var info = ir.Item.Type.GetItemInfo();
-                                var kgvol = info.Volume;
-                                var kgamt = (float)ir.Item.Amount;
-                                var mcavail = kgamt * kgvol;
-                                if (mcavail > transfer) {
-                                    MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
-                                    if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                        break;
+                                foreach (var ir in list) {
+                                    var info = ir.Item.Type.GetItemInfo();
+                                    var kgvol = info.Volume;
+                                    var kgamt = (float)ir.Item.Amount;
+                                    var mcavail = kgamt * kgvol;
+                                    if (mcavail > transfer) {
+                                        MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
+                                        if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
+                                            break;
+                                        } else {
+                                            //mLog.persist($"full transfer failure {(float)r.InputInventory.CurrentVolume:f2}/{(float)r.InputInventory.MaxVolume:f2}");
+                                        }
                                     } else {
-                                        mLog.persist("full transfer failure");
+                                        MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
+                                        if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
+                                            transfer -= mcavail;
+                                        } else {
+                                            //mLog.persist("partial transfer failure");
+                                        }
                                     }
-                                } else {
-                                    MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
-                                    if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                        transfer -= mcavail;
-                                    } else {
-                                        mLog.persist("partial transfer failure");
-                                    }
-                                }
-                                if (j < listLast) {
                                     yield return true;
                                 }
                             }
                         } else {
-                            mLog.persist("Could not get IR List");
+                            if (!mInventory.ContainsKey(mFromTag[res.Ore])) {
+                                
+                                mLog.persist($"FAILED TO GET INVENTORY FOR {res.Ore}");
+                                mRefine.RemoveAt(i);
+                                i--;
+                            }
+                        }
+                        yield return true;
+                    }
+                    if (mRefine.Count > 0) {
+                        MyInventoryItem? item = new MyInventoryItem();
+                        while (item.HasValue) {
+                            item = inv.GetItemAt(0);
+                            if (item.HasValue) {
+                                string tag;
+                                var gotTag = getTag4Item(item.Value, out tag);
+                                if (gotTag && tag == mRefine[0].Ore) {
+                                    //transfer -= (float)item.Value.Amount * item.Value.Type.GetItemInfo().Volume;
+                                    // todo ensure volume
+                                    break;
+                                } else {
+                                    if (!inv.TransferItemFrom(inv, 0, inv.ItemCount, true)) {
+                                        break;
+                                    }
+                                    yield return true;
+                                }
+                            }
                         }
                     }
                 }
@@ -854,7 +858,7 @@ namespace IngameScript
                     mLog.persist($"Volume for assembler is {maxVolume}");
                     int pos = -1;
                     foreach (var res in mResource.Values) {
-                        double volumeFactor = res.IngotInfo.Volume;
+                        double volumeFactor = res.IngotType.GetItemInfo().Volume;
                         //mLog.persist($"{res.Ingot}.volumeFactor={volumeFactor}");
                         var item = inv.GetItemAt(++pos);
                         string tag;
@@ -950,13 +954,13 @@ namespace IngameScript
             MyFixedPoint value;
             bool assign;
             long r = -1;
+            string tag;
+            getTag4Item(ingot, out tag);
             if (mInventory.TryGetValue(ingot, out value)) {
-                r = value.RawValue / div;
-                string tag;
-                getTag4Item(ingot, out tag);
+                r = value.RawValue / div;                
                 assign = r < ratio;
             } else {
-                mLog.persist($"failed to get inventory for {ingot}");
+                mLog.persist($"fail get inv ingot {ingot}");
                 assign = true;
                 r = 0;
             }
@@ -964,24 +968,44 @@ namespace IngameScript
             if (assign) {
                 if (mInventory.TryGetValue(ore, out value)) {
                     if (value > 0) {
-                        make = ore;
+                        make = tag;
                         if (r > -1) {
                             ratio = r;
                         }
                     }
                 } else {
-                    mLog.persist($"failed to get inventory for {ore}");
+                    mLog.persist($"fail get inv ore {ore}");
                 }
             }
         }
-
-        string makeResource;
-        string makeResourceTag;
+        readonly List<ResourceInfo> mRefine = new List<ResourceInfo>();
+        //string makeResource;
+        //string makeResourceTag;
         IEnumerator<bool> calcResourceRatiosMachine;
         IEnumerator<bool> calcResourceRatios() {
             yield return true;
+            MyFixedPoint ingotLevel;
             while (true) {
-                long ratio = long.MaxValue;
+                mRefine.Clear();
+                foreach (var kvp in mResource) {
+                    var res = kvp.Value;
+                    var key = res.IngotType.ToString();
+
+                    res.TempRatio = 0;
+                    if (mInventory.TryGetValue(key, out ingotLevel)) {
+                        res.TempRatio = ingotLevel.RawValue / res.lRatio;
+                        mLog.persist($"make ratio {res.TempRatio} for {key}");
+                        
+                    } else {
+                        mLog.persist($"failed to get inventory for {key}");
+                    }
+                    mRefine.Add(res);
+                    yield return true;
+                }
+                mRefine.Sort((a, b) => a.TempRatio > b.TempRatio ? 1 : -1);
+                yield return false;
+
+                /*long ratio = long.MaxValue;
                 makeResource = null;
                 calcResourceRatio("MyObjectBuilder_Ingot/Iron", "MyObjectBuilder_Ore/Iron", iron.lRatio, ref ratio, ref makeResource);
                 yield return true;
@@ -1008,10 +1032,10 @@ namespace IngameScript
                     makeResourceTag = null;
                     mLog.persist("Break out the drill it's mining time.");
                 } else {
-                    makeResourceTag = mToTag[makeResource];
+                    makeResourceTag = mResource[makeResource].Ore;
                     mLog.persist($"want to refine {makeResourceTag}");
                 }
-                yield return false;
+                yield return false;*/
             }
 
         }
@@ -1057,13 +1081,13 @@ namespace IngameScript
                 }
                 yield return true;
 
-                /*mProcessStep = 0;
+                mProcessStep = 0;
                 mProcessState = "stepAssemblerCountMachine";
                 while (stepAssemblerCountMachine.MoveNext() && stepAssemblerCountMachine.Current) {
                     mProcessStep++;
                     yield return true;
                 }
-                yield return true;*/
+                yield return true;
 
                 mProcessStep = 0;
                 mProcessState = "stepCargoCountMachine";
@@ -1123,7 +1147,7 @@ namespace IngameScript
         }
         double maxEver;
         int runcount = 0;
-        readonly int mProcStepsPerUpdate = 1;
+        readonly int mProcStepsPerUpdate = 10;
         string working = "\\|/-";
         int work = 0;
         public void Main(string arg, UpdateType update) {
@@ -1147,7 +1171,7 @@ namespace IngameScript
                 }
             }
             if ((update & (UpdateType.Update10)) != 0) {
-                Echo(working[work].ToString());
+                Echo($"{working[work]} {mProcessState} {mProcessStep}");
                 work++;
                 if (work == working.Length)
                     work = 0;

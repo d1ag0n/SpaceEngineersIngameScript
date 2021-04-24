@@ -10,7 +10,7 @@ namespace IngameScript
 
         readonly ShipControllerModule mController;
         
-        double difMax = 0.09;   // angular velocity difference threshold
+        double difMax = 0.045;   // angular velocity difference threshold
         double slowFact = 20.0; // slow down factor how quickly the ship tries to slow down toward the end of a turn
         double fastFact = 2.0;  // speed up factor
         double smallMax = 0.4;  // angle remaining in turn when smallFactor is applied
@@ -102,8 +102,11 @@ namespace IngameScript
 
         public void SetTargetDirection(Vector3D aWorld) {
             calcDirection = false;
-            if (mTargetDirection != aWorld) {
-                Active = true;
+            Active = true;
+            if (MAF.nearEqual(mTargetDirection, aWorld)) {
+                init();
+            } else {
+                
                 mTargetDirection = aWorld;
             }
         }
