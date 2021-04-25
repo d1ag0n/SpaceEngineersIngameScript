@@ -236,21 +236,23 @@ namespace IngameScript {
                 mStay.TargetVelocityRad = speed;
                 work = null;
             } else {
-                
                 work.TargetVelocityRad = speed;
-                mStay.TargetVelocityRad = -speed;
-                
-                
+                other.TargetVelocityRad = 0;
             }
             if (mStay.Top != null) {
-
-                ab = MathHelper.Clamp((float)MAF.angleBetween(mStay.Top.WorldMatrix.Backward, mGrav), -MAXSPEED, MAXSPEED);
+                ab = (float)MAF.angleBetween(mStay.Top.WorldMatrix.Backward, mGrav);
+                if (ab < 0.01) {
+                    ab = 0;
+                }
+                ab *= AMP;
+                ab = MathHelper.Clamp(ab, -MAXSPEED, MAXSPEED);
+                
                 Echo($"AB stay {ab}");
                 dot = mStay.Top.WorldMatrix.Right.Dot(mGrav);
                 if (dot > 0) {
                     ab = -ab;
                 }
-                mStay.TargetVelocityRad += ab;
+                mStay.TargetVelocityRad = ab - speed;
             }
 
         }
