@@ -6,8 +6,8 @@ using System.Collections.Generic;
 namespace IngameScript {
     
     public class DrillMission : APMission {
-        const float cargoPercent = 0.90f;
-        const double drillSpeed = 0.3;
+        const float CARGO_PCT = 0.90f;
+        const double DRILL_SPEED = 0.3;
 
         readonly List<IMyShipDrill> mDrill = new List<IMyShipDrill>();
 
@@ -40,9 +40,8 @@ namespace IngameScript {
             aManager.GetModule(out mATC);
             aManager.GetModule(out mGyro);
             mController.mManual = false;
-            if (mATC.connected) {
-                mThrust.Damp = false;
-            }
+            mThrust.Damp = false;
+            mLog.persist("align dock damp to false");
             mMissionAsteroid = aAsteroid;
             mMissionTarget = aTarget;
             var disp2center = mMissionAsteroid.Center - mMissionTarget;
@@ -60,13 +59,14 @@ namespace IngameScript {
                 mMissionStart = mMissionTarget + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
             }*/
             mMissionStart = mMissionAsteroid.Center + -mMissionDirection * (mMissionAsteroid.Radius + mController.Volume.Radius);
-            mATC.Disconnect();
+
             
 
             mManager.getByType(mDrill);
             
             mGyro.SetTargetDirection(Vector3D.Zero);
-            mThrust.Damp = false;
+
+            
             if (mATC.connected) {
                 stopDrill();
                 onUpdate = approach;
@@ -74,6 +74,7 @@ namespace IngameScript {
                 startDrill();
                 onUpdate = escape;
             }
+            
             lastCargo = mController.cargoLevel();
             mEscape = mController.Remote.WorldMatrix.Forward;
         }
@@ -106,11 +107,11 @@ namespace IngameScript {
         void escape() {
             double dif;
             Vector3D dir;
+            mThrust.Damp = false;
             orbitPlane(out dir, out dif);
             mLog.log($"escape, dif={dif}");
             info();
             scanRoid();
-
  
             if (dif > mController.Volume.Radius) {
                 mGyro.SetTargetDirection(mEscape);
@@ -123,15 +124,20 @@ namespace IngameScript {
         void approach() {
             Vector3D dir;
             double dif;
-            var plane = orbitPlane(out dir, out dif);
-            mLog.log($"approach, dif={dif}");
-            info();
-            scanRoid();
-            mATC.Disconnect();
+
             if (mController.cargoLevel() > 0f) {
                 onUpdate = alignDock;
                 return;
             }
+
+            var plane = orbitPlane(out dir, out dif);
+            mThrust.Damp = false;
+            mLog.log($"approach, dif={dif}");
+            info();
+            scanRoid();
+            mATC.Disconnect();
+            
+            
 
             mDestination = new BoundingSphereD(MAF.orthoProject(mMissionStart, plane, dir), 0);
             
@@ -164,7 +170,7 @@ namespace IngameScript {
                 
                 var wv = mController.Volume;
                 var scanPos = wv.Center + mMissionDirection * wv.Radius * 2.0;
-                scanPos += MAF.ranDir() * wv.Radius;
+                scanPos += MAF.ranDir() * wv.Radius + 2.5;
                 var entity = new MyDetectedEntityInfo();
                 ThyDetectedEntityInfo thy;
                 mCamera.Scan(ref scanPos, ref entity, out thy);
@@ -197,7 +203,7 @@ namespace IngameScript {
             }
             var speed = 2.5;
             if (lastDepth + 2.5 > deepestDepth) {
-                speed = drillSpeed;
+                speed = DRILL_SPEED;
             }
             var cargo = mController.cargoLevel();
 
@@ -213,7 +219,7 @@ namespace IngameScript {
             }
             var dist = followLine(speed);
 
-            if (cargo > cargoPercent) {
+            if (cargo > CARGO_PCT) {
                 onUpdate = extract;
                 deepestDepth -= 1d;
                 slow = false;
@@ -254,6 +260,7 @@ namespace IngameScript {
             mATC.ReserveDock();
             if (mATC.Dock.isReserved) {
                 mThrust.Damp = false;
+                mLog.persist("align dock DAMP TO false");
                 var wv = mController.Volume;
                 var com = mController.Remote.CenterOfMass;
                 var ms = mATC.Mother;
@@ -293,6 +300,8 @@ namespace IngameScript {
                 }
             } else {
                 mThrust.Damp = true;
+                mLog.persist("align dock DAMP TO TRUE");
+                
             }
         }
         void undock() {
@@ -301,7 +310,7 @@ namespace IngameScript {
         }
         
 
-        double followLine(double aSpeed = drillSpeed, bool reverse = false) {
+        double followLine(double aSpeed = DRILL_SPEED, bool reverse = false) {
             Vector3D pos;
 
             var com = mController.Remote.CenterOfMass;
@@ -317,10 +326,10 @@ namespace IngameScript {
 
 
 
-            if (off > 0.75) {
-                dist2com += 2.5;
-            } else {
+            if (off > 0.25 && !reverse) {
                 dist2com -= off * 0.5;
+            } else {
+                dist2com += 2.5;
             }
 
 

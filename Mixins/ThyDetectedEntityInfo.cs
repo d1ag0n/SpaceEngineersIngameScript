@@ -77,7 +77,7 @@ namespace IngameScript {
         }
 
         public IEnumerator<bool> asteroidIdentifier(CameraModule aCam) {
-            var radiusInc = 10d;
+            var radiusInc = 25d;
             var radius = radiusInc;
             var angleInc = MathHelperD.Pi / 9d;
             var angle = 0d;
@@ -146,7 +146,7 @@ namespace IngameScript {
         }
         static readonly Dictionary<string, int> mOreWork = new Dictionary<string, int>();
         public void SortOre() {
-            mOres.Sort((a, b) => (Position - b.Location).LengthSquared() < (Position - a.Location).LengthSquared() ? -1 : 1);
+            mOres.Sort((a, b) => (Position - b.Location).LengthSquared() > (Position - a.Location).LengthSquared() ? -1 : 1);
             int count;
             for (int i = 0; i < mOres.Count; i++) {
                 var o = mOres[i];

@@ -121,7 +121,6 @@ namespace IngameScript
         }
 
         void UpdateAction() {
-            mLog.log("Gyro Update");
             var sc = mController.Remote;
             if (sc == null) {
                 init();
@@ -203,7 +202,6 @@ namespace IngameScript
                 double rp, rr;
                 var dir = Vector3D.Normalize(_RollTarget - MyMatrix.Translation);
                 MAF.getRotationAnglesFromDown(m, dir, out rp, out rr);
-                mLog.log($"Roll={rr}");
                 Roll = (float)rr;
             }
             applyGyroOverride(m, pitch, Yaw == 0f ? yaw : Yaw, Roll);

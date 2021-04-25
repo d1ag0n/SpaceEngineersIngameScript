@@ -82,7 +82,7 @@ namespace IngameScript {
                     } else if (entity.EntityId == mManager.mProgram.Me.CubeGrid.EntityId) {
                         mLog.persist("Periscope scan obstructed by grid.");
                     } else {
-                        mLog.persist(mLog.gps(entity.Name, entity.Position));
+                        
                         var mod = mCamera;
                         ThyDetectedEntityInfo thy;
                         if (mod == null) {
@@ -90,6 +90,11 @@ namespace IngameScript {
                         } else {
                             mLog.persist("Periscope scan success.");
                             mod.AddNew(entity, out thy);
+                            if (thy == null) {
+                                mLog.persist(mLog.gps(entity.Name, entity.Position));
+                            } else {
+                                mLog.persist(mLog.gps(thy.Name, thy.Position));
+                            }
                         }
                     }
                 }

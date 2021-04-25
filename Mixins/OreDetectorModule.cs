@@ -52,7 +52,7 @@ namespace IngameScript {
             int index = aEntity.mOres.Count - 1;
             aManager.GetModule(out cam);
             aManager.GetModule(out detector);
-
+            
             for (; index > -1; index--) {
                 var ore = aEntity.mOres[index];
                 if (cam.Scan(ref ore.Location, ref entity, out thy)) {
@@ -75,7 +75,6 @@ namespace IngameScript {
                         aEntity.mOres.RemoveAtFast(index);
                         aEntity.SortOre();
                         aManager.mLog.persist(aManager.mLog.gps("removed", ore.Location));
-                        index++;
                     }
                 } else {
                     aManager.mLog.persist(aManager.mLog.gps("ExpectedSuccess", ore.Location));
@@ -84,7 +83,7 @@ namespace IngameScript {
                 
                 yield return true;
             }
-            
+            aEntity.SortOre();
         }
     }
 }

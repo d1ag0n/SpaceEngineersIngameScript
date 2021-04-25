@@ -826,7 +826,9 @@ namespace IngameScript
                     }
                     if (mRefine.Count > 0) {
                         MyInventoryItem? item = new MyInventoryItem();
-                        while (item.HasValue) {
+                        var count = inv.ItemCount;
+                        while (item.HasValue && count > 0) {
+                            count--;
                             item = inv.GetItemAt(0);
                             if (item.HasValue) {
                                 string tag;
