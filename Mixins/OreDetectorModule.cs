@@ -7,6 +7,24 @@ namespace IngameScript {
 
     public class OreDetectorModule : Module<IMyOreDetector> {
         public OreDetectorModule(ModuleManager aManager):base(aManager) { }
+
+        public override bool Accept(IMyTerminalBlock aBlock) {
+            var result = base.Accept(aBlock);
+            if (result) {
+                var d = aBlock as IMyOreDetector;
+                var blackList = "Stone,Ice";
+                d.SetValue("OreBlacklist", blackList);
+            }
+            return result;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="thy"></param>
+        /// <param name="aPos"></param>
+        /// <param name="info"></param>
+        /// <param name="update"></param>
+        /// <returns></returns>
         public int Scan(ThyDetectedEntityInfo thy, Vector3D aPos, out MyDetectedEntityInfo info, bool update) {
             int result = 0;
             info = default(MyDetectedEntityInfo);
@@ -22,21 +40,18 @@ namespace IngameScript {
                 detector.SetValue("RaycastTarget", aPos);
                 info = detector.GetValue<MyDetectedEntityInfo>(update ? "DirectResult" : "RaycastResult");
 
-                if (info.TimeStamp != 0) {
-                    result = 1;
-                    if (info.Name != "") {
-                        result = 2;
+                if (info.EntityId == 1) {
+                    result = 2;
+                    if (thy != null) {
                         if (thy.AddOre(info)) {
                             result = 3;
                             mLog.persist($"New {info.Name} Deposit found!");
                         }
                     }
-                    break;
                 } else {
-                    mLog.persist("ORE Timestamp Zero");
+                    result = 1;
                 }
-                //detector.SetValue("ScanEpoch", 0L);
-                //throw new Exception("shouldnt be able to write ScanEpoch");
+                break;
             }
             return result;
         }

@@ -20,11 +20,22 @@ using VRageMath;
 
 namespace IngameScript {
     partial class Program : MyGridProgram {
+        // name of the one of the rotors that move the elevator
         const string MOVE_ROTOR_1 = "MOVE1";
+        
+        // name of the other rotor that moves the elevator
         const string MOVE_ROTOR_2 = "MOVE2";
+        
+        // name of the rotor that balances the elevator
         const string STAY_ROTOR = "STAY";
-        const float MAXSPEED = 0.2f;
-        const float AMP = 2f;
+
+        // top speed for elevator rotor in radiand per second
+        const float MAXSPEED = 0.1f;
+
+        // factor applied to elevator speed, increse if your elevator is taking too long to lock into a floor
+        const float AMP = 2.0f;
+
+        // end of config
         readonly IMyShipController mSC;
         readonly IMyMotorStator mR1;
         readonly IMyMotorStator mR2;
@@ -32,6 +43,7 @@ namespace IngameScript {
         readonly Vector3I mBottom;
         readonly Vector3I mTop;
         readonly int floorHeight;
+        readonly int topFloor;
         readonly Vector3D mGrav;
         readonly float torque;
         readonly Vector3D mPerp;
@@ -49,6 +61,7 @@ namespace IngameScript {
                     r2 = r;
                     return false;
                 }
+                mR1.GetPosition()
                 if (r != null && stay == null && r.CustomName == STAY_ROTOR) {
                     stay = r;
                     return false;
@@ -68,11 +81,13 @@ namespace IngameScript {
             
 
             mGrav = mSC.GetNaturalGravity();
+
             var down = Base6Directions.GetIntVector(Base6Directions.GetClosestDirection(MAF.world2dir(mGrav, Me.CubeGrid.WorldMatrix)));
             mDown = MAF.local2dir(down, Me.CubeGrid.WorldMatrix);
             var part = r1.Top == null ? r2.Top : r1.Top;
             mBottom = findStop(part, down);
             mTop = findStop(part, -down);
+            topFloor = (mBottom - mTop).Length() / floorHeight;
             var partUp = Base6Directions.GetIntVector(part.Orientation.Up);
             Vector3I perp;
             Vector3I.Cross(ref down, ref partUp, out perp);
@@ -120,24 +135,58 @@ namespace IngameScript {
         bool mGoDown = false;
         bool mStop = true;
         
-        int floors = 1;
+        int floors2move = 1;
+        int currentFloor;
+        int targetFloor = -1;
+        int findFloor() {
+            Vector3I pos;
+            if (mGrav.Dot(mR1.WorldMatrix.Translation - mR2.WorldMatrix.Translation) < 0) {
+                pos = mR2.Top.Position;
+            } else {
+                pos = mR1.Top.Position;
+            }
+            pos -= mBottom;
+            return pos.Length() / floorHeight;
+            
+        }
+
         public void Main(string argument, UpdateType updateSource) {
-            if (argument.StartsWith("up")) {
+            int gotoFloor;
+            if (int.TryParse(argument, out gotoFloor)) {
+                targetFloor = MathHelper.Clamp(gotoFloor, 0, topFloor);
+                work = null;
+            } else if (argument.StartsWith("up")) {
+                targetFloor = -1;
                 argument = argument.Substring(2);
-                if (!int.TryParse(argument, out floors)) {
-                    floors = 1;
+                if (!int.TryParse(argument, out floors2move)) {
+                    floors2move = 1;
                 }
                 mGoDown = false;
                 mStop = false;
                 work = null;
             } else if (argument.StartsWith("down")) {
                 argument = argument.Substring(4);
-                if (!int.TryParse(argument, out floors)) {
-                    floors = 1;
+                if (!int.TryParse(argument, out floors2move)) {
+                    floors2move = 1;
                 }
                 work = null;
                 mGoDown = true;
                 mStop = false;
+                targetFloor = -1;
+            }
+            if (targetFloor > -1) {
+                floors2move = Math.Abs(currentFloor - targetFloor);
+
+                if (targetFloor > currentFloor) {
+                    mGoDown = false;
+                } else {
+                    mGoDown = true;
+                }
+                if (floors2move == 0) {
+                    targetFloor = -1;
+                } else {
+                    mStop = false;
+                }
             }
             if (work == null) {
                 if (mGoDown) {
@@ -146,20 +195,21 @@ namespace IngameScript {
                     work = getHighest(out other);
                 }
                 if (!work.IsAttached) {
-                    Echo("Switching workers");
                     var w = work;
                     work = other;
                     other = w;
-                    if (work == null || other == null) {
-                        throw new Exception("WTF");
-                    }
-                } else {
-
                 }
                 if (work.IsAttached) {
+                    if (other.IsAttached) {
+                        currentFloor = findFloor();
+                        if (currentFloor == targetFloor) {
+                            targetFloor = -1;
+                            floors2move = 0;
+                            mStop = true;
+                        }
+                    }
                     if (!mStop) {
                         if (mGoDown) {
-
                             if (work.Top.Position != mBottom) {
                                 if (other.IsAttached) {
                                     other.Detach();
@@ -211,10 +261,10 @@ namespace IngameScript {
             Echo($"speed={speed}");
             Echo($"mGoDown={mGoDown}");
             Echo($"mStop={mStop}");
-
+            Echo($"currentFloor={currentFloor}");
             var dist = (mStay.WorldMatrix.Translation - MAF.local2pos(mBottom * Me.CubeGrid.GridSize, Me.CubeGrid.WorldMatrix)).Length() / (floorHeight * Me.CubeGrid.GridSize);
 
-            Echo($"floor={dist}");
+            
             
             if (ab < 0.001) {
 
@@ -225,8 +275,8 @@ namespace IngameScript {
                     }
                 } else {
                     other.Attach();
-                    floors--;
-                    if (floors < 1) {
+                    floors2move--;
+                    if (floors2move < 1) {
                         mStop = true;
                     }
                     Echo($"Attching {other.CustomName}");
@@ -239,6 +289,7 @@ namespace IngameScript {
                 work.TargetVelocityRad = speed;
                 other.TargetVelocityRad = 0;
             }
+            Echo($"floors2move={floors2move}");
             if (mStay.Top != null) {
                 ab = (float)MAF.angleBetween(mStay.Top.WorldMatrix.Backward, mGrav);
                 if (ab < 0.01) {

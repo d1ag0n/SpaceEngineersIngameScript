@@ -18,7 +18,8 @@ namespace IngameScript {
         readonly Vector3D mMissionDirection;
         readonly ATClientModule mATC;
         readonly GyroModule mGyro;
-
+        readonly OreDetectorModule mOre;
+        readonly List<OreSearch> mSearch = new List<OreSearch>();
         bool mCancel = false;
         Action onUpdate;
         double deepestDepth;
@@ -39,6 +40,7 @@ namespace IngameScript {
         public DrillMission(ModuleManager aManager, BoundingSphereD aAsteroid, Vector3D aTarget, Vector3D aBestApproach) : base(aManager, aAsteroid) {
             aManager.GetModule(out mATC);
             aManager.GetModule(out mGyro);
+            aManager.GetModule(out mOre);
             mController.mManual = false;
             mThrust.Damp = false;
             mLog.persist("align dock damp to false");
@@ -77,6 +79,8 @@ namespace IngameScript {
             
             lastCargo = mController.cargoLevel();
             mEscape = mController.Remote.WorldMatrix.Forward;
+            oreSearchMachine = oreSearch();
+            oreSearchMachine.MoveNext();
         }
         public override bool Cancel() {
             mCancel = true;
@@ -232,9 +236,144 @@ namespace IngameScript {
             var targDist = (mMissionTarget - mController.Volume.Center).LengthSquared();
             mLog.log($"targDist={targDist}");
             if (targDist < 5d) {
-                mCancel = true;
+                onUpdate = search;
+            }
+            if (mController.ShipVelocities.AngularVelocity.LengthSquared() < 0.01) {
+                ngRev++;
+            } else {
+                ngRev = 0;
+            }
+            if (ngRev > 12) {
+                ngRev = 0;
+                mGyro.Roll = -mGyro.Roll;
             }
         }
+        Vector3D mMovePosition;
+        Vector3D mMoveCurrentPosition;
+        Vector3D mMoveDirection;
+        Vector3D mMoveCurrentDirection;
+        MatrixD mMoveMatrix;
+        void move(double aVelo) {
+            var com = mController.Remote.CenterOfMass;
+            var f = mController.Remote.WorldMatrix.Forward;
+            var canMove = false;
+            if (MAF.angleBetween(mMoveDirection, f) < 0.1) {
+                mMoveCurrentDirection = mMoveDirection;
+                canMove = true;
+            } else {
+                if (MAF.angleBetween(f, mMoveCurrentDirection) < 0.1) {
+                    Vector3D.Transform(ref mMoveCurrentDirection, ref mMoveMatrix, out mMoveCurrentDirection);
+                }
+            }
+            mGyro.SetTargetDirection(mMoveCurrentDirection);
+            if (canMove) {
+                if (Vector3D.DistanceSquared(com, mMovePosition) < 1d) {
+                    mMoveCurrentPosition = mMovePosition;
+                } else {
+                    if (Vector3D.DistanceSquared(com, mMoveCurrentPosition) < 1d) {
+                        mMoveCurrentPosition = com + mMoveDirection * 2d;
+                    }
+                }
+            }
+            var velo = MathHelperD.Clamp(Vector3D.Distance(com, mMoveCurrentPosition), 0, aVelo);
+        }
+        void setMove(Vector3D aTarget) {
+            var com = mController.Remote.CenterOfMass;
+            
+            mMovePosition = aTarget;
+            mMoveDirection = Vector3D.Normalize(aTarget - com);
+            
+            if (Vector3D.DistanceSquared(com, aTarget) < 6.25) {
+                mMoveCurrentPosition = aTarget;
+            } else {
+                mMoveCurrentPosition = com + mMoveDirection * 2d;
+            }
+            
+            mMoveMatrix = MatrixD.CreateFromAxisAngle(mMoveCurrentDirection.Cross(mMoveDirection), 0.1);
+            var f = mController.Remote.WorldMatrix.Forward;
+            if (MAF.angleBetween(mMoveDirection, f) < 0.1) {
+                mMoveCurrentDirection = f;
+            } else {
+                Vector3D.TransformNormal(ref f, ref mMoveMatrix, out mMoveCurrentDirection);
+            }
+        }
+        void search() {
+        }
+
+        class OreSearch {
+            public readonly string mName;
+            public readonly Vector3D mStartPosition;
+            public readonly Vector3D mStartDirection;
+            public readonly Vector3D mOrePosition;
+            public OreSearch(string aName, Vector3D aStartPosition, Vector3D aStartDirection, Vector3D aOrePosition) {
+                mName = aName;
+                mStartPosition = aStartPosition;
+                mStartDirection = aStartDirection;
+                mOrePosition = aOrePosition;
+            }
+
+        }
+        OreSearch mSearchResult;
+        readonly IEnumerator<bool> oreSearchMachine;
+        IEnumerator<bool> oreSearch() {
+            yield return true;
+            Vector3D originalDir, dir, CoM, target;
+            MatrixD roll, yaw;
+            double rolls, range;
+            ThyDetectedEntityInfo thy;
+            MyDetectedEntityInfo entity = new MyDetectedEntityInfo();
+            RayD ray;
+            double? intersect;
+            BoundingSphereD back;
+            double angle = MathHelperD.TwoPi / 64d;
+            int oreScan;
+            while (true) {
+                CoM = mController.Remote.CenterOfMass;
+                back = new BoundingSphereD(CoM + mController.Remote.WorldMatrix.Backward * (mController.Volume.Radius * 2d), mController.Volume.Radius);
+                originalDir = mController.Remote.WorldMatrix.Forward;
+                roll = MatrixD.CreateFromAxisAngle(originalDir, angle);
+                yaw = MatrixD.CreateFromAxisAngle(mController.Remote.WorldMatrix.Right, angle);
+                rolls = 0;
+                range = mController.Volume.Radius + 10d;
+                Vector3D.TransformNormal(ref originalDir, ref yaw, out dir);
+
+                yield return true;
+                while (true) {
+                    target = CoM + dir * range;
+                    ray = new RayD(CoM, dir);
+                    intersect = back.Intersects(ray);
+                    if (intersect.HasValue) {
+                        break;
+                    }
+                    if (mCamera.Scan(ref target, ref entity, out thy)) {
+                        if (entity.HitPosition.HasValue) {
+                            if (entity.Type == MyDetectedEntityType.Asteroid) {
+                                while (0 == (oreScan = mOre.Scan(null, target, out entity, false))) {
+                                    yield return true;
+                                }
+                                if (oreScan == 1 || !entity.HitPosition.HasValue) {
+                                    // nothing
+                                } else {
+                                    mSearchResult = new OreSearch(entity.Name, CoM, originalDir, entity.HitPosition.Value);
+                                    break;
+                                }
+                            }
+                        } else {
+                            range += 10;
+                        }
+                    }
+                    if (rolls >= MathHelperD.TwoPi) {
+                        rolls = 0;
+                        Vector3D.TransformNormal(ref dir, ref yaw, out dir);
+                    } else {
+                        rolls += angle;
+                        Vector3D.TransformNormal(ref dir, ref roll, out dir);
+                    }
+                }
+                yield return false;
+            }
+        }
+        int ngRev = 0;
         
         void extract() {
             mLog.log($"extract");

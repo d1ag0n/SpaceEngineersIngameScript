@@ -7,8 +7,6 @@ using VRage.Game.ModAPI.Ingame;
 
 namespace IngameScript {
     public  class OrbitMission : APMission {
-        
-        readonly List<IMyOreDetector> mDetectors = new List<IMyOreDetector>();
         protected readonly GyroModule mGyro;
         readonly Vector3D mOriginalOrbit;
         readonly Vector3D mOriginalPerp;
@@ -30,11 +28,8 @@ namespace IngameScript {
 
             calculateOrbitMatrix();
             onScan = analyzeScan;
-            mController.mManager.mProgram.GridTerminalSystem.GetBlocksOfType(mDetectors);
-            var blackList = "Stone";
-            foreach (var detector in mDetectors) {
-                detector.SetValue("OreBlacklist", blackList);
-            }
+            
+            
             
         }
 

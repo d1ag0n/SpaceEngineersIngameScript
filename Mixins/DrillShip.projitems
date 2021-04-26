@@ -35,6 +35,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)MotherState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Ore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OreDetectorModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ThrustModule.cs" />
