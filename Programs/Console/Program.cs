@@ -162,8 +162,10 @@ namespace commandline
         const double mdNewtons = 196800;
         const double mdVelocity = 1.71;
         const double mdGravity = 2.45;
-        static void sphere() {
+        static void facePoints(Vector3D aOrigin, Base6Directions.Direction aDontFace, int aHalfSize, double aDistance){
 
+            
+            
             int nx = 4;
             int ny = 5;
             for (int x = 0; x < nx; x++) {

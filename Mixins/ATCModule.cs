@@ -11,8 +11,9 @@ namespace IngameScript
         readonly HashSet<long> mDrills = new HashSet<long>();
         readonly BoxMap map = new BoxMap();
         readonly List<Connector> mConnectors = new List<Connector>();
-        readonly Dictionary<Vector3L, long> mDrillMissions = new Dictionary<Vector3L, long>();
+        readonly Dictionary<Vector3L, DrillMission> mDrillMissions = new Dictionary<Vector3L, DrillMission>();
         readonly GridComModule mCom;
+        readonly Dictionary<long, string> mDrillNames = new Dictionary<long, string>();
 
         public ATCModule(ModuleManager aManager) : base(aManager) {
             aManager.GetModule(out mCom);
@@ -29,29 +30,43 @@ namespace IngameScript
         }
 
         public void CancelDrill(Vector3L aPos) {
-            long id;
-            if (mDrillMissions.TryGetValue(aPos, out id)) {
-                if (mManager.mProgram.IGC.SendUnicastMessage(id, "Cancel", 0)) {
+            DrillMission m;
+            if (mDrillMissions.TryGetValue(aPos, out m)) {
+                if (mManager.mProgram.IGC.SendUnicastMessage(m.Id, "Cancel", 0)) {
                     mDrillMissions.Remove(aPos);
                 }
+            }
+        }
+        public struct DrillMission {
+            public readonly long Id;
+            public readonly string Name;
+            public readonly Vector3L Location;
+            public DrillMission(long aId, string aName, Vector3L aLocation) {
+                Id = aId;
+                Name = aName;
+                Location = aLocation;
+            }
+        }
+        public void DrillMissions(List<DrillMission> aList) {
+            foreach (var dm in mDrillMissions) {
+                aList.Add(dm.Value);
             }
         }
 
         public bool SendDrill(Ore ore) {
             if (mDrills.Count > 0) {
                 var id = mDrills.FirstElement();
-                long existing;
+                DrillMission existing;
                 if (mDrillMissions.TryGetValue(ore.Index, out existing)) {
-                    if (existing != id) {
+                    if (existing.Id != id) {
                         return false;
                     }
-                } else {
-                    mDrillMissions.Add(ore.Index, id);
                 }
 
                 if (mManager.mProgram.IGC.SendUnicastMessage(id, "Drill", ore.Pack())) {
                     mDrills.Remove(id);
-                    
+
+                    mDrillMissions.Add(ore.Index, new DrillMission(id, mDrillNames[id], ore.Index));
                     return true;
                 }
             }
@@ -87,7 +102,8 @@ namespace IngameScript
         void registrationMessage(Envelope e) {
             if (e.Message.Data != null) {
                 var data = e.Message.Data.ToString();
-                if (data == "Drill") {
+                if (data.StartsWith("Drill:")) {
+                    mDrillNames[e.Message.Source] = data.Substring(6);
                     mDrills.Add(e.Message.Source);
                 }
             }

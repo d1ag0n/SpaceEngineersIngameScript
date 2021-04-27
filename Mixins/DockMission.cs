@@ -21,6 +21,7 @@ namespace IngameScript {
         public DockMission(ModuleManager aManager) : base(aManager, default(BoundingSphereD)) {
             aManager.GetModule(out mATC);
             aManager.GetModule(out mGyro);
+            mGyro.MaxNGVelo = 0;
             onUpdate = reserve;
         }
 

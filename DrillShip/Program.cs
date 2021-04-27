@@ -28,6 +28,7 @@ namespace IngameScript {
             var g = new GyroModule(mManager);
             var t = new ThrustModule(mManager);
             new CameraModule(mManager);
+            new OreDetectorModule(mManager);
             var c = new ATClientModule(mManager);
             mManager.Initialize();
             var list = new List<IMyShipDrill>();

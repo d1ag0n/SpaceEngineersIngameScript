@@ -66,12 +66,12 @@ namespace IngameScript {
         }
         public void Update(Envelope aMessage) {
             Id = aMessage.Message.Source;
-            mLog.log("MotherId ", Id);
+            
             var ms = Unpack(aMessage.Message.Data);
             Box = ms.Item1;
             VeloDir = ms.Item2;
             Speed = ms.Item3;
-            mLog.log("MotherSpeed ", Speed);
+            
             AngularVelo = ms.Item4;
             Matrix = ms.Item5;
             CoM = ms.Item6;

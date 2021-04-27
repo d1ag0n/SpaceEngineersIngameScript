@@ -199,7 +199,7 @@ namespace IngameScript {
             if (updateRequired) {
                 mLog.log("Thrust module updating.");
                 var a = Acceleration;
-                mLog.log(a);
+                //mLog.log(a);
                 if (a.IsZero()) {
                     mThrust.AllStop();                    
                 } else {

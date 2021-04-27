@@ -43,7 +43,6 @@ namespace IngameScript {
             aManager.GetModule(out mOre);
             mController.mManual = false;
             mThrust.Damp = false;
-            mLog.persist("align dock damp to false");
             mMissionAsteroid = aAsteroid;
             mMissionTarget = aTarget;
             var disp2center = mMissionAsteroid.Center - mMissionTarget;
@@ -151,6 +150,8 @@ namespace IngameScript {
             FlyTo(10d);
             var r = mController.Volume.Radius;
             if (mDistToDest < 25d) {
+                setMove(mMissionTarget, false);
+                startDrill();
                 onUpdate = enter;
             }
         }
@@ -164,34 +165,38 @@ namespace IngameScript {
             mLog.log($"enter");
             info();
             if (mCancel) {
-                stopDrill();
+                setMove(mMissionStart, true);
                 onUpdate = extract;
             }
-            mGyro.SetTargetDirection(mMissionDirection);
+            
+            var depth = getDepth();
             if (firstEntrance) {
-                var flResult = followLine(4.0);
-                entranceDepth = flResult;
-                
-                var wv = mController.Volume;
-                var scanPos = wv.Center + mMissionDirection * wv.Radius * 2.0;
-                scanPos += MAF.ranDir() * wv.Radius + 2.5;
-                var entity = new MyDetectedEntityInfo();
-                ThyDetectedEntityInfo thy;
-                mCamera.Scan(ref scanPos, ref entity, out thy);
-                if (entity.Type == MyDetectedEntityType.Asteroid) {
-                    //var ct = wv.Contains(entity.HitPosition.Value);
-                    var disp = wv.Center - entity.HitPosition.Value;
-                    var dist = disp.LengthSquared();
-                    if (dist < (wv.Radius * wv.Radius) + 500d) {
-                        startDrill();
-                        onUpdate = drill;
-                        firstEntrance = false;
+                move(4);
+                entranceDepth = getDepth();
+                if (Vector3D.DistanceSquared(mController.Remote.CenterOfMass, mMissionTarget) < 25) {
+                    setMove(mMissionTarget, false);
+                    onUpdate = drill;
+                    firstEntrance = false;
+                } else {
+                    var wv = mController.Volume;
+                    var scanPos = wv.Center + mMissionDirection * wv.Radius * 2.0;
+                    scanPos += MAF.ranDir() * wv.Radius + 2.5;
+                    var entity = new MyDetectedEntityInfo();
+                    ThyDetectedEntityInfo thy;
+                    mCamera.Scan(ref scanPos, ref entity, out thy);
+                    if (entity.Type == MyDetectedEntityType.Asteroid) {
+                        //var ct = wv.Contains(entity.HitPosition.Value);
+                        var disp = wv.Center - entity.HitPosition.Value;
+                        var dist = disp.LengthSquared();
+                        if (dist < (wv.Radius * wv.Radius) + 500d) {
+                            onUpdate = drill;
+                            firstEntrance = false;
+                        }
                     }
                 }
             } else {
-                var flResult = followLine(10.0);
-                if (flResult + 20d > entranceDepth) {
-                    startDrill();
+                move(10);
+                if (depth + 20d > entranceDepth) {
                     onUpdate = drill;
                 }
             }
@@ -202,7 +207,7 @@ namespace IngameScript {
             mLog.log($"drilling");
             info();
             if (mCancel) {
-                stopDrill();
+                setMove(mMissionStart, true);
                 onUpdate = extract;
             }
             var speed = 2.5;
@@ -221,9 +226,12 @@ namespace IngameScript {
             if (lastDepth < entranceDepth) {
                 speed = 5.0;
             }
-            var dist = followLine(speed);
+            var dist = getDepth();
+            mGyro.MaxNGVelo = 0;
+            move(speed);
 
             if (cargo > CARGO_PCT) {
+                setMove(mMissionStart, true);
                 onUpdate = extract;
                 deepestDepth -= 1d;
                 slow = false;
@@ -236,6 +244,10 @@ namespace IngameScript {
             var targDist = (mMissionTarget - mController.Volume.Center).LengthSquared();
             mLog.log($"targDist={targDist}");
             if (targDist < 5d) {
+                if (mSearch.Count == 0) {
+                    mSearch.Add(new OreSearch("Origin", mController.Remote.CenterOfMass, mMissionDirection, mController.Remote.CenterOfMass + mController.Remote.WorldMatrix.Forward));
+                }
+                setMove(mController.Remote.CenterOfMass + mController.Remote.WorldMatrix.Forward, false);
                 onUpdate = search;
             }
             if (mController.ShipVelocities.AngularVelocity.LengthSquared() < 0.01) {
@@ -251,53 +263,137 @@ namespace IngameScript {
         Vector3D mMovePosition;
         Vector3D mMoveCurrentPosition;
         Vector3D mMoveDirection;
-        Vector3D mMoveCurrentDirection;
-        MatrixD mMoveMatrix;
-        void move(double aVelo) {
+        bool mMoveReverse;
+        double move(double aVelo) {
             var com = mController.Remote.CenterOfMass;
             var f = mController.Remote.WorldMatrix.Forward;
             var canMove = false;
-            if (MAF.angleBetween(mMoveDirection, f) < 0.1) {
-                mMoveCurrentDirection = mMoveDirection;
+            
+            var ab = MAF.angleBetween(mMoveReverse ? -mMoveDirection : mMoveDirection, f);
+            mLog.log($"move.abFinal={ab}");
+            if (ab < 0.01) {
                 canMove = true;
-            } else {
-                if (MAF.angleBetween(f, mMoveCurrentDirection) < 0.1) {
-                    Vector3D.Transform(ref mMoveCurrentDirection, ref mMoveMatrix, out mMoveCurrentDirection);
-                }
             }
-            mGyro.SetTargetDirection(mMoveCurrentDirection);
+            
+            var result = Vector3D.DistanceSquared(com, mMovePosition);
             if (canMove) {
-                if (Vector3D.DistanceSquared(com, mMovePosition) < 1d) {
+                if (result < 1d) {
                     mMoveCurrentPosition = mMovePosition;
                 } else {
-                    if (Vector3D.DistanceSquared(com, mMoveCurrentPosition) < 1d) {
-                        mMoveCurrentPosition = com + mMoveDirection * 2d;
+                    if (Vector3D.DistanceSquared(com, mMoveCurrentPosition) < aVelo * aVelo) {
+                        mMoveCurrentPosition = mMoveCurrentPosition + mMoveDirection * aVelo;
                     }
                 }
             }
-            var velo = MathHelperD.Clamp(Vector3D.Distance(com, mMoveCurrentPosition), 0, aVelo);
+            
+            var disp = mMoveCurrentPosition - com;
+            var dir = disp;
+            var mag = dir.Normalize();
+            mLog.log($"move.canMove={canMove}");
+            mLog.log($"move.mag={mag}");
+            if (mag < 0.1) {
+                mThrust.Acceleration = 3d * (-mController.LocalLinearVelo);
+            } else {
+                var velo = MathHelperD.Clamp(mag, 0.0, aVelo);
+                mLog.log($"move.velo={velo}");
+                mThrust.Acceleration = 3d * ((MAF.world2dir(dir, mController.Grid.WorldMatrix) * velo) - mController.LocalLinearVelo);
+            }
+            mLog.log(mLog.gps("mMovePosition", mMovePosition));
+            mLog.log(mLog.gps("mMoveCurrentPosition", mMoveCurrentPosition));
+            return result;
         }
-        void setMove(Vector3D aTarget) {
+        void setMove(Vector3D aTarget, bool reverse) {
+            mMoveReverse = reverse;
+            mGyro.MaxNGVelo = 0.1f;
+            
             var com = mController.Remote.CenterOfMass;
             
             mMovePosition = aTarget;
             mMoveDirection = Vector3D.Normalize(aTarget - com);
-            
+            if (reverse) {
+                mGyro.SetTargetDirection(-mMoveDirection);
+            } else {
+                mGyro.SetTargetDirection(mMoveDirection);
+            }
+
             if (Vector3D.DistanceSquared(com, aTarget) < 6.25) {
                 mMoveCurrentPosition = aTarget;
             } else {
                 mMoveCurrentPosition = com + mMoveDirection * 2d;
             }
-            
-            mMoveMatrix = MatrixD.CreateFromAxisAngle(mMoveCurrentDirection.Cross(mMoveDirection), 0.1);
-            var f = mController.Remote.WorldMatrix.Forward;
-            if (MAF.angleBetween(mMoveDirection, f) < 0.1) {
-                mMoveCurrentDirection = f;
-            } else {
-                Vector3D.TransformNormal(ref f, ref mMoveMatrix, out mMoveCurrentDirection);
+        }
+
+        void search() {
+            mLog.log($"search");
+            info();
+            move(0.3);
+            if (mCancel) {
+                mSearchResult = null;
+                onUpdate = procSearchResult;
+                return;
+            }
+            oreSearchMachine.MoveNext();
+            if (!oreSearchMachine.Current) {
+                mLog.persist("setting procSearchResult");
+                onUpdate = procSearchResult;
             }
         }
-        void search() {
+        void procSearchResult() {
+            mLog.log($"procSearchResult");
+            info();
+            if (mSearchResult == null) {
+                if (mSearch.Count == 1) {
+                    // nothing else found need to point correctly and exit                    
+                    mLog.persist("setting extract");
+                    setMove(mMissionStart, true);
+                    onUpdate = extract;
+                    mCancel = true;
+                } else {
+                    setMove(mSearch[mSearch.Count - 1].mStartPosition, true);
+                    mSearch.RemoveAtFast(mSearch.Count - 1);
+                    mLog.persist("setting backOut");
+                    onUpdate = backOut;
+                }
+            } else {
+                mSearch.Add(mSearchResult);
+                setMove(mSearchResult.mOrePosition, false);
+                mSearchResult = null;
+                mLog.persist("setting drill2result");
+                onUpdate = drill2result;
+            }
+        }
+        void backOut() {
+            mLog.log($"backOut");
+            info();
+            var mr = move(0.3);
+            if (mr < 1) {
+                var sr = mSearch[mSearch.Count - 1];
+                mGyro.SetTargetDirection(sr.mStartDirection);
+                if (MAF.angleBetween(mController.Remote.WorldMatrix.Forward, sr.mStartDirection) < 0.1) {
+                    mLog.persist("setting search");
+                    if (mCancel) {
+                        mSearchResult = null;
+                        onUpdate = procSearchResult;
+                    } else {
+                        onUpdate = search;
+                    }
+                }
+            }
+        }
+
+        void drill2result() {
+            mLog.log($"drill2result");
+            info();
+            var mr = move(0.3);
+            if (mCancel) {
+                mSearchResult = null;
+                onUpdate = procSearchResult;
+                return;
+            }
+            if (mr < 1) {
+                mLog.persist("setting search");
+                onUpdate = search;
+            }
         }
 
         class OreSearch {
@@ -316,25 +412,30 @@ namespace IngameScript {
         OreSearch mSearchResult;
         readonly IEnumerator<bool> oreSearchMachine;
         IEnumerator<bool> oreSearch() {
-            yield return true;
+            
             Vector3D originalDir, dir, CoM, target;
             MatrixD roll, yaw;
-            double rolls, range;
+            double rolls, yaws, range;
             ThyDetectedEntityInfo thy;
             MyDetectedEntityInfo entity = new MyDetectedEntityInfo();
             RayD ray;
             double? intersect;
             BoundingSphereD back;
-            double angle = MathHelperD.TwoPi / 64d;
+            double yawAngle = MathHelperD.TwoPi / 32d;
+            double rollAngle = yawAngle / 2;
             int oreScan;
+            int scanFails;
+            yield return true;
+
             while (true) {
+                scanFails = 0;
                 CoM = mController.Remote.CenterOfMass;
                 back = new BoundingSphereD(CoM + mController.Remote.WorldMatrix.Backward * (mController.Volume.Radius * 2d), mController.Volume.Radius);
                 originalDir = mController.Remote.WorldMatrix.Forward;
-                roll = MatrixD.CreateFromAxisAngle(originalDir, angle);
-                yaw = MatrixD.CreateFromAxisAngle(mController.Remote.WorldMatrix.Right, angle);
-                rolls = 0;
-                range = mController.Volume.Radius + 10d;
+                roll = MatrixD.CreateFromAxisAngle(originalDir, -rollAngle);
+                yaw = MatrixD.CreateFromAxisAngle(mController.Remote.WorldMatrix.Up, -yawAngle);
+                yaws = rolls = 0;
+                range = mController.Volume.Radius + 100d;
                 Vector3D.TransformNormal(ref originalDir, ref yaw, out dir);
 
                 yield return true;
@@ -343,8 +444,10 @@ namespace IngameScript {
                     ray = new RayD(CoM, dir);
                     intersect = back.Intersects(ray);
                     if (intersect.HasValue) {
+                        mLog.persist("Intersect breaking");
                         break;
                     }
+                    mLog.log($"rolls={rolls:f4}, yaws={yaws:f4}");
                     if (mCamera.Scan(ref target, ref entity, out thy)) {
                         if (entity.HitPosition.HasValue) {
                             if (entity.Type == MyDetectedEntityType.Asteroid) {
@@ -358,15 +461,25 @@ namespace IngameScript {
                                     break;
                                 }
                             }
-                        } else {
-                            range += 10;
                         }
+                    } else {
+                        scanFails++;
+                        if (scanFails < 6 * 15) {
+                            mLog.log(mLog.gps("scanFail", target));
+                            yield return true;
+                            continue;
+                        } else {
+                            scanFails = 0;
+                        }
+                        
                     }
+                    yield return true;
                     if (rolls >= MathHelperD.TwoPi) {
                         rolls = 0;
+                        yaws += yawAngle;
                         Vector3D.TransformNormal(ref dir, ref yaw, out dir);
                     } else {
-                        rolls += angle;
+                        rolls += rollAngle;
                         Vector3D.TransformNormal(ref dir, ref roll, out dir);
                     }
                 }
@@ -381,13 +494,13 @@ namespace IngameScript {
             mDestination = new BoundingSphereD(mMissionStart, 0);
             //var disp = com - mMissionStart;
             //var distSq = disp.LengthSquared();
-            
-            var flr = followLine(5.0, true);
-            mLog.log($"flr={flr}, entranceDepth={entranceDepth}");
-            if (flr < entranceDepth) {
+            move(5);
+            var depth = getDepth();
+            mLog.log($"flr={depth}, entranceDepth={entranceDepth}");
+            if (depth < entranceDepth) {
                 stopDrill();
             }
-            if (flr < mController.Volume.Radius * 2d) {
+            if (depth < mController.Volume.Radius * 2d) {
                 onUpdate = alignDock;
                 lastCargo = mController.cargoLevel();
             }
@@ -443,48 +556,16 @@ namespace IngameScript {
                 
             }
         }
-        void undock() {
-            mATC.Disconnect();
-            onUpdate = enter;
-        }
+
         
 
-        double followLine(double aSpeed = DRILL_SPEED, bool reverse = false) {
+        double getDepth() {
             Vector3D pos;
 
             var com = mController.Remote.CenterOfMass;
             var start2com = com - mMissionStart;
             var dir2com = start2com;
-            var dist2com = dir2com.Normalize();
-
-            var position = mMissionStart + mMissionDirection * dist2com;
-
-            var dispToPos = position - com;
-            var dirToPos = dispToPos;
-            var off = dirToPos.Normalize();
-
-
-
-            if (off > 0.25 && !reverse) {
-                dist2com -= off * 0.5;
-            } else {
-                dist2com += 2.5;
-            }
-
-
-            if (reverse) {
-                pos = mMissionStart + mMissionDirection * -dist2com;
-            } else {
-                pos = mMissionStart + mMissionDirection * dist2com;
-            }
-            
-            var m = mController.MyMatrix;
-            pos = MAF.world2pos(pos, m);
-            var dir = pos;
-            dir.Normalize();
-            dir *= aSpeed;
-            mThrust.Acceleration = dir - mController.LocalLinearVelo;
-            return dist2com;
+            return dir2com.Normalize();
         }
         public void startDrill() {
             foreach (var d in mDrill) {

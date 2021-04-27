@@ -88,23 +88,23 @@ namespace IngameScript {
         void UpdateAction() {
             var cbox = BOX.GetCBox(Volume.Center);
             var dif = mManager.Runtime - lastRegistration;
-            mLog.log($"controller.OnMission={mController.OnMission}, mThrust.Damp={mThrust.Damp}");
+            //mLog.log($"controller.OnMission={mController.OnMission}, mThrust.Damp={mThrust.Damp}");
 
             if (mManager.Drill && !mController.OnMission && dif > 60d) {
                 if (Mother.Id != 0) {
-                    if (mManager.mProgram.IGC.SendUnicastMessage(Mother.Id, "Registration", "Drill")) {
+                    if (mManager.mProgram.IGC.SendUnicastMessage(Mother.Id, "Registration", $"Drill:{Grid.CustomName}")) {
                         lastRegistration = mManager.Runtime;
-                        mLog.persist("Reg sent");
+                        //mLog.persist("Reg sent");
                     } else {
-                        mLog.log("IGC fail");
+                        //mLog.log("IGC fail");
                     }
                 } else {
-                    mLog.log("No mother");
+                    //mLog.log("No mother");
                 }
             } else {
-                mLog.log($"Not sent yet - drill={mManager.Drill}, dif={dif}");
+                //mLog.log($"Not sent yet - drill={mManager.Drill}, dif={dif}");
             }
-            mLog.log($"ATClient Updated - lastRegistration={lastRegistration}");
+            //mLog.log($"ATClient Updated - lastRegistration={lastRegistration}");
         }
         void onCancelMessage(Envelope e) => mController.CancelMission();
         void onDrillMessage(Envelope e) {

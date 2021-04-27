@@ -10,7 +10,7 @@ namespace IngameScript
 
         readonly ShipControllerModule mController;
         
-        double difMax = 0.045;   // angular velocity difference threshold
+        double difMax = 0.06;   // angular velocity difference threshold
         double slowFact = 20.0; // slow down factor how quickly the ship tries to slow down toward the end of a turn
         double fastFact = 2.0;  // speed up factor
         double smallMax = 0.4;  // angle remaining in turn when smallFactor is applied
@@ -19,7 +19,7 @@ namespace IngameScript
         Vector3D mTargetPosition;
         Vector3D mTargetDirection;
         bool calcDirection = false;
-        
+        public float MaxNGVelo = 0;
 
         public new bool Active {
             get { return base.Active; }
@@ -94,7 +94,7 @@ namespace IngameScript
         }
 
         public float Roll;
-        public float Yaw;
+        //public float Yaw;
         Vector3D _RollTarget;
         public void SetRollTarget(Vector3D aWorld) {
             _RollTarget = aWorld;
@@ -145,8 +145,7 @@ namespace IngameScript
 
             
             MAF.getRotationAngles(mTargetDirection, m, out yaw, out pitch);
-
-
+            
             if (Math.Abs(pitch) < smallMax) {
                 pitch *= smallFact;
             }
@@ -204,7 +203,8 @@ namespace IngameScript
                 MAF.getRotationAnglesFromDown(m, dir, out rp, out rr);
                 Roll = (float)rr;
             }
-            applyGyroOverride(m, pitch, Yaw == 0f ? yaw : Yaw, Roll);
+            
+            applyGyroOverride(m, pitch, yaw, Roll);
         }
 
         public void setGyrosEnabled(bool aValue) {
@@ -238,7 +238,13 @@ namespace IngameScript
 
             //pitch_speed = pidPitch.Control(pitch_speed);
             //roll_speed = pidRoll.Control(roll_speed);
-
+            mLog.log($"MaxNGVelo={MaxNGVelo}");
+            if (MaxNGVelo > 0) {
+                
+                pitch = MathHelperD.Clamp(pitch, -MaxNGVelo, MaxNGVelo);
+                yaw = MathHelperD.Clamp(yaw, -MaxNGVelo, MaxNGVelo);
+                roll = MathHelperD.Clamp(roll, -MaxNGVelo, MaxNGVelo);
+            }
 
             // Large gyro 3.36E+07
             // Small gyro 448000

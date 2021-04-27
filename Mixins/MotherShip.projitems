@@ -23,6 +23,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)CameraPersistence.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DrillControlMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GridComModule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroAVMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GyroAVMission.cs" />
