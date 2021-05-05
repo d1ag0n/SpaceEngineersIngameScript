@@ -148,14 +148,13 @@ namespace IngameScript {
         Vector3D collisionDetect() {
             var wv = mController.Grid.WorldVolume;
             var stopLen = Math.Sqrt(mStopLengthSquared);
-            var scanDist = wv.Radius + (stopLen * 3) + PADDING;
+            var scanDist = (wv.Radius * 2d) + (stopLen * 3d);
             var detected = false;
 
             for (int i = 0; i < 5; i++) {
                 var lvd = mController.LinearVelocityDirection;
                 Vector3D scanPoint;
                 if (mController.LinearVelocity < 1.0) {
-
                     scanPoint = wv.Center + MAF.ranDir() * (wv.Radius * 5);
                 } else {
                     scanPoint = wv.Center + lvd * scanDist;
@@ -166,13 +165,13 @@ namespace IngameScript {
                     rd = -rd;
                 }
                 // random distance from sphere center to scan
-                var scanRadius = 0.1 + 2 * wv.Radius * MAF.random.NextDouble();
+                var scanRadius = wv.Radius * 1.5d;
 
                 scanPoint += rd * scanRadius;
 
                 var entity = new MyDetectedEntityInfo();
                 ThyDetectedEntityInfo thy;
-                
+
                 if (mCamera.Scan(ref scanPoint, ref entity, out thy)) {
                     if (
                         (thy != null && thy != mEntity) ||
@@ -207,18 +206,20 @@ namespace IngameScript {
                             }
                         }
                     }
+                } else {
+                    mPreferredVelocityFactor -= 0.1;
                 }
             }
             if (detected) {
-                mPreferredVelocityFactor -= 0.01;
+                mPreferredVelocityFactor = 0.01;
             } else {
-                mPreferredVelocityFactor += 0.01;
+                mPreferredVelocityFactor += 0.001;
                 mObstacle.Radius *= 0.999;
                 if (mObstacle.Radius < 1) {
                     mObstacle.Radius = 0;
                 }
             }
-            mPreferredVelocityFactor = MathHelperD.Clamp(mPreferredVelocityFactor, 0.01, 1.0);
+            mPreferredVelocityFactor = MathHelperD.Clamp(mPreferredVelocityFactor, 0.02, 1.0);
             var result = Vector3D.Zero;
             if (mObstacle.Radius > 0) {
                 bool wasOnEscape = onEscape;

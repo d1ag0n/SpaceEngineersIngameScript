@@ -78,7 +78,7 @@ namespace IngameScript
         readonly LogModule mLog;
         readonly ModuleManager mManager;
 
-        IMyTextPanel mLCD;
+        //IMyTextPanel mLCD;
         IMyTextPanel mDisplay;
         IMyTextPanel mHelp;
 
@@ -86,8 +86,7 @@ namespace IngameScript
 
         readonly List<IMyCargoContainer> mCargo = new List<IMyCargoContainer>();
         //readonly List<IMyProductionBlock> mProduction = new List<IMyProductionBlock>();
-        readonly List<IMyRefinery> _mRefineries = new List<IMyRefinery>();
-        IMyRefinery[] mRefineries;
+        readonly List<IMyRefinery> mRefineries = new List<IMyRefinery>();
         readonly List<IMyAssembler> mAssemblers = new List<IMyAssembler>();
 
 
@@ -205,8 +204,8 @@ namespace IngameScript
             mBuilder.Clear();
         }
         void init() {
-            mLCD = null;
-            mManager.getByTag("inventoryConsole", ref mLCD);
+            //mLCD = null;
+            //mManager.getByTag("inventoryConsole", ref mLCD);
             mManager.getByTag("inventoryDisplay", ref mDisplay);
             mManager.getByTag("inventoryHelp", ref mHelp);
 
@@ -219,8 +218,7 @@ namespace IngameScript
             mCargo.Clear();
             mManager.getByTag(tagInventory, mCargo);
 
-            mManager.getByType(_mRefineries);
-            mRefineries = _mRefineries.ToArray();
+            mManager.getByType(mRefineries);
             foreach (var r in mRefineries) {
                 r.Enabled = true;
                 r.UseConveyorSystem = false;
@@ -351,7 +349,7 @@ namespace IngameScript
                             } else {
                                 var amt = sortItem.Amount;
                                 if (itemInfo.UsesFractions) {
-                                    amt.RawValue = (long)(free / itemInfo.Volume);
+                                    amt = (MyFixedPoint)(free / itemInfo.Volume);
                                 } else {
                                     continue;
                                 }
@@ -775,6 +773,11 @@ namespace IngameScript
                 yield return false;
             }
         }
+        float getAmount(MyItemInfo info, float volume) => volume / info.Volume;
+        float getVolume(MyItemInfo info, float amount) => amount * info.Volume;
+
+        readonly List<MyItemType> mWorkItemType = new List<MyItemType>();
+        readonly Dictionary<string, MyInventoryItem> mWorkInventoryItem = new Dictionary<string, MyInventoryItem>();
         IEnumerator<bool> stepRefineMachine;
         IEnumerator<bool> stepRefine(/*IMyRefinery aRefinery*/) {
             yield return true;
@@ -782,48 +785,54 @@ namespace IngameScript
                 // todo clean this up
                 foreach (var r in mRefineries) {
                     var inv = r.InputInventory;
-                    var transfer = 1f; // volume to transfer m^3
-                    List<InventoryRegister> list;
+                    var maxVol = ((float)inv.MaxVolume * 0.9f);
+                    mLog.persist($"maxVol={maxVol} for {r.CustomName}");
+                    var preferredVolume = maxVol / mResource.Count;
+                    inv.GetItems(null, i => {
+                        mWorkInventoryItem[i.Type.ToString()] = i;
+                        return false;
+                    });
+                    inv.GetAcceptedItems(mWorkItemType);
+                    foreach (var it in mWorkItemType) {
 
-                    for (int i = 0; i < mRefine.Count; i++) {
-                        var res = mRefine[i];
-                        if (mInventoryRegister.TryGetValue(res.Ore, out list)) {
-                            var used = (float)r.InputInventory.CurrentVolume / (float)r.InputInventory.MaxVolume;
-                            if (used < 0.25f) {
+                        var info = it.GetItemInfo();
+                        var currentVolume = 0f;
+                        string tag;
+                        if (getTag4Item(it.ToString(), out tag)) {
+                            MyInventoryItem item;
+                            if (mWorkInventoryItem.TryGetValue(it.ToString(), out item)) {
+                                currentVolume = (float)item.Amount * info.Volume;
+                            }
+                            var need = preferredVolume - currentVolume;
 
-                                foreach (var ir in list) {
-                                    var info = ir.Item.Type.GetItemInfo();
-                                    var kgvol = info.Volume;
-                                    var kgamt = (float)ir.Item.Amount;
-                                    var mcavail = kgamt * kgvol;
-                                    if (mcavail > transfer) {
-                                        MyFixedPoint mfp = (MyFixedPoint)(transfer / info.Volume);
-                                        if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                            break;
-                                        } else {
-                                            //mLog.persist($"full transfer failure {(float)r.InputInventory.CurrentVolume:f2}/{(float)r.InputInventory.MaxVolume:f2}");
-                                        }
-                                    } else {
-                                        MyFixedPoint mfp = (MyFixedPoint)(mcavail / info.Volume);
-                                        if (ir.Inventory.TransferItemTo(inv, ir.Item, mfp)) {
-                                            transfer -= mcavail;
-                                        } else {
-                                            //mLog.persist("partial transfer failure");
-                                        }
-                                    }
+                            mLog.persist($"{tag} {currentVolume}/{preferredVolume} for {r.CustomName}");
+                            if (need < -0.1) {
+                                // move out
+                                sortBlock = r;
+                                sortInventory = inv;
+                                sortItem = item;
+                                sortTag = tag;
+                                while (sortMachine.MoveNext() && sortMachine.Current) {
                                     yield return true;
                                 }
-                            }
-                        } else {
-                            if (!mInventory.ContainsKey(mFromTag[res.Ore])) {
-                                
-                                mLog.persist($"FAILED TO GET INVENTORY FOR {res.Ore}");
-                                mRefine.RemoveAt(i);
-                                i--;
+                                //mLog.persist($"Transferring {tag} out of {r.CustomName}");
+                            } else if (need > 0.1) {
+                                List<InventoryRegister> irList;
+                                if (mInventoryRegister.TryGetValue(tag, out irList)) {
+                                    foreach (var ir in irList) {
+                                        if (inv.TransferItemFrom(ir.Inventory, ir.Item, (MyFixedPoint)(need / info.Volume))) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else {
+                                continue;
                             }
                         }
-                        yield return true;
                     }
+                    mWorkItemType.Clear();
+                    mWorkInventoryItem.Clear();
+
                     if (mRefine.Count > 0) {
                         MyInventoryItem? item = new MyInventoryItem();
                         var count = inv.ItemCount;
@@ -1149,7 +1158,7 @@ namespace IngameScript
         }
         double maxEver;
         int runcount = 0;
-        readonly int mProcStepsPerUpdate = 10;
+        readonly int mProcStepsPerUpdate = 1;
         string working = "\\|/-";
         int work = 0;
         public void Main(string arg, UpdateType update) {

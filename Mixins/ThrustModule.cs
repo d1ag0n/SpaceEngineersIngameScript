@@ -137,6 +137,9 @@ namespace IngameScript {
         public Vector3D Acceleration {
             get { return _Acceleration; }
             set {
+                if (!value.IsZero() && !mController.GravityLocal.IsZero()) {
+                    value += -mController.GravityLocal;
+                }
                 _Acceleration = value;
                 updateRequired = true;
             }
@@ -174,7 +177,7 @@ namespace IngameScript {
         void InitAction() {
             foreach (var b in Blocks) {
                 //var g = GetGroup(b);
-                b.Enabled = false;
+                b.Enabled = true;
                 b.ThrustOverridePercentage = 0f;
                 mThrust.Add(b);
             }
@@ -183,6 +186,10 @@ namespace IngameScript {
         
         void UpdateAction() {
             //mThrust.calculateCoT();
+            if (mController == null) {
+                mLog.log("Thrust no controller.");
+                return;
+            }
             if (!Active) {
                 mLog.log("Thrust module not active.");
                 return;
@@ -194,7 +201,8 @@ namespace IngameScript {
                 if (localVeloSq <= 0.000025) {
                     localVelo = Vector3D.Zero;
                 }
-                Acceleration = localVelo * -6.0;
+
+                Acceleration = -mController.GravityLocal + (localVelo * -6.0);
             }
             if (updateRequired) {
                 mLog.log("Thrust module updating.");
@@ -204,6 +212,7 @@ namespace IngameScript {
                     mThrust.AllStop();                    
                 } else {
                     var m = mController.Mass;
+                    
                     mThrust.Update(a, m, Emergency);
                 }
                 updateRequired = false;

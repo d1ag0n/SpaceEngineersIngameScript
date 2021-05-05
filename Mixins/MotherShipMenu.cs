@@ -12,7 +12,7 @@ namespace IngameScript {
             mPeriscope = new PeriscopeMenu(aMenuModule);
             mCamera = new CameraMenu(aMenuModule);
             mControl = new ShipControllerMenu(aMenuModule);
-            mDrill = new DrillControlMenu();
+            mDrill = new DrillControlMenu(aMenuModule);
 
             mItems.Add(new MenuItem("Control", () => mControl));
             mItems.Add(new MenuItem("Periscope", () => mPeriscope));

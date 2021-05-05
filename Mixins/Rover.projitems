@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>75b8ec92-1bc9-494f-a367-8b06974358cf</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Rover</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BlockDirList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GyroModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)HoverMission.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IModuleBlock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Lag.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)LogModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MAF.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MissionBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Module.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ShipControllerModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThrustList.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ThrustModule.cs" />
+  </ItemGroup>
+</Project>

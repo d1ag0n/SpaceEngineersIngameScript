@@ -12,11 +12,9 @@ namespace IngameScript {
         public double FrontForce => forces[0];
         public double BackForce => forces[1];
         double[] forces = new double[6];
-        readonly ThrustModule mThrust;
 
-        public ThrustList(ThrustModule aThrust) {
-            mThrust = aThrust;
-        }
+        
+
 
         // todo index based acceleration modification, track how many thrusters currently powered to full
 
@@ -48,9 +46,7 @@ namespace IngameScript {
             var x = Math.Abs(aAccel.X) * aMass;
             var y = Math.Abs(aAccel.Y) * aMass;
 
-            if (emergency) {
-                mThrust.mLog.log("EMERGENCY!");
-            } else {
+            if (!emergency) {
                 double ratio = forces[f] / z;
                 double tempRatio = forces[l] / x;
                 if (tempRatio < ratio) {
@@ -89,9 +85,6 @@ namespace IngameScript {
                     var force = t.MaxEffectiveThrust;
                     weightedCoT += force * t.WorldMatrix.Translation;
                     totalForce += force;
-                    if (i == 1) {
-                        mThrust.mLog.log(mThrust.mLog.gps($"T{(Base6Directions.Direction)i}", t.WorldMatrix.Translation));
-                    }
                 }
                 mCoT[i] = weightedCoT / totalForce;
                 
@@ -102,8 +95,8 @@ namespace IngameScript {
         public void AllStop() {
             foreach (var list in mLists) {
                 foreach (var t in list) {
-                    t.ThrustOverridePercentage = 0f;
-                    t.Enabled = false;
+                    t.Enabled = true;
+                    t.ThrustOverride = 0f;
                 }
             }
         }
@@ -161,8 +154,10 @@ namespace IngameScript {
 
         double handleLists(double aForce, int aUse, int aDisable) {
             var forceSum = 0.0;
+            int count = 0;
             foreach (var t in mLists[aDisable]) {
-                t.Enabled = false;
+                count++;
+                t.ThrustOverride = 0;
                 forceSum += t.MaxEffectiveThrust;
             }
             forces[aDisable] = forceSum;
@@ -171,29 +166,27 @@ namespace IngameScript {
         }
 
         double runList(double aForce, int aList) {
-            double applied = 0;
-            var forceSum = 0.0;
+            var applied = 0d;
+            var forceSum = 0d;
+            int count = 0;
             foreach (var t in mLists[aList]) {
-                double met = t.MaxEffectiveThrust;
-                
+                var met = t.MaxEffectiveThrust;
+                count++;
                 forceSum += met;
                 if (aForce > 0) {
                     if (t.IsFunctional) {
-                        t.Enabled = true;
                         if (met < aForce) {
-                            t.ThrustOverridePercentage = 1;
+                            t.ThrustOverride = met;
                             applied += met;
                             aForce -= met;
-                        } else {
-                            var p = aForce / met;
-                            t.ThrustOverridePercentage = (float)p;
-                            applied += t.ThrustOverride;
-                            aForce -= t.ThrustOverride;
-                            //applied += met * p;
+                        } else {                            
+                            t.ThrustOverride = (float)aForce;
+                            applied += aForce;
+                            aForce = 0;
                         }
                     }
                 } else {
-                    t.Enabled = false;
+                    t.ThrustOverride = 0;
                 }
             }
             forces[aList] = forceSum;

@@ -22,17 +22,31 @@ namespace IngameScript {
             aManager.GetModule(out mATC);
             aManager.GetModule(out mGyro);
             mGyro.MaxNGVelo = 0;
-            onUpdate = reserve;
+            onUpdate = align;
         }
 
-        void reserve() {
-            mLog.log("reserve");
+        void align() {
             mATC.ReserveDock();
-            mThrust.Damp = true;
             if (mATC.Dock.isReserved) {
-                onUpdate = dock;
+                var ms = mATC.Mother;
+                Vector3D pos = mATC.Dock.theConnector * 2.5;
+                Vector3D face = Base6Directions.GetVector(mATC.Dock.ConnectorFace);
+                var mm = ms.Matrix;
+                pos += face * ms.Sphere.Radius;
+                mDestination.Center = MAF.local2pos(pos, ms.Matrix);
+                BaseVelocity = ms.VeloDir * ms.Speed;
+                pos = MAF.local2pos(pos, mm);
+                base.Update();
+                if (mDistToDest < mController.Volume.Radius) {
+                    onUpdate = dock;
+                } else {
+                    collisionDetectTo();
+                }
+            } else {
+                mThrust.Damp = true;
             }
         }
+
         public override void Update() => onUpdate();
 
         /*void approach() {
@@ -100,7 +114,7 @@ namespace IngameScript {
                 }
                 FlyTo(20.0);
             } else {
-                onUpdate = reserve;
+                onUpdate = align;
             }
         }
         void nothing() {

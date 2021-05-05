@@ -20,6 +20,7 @@ namespace IngameScript
         Vector3D mTargetDirection;
         bool calcDirection = false;
         public float MaxNGVelo = 0;
+        public bool Down;
 
         public new bool Active {
             get { return base.Active; }
@@ -93,22 +94,20 @@ namespace IngameScript
             }
         }
 
-        public float Roll;
-        //public float Yaw;
-        Vector3D _RollTarget;
-        public void SetRollTarget(Vector3D aWorld) {
-            _RollTarget = aWorld;
-        }
-
         public void SetTargetDirection(Vector3D aWorld) {
             calcDirection = false;
             Active = true;
-            if (MAF.nearEqual(mTargetDirection, aWorld)) {
-                init();
+            if (aWorld.IsZero()) {
+                mLog.log($"Gyro set to zero");
             } else {
-                
-                mTargetDirection = aWorld;
+                mLog.log($"Gyro NOT to zero");
+                var ls = aWorld.LengthSquared();
+                if (!MAF.nearEqual(ls, 1)) {
+                    aWorld.Normalize();
+                    mLog.log($"GyroModule normalizing direction: {ls:f7}");
+                }
             }
+            mTargetDirection = aWorld;
         }
         public IMyTerminalBlock NavBlock;
 
@@ -135,30 +134,57 @@ namespace IngameScript
                 }
             }
             if (mTargetDirection.IsZero()) {
+                mLog.log("Gyro update INIT");
                 init();
                 return;
             }
-            double pitch, yaw;
+            double yaw = 0, pitch = 0, roll = 0;
 
             var sv = mController.ShipVelocities;
             var av = MAF.world2dir(sv.AngularVelocity, m);
 
-            
-            MAF.getRotationAngles(mTargetDirection, m, out yaw, out pitch);
-            
-            if (Math.Abs(pitch) < smallMax) {
-                pitch *= smallFact;
+            if (Down) {
+                MAF.getRotationAnglesFromDown(m, mTargetDirection, out pitch, out roll);
+            } else {
+                MAF.getRotationAngles(mTargetDirection, m, out yaw, out pitch);
             }
-
+            
             if (Math.Abs(yaw) < smallMax) {
                 yaw *= smallFact;
             }
 
+            if (Math.Abs(pitch) < smallMax) {
+                pitch *= smallFact;
+            }
+            if (Math.Abs(roll) < smallMax) {
+                roll *= smallFact;
+            }
+
             var pv = av.X;
             var yv = -av.Y;
+            var rv = av.Z;
 
-            var pitchDif = (pitch - pv);
-            var yawDif = (yaw - yv);
+            var yawDif = yaw - yv;
+            var pitchDif = pitch - pv;
+            var rollDif = roll - rv;
+
+            if (Math.Abs(yawDif) < difMax) {
+                yawDif = 0;
+            } else {
+                if (yaw < 0) {
+                    if (yv > yaw) {
+                        yawDif *= fastFact;
+                    } else {
+                        yawDif *= slowFact;
+                    }
+                } else {
+                    if (yv < yaw) {
+                        yawDif *= fastFact;
+                    } else {
+                        yawDif *= slowFact;
+                    }
+                }
+            }
 
             if (Math.Abs(pitchDif) < difMax) {
                 pitchDif = 0;
@@ -177,34 +203,29 @@ namespace IngameScript
                     }
                 }
             }
-            if (Math.Abs(yawDif) < difMax) {
-                yawDif = 0;
+
+            if (Math.Abs(rollDif) < difMax) {
+                rollDif = 0;
             } else {
-                if (yaw < 0) {
-                    if (yv > yaw) {
-                        yawDif *= fastFact;
+                if (roll < 0) {
+                    if (rv > roll) {
+                        rollDif *= fastFact;
                     } else {
-                        yawDif *= slowFact;
+                        rollDif *= slowFact;
                     }
                 } else {
-                    if (yv < yaw) {
-                        yawDif *= fastFact;
+                    if (rv < roll) {
+                        rollDif *= fastFact;
                     } else {
-                        yawDif *= slowFact;
+                        rollDif *= slowFact;
                     }
                 }
             }
-            pitch += pitchDif;
+
             yaw += yawDif;
-            if (!_RollTarget.IsZero()) {
-                //var ab = (float)MAF.angleBetween(m.Down, Vector3D.Normalize(_RollTarget - m.Translation));
-                double rp, rr;
-                var dir = Vector3D.Normalize(_RollTarget - MyMatrix.Translation);
-                MAF.getRotationAnglesFromDown(m, dir, out rp, out rr);
-                Roll = (float)rr;
-            }
-            
-            applyGyroOverride(m, pitch, yaw, Roll);
+            pitch += pitchDif;
+            roll += yawDif;
+            applyGyroOverride(m, pitch, yaw, roll);
         }
 
         public void setGyrosEnabled(bool aValue) {

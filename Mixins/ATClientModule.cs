@@ -106,7 +106,12 @@ namespace IngameScript {
             }
             //mLog.log($"ATClient Updated - lastRegistration={lastRegistration}");
         }
-        void onCancelMessage(Envelope e) => mController.CancelMission();
+        void onCancelMessage(Envelope e) {
+            mController.CancelMission();
+            if (!connected) {
+                mController.NewMission(new DockMission(mManager));
+            }
+        }
         void onDrillMessage(Envelope e) {
             var ore = Ore.Unpack(e.Message.Data);
             var m = new DrillMission(mManager, ore.Item3, ore.Item1, ore.Item2);

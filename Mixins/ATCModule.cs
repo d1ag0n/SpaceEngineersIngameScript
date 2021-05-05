@@ -28,14 +28,36 @@ namespace IngameScript
                 c.Update();
             }
         }
-
-        public void CancelDrill(Vector3L aPos) {
+        public void RecallAllDrills() {
+            int count = 0;
+            int called = 0;
+            foreach (var d in mDrills) {
+                count++;
+                if (mManager.mProgram.IGC.SendUnicastMessage(d, "Cancel", 0)) {
+                    called++;
+                }
+            }
+            var list = new List<DrillMission>();
+            foreach (var p in mDrillMissions.Values) {
+                list.Add(p);
+            }
+            foreach (var dm in list) {
+                count++;
+                if (CancelDrill(dm.Location)) {
+                    called++;
+                }
+            }
+            mLog.persist($"Recalled {called}/{count}");
+        }
+        public bool CancelDrill(Vector3L aPos) {
             DrillMission m;
             if (mDrillMissions.TryGetValue(aPos, out m)) {
                 if (mManager.mProgram.IGC.SendUnicastMessage(m.Id, "Cancel", 0)) {
                     mDrillMissions.Remove(aPos);
+                    return true;
                 }
             }
+            return false;
         }
         public struct DrillMission {
             public readonly long Id;

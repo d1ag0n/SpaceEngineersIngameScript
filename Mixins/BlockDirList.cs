@@ -24,7 +24,6 @@ namespace IngameScript {
             direction = aBlock.Orientation.TransformDirection(direction);
             aBlock.CustomName = $"{aBlock.GetType().Name} {direction}";
             mLists[(int)direction].Add(aBlock);
-            aBlock.ShowOnHUD = false;
         }
      
     }

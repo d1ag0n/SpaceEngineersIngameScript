@@ -61,6 +61,34 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RotoVator", "RotoVator\Roto
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "RotoVator", "Mixins\RotoVator.shproj", "{78F91DB4-BD9F-404E-A704-CDDF1950C76D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AWalker", "Walker\AWalker.csproj", "{BB51742B-7090-4807-B4C1-A087DC23B960}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Walker", "Mixins\Walker.shproj", "{EF67B0AD-B3A8-47A5-A74F-A00F4D6B799C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AGearWalker", "AGearWalker\AGearWalker.csproj", "{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Segue", "Segue\Segue.csproj", "{B17A7817-E81B-4B14-AA26-C7EA5879BF86}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SlopeMiner", "SlopeMiner\SlopeMiner.csproj", "{AF666F96-C961-4CB0-913E-B7D6C455F39E}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SlopeMiner", "Mixins\SlopeMiner.shproj", "{C0543998-3983-4E94-9CD7-2775A6ED65F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rover", "Rover\Rover.csproj", "{49EA66A0-0381-492B-A9D5-6F864A74B634}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Rover", "Mixins\Rover.shproj", "{75B8EC92-1BC9-494F-A367-8B06974358CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArticulatedMiner", "ArticulatedMiner\ArticulatedMiner.csproj", "{95E433BE-73A1-40B5-B6E5-380221D2B930}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ArticulatedMiner", "Mixins\ArticulatedMiner.shproj", "{2DDE766B-3192-4DC6-BC9F-8769DCEB9096}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "APheat", "APheat\APheat.csproj", "{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AARotorSuspension", "AARotorSuspension\AARotorSuspension.csproj", "{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "RotorSuspension", "Mixins\RotorSuspension.shproj", "{38639161-6991-48A1-8AE4-37730B73BCA7}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Segue", "Mixins\Segue.shproj", "{F7558982-EA36-4FF0-BDEA-AFC5EB663894}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Mixins\Dock.projitems*{00cf050b-d297-420d-aaa4-1ec9a26ec72d}*SharedItemsImports = 13
@@ -68,22 +96,35 @@ Global
 		Mixins\ATests.projitems*{1a42adc5-ad76-4489-9b68-32bf1df5581f}*SharedItemsImports = 13
 		Mixins\InventoryManager.projitems*{2204ea25-7bb9-4fd6-a663-99c934859b7e}*SharedItemsImports = 13
 		Mixins\DrillShip.projitems*{22ced295-35f9-46b5-86f6-bbc722daea0e}*SharedItemsImports = 4
+		Mixins\ArticulatedMiner.projitems*{2dde766b-3192-4dc6-bc9f-8769dceb9096}*SharedItemsImports = 13
 		Mixins\Connector.projitems*{2e5ebfa6-57a6-4a3b-b793-f708a0adc035}*SharedItemsImports = 13
+		Mixins\RotorSuspension.projitems*{38639161-6991-48a1-8ae4-37730b73bca7}*SharedItemsImports = 13
 		Mixins\GravityDrive.projitems*{3ba81220-3131-4fc8-a786-837801338a9c}*SharedItemsImports = 13
 		Mixins\RotoFinger.projitems*{41aaebe1-73a6-4d0d-9c89-c3a4bcab6ec9}*SharedItemsImports = 13
 		Mixins\RotoVator.projitems*{449068a1-db1d-4102-80ba-93fa085f243a}*SharedItemsImports = 4
 		Mixins\AutoPilot.projitems*{4941e846-35f4-421b-b602-9d4766f96bdb}*SharedItemsImports = 13
+		Mixins\Rover.projitems*{49ea66a0-0381-492b-a9d5-6f864a74b634}*SharedItemsImports = 4
+		Mixins\RotorSuspension.projitems*{4f2da115-f79a-472f-b0af-6a7529ef8f4a}*SharedItemsImports = 4
 		Mixins\CruiseControl.projitems*{59812ba8-f6a8-4f95-854d-5aeb80a651b9}*SharedItemsImports = 13
 		Mixins\Stator.projitems*{5f82ad74-3d6b-47fe-a9e0-a057ff01556f}*SharedItemsImports = 13
 		Mixins\OrientationInfo.projitems*{6c40d436-d4c5-4686-8c44-2179bc367042}*SharedItemsImports = 13
+		Mixins\Rover.projitems*{75b8ec92-1bc9-494f-a367-8b06974358cf}*SharedItemsImports = 13
+		Mixins\Walker.projitems*{781f2a33-bcd0-46ca-ac90-1cc5bf1f9c07}*SharedItemsImports = 4
 		Mixins\RotoVator.projitems*{78f91db4-bd9f-404e-a704-cddf1950c76d}*SharedItemsImports = 13
+		Mixins\ArticulatedMiner.projitems*{95e433be-73a1-40b5-b6e5-380221d2b930}*SharedItemsImports = 4
 		Mixins\GravityDrive.projitems*{96550cd7-5076-4a17-93f3-7684f64b23b3}*SharedItemsImports = 4
 		Mixins\ATests.projitems*{a6d431ac-3bf0-4e2e-8946-3b40fa2473f8}*SharedItemsImports = 4
 		Mixins\InventoryManager.projitems*{acbc1545-3539-45e0-9aeb-09dcdc6de473}*SharedItemsImports = 4
+		Mixins\SlopeMiner.projitems*{af666f96-c961-4cb0-913e-b7d6c455f39e}*SharedItemsImports = 4
+		Mixins\Segue.projitems*{b17a7817-e81b-4b14-aa26-c7ea5879bf86}*SharedItemsImports = 4
 		Mixins\CruiseControl.projitems*{b8365198-c870-45be-9bfe-d60819c4c76f}*SharedItemsImports = 4
+		Mixins\Walker.projitems*{bb51742b-7090-4807-b4c1-a087dc23b960}*SharedItemsImports = 4
+		Mixins\SlopeMiner.projitems*{c0543998-3983-4e94-9cd7-2775a6ed65f9}*SharedItemsImports = 13
 		Mixins\DrillShip.projitems*{c53f78b8-857b-4259-a079-73ad0d285e1f}*SharedItemsImports = 13
 		Mixins\MotherShip.projitems*{de07b458-89f9-4df4-b8ed-cc1b4e91b1c5}*SharedItemsImports = 4
+		Mixins\Walker.projitems*{ef67b0ad-b3a8-47a5-a74f-a00f4d6b799c}*SharedItemsImports = 13
 		Mixins\Mission.projitems*{f1cfc2c0-6a86-477c-8065-f07745e218c4}*SharedItemsImports = 13
+		Mixins\Segue.projitems*{f7558982-ea36-4ff0-bdea-afc5eb663894}*SharedItemsImports = 13
 		Mixins\Library.projitems*{fa185618-a62b-480f-abc7-76f155fbdc58}*SharedItemsImports = 13
 		Mixins\MotherShip.projitems*{fc5c7969-7016-4ba5-8296-c463b88fcbf6}*SharedItemsImports = 13
 	EndGlobalSection
@@ -181,6 +222,62 @@ Global
 		{449068A1-DB1D-4102-80BA-93FA085F243A}.Release|Any CPU.Build.0 = Debug|x64
 		{449068A1-DB1D-4102-80BA-93FA085F243A}.Release|x64.ActiveCfg = Debug|x64
 		{449068A1-DB1D-4102-80BA-93FA085F243A}.Release|x64.Build.0 = Debug|x64
+		{BB51742B-7090-4807-B4C1-A087DC23B960}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{BB51742B-7090-4807-B4C1-A087DC23B960}.Debug|x64.ActiveCfg = Debug|x64
+		{BB51742B-7090-4807-B4C1-A087DC23B960}.Debug|x64.Build.0 = Debug|x64
+		{BB51742B-7090-4807-B4C1-A087DC23B960}.Release|Any CPU.ActiveCfg = Debug|x64
+		{BB51742B-7090-4807-B4C1-A087DC23B960}.Release|Any CPU.Build.0 = Debug|x64
+		{BB51742B-7090-4807-B4C1-A087DC23B960}.Release|x64.ActiveCfg = Debug|x64
+		{BB51742B-7090-4807-B4C1-A087DC23B960}.Release|x64.Build.0 = Debug|x64
+		{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}.Debug|x64.ActiveCfg = Debug|x64
+		{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}.Debug|x64.Build.0 = Debug|x64
+		{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}.Release|Any CPU.ActiveCfg = Debug|x64
+		{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}.Release|Any CPU.Build.0 = Debug|x64
+		{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}.Release|x64.ActiveCfg = Debug|x64
+		{781F2A33-BCD0-46CA-AC90-1CC5BF1F9C07}.Release|x64.Build.0 = Debug|x64
+		{B17A7817-E81B-4B14-AA26-C7EA5879BF86}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{B17A7817-E81B-4B14-AA26-C7EA5879BF86}.Debug|x64.ActiveCfg = Debug|x64
+		{B17A7817-E81B-4B14-AA26-C7EA5879BF86}.Debug|x64.Build.0 = Debug|x64
+		{B17A7817-E81B-4B14-AA26-C7EA5879BF86}.Release|Any CPU.ActiveCfg = Debug|x64
+		{B17A7817-E81B-4B14-AA26-C7EA5879BF86}.Release|Any CPU.Build.0 = Debug|x64
+		{B17A7817-E81B-4B14-AA26-C7EA5879BF86}.Release|x64.ActiveCfg = Debug|x64
+		{B17A7817-E81B-4B14-AA26-C7EA5879BF86}.Release|x64.Build.0 = Debug|x64
+		{AF666F96-C961-4CB0-913E-B7D6C455F39E}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{AF666F96-C961-4CB0-913E-B7D6C455F39E}.Debug|x64.ActiveCfg = Debug|x64
+		{AF666F96-C961-4CB0-913E-B7D6C455F39E}.Debug|x64.Build.0 = Debug|x64
+		{AF666F96-C961-4CB0-913E-B7D6C455F39E}.Release|Any CPU.ActiveCfg = Debug|x64
+		{AF666F96-C961-4CB0-913E-B7D6C455F39E}.Release|Any CPU.Build.0 = Debug|x64
+		{AF666F96-C961-4CB0-913E-B7D6C455F39E}.Release|x64.ActiveCfg = Debug|x64
+		{AF666F96-C961-4CB0-913E-B7D6C455F39E}.Release|x64.Build.0 = Debug|x64
+		{49EA66A0-0381-492B-A9D5-6F864A74B634}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{49EA66A0-0381-492B-A9D5-6F864A74B634}.Debug|x64.ActiveCfg = Debug|x64
+		{49EA66A0-0381-492B-A9D5-6F864A74B634}.Debug|x64.Build.0 = Debug|x64
+		{49EA66A0-0381-492B-A9D5-6F864A74B634}.Release|Any CPU.ActiveCfg = Debug|x64
+		{49EA66A0-0381-492B-A9D5-6F864A74B634}.Release|Any CPU.Build.0 = Debug|x64
+		{49EA66A0-0381-492B-A9D5-6F864A74B634}.Release|x64.ActiveCfg = Debug|x64
+		{49EA66A0-0381-492B-A9D5-6F864A74B634}.Release|x64.Build.0 = Debug|x64
+		{95E433BE-73A1-40B5-B6E5-380221D2B930}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{95E433BE-73A1-40B5-B6E5-380221D2B930}.Debug|x64.ActiveCfg = Debug|x64
+		{95E433BE-73A1-40B5-B6E5-380221D2B930}.Debug|x64.Build.0 = Debug|x64
+		{95E433BE-73A1-40B5-B6E5-380221D2B930}.Release|Any CPU.ActiveCfg = Debug|x64
+		{95E433BE-73A1-40B5-B6E5-380221D2B930}.Release|Any CPU.Build.0 = Debug|x64
+		{95E433BE-73A1-40B5-B6E5-380221D2B930}.Release|x64.ActiveCfg = Debug|x64
+		{95E433BE-73A1-40B5-B6E5-380221D2B930}.Release|x64.Build.0 = Debug|x64
+		{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}.Debug|x64.ActiveCfg = Debug|x64
+		{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}.Debug|x64.Build.0 = Debug|x64
+		{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}.Release|Any CPU.ActiveCfg = Debug|x64
+		{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}.Release|Any CPU.Build.0 = Debug|x64
+		{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}.Release|x64.ActiveCfg = Debug|x64
+		{49390375-7DAC-47B1-B94A-8C3AC8C2AA36}.Release|x64.Build.0 = Debug|x64
+		{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}.Debug|x64.ActiveCfg = Debug|x64
+		{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}.Debug|x64.Build.0 = Debug|x64
+		{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}.Release|Any CPU.ActiveCfg = Debug|x64
+		{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}.Release|Any CPU.Build.0 = Debug|x64
+		{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}.Release|x64.ActiveCfg = Debug|x64
+		{4F2DA115-F79A-472F-B0AF-6A7529EF8F4A}.Release|x64.Build.0 = Debug|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -202,6 +299,12 @@ Global
 		{2204EA25-7BB9-4FD6-A663-99C934859B7E} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{3BA81220-3131-4FC8-A786-837801338A9C} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 		{78F91DB4-BD9F-404E-A704-CDDF1950C76D} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{EF67B0AD-B3A8-47A5-A74F-A00F4D6B799C} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{C0543998-3983-4E94-9CD7-2775A6ED65F9} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{75B8EC92-1BC9-494F-A367-8B06974358CF} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{2DDE766B-3192-4DC6-BC9F-8769DCEB9096} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{38639161-6991-48A1-8AE4-37730B73BCA7} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
+		{F7558982-EA36-4FF0-BDEA-AFC5EB663894} = {95DC9D43-E5E3-49A1-874A-FE21B363B720}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6A99BF5F-D8A0-4E32-96BC-BC9F8E4EFB63}

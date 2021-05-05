@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)BoxMap.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)CameraModule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)CDMission.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Connector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DockMessage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)DockMission.cs" />

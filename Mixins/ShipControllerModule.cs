@@ -37,6 +37,8 @@ namespace IngameScript {
 
         readonly List<IMyInventory> mInventory = new List<IMyInventory>();
         public MyShipVelocities ShipVelocities { get; private set; }
+        public Vector3D Gravity { get; private set; }
+        public Vector3D GravityLocal { get; private set; }
         public Vector3D LinearVelocityDirection { get; private set; }
         public double LinearVelocity { get; private set; }
         public IMyShipController Remote { get; private set; }
@@ -187,19 +189,32 @@ namespace IngameScript {
                     }
                 }
             }
-            if (Cockpit == null || !Cockpit.IsFunctional || !Cockpit.IsUnderControl) {
+            if (Cockpit == null || !Cockpit.IsFunctional || !Cockpit.IsUnderControl || !Cockpit.IsMainCockpit) {
+                Cockpit = null;
                 foreach (var sc in Blocks) {
-                    Cockpit = sc;
-                    if (sc.IsUnderControl && sc.IsFunctional) {
-                        break;
+                    if (sc.IsFunctional) {
+                        if (sc.IsUnderControl) {
+                            Cockpit = sc;
+                            break;
+                        }
+                        if (sc.IsMainCockpit) {
+                            Cockpit = sc;
+                            break;
+                        }
+                        Cockpit = sc;
                     }
+                }
+                if (Cockpit == null) {
+                    Cockpit = Remote;
                 }
             }
             if (Remote == null) {
                 mLog.log("No ship controller.");
-                mManager.mProgram.Echo("No ship controller");
+                mManager.mProgram.Echo("No ship controller.");
                 return;
             }
+            Gravity = Remote.GetNaturalGravity();
+            GravityLocal = MAF.world2dir(Gravity, Grid.WorldMatrix);
             var sm = Remote.CalculateShipMass();
             Mass = sm.PhysicalMass;
             ShipVelocities = Remote.GetShipVelocities();

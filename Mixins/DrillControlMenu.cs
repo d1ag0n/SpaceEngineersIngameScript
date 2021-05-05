@@ -11,11 +11,7 @@ namespace IngameScript {
             mList.Add(new MenuItem("Recall Drills", recall));
         }
         Menu recall() {
-            mATC.DrillMissions(mDrillMission);
-            foreach (var dm in mDrillMission) {
-                mATC.CancelDrill(dm.Location);
-            }
-            mDrillMission.Clear();
+            mATC.RecallAllDrills();
             return this;
         }
         public override List<MenuItem> GetPage() => mList;
